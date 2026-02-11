@@ -1,3 +1,8 @@
+<!-- TODO(#332): Convert frontmatter from command format to skill format:
+     - Add `name: tackle-pr-comment`
+     - Keep `description` and `argument-hint`
+     - Review `allowed-tools` for skill context
+-->
 ---
 allowed-tools: Read, Glob, Grep, Write, Bash(gh api repos/*/*/pulls/*/reviews/*), Bash(gh api repos/*/*/pulls/comments/*), Bash(gh api repos/*/*/issues/comments/*), Bash(gh api repos/*/*/pulls/*/comments), Bash(gh api repos/*/*/issues/*/comments)
 argument-hint: <pr-comment-url>
@@ -78,6 +83,8 @@ Before creating the scratchpad, assess if the feedback is clear enough to act on
 
 ## Step 5: Create Implementation Scratchpad
 
+<!-- TODO(#332): Replace CLAUDE.md reference with /scratchpad skill reference.
+     Also reference /issue-context skill for directory organization. -->
 Follow the `scratchpads` workflow in CLAUDE.md.
 
 **Naming pattern**: `NNNN-pr-{PR_NUMBER}-{COMMENT_TYPE}-{COMMENT_ID}.txt`
@@ -152,6 +159,7 @@ Feedback items marked IGNORE in the Analysis section should not appear in any st
 
 ## Step 6: Questions (If Needed)
 
+<!-- TODO(#332): Replace CLAUDE.md reference with /question skill reference -->
 If there are decisions that need user input (not clarification from reviewer), use the `questions` workflow in CLAUDE.md:
 
 **Naming pattern**: `NNNN-pr-{PR_NUMBER}-{COMMENT_TYPE}-{COMMENT_ID}-questions.txt`
@@ -176,6 +184,7 @@ When the user approves the plan and asks to proceed:
 
 1. **Ask**: "Would you like me to create a commit message file now? (The implementation plan has enough context to draft it.)"
 
+<!-- TODO(#332): Replace CLAUDE.md reference with /commit-msg skill reference -->
 2. **If yes**: Follow the `commits` workflow in CLAUDE.md to create the commit message file with these specific requirements:
    - Use `[PR feedback]` as the commit prefix (instead of conventional commit format)
    - Include a `Ref: {PR_COMMENT_URL}` footer to link back to the review comment

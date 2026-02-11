@@ -1,3 +1,8 @@
+<!-- TODO(#332): Convert frontmatter from command format to skill format:
+     - Add `name: breadcrumb`
+     - Keep `description` and `argument-hint`
+     - Review `allowed-tools` for skill context (commands inherit project tools; skills declare their own)
+-->
 ---
 allowed-tools: Read, Write, Bash(git:*)
 argument-hint: <note text>
@@ -18,6 +23,7 @@ Like Hansel and Gretel dropping breadcrumbs to find their way home, this command
 git branch --show-current
 ```
 
+<!-- TODO(#332): Reference /issue-context skill for branch pattern validation instead of hardcoding -->
 **If branch doesn't match `issues/<NUMBER>` pattern:**
 
 - Print: "Not on an issue branch. Breadcrumbs require an `issues/<NUMBER>` branch."

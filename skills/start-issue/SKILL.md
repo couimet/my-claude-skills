@@ -1,3 +1,9 @@
+<!-- TODO(#332): Convert frontmatter from command format to skill format:
+     - Add `name: start-issue`
+     - Keep `description` and `argument-hint`
+     - Review `allowed-tools` for skill context
+     - Add Bash(git:*) — needed for branch creation
+-->
 ---
 allowed-tools: Read, Bash(gh:*), Write, Glob, Grep
 argument-hint: <github-issue-url>
@@ -34,6 +40,8 @@ Where `<NUMBER>` is the GitHub issue number (e.g., `issues/223`).
   - Related code that will be affected
   - Existing patterns to follow
   - Test files that will need updates
+<!-- TODO(#332): Remove rangeLink-specific integration points below. Replace with generic
+     guidance like "Check project-specific integration points (entry points, config, docs)" -->
 - **Check integration points** - For new commands/features, review:
   - `packages/rangelink-vscode-extension/src/statusBar/RangeLinkStatusBar.ts` for status bar menu integration
   - `packages/rangelink-vscode-extension/package.json` contributes section (menus/keybindings)
@@ -42,6 +50,8 @@ Where `<NUMBER>` is the GitHub issue number (e.g., `issues/223`).
 
 ### 3. Create Implementation Plan Scratchpad
 
+<!-- TODO(#332): Replace CLAUDE.md reference with /scratchpad skill reference.
+     Also reference /issue-context skill for directory organization. -->
 Follow the `scratchpads` workflow in CLAUDE.md for file location and numbering.
 Use filename pattern: `NNNN-issue-NUMBER-description.txt`
 
@@ -95,6 +105,8 @@ List any reasonable defaults assumed to avoid blocking on minor decisions:
 
 Bulleted list of all files that will be touched, grouped by step.
 
+<!-- TODO(#332): Remove rangeLink-specific discoverability touchpoints (status bar, context menu, etc.)
+     Replace with generic guidance: "Check project's documentation and discoverability conventions" -->
 ## Documentation & Discoverability
 
 **User-facing changes require:**
@@ -130,6 +142,7 @@ DO ask questions about:
 - User-facing behavior where preference matters
 - Scope clarification when requirements are ambiguous
 
+<!-- TODO(#332): Replace CLAUDE.md reference with /question skill reference -->
 If questions are needed, follow the `questions` workflow in CLAUDE.md for file location and numbering.
 Use filename pattern: `NNNN-issue-NUMBER-questions.txt`
 

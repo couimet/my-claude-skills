@@ -1,3 +1,8 @@
+<!-- TODO(#332): Convert frontmatter from command format to skill format:
+     - Add `name: finish-issue`
+     - Keep `description` and `argument-hint`
+     - Review `allowed-tools` for skill context (pnpm:* is project-specific — generalize?)
+-->
 ---
 allowed-tools: Read, Bash(git:*, pnpm:*, gh:*), Write, Glob, Grep
 argument-hint: [optional: issue-number-or-url]
@@ -27,6 +32,8 @@ Parse the issue number from `issues/<NUMBER>` pattern or use the provided argume
 
 ### 2. Pre-PR Verification
 
+<!-- TODO(#332): Remove rangeLink-specific commands (pnpm format:fix, pnpm test, pnpm-workspace.yaml).
+     Replace with generic guidance: "Run project's format, lint, and test commands" -->
 Run these commands from the **project root** (where `pnpm-workspace.yaml` lives):
 
 ```bash
@@ -48,6 +55,8 @@ git status
 
 Check if documentation updates are needed:
 
+<!-- TODO(#332): Remove rangeLink-specific paths (packages/rangelink-vscode-extension/).
+     Replace with generic guidance: "Check project's CHANGELOG, README, and config for documentation needs" -->
 **CHANGELOG.md** (`packages/rangelink-vscode-extension/CHANGELOG.md`):
 
 - User-facing changes → Add entry (Added/Changed/Fixed)
@@ -77,6 +86,8 @@ Collect information from:
 
 ### 5. Generate PR Description Scratchpad
 
+<!-- TODO(#332): Replace CLAUDE.md reference with /scratchpad skill reference.
+     Also reference /issue-context skill for directory organization. -->
 Follow the `scratchpads` workflow in CLAUDE.md for file location and numbering.
 Use filename pattern: `NNNN-finish-issue-NUMBER.txt`
 
@@ -117,6 +128,7 @@ The PR description MUST follow this template:
 - Closes #NUMBER
 ```
 
+<!-- TODO(#332): Keep this rule but reference /scratchpad and /question skill directory conventions -->
 ### PR Description Rules
 
 - **NEVER** reference `.scratchpads/`, `.claude-questions/`, or `.breadcrumbs/` files
@@ -127,6 +139,7 @@ The PR description MUST follow this template:
 
 If unclear whether documentation is needed or other decisions arise:
 
+<!-- TODO(#332): Replace CLAUDE.md reference with /question skill reference -->
 - Use the questions workflow in CLAUDE.md to gather user input
 - Do NOT guess on user-facing decisions
 

@@ -1,3 +1,9 @@
+<!-- TODO(#332): Convert frontmatter from command format to skill format:
+     - Add `name: tackle-scratchpad-block`
+     - Keep `description` and `argument-hint`
+     - Review `allowed-tools` — Bash(*) is very permissive, narrow if possible
+     - argument-hint uses rangeLink terminology — reference /code-ref skill for link format
+-->
 ---
 allowed-tools: Read, Write, Edit, Bash(*), Glob, Grep
 argument-hint: <rangelink-to-scratchpad-steps>
@@ -32,6 +38,7 @@ Note: User controls execution order. Do not verify or block based on previous st
 
 Before executing, assess if the steps are clear enough:
 
+<!-- TODO(#332): Replace CLAUDE.md reference with /question skill reference -->
 **If unclear**: Follow the `questions` workflow in CLAUDE.md to ask for clarification.
 Use filename pattern: `NNNN-scratchpad-block-questions.txt`
 
@@ -47,6 +54,8 @@ Perform the implementation work as specified in the selected lines:
 
 ### Test Execution
 
+<!-- TODO(#332): Remove rangeLink-specific E001 rule reference and pnpm test.
+     Replace with generic guidance: "Run the project's test suite" -->
 Follow rule E001 in CLAUDE.md for shell environment setup, then run:
 
 ```bash
@@ -59,6 +68,7 @@ pnpm test
 
 **IMPORTANT**: Always create a NEW commit message file for this block. Never reuse commit message files from previous steps.
 
+<!-- TODO(#332): Replace CLAUDE.md reference with /commit-msg skill reference -->
 Follow the `commits` workflow in CLAUDE.md.
 
 Use filename pattern: `NNNN-scratchpad-step-description.txt`

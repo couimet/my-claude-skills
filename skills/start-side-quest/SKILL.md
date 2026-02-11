@@ -1,3 +1,9 @@
+<!-- TODO(#332): Convert frontmatter from command format to skill format:
+     - Add `name: start-side-quest`
+     - Keep `description` and `argument-hint`
+     - Review `allowed-tools` for skill context
+     - argument-hint uses rangeLink terminology — reference /code-ref skill for link format
+-->
 ---
 allowed-tools: Read, Bash(git:*), Bash(gh:*), Write, Glob, Grep
 argument-hint: <description | rangelink-to-context>
@@ -57,6 +63,7 @@ Examples:
 
 ### 3. Create Implementation Scratchpad
 
+<!-- TODO(#332): Replace CLAUDE.md reference with /scratchpad skill reference -->
 Follow the `scratchpads` workflow in CLAUDE.md for file location and numbering.
 Use filename pattern: `NNNN-side-quest-<slug>.txt`
 
@@ -98,6 +105,7 @@ Brief explanation of why this is orthogonal to the parent work:
 
 **Only create questions for decisions that would fundamentally change the approach.**
 
+<!-- TODO(#332): Replace CLAUDE.md reference with /question skill reference -->
 If questions are needed, follow the `questions` workflow in CLAUDE.md.
 Use filename pattern: `NNNN-side-quest-<slug>-questions.txt`
 
@@ -120,6 +128,8 @@ Stash: <stash message if applicable>
 ---
 
 Ready to implement. When done:
+<!-- TODO(#332): Remove rangeLink-specific pnpm test. Replace with generic "Run project's test suite".
+     Replace CLAUDE.md commits reference with /commit-msg skill reference. -->
 1. Run tests: pnpm test
 2. Create commit message per CLAUDE.md `commits` workflow
 3. Commit and create PR
