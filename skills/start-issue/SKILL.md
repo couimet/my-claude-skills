@@ -1,29 +1,25 @@
-<!-- TODO(#332): Convert frontmatter from command format to skill format:
-     - Add `name: start-issue`
-     - Keep `description` and `argument-hint`
-     - Review `allowed-tools` for skill context
-     - Add Bash(git:*) — needed for branch creation
--->
 ---
-allowed-tools: Read, Bash(gh:*), Write, Glob, Grep
-argument-hint: <github-issue-url>
+name: start-issue
 description: Start working on a GitHub issue - analyze, explore codebase, and create detailed implementation plan
+argument-hint: <github-issue-url>
+allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *)
 ---
 
-# Start GitHub Issue Workflow
+# Start Issue
 
-## Context
+Analyze a GitHub issue, explore the codebase, and create a detailed implementation plan. This skill is for **planning only** — it does not implement anything.
 
-Issue URL: $ARGUMENTS
+**Input:** $ARGUMENTS (a GitHub issue URL)
 
-Fetch the issue details:
-!`gh issue view $ARGUMENTS --json title,body,number,state,labels`
+## Step 1: Fetch Issue Details
 
-## Your Tasks
+```bash
+gh issue view $ARGUMENTS --json title,body,number,state,labels
+```
 
-### 1. Create Feature Branch
+## Step 2: Create Feature Branch
 
-Create a feature branch using the pattern `issues/<NUMBER>` from the latest remote main:
+Create a feature branch from the latest remote main:
 
 ```bash
 git fetch origin && git checkout -b issues/<NUMBER> origin/main
@@ -31,33 +27,24 @@ git fetch origin && git checkout -b issues/<NUMBER> origin/main
 
 Where `<NUMBER>` is the GitHub issue number (e.g., `issues/223`).
 
-### 2. Gather Full Context
+## Step 3: Gather Full Context
 
-- **Fetch parent issues** - If the issue body references a parent (e.g., "Parent Issue: #47"), fetch it to understand the broader goal and how this issue fits into the plan
-- **Note child issues** - If this is a parent/epic, note child issues to understand full scope
-- **Explore the codebase** - Use Grep/Glob/Read to find and examine:
+- **Fetch parent issues** — if the issue body references a parent (e.g., "Parent Issue: #47"), fetch it to understand the broader goal and how this issue fits into the plan
+- **Note child issues** — if this is a parent/epic, note child issues to understand full scope
+- **Explore the codebase** — use Grep/Glob/Read to find and examine:
   - Files/functions mentioned in the issue
   - Related code that will be affected
   - Existing patterns to follow
   - Test files that will need updates
-<!-- TODO(#332): Remove rangeLink-specific integration points below. Replace with generic
-     guidance like "Check project-specific integration points (entry points, config, docs)" -->
-- **Check integration points** - For new commands/features, review:
-  - `packages/rangelink-vscode-extension/src/statusBar/RangeLinkStatusBar.ts` for status bar menu integration
-  - `packages/rangelink-vscode-extension/package.json` contributes section (menus/keybindings)
-  - README.md feature documentation
-  - CHANGELOG.md for release notes pattern
+- **Check integration points** — review the project's entry points, configuration, documentation, and discoverability conventions for anything the change might affect
 
-### 3. Create Implementation Plan Scratchpad
+## Step 4: Create Implementation Plan Scratchpad
 
-<!-- TODO(#332): Replace CLAUDE.md reference with /scratchpad skill reference.
-     Also reference /issue-context skill for directory organization. -->
-Follow the `scratchpads` workflow in CLAUDE.md for file location and numbering.
-Use filename pattern: `NNNN-issue-NUMBER-description.txt`
+Use `/scratchpad` to create a working document. The `/issue-context` skill will handle directory placement based on the branch.
 
 The scratchpad for issues MUST contain these sections:
 
-```markdown
+```
 # Issue #NUMBER: Title
 
 Parent: #XX (if applicable)
@@ -73,10 +60,10 @@ Type/Priority/Scope: from labels
 
 Numbered steps that are:
 
-- **Commit-sized** - each step could be a single commit or small PR
-- **Specific** - reference exact files, functions, types by name
-- **Ordered** - dependencies between steps are clear
-- **Testable** - each step should mention what tests to add/update
+- **Commit-sized** — each step could be a single commit or small PR
+- **Specific** — reference exact files, functions, types by name
+- **Ordered** — dependencies between steps are clear
+- **Testable** — each step should mention what tests to add/update
 
 Example format:
 
@@ -99,42 +86,36 @@ Example format:
 
 List any reasonable defaults assumed to avoid blocking on minor decisions:
 
-- "Assuming X because Y" - document reasoning
+- "Assuming X because Y" — document reasoning
 
 ## Files to Modify
 
 Bulleted list of all files that will be touched, grouped by step.
 
-<!-- TODO(#332): Remove rangeLink-specific discoverability touchpoints (status bar, context menu, etc.)
-     Replace with generic guidance: "Check project's documentation and discoverability conventions" -->
 ## Documentation & Discoverability
 
-**User-facing changes require:**
+Check the project's documentation and discoverability conventions. Common touchpoints:
 
-- [ ] CHANGELOG.md entry (under appropriate version section)
-- [ ] README.md update (if new command, setting, or feature)
-
-**Discoverability touchpoints to consider:**
-
-- Status bar menu integration (for commands users invoke frequently)
-- Context menu entries (for selection-based actions)
-- Keybinding (if high-frequency action)
-- Command palette title (clear, searchable naming)
+- [ ] CHANGELOG entry (under appropriate version section)
+- [ ] README update (if new command, setting, or feature)
+- [ ] Any project-specific integration points (entry points, config, menus, keybindings)
 
 ## Acceptance Criteria
 
 Checklist from the issue (copy verbatim if provided).
 ```
 
-### 4. Create Questions File (Only If Necessary)
+Format all code references per the `/code-ref` skill conventions.
+
+## Step 5: Create Questions File (Only If Necessary)
 
 **Only create questions for decisions that would FUNDAMENTALLY change the implementation plan.**
 
 Do NOT ask questions about:
 
 - Minor choices with clear best practices (assume the better option)
-- Implementation details you can reasonably decide
-- Things you can verify by reading existing code patterns
+- Decisions where the codebase already establishes a clear, consistent pattern to follow
+- Information you can verify by reading code or documentation rather than asking
 
 DO ask questions about:
 
@@ -142,39 +123,15 @@ DO ask questions about:
 - User-facing behavior where preference matters
 - Scope clarification when requirements are ambiguous
 
-<!-- TODO(#332): Replace CLAUDE.md reference with /question skill reference -->
-If questions are needed, follow the `questions` workflow in CLAUDE.md for file location and numbering.
-Use filename pattern: `NNNN-issue-NUMBER-questions.txt`
+If questions are needed, use `/question` to create a questions file. Add a `**Plan impact:**` line after the `Recommendation:` in each question to explain which steps would change based on the answer.
 
-Extend the base format with issue-specific fields:
+## Step 6: Report Status and STOP
 
-```markdown
-# Questions for Issue #NUMBER
-
-## Question 001: <specific question>
-
-Context: <why this matters for the plan>
-
-Options:
-A) <option> - <tradeoff>
-B) <option> - <tradeoff>
-
-Recommendation: <your recommendation with reasoning>
-
-**Plan impact:** <which steps would change based on answer>
-
-Answer: <prefilled with recommendation>
-
----
-```
-
-### 5. Report Status and STOP
-
-Print the branch name (`issues/<NUMBER>`) and paths of any created scratchpad/questions files.
+Print the branch name and paths of any created scratchpad/questions files.
 
 **IMPORTANT: Do NOT proceed with implementation.**
 
-This command is for planning only. After reporting status:
+This skill is for planning only. After reporting status:
 
 - Wait for the user to review the implementation plan
 - Only begin implementation when the user explicitly asks (e.g., "proceed", "start implementing", "go ahead")
@@ -189,5 +146,4 @@ Before finishing, verify:
 - [ ] Test updates are mentioned for each step that changes behavior
 - [ ] Assumptions are documented with reasoning
 - [ ] Questions (if any) would genuinely change the plan if answered differently
-- [ ] Documentation planned: CHANGELOG entry, README updates if user-facing
-- [ ] Discoverability considered: status bar menu, context menus, keybindings
+- [ ] Documentation and discoverability considered
