@@ -1,35 +1,35 @@
-<!-- TODO(#332): Convert frontmatter from command format to skill format:
-     - Add `name: breadcrumb`
-     - Keep `description` and `argument-hint`
-     - Review `allowed-tools` for skill context (commands inherit project tools; skills declare their own)
--->
 ---
-allowed-tools: Read, Write, Bash(git:*)
-argument-hint: <note text>
+name: breadcrumb
 description: Drop a timestamped note for the current issue - collected by /finish-issue for PR descriptions
+argument-hint: <note text>
+allowed-tools: Read, Write, Bash(git branch --show-current), Bash(date *)
 ---
 
-# Breadcrumb Command
+# Breadcrumb
 
-## Context
+Drop a timestamped note along your journey through an issue. When you run `/finish-issue`, it follows the trail back — collecting all discoveries, decisions, and reminders.
 
-Note to record: $ARGUMENTS
+**Input:** $ARGUMENTS (the note text to record)
 
-Like Hansel and Gretel dropping breadcrumbs to find their way home, this command lets you drop notes along your journey through an issue. When you run `/finish-issue`, it follows the trail back—collecting all discoveries, decisions, and reminders.
+## Step 1: Detect Branch Context
 
-## Step 1: Validate Branch
+Read the current branch:
 
 ```bash
 git branch --show-current
 ```
 
-<!-- TODO(#332): Reference /issue-context skill for branch pattern validation instead of hardcoding -->
-**If branch doesn't match `issues/<NUMBER>` pattern:**
+Extract the breadcrumb identifier based on branch pattern:
 
-- Print: "Not on an issue branch. Breadcrumbs require an `issues/<NUMBER>` branch."
+| Branch pattern | Identifier | Example |
+|---|---|---|
+| `issues/*` | Issue ID per `/issue-context` rules | `issues/332` → `332` |
+| `side-quest/*` | Full slug after `side-quest/` | `side-quest/cleanup-test-mocks` → `cleanup-test-mocks` |
+
+**If branch matches neither pattern:**
+
+- Print: "Not on a work branch. Breadcrumbs require an `issues/*` or `side-quest/*` branch."
 - STOP
-
-**Extract the issue number** from the branch name (e.g., `issues/258` → `258`).
 
 ## Step 2: Validate Input
 
@@ -40,13 +40,14 @@ git branch --show-current
 
 ## Step 3: Append Breadcrumb
 
-**File location:** `.breadcrumbs/<ISSUE-NUMBER>.md`
+**File location:** `.breadcrumbs/<identifier>.md`
+
+Where `<identifier>` is the value extracted in Step 1.
 
 **If file doesn't exist**, create it with header:
 
-```markdown
-# Breadcrumbs for Issue #<NUMBER>
-```
+- For issues: `# Breadcrumbs for Issue #<identifier>`
+- For side-quests: `# Breadcrumbs for Side-Quest: <identifier>`
 
 **Append the entry:**
 
@@ -58,8 +59,6 @@ git branch --show-current
 
 Where `<TIMESTAMP>` is the current date/time in format `YYYY-MM-DD HH:MM:SS`.
 
-Use bash to get timestamp and append:
-
 ```bash
 date "+%Y-%m-%d %H:%M:%S"
 ```
@@ -69,7 +68,7 @@ date "+%Y-%m-%d %H:%M:%S"
 Print a brief confirmation:
 
 ```text
-🍞 Breadcrumb dropped in .breadcrumbs/<NUMBER>.md
+Breadcrumb dropped in .breadcrumbs/<identifier>.md
 ```
 
-Do NOT print the full file contents—keep it minimal.
+Do NOT print the full file contents — keep it minimal.
