@@ -1,99 +1,82 @@
-<!-- TODO(#332): Convert frontmatter from command format to skill format:
-     - Add `name: finish-issue`
-     - Keep `description` and `argument-hint`
-     - Review `allowed-tools` for skill context (pnpm:* is project-specific — generalize?)
--->
 ---
-allowed-tools: Read, Bash(git:*, pnpm:*, gh:*), Write, Glob, Grep
-argument-hint: [optional: issue-number-or-url]
+name: finish-issue
 description: Wrap up issue work - run verification, check documentation needs, generate PR description
+argument-hint: [optional: issue-number-or-url]
+allowed-tools: Read, Write, Glob, Grep, Bash(git branch --show-current), Bash(git status), Bash(git log *), Bash(git diff *)
 ---
 
-# Finish Issue Workflow
+# Finish Issue
 
-## Context
-
-Symmetrical companion to `/start-issue` - handles the "wrap up" phase of issue work.
+Symmetrical companion to `/start-issue` — handles the "wrap up" phase of issue work.
 
 **Input:** $ARGUMENTS
 
-If no argument provided, extract issue number from current branch name (`issues/<NUMBER>`).
+If no argument provided, extract issue number from current branch name using `/issue-context` rules.
 
-## Your Tasks
-
-### 1. Determine Issue Number
+## Step 1: Determine Issue Number
 
 ```bash
-# If no argument, extract from branch name
 git branch --show-current
 ```
 
-Parse the issue number from `issues/<NUMBER>` pattern or use the provided argument.
+Parse the issue number from `issues/<NUMBER>` pattern (per `/issue-context`) or use the provided argument.
 
-### 2. Pre-PR Verification
+## Step 2: Pre-PR Verification
 
-<!-- TODO(#332): Remove rangeLink-specific commands (pnpm format:fix, pnpm test, pnpm-workspace.yaml).
-     Replace with generic guidance: "Run project's format, lint, and test commands" -->
-Run these commands from the **project root** (where `pnpm-workspace.yaml` lives):
+Run the project's standard verification commands from the project root:
+
+1. **Format** — run the project's formatter (fix mode)
+2. **Tests** — run the full test suite; all must pass
+3. **Check status** — `git status` for uncommitted changes
 
 ```bash
-# Format code
-pnpm format:fix
-
-# Run tests - all must pass
-pnpm test
-
-# Check for uncommitted changes
 git status
 ```
 
-- If `format:fix` makes changes → prepare a commit
+- If formatting makes changes → prepare a commit
 - If tests fail → investigate and fix before proceeding
 - If uncommitted changes exist → notify user
 
-### 3. Documentation Review
+## Step 3: Documentation Review
 
-Check if documentation updates are needed:
+Check if documentation updates are needed. Common touchpoints:
 
-<!-- TODO(#332): Remove rangeLink-specific paths (packages/rangelink-vscode-extension/).
-     Replace with generic guidance: "Check project's CHANGELOG, README, and config for documentation needs" -->
-**CHANGELOG.md** (`packages/rangelink-vscode-extension/CHANGELOG.md`):
+**CHANGELOG**:
 
 - User-facing changes → Add entry (Added/Changed/Fixed)
 - Internal refactoring/infrastructure → No entry (users don't see it)
 
-**README.md**:
+**README**:
 
 - New command → Document with keybinding
 - New setting → Document in Configuration
 - New feature → Document appropriately
 - Internal changes → Usually no update
 
-**package.json contributes** (`packages/rangelink-vscode-extension/package.json`):
+**Project-specific integration points**:
 
 - Verify commands/keybindings/settings/menus already added during implementation
 
-### 4. Gather Context for PR Description
+## Step 4: Gather Context for PR Description
 
 Collect information from:
 
-- Breadcrumbs file (if exists): `.breadcrumbs/<NUMBER>.md`
-- Scratchpads matching `*issue-<NUMBER>*`: `ls .scratchpads/*issue-<NUMBER>*`
-- Commit messages: `git log --oneline origin/main..HEAD`
+- Breadcrumbs file (if exists): `.breadcrumbs/<identifier>.md` (where `<identifier>` is the issue number or side-quest slug per `/issue-context`)
+- Scratchpads matching the work: use Glob to find `*<identifier>*` in `.scratchpads/`
+- Commit history: `git log --oneline origin/main..HEAD`
 - Commit details: `git log origin/main..HEAD`
 
 **Breadcrumbs** capture key discoveries and decisions made during implementation. If present, incorporate highlights into the PR description.
 
-### 5. Generate PR Description Scratchpad
+## Step 5: Generate PR Description Scratchpad
 
-<!-- TODO(#332): Replace CLAUDE.md reference with /scratchpad skill reference.
-     Also reference /issue-context skill for directory organization. -->
-Follow the `scratchpads` workflow in CLAUDE.md for file location and numbering.
-Use filename pattern: `NNNN-finish-issue-NUMBER.txt`
+Use `/scratchpad` to create a working document. The `/issue-context` skill will handle directory placement based on the branch.
+
+Use description: `finish-issue-<identifier>`
 
 The PR description MUST follow this template:
 
-```markdown
+```
 [issues/NUMBER] Title
 
 ## Summary
@@ -120,30 +103,30 @@ The PR description MUST follow this template:
 
 ## Documentation
 
-- [ ] CHANGELOG.md: [entry added / not needed - reason]
-- [ ] README.md: [updated / not needed - reason]
+- [ ] CHANGELOG: [entry added / not needed - reason]
+- [ ] README: [updated / not needed - reason]
 
 ## Related
 
 - Closes #NUMBER
 ```
 
-<!-- TODO(#332): Keep this rule but reference /scratchpad and /question skill directory conventions -->
+Format all code references per the `/code-ref` skill conventions.
+
 ### PR Description Rules
 
 - **NEVER** reference `.scratchpads/`, `.claude-questions/`, or `.breadcrumbs/` files
 - These are local/ephemeral and inaccessible from GitHub
 - Capture all relevant information directly in the PR body
 
-### 6. Handle Ambiguity
+## Step 6: Handle Ambiguity
 
 If unclear whether documentation is needed or other decisions arise:
 
-<!-- TODO(#332): Replace CLAUDE.md reference with /question skill reference -->
-- Use the questions workflow in CLAUDE.md to gather user input
+- Use `/question` to create a questions file and gather user input
 - Do NOT guess on user-facing decisions
 
-### 7. Report Status and STOP
+## Step 7: Report Status and STOP
 
 Print a summary:
 
@@ -151,13 +134,13 @@ Print a summary:
 === Issue #NUMBER Ready for PR ===
 
 Verification:
-- format:fix: [ran / no changes needed]
+- format: [ran / no changes needed]
 - tests: [all pass / X tests, Y passing]
 - uncommitted changes: [none / list]
 
 Documentation:
-- CHANGELOG.md: [entry added / not needed - reason]
-- README.md: [updated / not needed - reason]
+- CHANGELOG: [entry added / not needed - reason]
+- README: [updated / not needed - reason]
 
 Files created:
 - .scratchpads/NNNN-finish-issue-NUMBER.txt (PR description)
@@ -171,7 +154,7 @@ Ready for PR. Review the scratchpad and:
 
 **IMPORTANT: Do NOT create the PR automatically.**
 
-This command prepares everything for the PR. Wait for the user to:
+This skill prepares everything for the PR. Wait for the user to:
 
 - Review the PR description
 - Explicitly ask to create the PR (e.g., "create PR", "submit")
@@ -180,8 +163,8 @@ This command prepares everything for the PR. Wait for the user to:
 
 Before finishing, verify:
 
-- [ ] `pnpm format:fix` ran successfully
-- [ ] `pnpm test` passes
+- [ ] Project's formatter ran successfully
+- [ ] Project's test suite passes
 - [ ] No uncommitted changes (or user has been notified)
 - [ ] PR description doesn't reference ephemeral files
 - [ ] Documentation needs assessed
