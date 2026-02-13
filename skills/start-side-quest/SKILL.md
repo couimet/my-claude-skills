@@ -1,32 +1,23 @@
-<!-- TODO(#332): Convert frontmatter from command format to skill format:
-     - Add `name: start-side-quest`
-     - Keep `description` and `argument-hint`
-     - Review `allowed-tools` for skill context
-     - argument-hint uses rangeLink terminology — reference /code-ref skill for link format
--->
 ---
-allowed-tools: Read, Bash(git:*), Bash(gh:*), Write, Glob, Grep
-argument-hint: <description | rangelink-to-context>
+name: start-side-quest
 description: Start a side-quest branch for orthogonal improvements discovered while working on an issue
+argument-hint: <description | path/to/file.ts#L10-L20>
+allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *), Bash(git branch --show-current), Bash(git status *), Bash(git stash *)
 ---
 
-# Start Side-Quest Workflow
+# Start Side-Quest
 
-## Context
-
-You are starting a "side-quest" - a focused branch for orthogonal improvements discovered while working on another issue. Side-quests keep the main issue branch clean and focused.
+Start a "side-quest" — a focused branch for orthogonal improvements discovered while working on another issue. Side-quests keep the main issue branch clean and focused.
 
 **Input:** $ARGUMENTS
 
 This can be:
 
 - A description of the side-quest (e.g., "BookmarksStore API improvements")
-- A RangeLink to code that inspired the side-quest (e.g., `src/bookmarks/BookmarksStore.ts#L216-L254`)
+- A code reference per `/code-ref` format (e.g., `src/bookmarks/BookmarksStore.ts#L216-L254`)
 - Both combined
 
-## Your Tasks
-
-### 1. Capture Current State
+## Step 1: Capture Current State
 
 First, determine the current branch and its state:
 
@@ -35,7 +26,7 @@ git branch --show-current
 git status --porcelain
 ```
 
-If on an `issues/*` branch with uncommitted changes:
+If on an `issues/*` or `side-quest/*` branch with uncommitted changes:
 
 - Note the parent branch name for return context
 - Stash the changes with a descriptive message
@@ -44,7 +35,7 @@ If on an `issues/*` branch with uncommitted changes:
 git stash push -m "WIP: <parent-branch> - paused for side-quest"
 ```
 
-### 2. Create Side-Quest Branch
+## Step 2: Create Side-Quest Branch
 
 Derive a slug from the description (lowercase, hyphens, no special chars).
 
@@ -61,15 +52,15 @@ Examples:
 - `side-quest/fix-result-type-usage`
 - `side-quest/cleanup-test-mocks`
 
-### 3. Create Implementation Scratchpad
+## Step 3: Create Implementation Scratchpad
 
-<!-- TODO(#332): Replace CLAUDE.md reference with /scratchpad skill reference -->
-Follow the `scratchpads` workflow in CLAUDE.md for file location and numbering.
-Use filename pattern: `NNNN-side-quest-<slug>.txt`
+Use `/scratchpad` to create a working document. Since side-quest branches don't match `issues/*`, the scratchpad will be placed in the flat `.scratchpads/` directory per `/issue-context` rules.
+
+Use description: `side-quest-<slug>`
 
 The scratchpad MUST contain:
 
-```markdown
+```
 # Side-Quest: <Title>
 
 Parent branch: <issues/XXX or main> (branch to return to after)
@@ -101,15 +92,15 @@ Brief explanation of why this is orthogonal to the parent work:
 - [ ] Ready for independent PR
 ```
 
-### 4. Create Questions File (Only If Necessary)
+Format all code references per the `/code-ref` skill conventions.
+
+## Step 4: Create Questions File (Only If Necessary)
 
 **Only create questions for decisions that would fundamentally change the approach.**
 
-<!-- TODO(#332): Replace CLAUDE.md reference with /question skill reference -->
-If questions are needed, follow the `questions` workflow in CLAUDE.md.
-Use filename pattern: `NNNN-side-quest-<slug>-questions.txt`
+If questions are needed, use `/question` to create a questions file and gather user input.
 
-### 5. Report Status and STOP
+## Step 5: Report Status and STOP
 
 Print a summary:
 
@@ -128,10 +119,8 @@ Stash: <stash message if applicable>
 ---
 
 Ready to implement. When done:
-<!-- TODO(#332): Remove rangeLink-specific pnpm test. Replace with generic "Run project's test suite".
-     Replace CLAUDE.md commits reference with /commit-msg skill reference. -->
-1. Run tests: pnpm test
-2. Create commit message per CLAUDE.md `commits` workflow
+1. Run the project's test suite
+2. Create commit message with /commit-msg
 3. Commit and create PR
 4. Return to parent: git checkout <parent-branch>
    (run `git stash pop` only if changes were stashed)
@@ -139,7 +128,7 @@ Ready to implement. When done:
 
 **IMPORTANT: Do NOT proceed with implementation.**
 
-This command sets up the side-quest context. Wait for user to:
+This skill sets up the side-quest context. Wait for user to:
 
 - Review the plan
 - Explicitly ask to implement (e.g., "proceed", "implement", "go ahead")
@@ -148,7 +137,7 @@ This command sets up the side-quest context. Wait for user to:
 
 Before finishing, verify:
 
-- [ ] Current work stashed (if on issues/\* branch with changes)
+- [ ] Current work stashed (if on a work branch with changes)
 - [ ] Side-quest branch created from origin/main
 - [ ] Scratchpad has specific file/change details
 - [ ] Parent branch noted for easy return
