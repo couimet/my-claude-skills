@@ -1,28 +1,21 @@
-<!-- TODO(#332): Convert frontmatter from command format to skill format:
-     - Add `name: tackle-scratchpad-block`
-     - Keep `description` and `argument-hint`
-     - Review `allowed-tools` — Bash(*) is very permissive, narrow if possible
-     - argument-hint uses rangeLink terminology — reference /code-ref skill for link format
--->
 ---
-allowed-tools: Read, Write, Edit, Bash(*), Glob, Grep
-argument-hint: <rangelink-to-scratchpad-steps>
+name: tackle-scratchpad-block
 description: Execute steps from a scratchpad block and create commit message
+argument-hint: <path/to/scratchpad.txt#L10-L20>
+allowed-tools: Read, Write, Edit, Bash(*), Glob, Grep
 ---
 
-# Tackle Scratchpad Block Workflow
+# Tackle Scratchpad Block
 
-## Context
+Execute a specific block of implementation steps from a scratchpad file, then create a commit message for review.
 
-RangeLink to scratchpad steps: $ARGUMENTS
-
-This command executes a specific block of implementation steps from a scratchpad file, then creates a commit message for review.
+**Input:** $ARGUMENTS (a code reference to scratchpad lines, per `/code-ref` format)
 
 ## Step 1: Read the Target Block
 
-Read the lines specified by the RangeLink to get the step(s) to execute.
+Read the lines specified by the code reference to get the step(s) to execute.
 
-**If the RangeLink doesn't resolve** (file not found, lines don't exist, or content isn't actionable steps): STOP immediately and report the issue. Do not attempt to guess, search for alternatives, or infer intent.
+**If the reference doesn't resolve** (file not found, lines don't exist, or content isn't actionable steps): STOP immediately and report the issue. Do not attempt to guess, search for alternatives, or infer intent.
 
 ## Step 2: Understand the Context
 
@@ -38,9 +31,7 @@ Note: User controls execution order. Do not verify or block based on previous st
 
 Before executing, assess if the steps are clear enough:
 
-<!-- TODO(#332): Replace CLAUDE.md reference with /question skill reference -->
-**If unclear**: Follow the `questions` workflow in CLAUDE.md to ask for clarification.
-Use filename pattern: `NNNN-scratchpad-block-questions.txt`
+**If unclear**: Use `/question` to create a questions file and gather user input before proceeding.
 
 **If clear**: Proceed to Step 4.
 
@@ -54,13 +45,7 @@ Perform the implementation work as specified in the selected lines:
 
 ### Test Execution
 
-<!-- TODO(#332): Remove rangeLink-specific E001 rule reference and pnpm test.
-     Replace with generic guidance: "Run the project's test suite" -->
-Follow rule E001 in CLAUDE.md for shell environment setup, then run:
-
-```bash
-pnpm test
-```
+Run the project's test suite after making changes.
 
 **Exception**: Skip tests only if the scratchpad block explicitly says not to run them for this step.
 
@@ -68,10 +53,7 @@ pnpm test
 
 **IMPORTANT**: Always create a NEW commit message file for this block. Never reuse commit message files from previous steps.
 
-<!-- TODO(#332): Replace CLAUDE.md reference with /commit-msg skill reference -->
-Follow the `commits` workflow in CLAUDE.md.
-
-Use filename pattern: `NNNN-scratchpad-step-description.txt`
+Use `/commit-msg` to create the commit message file.
 
 Include context from:
 
@@ -100,7 +82,7 @@ Wait for user to:
 
 Before finishing:
 
-- [ ] All steps in the RangeLink block were executed
+- [ ] All steps in the target block were executed
 - [ ] Tests pass (unless scratchpad explicitly skipped them)
 - [ ] NEW commit message file created with clear "why" context
 - [ ] Changes align with scratchpad's stated goal
