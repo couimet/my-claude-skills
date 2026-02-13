@@ -93,7 +93,7 @@ Where:
 **Naming convention**: Use letters (A, B, C) for feedback items, numbers (1, 2, 3) for implementation steps.
 This avoids confusion when referencing "Feedback B" vs "Step 2".
 
-```
+```markdown
 # PR #{PR_NUMBER} Comment Response
 
 Source: {FULL_PR_COMMENT_URL}

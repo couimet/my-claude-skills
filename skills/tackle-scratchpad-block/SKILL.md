@@ -9,6 +9,8 @@ allowed-tools: Read, Write, Edit, Bash(*), Glob, Grep
 
 Execute a specific block of implementation steps from a scratchpad file, then create a commit message for review.
 
+**Note on `Bash(*)` permission:** This skill intentionally uses unrestricted Bash access because it executes arbitrary implementation steps and test suites from user-authored scratchpad content. Other skills use allowlisted commands for their specific workflows. Users should review scratchpad content before invoking this skill.
+
 **Input:** $ARGUMENTS (a code reference to scratchpad lines, per `/code-ref` format)
 
 ## Step 1: Read the Target Block

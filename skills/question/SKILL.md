@@ -1,4 +1,4 @@
-OK, give me ---
+---
 name: question
 description: Create a questions file in .claude-questions/ for gathering user input on design decisions. Questions go to file (never terminal) — user edits answers in-file as the single source of truth.
 argument-hint: <topic>

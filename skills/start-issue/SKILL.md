@@ -44,7 +44,7 @@ Use `/scratchpad` to create a working document. The `/issue-context` skill will 
 
 The scratchpad for issues MUST contain these sections:
 
-```
+```markdown
 # Issue #NUMBER: Title
 
 Parent: #XX (if applicable)

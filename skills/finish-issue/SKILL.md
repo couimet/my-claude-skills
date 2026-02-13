@@ -167,5 +167,5 @@ Before finishing, verify:
 - [ ] Project's test suite passes
 - [ ] No uncommitted changes (or user has been notified)
 - [ ] PR description doesn't reference ephemeral files
-- [ ] Documentation needs assessed
+- [ ] Documentation needs to be assessed
 - [ ] Scratchpad created with PR description

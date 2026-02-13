@@ -27,6 +27,11 @@ for skill_dir in "$REPO_DIR"/*/; do
     if [ -L "$target" ]; then
       rm "$target"
       updated=$((updated + 1))
+    elif [ -f "$target" ]; then
+      echo "  WARNING: $target is a regular file (not a symlink). Skipping."
+      echo "           Remove it manually if you want this skill managed by the repo."
+      skipped=$((skipped + 1))
+      continue
     elif [ -d "$target" ]; then
       echo "  WARNING: $target is a real directory (not a symlink). Skipping."
       echo "           Remove it manually if you want this skill managed by the repo."
