@@ -1,19 +1,15 @@
-<!-- TODO(#332): Convert frontmatter from command format to skill format:
-     - Add `name: tackle-pr-comment`
-     - Keep `description` and `argument-hint`
-     - Review `allowed-tools` for skill context
--->
 ---
-allowed-tools: Read, Glob, Grep, Write, Bash(gh api repos/*/*/pulls/*/reviews/*), Bash(gh api repos/*/*/pulls/comments/*), Bash(gh api repos/*/*/issues/comments/*), Bash(gh api repos/*/*/pulls/*/comments), Bash(gh api repos/*/*/issues/*/comments)
-argument-hint: <pr-comment-url>
+name: tackle-pr-comment
 description: Tackle a PR comment - analyze feedback, explore code, and create implementation scratchpad
+argument-hint: <pr-comment-url>
+allowed-tools: Read, Glob, Grep, Write, Bash(gh api repos/*/*/pulls/*/reviews/*), Bash(gh api repos/*/*/pulls/comments/*), Bash(gh api repos/*/*/issues/comments/*), Bash(gh api repos/*/*/pulls/*/comments), Bash(gh api repos/*/*/issues/*/comments)
 ---
 
-# Tackle PR Comment Workflow
+# Tackle PR Comment
 
-## Context
+Analyze a PR comment, explore the referenced code, and create a detailed implementation scratchpad. This skill is for **analysis and planning only** — it does not implement changes until the user approves.
 
-PR Comment URL: $ARGUMENTS
+**Input:** $ARGUMENTS (a PR comment URL)
 
 ## Step 1: Parse the URL and Fetch the Comment
 
@@ -83,25 +79,21 @@ Before creating the scratchpad, assess if the feedback is clear enough to act on
 
 ## Step 5: Create Implementation Scratchpad
 
-<!-- TODO(#332): Replace CLAUDE.md reference with /scratchpad skill reference.
-     Also reference /issue-context skill for directory organization. -->
-Follow the `scratchpads` workflow in CLAUDE.md.
+Use `/scratchpad` to create a working document. The `/issue-context` skill will handle directory placement based on the branch.
 
-**Naming pattern**: `NNNN-pr-{PR_NUMBER}-{COMMENT_TYPE}-{COMMENT_ID}.txt`
+Use description: `pr-{PR_NUMBER}-{COMMENT_TYPE}-{COMMENT_ID}`
 
 Where:
 
 - `{COMMENT_TYPE}` is: `review`, `discussion`, or `issuecomment`
 - `{COMMENT_ID}` is the numeric ID from the URL (e.g., `3647271799`, `2680237139`, `987654`)
 
-Use Glob to find the highest existing NNNN in `.scratchpads/` and increment.
-
 ### Scratchpad Format
 
 **Naming convention**: Use letters (A, B, C) for feedback items, numbers (1, 2, 3) for implementation steps.
 This avoids confusion when referencing "Feedback B" vs "Step 2".
 
-```markdown
+```
 # PR #{PR_NUMBER} Comment Response
 
 Source: {FULL_PR_COMMENT_URL}
@@ -155,14 +147,13 @@ Feedback items marked IGNORE in the Analysis section should not appear in any st
 - `path/to/file2.ts` - {what changes}
 ```
 
-**STOP HERE** - The scratchpad template ends above. Do NOT add commit message sections to scratchpads. Commit messages are created separately in Step 8 (after user approval) using the `.commit-msgs/` workflow.
+Format all code references per the `/code-ref` skill conventions.
+
+**STOP HERE** - The scratchpad template ends above. Do NOT add commit message sections to scratchpads. Commit messages are created separately in Step 8 (after user approval) using `/commit-msg`.
 
 ## Step 6: Questions (If Needed)
 
-<!-- TODO(#332): Replace CLAUDE.md reference with /question skill reference -->
-If there are decisions that need user input (not clarification from reviewer), use the `questions` workflow in CLAUDE.md:
-
-**Naming pattern**: `NNNN-pr-{PR_NUMBER}-{COMMENT_TYPE}-{COMMENT_ID}-questions.txt`
+If there are decisions that need user input (not clarification from reviewer), use `/question` to create a questions file.
 
 Only create a questions file for decisions that would fundamentally change the implementation approach.
 
@@ -184,9 +175,8 @@ When the user approves the plan and asks to proceed:
 
 1. **Ask**: "Would you like me to create a commit message file now? (The implementation plan has enough context to draft it.)"
 
-<!-- TODO(#332): Replace CLAUDE.md reference with /commit-msg skill reference -->
-2. **If yes**: Follow the `commits` workflow in CLAUDE.md to create the commit message file with these specific requirements:
-   - Use `[PR feedback]` as the commit prefix (instead of conventional commit format)
+2. **If yes**: Use `/commit-msg` to create the commit message file with these specific requirements:
+   - Use `[PR feedback]` as the commit type (instead of the usual type like `[refactor]` or `[fix]`)
    - Include a `Ref: {PR_COMMENT_URL}` footer to link back to the review comment
    - Do NOT include the `Co-Authored-By:` block
 
@@ -230,5 +220,5 @@ Before finishing initial analysis (Step 7):
 After user approves (Step 8):
 
 - [ ] Asked user if they want a commit message file created
-- [ ] If yes, created commit message with `[PR feedback]` prefix and `Ref:` footer
+- [ ] If yes, created commit message with `[PR feedback]` type and `Ref:` footer
 - [ ] If any feedback was ignored, added `Ignored Feedback:` section with reasoning
