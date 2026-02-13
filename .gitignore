@@ -1,0 +1,5 @@
+# Skill working directories (ephemeral, per-project)
+.scratchpads/
+.claude-questions/
+.commit-msgs/
+.breadcrumbs/
