@@ -2,7 +2,7 @@
 name: issue-context
 user-invocable: false
 description: Detects issue context from git branch name and determines subdirectory organization for working files. Auto-consulted by foundation skills (/scratchpad, /question, /commit-msg, /breadcrumb) when deciding where to place files.
-allowed-tools: Bash(git branch --show-current), Glob
+allowed-tools: Read, Write, Bash(git branch --show-current), Glob
 ---
 
 # Issue Context
@@ -97,3 +97,22 @@ Breadcrumbs use a different pattern — a single file per issue rather than numb
 ```
 
 The `/breadcrumb` skill handles this directly, but still uses issue-context for branch detection and ID extraction.
+
+## Ensure `.gitignore`
+
+Before creating any ephemeral file, ensure the project's `.gitignore` includes entries for all skill working directories. This prevents SCM noise in consuming projects.
+
+1. Read `.gitignore` in the project root (if it doesn't exist, treat contents as empty)
+2. Check if the sentinel comment `# Claude skill working directories` is present
+3. If **already present** → do nothing (idempotent)
+4. If **missing** → append the following block (with a leading blank line if the file is non-empty):
+
+```text
+# Claude skill working directories
+.scratchpads/
+.claude-questions/
+.commit-msgs/
+.breadcrumbs/
+```
+
+This runs once per project — subsequent skill invocations find the sentinel and skip.
