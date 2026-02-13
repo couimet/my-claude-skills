@@ -56,6 +56,7 @@ Benefits:
 4. **Length**: Keep under 15 lines total
 5. **No file lists**: Redundant with the diff
 6. **No line wrapping at 80 columns**: Use natural line breaks only
+7. **No ephemeral file paths**: Never reference `.scratchpads/`, `.claude-questions/`, `.commit-msgs/`, or `.breadcrumbs/` paths — these are local working files that don't exist on GitHub
 
 ### Good Example
 
