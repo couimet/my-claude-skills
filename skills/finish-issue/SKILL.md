@@ -76,7 +76,7 @@ Use description: `finish-issue-<identifier>`
 
 The PR description MUST follow this template:
 
-```
+```markdown
 [issues/NUMBER] Title
 
 ## Summary

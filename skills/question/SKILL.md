@@ -3,7 +3,6 @@ name: question
 description: Create a questions file in .claude-questions/ for gathering user input on design decisions. Questions go to file (never terminal) — user edits answers in-file as the single source of truth.
 argument-hint: <topic>
 allowed-tools: Read, Write, Glob, Bash(git branch --show-current)
-
 ---
 
 # Question
@@ -19,7 +18,7 @@ Questions are NEVER printed in terminal output. They go to a file that the user 
 ## Auto-Numbering
 
 1. Find the highest existing number:
-   ```
+   ```text
    Glob(pattern="*.txt", path=".claude-questions/")
    ```
 2. Increment by 1, zero-padded to 4 digits (e.g., `0001`, `0042`)
@@ -37,7 +36,7 @@ Derive the description slug from $ARGUMENTS (lowercase, hyphens, no special char
 
 Files use `.txt` extension (not `.md`).
 
-```
+```text
 # Question Topic
 
 ## Q001: <clear, specific question ending with ?>

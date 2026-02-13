@@ -10,7 +10,8 @@ mkdir -p "$SKILLS_DIR"
 
 installed=0
 updated=0
-skipped=0
+unchanged=0
+conflict=0
 
 for skill_dir in "$REPO_DIR"/*/; do
   [ -d "$skill_dir" ] || continue
@@ -19,7 +20,7 @@ for skill_dir in "$REPO_DIR"/*/; do
   source="${skill_dir%/}"
 
   if [ -L "$target" ] && [ "$(readlink "$target")" = "$source" ]; then
-    skipped=$((skipped + 1))
+    unchanged=$((unchanged + 1))
     continue
   fi
 
@@ -30,12 +31,12 @@ for skill_dir in "$REPO_DIR"/*/; do
     elif [ -f "$target" ]; then
       echo "  WARNING: $target is a regular file (not a symlink). Skipping."
       echo "           Remove it manually if you want this skill managed by the repo."
-      skipped=$((skipped + 1))
+      conflict=$((conflict + 1))
       continue
     elif [ -d "$target" ]; then
       echo "  WARNING: $target is a real directory (not a symlink). Skipping."
       echo "           Remove it manually if you want this skill managed by the repo."
-      skipped=$((skipped + 1))
+      conflict=$((conflict + 1))
       continue
     fi
   else
@@ -47,5 +48,5 @@ for skill_dir in "$REPO_DIR"/*/; do
 done
 
 echo ""
-echo "Done: $installed new, $updated updated, $skipped unchanged"
+echo "Done: $installed new, $updated updated, $unchanged unchanged, $conflict conflict(s)"
 echo "Skills available as /skill-name in all Claude Code projects."
