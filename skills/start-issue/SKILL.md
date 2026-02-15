@@ -65,22 +65,52 @@ Numbered steps that are:
 - **Ordered** — dependencies between steps are clear
 - **Testable** — each step should mention what tests to add/update
 
-Example format:
+Steps are embedded as a fenced JSON block (see `/scratchpad` Step Tracking section for full schema):
 
-### Step 1: <brief description>
+```json
+{
+  "steps": [
+    {
+      "id": "S001",
+      "title": "<brief description>",
+      "status": "pending",
+      "done_when": "<concrete criteria for this step>",
+      "depends_on": [],
+      "files": ["src/types/<filename>.ts", "src/types/index.ts"],
+      "tasks": [
+        "Add <TypeName> interface to src/types/<filename>.ts",
+        "Export from src/types/index.ts"
+      ]
+    },
+    {
+      "id": "S002",
+      "title": "<brief description>",
+      "status": "pending",
+      "done_when": "<concrete criteria for this step>",
+      "depends_on": ["S001"],
+      "files": ["src/<path>/<filename>.ts"],
+      "tasks": [
+        "Modify <functionName>() in src/<path>/<filename>.ts",
+        "Update return type, add new parameters"
+      ]
+    },
+    {
+      "id": "S003",
+      "title": "<brief description>",
+      "status": "pending",
+      "done_when": "All new functions have test coverage, tests pass",
+      "depends_on": ["S002"],
+      "files": ["src/<path>/__tests__/<filename>.test.ts"],
+      "tasks": [
+        "Add tests in src/<path>/__tests__/<filename>.test.ts",
+        "Cover happy path, edge cases, error conditions"
+      ]
+    }
+  ]
+}
+```
 
-- Add `<TypeName>` interface to `src/types/<filename>.ts`
-- Export from `src/types/index.ts`
-
-### Step 2: <brief description>
-
-- Modify `<functionName>()` in `src/<path>/<filename>.ts`
-- Update return type, add new parameters
-
-### Step 3: <brief description>
-
-- Add tests in `src/<path>/__tests__/<filename>.test.ts`
-- Cover happy path, edge cases, error conditions
+Note: Always set `"status": "pending"` when planning — `/tackle-scratchpad-block` manages status transitions during execution.
 
 ## Assumptions Made
 
