@@ -100,7 +100,7 @@ The `/breadcrumb` skill handles this directly, but still uses issue-context for 
 
 ## Ensure `.gitignore`
 
-Before creating any ephemeral file, ensure the project's `.gitignore` includes entries for all skill working directories. This prevents SCM noise in consuming projects.
+Foundation skills already consult issue-context for directory placement — this check runs as part of that same consultation. Before creating any ephemeral file, ensure the project's `.gitignore` includes entries for all skill working directories. This prevents SCM noise in consuming projects.
 
 1. Read `.gitignore` in the project root (if it doesn't exist, treat contents as empty)
 2. Check if the sentinel comment `# Claude skill working directories` is present
