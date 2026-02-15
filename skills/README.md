@@ -32,3 +32,15 @@
 **Two-tier design:** Foundation skills define standalone conventions (file formats, numbering, placement rules). Composite skills orchestrate workflows by referencing foundations by name — they never inline foundation definitions.
 
 **Non-invocable skills** (`user-invocable: false`) don't appear in the `/` menu but their descriptions load into Claude's context. Claude auto-consults them when the context matches (e.g., generating code references, deciding where to put files).
+
+## Step Tracking
+
+Implementation plan steps are embedded as a fenced JSON block inside the scratchpad's `## Implementation Plan` section. Each step has:
+
+- **`id`** — `S001`, `S002`, etc. (zero-padded 3-digit, mirrors Q001/A001)
+- **`status`** — `pending` | `in_progress` | `done` | `blocked`
+- **`done_when`** — concrete completion criteria (optional)
+- **`depends_on`** — array of step IDs that must be done first
+- **`files`** / **`tasks`** — what to touch and what to do
+
+Planning skills (`/start-issue`, `/tackle-pr-comment`) always write `"status": "pending"`. The `/tackle-scratchpad-block` skill manages status transitions during execution. See the `/scratchpad` skill for the full JSON schema.

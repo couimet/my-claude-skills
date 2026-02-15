@@ -19,6 +19,15 @@ Read the lines specified by the code reference to get the step(s) to execute.
 
 **If the reference doesn't resolve** (file not found, lines don't exist, or content isn't actionable steps): STOP immediately and report the issue. Do not attempt to guess, search for alternatives, or infer intent.
 
+### Check Step Status
+
+After reading the step, parse the `"status"` field from the JSON:
+
+- **`"done"`** → Warn the user: "This step is already done. Re-execute anyway?" Wait for confirmation.
+- **`"blocked"`** → Read the `"depends_on"` array and check if the blocking steps have `"status": "done"` in the scratchpad's JSON block. If they do, proceed (the block is resolved). If not, warn: "This step depends on S00N which is not yet done." Wait for confirmation.
+- **`"in_progress"`** → Warn the user: "This step is in_progress, possibly from an interrupted run. Continue?" Wait for confirmation.
+- **`"pending"`** → proceed normally.
+
 ## Step 2: Understand the Context
 
 Read the full scratchpad to understand:
@@ -37,9 +46,19 @@ Before executing, assess if the steps are clear enough:
 
 **If clear**: Proceed to Step 4.
 
-## Step 4: Execute the Steps
+## Step 4: Mark In-Progress and Execute
 
-Perform the implementation work as specified in the selected lines:
+Before executing, update the step's status in the scratchpad's JSON block:
+
+```json
+"id": "S002",
+"title": "Implement handler",
+"status": "in_progress",
+```
+
+Use the Edit tool to replace `"status": "pending"` (or `"status": "blocked"`) with `"status": "in_progress"`. Include the `"id"` and `"title"` fields in the old_string for Edit uniqueness.
+
+Then perform the implementation work as specified in the selected lines:
 
 - Make code changes
 - Add/update tests as needed
@@ -51,7 +70,19 @@ Run the project's test suite after making changes.
 
 **Exception**: Skip tests only if the scratchpad block explicitly says not to run them for this step.
 
-## Step 5: Create Commit Message File
+## Step 5: Mark Done and Create Commit Message File
+
+After successful execution and passing tests, update the step's status in the scratchpad's JSON block:
+
+```json
+"id": "S002",
+"title": "Implement handler",
+"status": "done",
+```
+
+Use the Edit tool to replace `"status": "in_progress"` with `"status": "done"`. Include the `"id"` and `"title"` fields in the old_string for Edit uniqueness.
+
+**If tests fail or execution is incomplete**, leave the step as `"in_progress"` — do NOT mark it `"done"`.
 
 **IMPORTANT**: Always create a NEW commit message file for this block. Never reuse commit message files from previous steps.
 

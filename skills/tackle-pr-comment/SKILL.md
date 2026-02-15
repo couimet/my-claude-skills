@@ -90,8 +90,8 @@ Where:
 
 ### Scratchpad Format
 
-**Naming convention**: Use letters (A, B, C) for feedback items, numbers (1, 2, 3) for implementation steps.
-This avoids confusion when referencing "Feedback B" vs "Step 2".
+**Naming convention**: Use letters (A, B, C) for feedback items in text headings, and `S001`, `S002` IDs for implementation steps in the JSON block.
+This avoids confusion when referencing "Feedback B" vs "S002".
 
 ```markdown
 # PR #{PR_NUMBER} Comment Response
@@ -122,20 +122,40 @@ Note: ACCEPT items flow to Implementation Plan steps. IGNORE items flow to the c
 
 ## Implementation Plan
 
-### Step 1: {description}
+```json
+{
+  "steps": [
+    {
+      "id": "S001",
+      "title": "{description}",
+      "status": "pending",
+      "done_when": "{concrete criteria}",
+      "depends_on": [],
+      "files": ["path/to/file.ts"],
+      "tasks": [
+        "What to change: {details}"
+      ],
+      "addresses": ["A", "C"]
+    },
+    {
+      "id": "S002",
+      "title": "{description}",
+      "status": "pending",
+      "done_when": "{concrete criteria}",
+      "depends_on": ["S001"],
+      "files": ["path/to/file.ts"],
+      "tasks": [
+        "What to change: {details}"
+      ],
+      "addresses": ["B"]
+    }
+  ]
+}
+```
 
-- Specific file: `path/to/file.ts`
-- What to change: {details}
-- Addresses: Feedback A, C
-
-### Step 2: {description}
-
-- Specific file: `path/to/file.ts`
-- What to change: {details}
-- Addresses: Feedback B
-
-Note: A single step can address multiple feedback items (as shown in Step 1 above).
+Note: A single step can address multiple feedback items (as shown in S001 above).
 Feedback items marked IGNORE in the Analysis section should not appear in any step.
+Always set `"status": "pending"` — `/tackle-scratchpad-block` manages status transitions during execution.
 
 ## Recommendations
 
