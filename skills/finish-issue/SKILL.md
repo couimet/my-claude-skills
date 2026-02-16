@@ -53,6 +53,13 @@ Check if documentation updates are needed. Common touchpoints:
 - New feature → Document appropriately
 - Internal changes → Usually no update
 
+**Unreleased markers** (if project uses trunk-based documentation):
+
+- New section headers → Add `<sup>Unreleased</sup>` marker
+- New command/setting table rows → Add `<sup>Unreleased</sup>` marker
+- If no top-of-README banner exists → Add one explaining the convention
+- Check project's CLAUDE.md or release docs for the exact convention
+
 **Project-specific integration points**:
 
 - Verify commands/keybindings/settings/menus already added during implementation
