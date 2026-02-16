@@ -129,6 +129,7 @@ Check the project's documentation and discoverability conventions. Common touchp
 - [ ] CHANGELOG entry (under appropriate version section)
 - [ ] README update (if new command, setting, or feature)
 - [ ] Any project-specific integration points (entry points, config, menus, keybindings)
+- [ ] Unreleased markers on new README content (if project uses trunk-based documentation)
 
 ## Acceptance Criteria
 
