@@ -120,6 +120,8 @@ The PR description MUST follow this template:
 
 Format all code references per the `/code-ref` skill conventions.
 
+Format all prose output per the `/prose-style` skill conventions.
+
 ### PR Description Rules
 
 - **NEVER** reference `.scratchpads/`, `.claude-questions/`, or `.breadcrumbs/` files

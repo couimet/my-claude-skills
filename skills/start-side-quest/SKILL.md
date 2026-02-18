@@ -94,6 +94,8 @@ Brief explanation of why this is orthogonal to the parent work:
 
 Format all code references per the `/code-ref` skill conventions.
 
+Format all prose output per the `/prose-style` skill conventions.
+
 ## Step 4: Create Questions File (Only If Necessary)
 
 **Only create questions for decisions that would fundamentally change the approach.**

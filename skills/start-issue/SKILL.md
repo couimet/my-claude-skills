@@ -138,6 +138,8 @@ Checklist from the issue (copy verbatim if provided).
 
 Format all code references per the `/code-ref` skill conventions.
 
+Format all prose output per the `/prose-style` skill conventions.
+
 ## Step 5: Create Questions File (Only If Necessary)
 
 **Only create questions for decisions that would FUNDAMENTALLY change the implementation plan.**
