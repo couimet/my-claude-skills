@@ -63,10 +63,6 @@ Where `<TIMESTAMP>` is the current date/time in format `YYYY-MM-DD HH:MM:SS`.
 date "+%Y-%m-%d %H:%M:%S"
 ```
 
-## Prose Style
-
-Format all prose output per the `/prose-style` skill conventions.
-
 ## Step 4: Confirm
 
 Print a brief confirmation:
@@ -76,3 +72,7 @@ Breadcrumb dropped in .breadcrumbs/<identifier>.md
 ```
 
 Do NOT print the full file contents — keep it minimal.
+
+## Prose Style
+
+Format all prose output per the `/prose-style` skill conventions.
