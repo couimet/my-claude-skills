@@ -79,6 +79,10 @@ When a scratchpad contains an implementation plan, embed the steps inside a fenc
 
 When referencing code in scratchpad content, format all file/line references per the `/code-ref` skill conventions. This makes references clickable when tools like RangeLink are installed.
 
+## Prose Style
+
+Format all prose output per the `/prose-style` skill conventions.
+
 ## Questions Trigger
 
 If design questions arise while creating or updating a scratchpad:

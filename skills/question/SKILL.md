@@ -95,6 +95,10 @@ When reading answers back, treat any answer still containing `[RECOMMENDED]` as 
 
 Use `Q001`, `Q002` etc. to reference questions and `A001`, `A002` to reference answers — both within the questions file and from other documents (scratchpads, commit messages, etc.).
 
+## Prose Style
+
+Format all prose output per the `/prose-style` skill conventions.
+
 ## Process
 
 1. Create the file with questions formatted as above
