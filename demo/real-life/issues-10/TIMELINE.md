@@ -242,6 +242,30 @@ Note: This exchange happened after context compaction (the conversation had been
 
 ---
 
+### Exchange 14 — /tackle-scratchpad-block S003: README Sections 5-6 (Philosophy + Skills Reference)
+
+**2026-02-19 — User invokes `/tackle-scratchpad-block` on S003 of the start-issue plan**
+
+The user ran `/tackle-scratchpad-block demo/real-life/issues-10/0016--scratchpad--0001-start-issue-plan-v0003.txt#L57-L71` to execute S003 ("Write README sections 5-6: design philosophy and skills reference"). This replaced the minimal "## Skills" pointer with two full sections:
+
+1. **"Why I Built These"** — 7 philosophy bullets distilled from real usage: files over chat (with RangeLink callout), crash-proof context, organized not scattered, user controls execution, ephemeral vs permanent, plan then execute, no magic.
+2. **"Skills Reference"** — Two tables replacing the bare `skills/README.md` pointer:
+   - "What You Type" — 9 invocable skills with `/command` syntax and one-liner descriptions
+   - "What Works Automatically" — 4 non-invocable skills with when-it-activates explanations
+   - Architecture link preserved for readers wanting depth
+
+Note: This exchange also happened after context compaction — Claude reconstructed context from the summary and demo artifacts.
+
+**Artifacts produced:**
+
+- [0018--readme--README-v0003.md](0018--readme--README-v0003.md) — README with sections 1-6 complete.
+- [0019--scratchpad--0001-start-issue-plan-v0004.txt](0019--scratchpad--0001-start-issue-plan-v0004.txt) — Start-issue plan with S003 marked `"done"`.
+- [0020--commit-msg--0005-readme-philosophy-and-skills-reference-v0001.txt](0020--commit-msg--0005-readme-philosophy-and-skills-reference-v0001.txt) — Commit message for the philosophy and reference sections.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+---
+
 ## Phase 4: PR and CodeRabbit (pending)
 
 *This section will be filled in when the PR is created and reviewed.*
