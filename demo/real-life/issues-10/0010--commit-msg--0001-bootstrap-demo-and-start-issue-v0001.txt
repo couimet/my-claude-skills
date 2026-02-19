@@ -1,0 +1,8 @@
+[docs] Bootstrap demo infrastructure and start-issue plan for README overhaul
+
+Establishes the "eat your own dog food" approach: issue #10's own workflow becomes the README's walkthrough demo. All ephemeral skill artifacts are persisted in demo/real-life/issues-10/ with a naming convention that makes the folder a visual timeline — each file's global sequence number matches its TIMELINE.md entry 1:1.
+
+Benefits:
+- Real artifacts replace fabricated examples — readers see actual skill output, not hypotheticals
+- Chronological folder listing tells the story without opening any file
+- TIMELINE.md provides narrative context behind each artifact for the full follow-along experience

@@ -1,0 +1,74 @@
+# Demo Approach Follow-ups (from A003)
+
+## Q001: Does the demo/ folder replace the examples/ directory entirely (resolving Q010)?
+
+Context: A003 proposes persisting real artifacts in `demo/real-life/issues-10/`. A004 wants collapsible inline samples. If the demo folder contains real scratchpads, question files, commit messages, and breadcrumbs from this actual issue, that's far more compelling than fabricated examples/ files. The README can inline abbreviated excerpts and link to the demo folder for full context.
+
+Options:
+A) Yes, demo/ replaces examples/ - The demo folder IS the examples directory, but better because everything is real. README links point into `demo/real-life/issues-10/` instead of `examples/`.
+B) Both - Keep a small examples/ with clean, minimal samples for quick reference. The demo/ folder is the "full story" for people who want depth.
+
+Recommendation: A - Real artifacts are strictly more valuable than fabricated ones. Having both creates maintenance burden and confusing navigation ("which do I look at?"). The demo folder serves both purposes: quick reference (individual files) and full story (the sequence).
+
+A001: A
+
+---
+
+## Q002: What versioning scheme for demo artifacts?
+
+Context: You want sequentially-versioned filenames to capture how files evolve. For example, a scratchpad gets created, then updated when steps complete. We need a naming convention that makes the evolution clear.
+
+Options:
+A) Suffix versioning - `0004-readme-enrichment-plan-v1.txt`, `0004-readme-enrichment-plan-v2.txt`, etc. Keeps the original filename recognizable, versions sort naturally.
+B) Snapshot directories - `demo/real-life/issues-10/step-01-planning/`, `step-02-first-iteration/`, etc. Each directory is a snapshot of all artifacts at that phase. More context per snapshot but duplicates unchanged files.
+C) Flat with timestamps - `2026-02-18T14-30-0004-readme-enrichment-plan.txt`. Self-documenting but long filenames.
+
+Recommendation: A - Suffix versioning is simple, sorts naturally, and doesn't duplicate unchanged files. Readers can diff v1 vs v2 to see exactly what changed. A small `TIMELINE.md` in the demo folder can narrate the sequence.
+
+A002: A -- for the suffix format, instead of `-v1` suffix with single digit, use a `NNNN` format for the numbers (like skills/issue-context/SKILL.md#L79-L89 defines -- yes; shameless plug for a RangeLink here!!!) but for our current custom suffix instead of the beginning of the file). Does that make sense ?
+
+---
+
+## Q003: How should we capture the conversation itself?
+
+Context: You mentioned "the full log from our conversation in the claude-code terminal in a he-said-she-said visual." Claude Code doesn't have a built-in export, and I can't access the terminal rendering. We need a practical approach.
+
+Options:
+A) I reconstruct it - I write a narrative log file that summarizes each exchange: what you asked, what I did, what artifacts were produced. Not a verbatim transcript but an accurate retelling with the key prompts and responses.
+B) You export manually - You copy-paste the terminal output at key milestones into the demo folder. Most authentic but requires your effort.
+C) Annotated artifact trail - Skip the conversation log entirely. Instead, each artifact in the demo folder gets a header comment explaining what prompted its creation and what happened next. The artifacts themselves tell the story.
+D) Hybrid - I maintain a TIMELINE.md that narrates the flow with timestamps and links to artifacts. You paste in key terminal snippets when you feel they add value.
+
+Recommendation: D - A TIMELINE.md gives structure and context. Your terminal snippets add authenticity where it matters. I can maintain the timeline continuously; you paste in the bits that are most illustrative.
+
+A003: D - In TIMELINE.md, make sure to add prepared blocks where I can opt-in to add something - or leave blank when I feel nothing was worth adding. I'll rely on you to build most of it. I'll let you capture your recommendation/guidance as a sub-task in the /scratchpad for me to copy from the terminal the start of the conversation before you started building the file. Or, can you use Option A for what has happened so far and you continue on your own with Option D from now on ?
+
+---
+
+## Q004: Should we split this into two issues — README content vs. demo infrastructure?
+
+Context: A003 significantly expands scope. The original issue #10 is "add meat to readme." The demo folder, artifact versioning, conversation capture, and intentional-error-for-CodeRabbit are a substantial parallel effort. Splitting could keep each issue focused, or we could treat the demo as the vehicle for building the README content (they're inseparable).
+
+Options:
+A) Keep as one issue - The demo IS the README content. You can't write the "See It In Action" section without having done it. The artifacts are generated as a byproduct of writing the README.
+B) Split into two - Issue #10 stays as README content. New issue for "Create demo/ with real artifacts from issue #10 workflow." They reference each other but can be tracked independently.
+C) Sub-issues - Keep #10 as parent, create child issues for demo infrastructure, README sections, and the intentional-error experiment.
+
+Recommendation: A - The whole point is that the demo and the README are the same work. Splitting them creates artificial separation and coordination overhead. The demo folder populates naturally as we work through the README issue.
+
+A004: A. About getting CodeRabbit to trip on something: look at all the PRs on https://github.com/couimet/rangeLink; CodeRabbit almost always has something to nitpick about... Use /tackle-pr-comment to retrieve https://github.com/couimet/rangeLink/pull/367#pullrequestreview-3819955487 -- you'llk see CodeRabbit is a stiffler for grammar too. I trust you'll find something..,.
+
+---
+
+## Q005: About the hooks / file-based loop — what's your preferred workflow?
+
+Context: Claude Code doesn't support user-defined hooks that I can install programmatically from within a conversation. The file-based approach you described is workable: I write to files, tell you in terminal, you edit/reply, we loop. But I want to confirm the mechanics.
+
+Options:
+A) I copy artifacts to demo/ after each skill invocation - Every time I create or update a scratchpad, question file, commit message, or breadcrumb, I also copy it to `demo/real-life/issues-10/` with the version suffix. I tell you in terminal what changed. You review and reply.
+B) Batch copy at milestones - I work normally with ephemeral files, then at key milestones (end of planning, after first implementation block, after PR feedback, etc.) I snapshot everything to the demo folder at once. Less noise, but you lose the incremental story.
+C) Demo folder is primary - Instead of creating ephemeral files and copying, I create the working files directly in `demo/real-life/issues-10/`. Skills would need to be invoked with modified paths.
+
+Recommendation: A - Copying after each invocation captures the full incremental story. The ephemeral files still serve their normal workflow purpose; the demo copies are the persistent record. I'll include a short terminal message after each copy: "Updated demo: <filename>".
+
+A005: A should indeed work; combining it with A003 should build something fairly interesting. Clarification from your recommendation: let's use "Added new file: <filename>" to ensure the "Updated" word doesn't confuse us at some point and the process derails and we start updating files instead of creating new ones with suffixes like decided in 
