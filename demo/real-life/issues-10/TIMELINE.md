@@ -214,6 +214,34 @@ The `<details>` blocks link to real files in `demo/real-life/issues-10/` — rea
 
 ---
 
+### Exchange 13 — /tackle-scratchpad-block S002: README Section 4 (Workflow Walkthrough)
+
+**2026-02-19 — User invokes `/tackle-scratchpad-block` on S002 of the start-issue plan**
+
+The user ran `/tackle-scratchpad-block demo/real-life/issues-10/0013--scratchpad--0001-start-issue-plan-v0002.txt#L42-L56` to execute S002 ("Write README section 4: full workflow walkthrough with Mermaid diagram"). This is the section that ties the whole README together — moving from individual skill demos (Quick Start) to showing how skills compose across a full issue lifecycle.
+
+Claude wrote the "See It In Action" section with:
+
+1. **Mermaid lifecycle diagram** — visual flow: `/start-issue` → `/tackle-scratchpad-block` loop → `/finish-issue`, with dotted lines to `/breadcrumb`, `/start-side-quest`, and `/question` as mid-loop activities.
+2. **Pre-planning walkthrough** — how `/scratchpad` and `/question` were used before any branch existed, including a `<details>` block showing Q003's evolution from Claude's recommendation to the user's "eat your own dog food" answer.
+3. **`/start-issue` section** — branch creation + formal plan with JSON step tracking, linking to the real plan artifact.
+4. **`/tackle-scratchpad-block` section** — the core loop, showing the exact code-reference syntax and a `<details>` block comparing a step before/after execution.
+5. **Side-quests and breadcrumbs** — brief explanation of mid-issue detours.
+6. **`/finish-issue`** — wrap-up flow description.
+7. **Following along** — pointer to the demo folder and TIMELINE.md.
+
+Note: This exchange happened after context compaction (the conversation had been summarized). Claude reconstructed full working context from the summary and demo artifacts to continue seamlessly.
+
+**Artifacts produced:**
+
+- [0015--readme--README-v0002.md](0015--readme--README-v0002.md) — README with sections 1-4 complete.
+- [0016--scratchpad--0001-start-issue-plan-v0003.txt](0016--scratchpad--0001-start-issue-plan-v0003.txt) — Start-issue plan with S002 marked `"done"`.
+- [0017--commit-msg--0004-readme-section-4-workflow-walkthrough-v0001.txt](0017--commit-msg--0004-readme-section-4-workflow-walkthrough-v0001.txt) — Commit message for the workflow walkthrough section.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+---
+
 ## Phase 4: PR and CodeRabbit (pending)
 
 *This section will be filled in when the PR is created and reviewed.*
