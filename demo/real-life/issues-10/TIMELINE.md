@@ -208,6 +208,7 @@ The `<details>` blocks link to real files in `demo/real-life/issues-10/` — rea
 **Artifacts produced:**
 
 - [0011--readme--README-v0001.md](0011--readme--README-v0001.md) — First version of the rewritten README with sections 1-3.
+- [0013--scratchpad--0001-start-issue-plan-v0002.txt](0013--scratchpad--0001-start-issue-plan-v0002.txt) — Start-issue plan with S001 marked `"done"` (status was not captured in v0001 — fixed retroactively).
 
 <!-- YOUR TERMINAL SNIPPET (optional) -->
 
