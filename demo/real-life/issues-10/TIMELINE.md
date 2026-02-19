@@ -208,7 +208,9 @@ The `<details>` blocks link to real files in `demo/real-life/issues-10/` — rea
 **Artifacts produced:**
 
 - [0011--readme--README-v0001.md](0011--readme--README-v0001.md) — First version of the rewritten README with sections 1-3.
+- [0012--commit-msg--0002-readme-sections-1-3-v0001.txt](0012--commit-msg--0002-readme-sections-1-3-v0001.txt) — Commit message for the README sections 1-3 rewrite.
 - [0013--scratchpad--0001-start-issue-plan-v0002.txt](0013--scratchpad--0001-start-issue-plan-v0002.txt) — Start-issue plan with S001 marked `"done"` (status was not captured in v0001 — fixed retroactively).
+- [0014--commit-msg--0003-capture-status-in-demo-scratchpad-v0001.txt](0014--commit-msg--0003-capture-status-in-demo-scratchpad-v0001.txt) — Commit message for the retroactive status capture fix.
 
 <!-- YOUR TERMINAL SNIPPET (optional) -->
 
@@ -355,6 +357,29 @@ Note: 0027 and 0028 (listed in Exchange 17 above) were also produced during this
 
 ---
 
-## Phase 5: Wrap-up (pending — /finish-issue)
+## Phase 5: Wrap-up
 
-*This section will be filled in at the end.*
+### Exchange 19 — /finish-issue
+
+**2026-02-19 — User invokes `/finish-issue`**
+
+The user ran `/finish-issue to cover demo/real-life/issues-10/0028--scratchpad--0001-start-issue-plan-v0006.txt#L101C5-L117C6` to execute S006 ("Wrap up with /finish-issue"). Claude:
+
+1. Verified no uncommitted tracked changes (clean working tree)
+2. Confirmed 9 commits on the branch ahead of `origin/main`
+3. Audited demo folder completeness — found 0012 and 0014 missing from TIMELINE.md, backfilled both entries
+4. Verified all README links resolve to existing files
+5. Generated PR description scratchpad at `.scratchpads/issues/10/0002-finish-issue-10.txt`
+
+**Artifacts produced:**
+
+- [0030--scratchpad--0002-finish-issue-10-v0001.txt](0030--scratchpad--0002-finish-issue-10-v0001.txt) — PR description ready for `gh pr create`.
+- [0031--scratchpad--0001-start-issue-plan-v0007.txt](0031--scratchpad--0001-start-issue-plan-v0007.txt) — Final start-issue plan with all 6 steps marked `"done"`.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+---
+
+## Final Artifact Count
+
+31 numbered files + TIMELINE.md. Every numbered file has a corresponding entry in this timeline.
