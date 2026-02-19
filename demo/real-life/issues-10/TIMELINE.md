@@ -294,6 +294,27 @@ This is a perfect example of the RangeLink workflow in practice: the user select
 
 ---
 
+### Exchange 16 — /tackle-scratchpad-block S004: README Sections 7-8 (Contributing + Resources)
+
+**2026-02-19 — User invokes `/tackle-scratchpad-block` on S004 of the start-issue plan**
+
+The user ran `/tackle-scratchpad-block demo/real-life/issues-10/0019--scratchpad--0001-start-issue-plan-v0004.txt#L72-L85` to execute S004 ("Write README sections 7-8: contributing and resources"). Claude added:
+
+1. **"Making These Your Own"** — fork-edit-install workflow with numbered steps. Clarifies that editing takes effect immediately (symlinks), while adding/removing skills requires re-running install.sh. Encourages PRs.
+2. **"Resources"** — four key links: official Claude Code skills docs, Claude Code documentation, this repo's skills/README.md, and RangeLink. Closing line credits Anthropic's official skills system.
+
+With this step, all 8 README sections from the acceptance criteria are complete: hook, install, quick start, full workflow, philosophy, reference, contributing, resources.
+
+**Artifacts produced:**
+
+- [0023--readme--README-v0005.md](0023--readme--README-v0005.md) — README with all 8 sections complete.
+- [0024--scratchpad--0001-start-issue-plan-v0005.txt](0024--scratchpad--0001-start-issue-plan-v0005.txt) — Start-issue plan with S004 marked `"done"`.
+- [0025--commit-msg--0007-readme-contributing-and-resources-v0001.txt](0025--commit-msg--0007-readme-contributing-and-resources-v0001.txt) — Commit message for the contributing and resources sections.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+---
+
 ## Phase 4: PR and CodeRabbit (pending)
 
 *This section will be filled in when the PR is created and reviewed.*
