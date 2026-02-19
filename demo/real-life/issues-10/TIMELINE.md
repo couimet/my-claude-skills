@@ -328,9 +328,30 @@ Claude introduced a subtle broken link in the Resources section: the display tex
 **Artifacts produced:**
 
 - [0026--commit-msg--0008-small-nitpick-for-coderabbit-v0001.txt](0026--commit-msg--0008-small-nitpick-for-coderabbit-v0001.txt) — Commit message describing the one-character intentional typo.
+- [0027--readme--README-v0006.md](0027--readme--README-v0006.md) — README with intentional broken link (`skill/README.md` instead of `skills/README.md`).
+- [0028--scratchpad--0001-start-issue-plan-v0006.txt](0028--scratchpad--0001-start-issue-plan-v0006.txt) — Start-issue plan with S005 marked `"done"`.
 
 <!-- YOUR TERMINAL SNIPPET (optional) -->
 
+---
+
+### Exchange 18 — User catches missed demo protocol
+
+**2026-02-19 — User points out missing demo artifacts**
+
+The user noticed that Exchange 17 failed to follow the established demo protocol: no versioned README snapshot (v0006 with the intentional error) and no versioned scratchpad snapshot (v0006 with S005 in_progress). Claude corrected the oversight, adding both artifacts and updating the Exchange 17 entry to reference them.
+
+This is itself a useful data point for the demo — it shows that the protocol requires discipline and that the user is the quality gate.
+
+**Artifacts produced:**
+
+- [0029--commit-msg--0009-backfill-demo-protocol-for-s005-v0001.txt](0029--commit-msg--0009-backfill-demo-protocol-for-s005-v0001.txt) — Commit message for the backfilled demo artifacts.
+
+Note: 0027 and 0028 (listed in Exchange 17 above) were also produced during this exchange as backfills. S005 status was corrected to `"done"` in 0028 — the `done_when` criteria ("PR created with a subtle but real error") will be satisfied once the user commits and pushes.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+*Remaining S005 tasks (pending CodeRabbit review): wait for review, /tackle-pr-comment, copy artifacts to demo.*
 
 ---
 
