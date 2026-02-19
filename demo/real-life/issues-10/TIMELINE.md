@@ -315,9 +315,22 @@ With this step, all 8 README sections from the acceptance criteria are complete:
 
 ---
 
-## Phase 4: PR and CodeRabbit (pending)
+## Phase 4: PR and CodeRabbit
 
-*This section will be filled in when the PR is created and reviewed.*
+### Exchange 17 — /tackle-scratchpad-block S005 (partial): Introduce intentional error
+
+**2026-02-19 — User invokes `/tackle-scratchpad-block` on S005 of the start-issue plan**
+
+The user ran `/tackle-scratchpad-block demo/real-life/issues-10/0024--scratchpad--0001-start-issue-plan-v0005.txt#L86-L100` to execute S005 ("Introduce intentional error for CodeRabbit demo"). This step has 5 tasks, but tasks 3-5 (wait for CodeRabbit, /tackle-pr-comment, copy artifacts) require the PR to exist first.
+
+Claude introduced a subtle broken link in the Resources section: the display text reads `skills/README.md` but the link target is `skill/README.md` (missing the `s`). This is the kind of typo CodeRabbit typically catches.
+
+**Artifacts produced:**
+
+- [0026--commit-msg--0008-small-nitpick-for-coderabbit-v0001.txt](0026--commit-msg--0008-small-nitpick-for-coderabbit-v0001.txt) — Commit message describing the one-character intentional typo.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
 
 ---
 

@@ -1,0 +1,6 @@
+[docs] Introduce subtle broken link for CodeRabbit to catch
+
+The Resources section links to `skill/README.md` instead of `skills/README.md` — a one-character typo in the link target while the display text is correct. This is intentional bait for CodeRabbit's automated review.
+
+Benefits:
+- Gives us a real /tackle-pr-comment cycle to demo in the README walkthrough

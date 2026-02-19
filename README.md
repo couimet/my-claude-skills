@@ -312,7 +312,7 @@ If you build something useful, PRs are welcome. These skills evolved from my own
 
 - [Claude Code skills documentation](https://code.claude.com/docs/en/skills) — the official guide to how skills work, including the `SKILL.md` format spec
 - [Claude Code documentation](https://code.claude.com/docs/en/) — full Claude Code reference
-- [skills/README.md](skills/README.md) — this repo's skill inventory, architecture notes, and step tracking schema
+- [skills/README.md](skill/README.md) — this repo's skill inventory, architecture notes, and step tracking schema
 - [RangeLink](https://github.com/couimet/rangeLink) — VS Code/Cursor extension that makes `file#line` references clickable (used throughout these skills via the `code-ref` convention)
 
 Everything here builds on Claude Code's official skills system — we're not inventing a framework, just adding conventions on top of what Anthropic already provides.
