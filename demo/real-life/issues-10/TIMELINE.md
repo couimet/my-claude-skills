@@ -380,6 +380,46 @@ The user ran `/finish-issue to cover demo/real-life/issues-10/0028--scratchpad--
 
 ---
 
+### Exchange 20 — User review: heading consistency in walkthrough steps
+
+**2026-02-19 — User notices heading inconsistency after reviewing rendered README on GitHub**
+
+The user pointed out that steps 2, 3, and 5 in the "See It In Action" walkthrough use the pattern `### N. `/skill-name` — brief description` which renders prominently on GitHub, but step 1 ("Pre-planning") doesn't promote any skill in its heading. They asked for a `/scratchpad` with pros and cons as a UX/tech writer analysis.
+
+The user referenced specific lines using RangeLink:
+
+> `README.md#L177` and `README.md#L209` : they stand out great in the readme.
+>
+> I feel `README.md#L142` should use the same format and promote the `/scratchpad` skill
+
+Claude created a scratchpad with 4 options (A: both skills with `+`, B: `/scratchpad` only, C: generic heading with blockquote subtitle, D: `/question` only), each with detailed pros and cons. Recommended Option A.
+
+**Artifacts produced:**
+
+- [0032--scratchpad--0003-readme-section-4-heading-consistency-v0001.txt](0032--scratchpad--0003-readme-section-4-heading-consistency-v0001.txt) — UX analysis with 4 options and pros/cons for the heading format.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+---
+
+### Exchange 21 — User applies Option A and extends to step 4
+
+**2026-02-19 — User picks Option A from the scratchpad and asks to apply it to step 4 as well**
+
+The user chose Option A from the heading consistency scratchpad and asked Claude to also fix step 4 (`### 4. Side-quests and breadcrumbs`) so all 5 walkthrough headings follow the same `### N. `/skill` — description` pattern. Changes:
+
+- Step 1: `### 1. Pre-planning: explore before committing to a plan` → `### 1. `/scratchpad` + `/question` — explore before committing to a plan`
+- Step 4: `### 4. Side-quests and breadcrumbs` → `### 4. `/breadcrumb` + `/start-side-quest` — handle detours without derailing`
+
+**Artifacts produced:**
+
+- [0033--readme--README-v0007.md](0033--readme--README-v0007.md) — README with all 5 walkthrough headings consistent.
+- [0034--commit-msg--0010-consistent-walkthrough-headings-v0001.txt](0034--commit-msg--0010-consistent-walkthrough-headings-v0001.txt) — Commit message for the heading consistency fix.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+---
+
 ## Final Artifact Count
 
-31 numbered files + TIMELINE.md. Every numbered file has a corresponding entry in this timeline.
+34 numbered files + TIMELINE.md. Every numbered file has a corresponding entry in this timeline.
