@@ -1,0 +1,7 @@
+[fix] Correct install.sh guidance and clarify RangeLink requirement for clickable links
+
+User review caught two inaccuracies via precise RangeLink code references. The "No magic" bullet implied you must re-run install.sh after every edit, but symlinks mean edits take effect immediately — install.sh is only needed when adding or removing skills. The code-ref table row claimed links are "clickable permalinks" without noting that VS Code/Cursor don't recognize the suffix natively; RangeLink or a similar extension is required.
+
+Benefits:
+- Readers won't waste time re-running install.sh after editing a skill
+- Sets accurate expectations about what makes code references clickable

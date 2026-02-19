@@ -266,6 +266,34 @@ Note: This exchange also happened after context compaction — Claude reconstruc
 
 ---
 
+### Exchange 15 — User review: two README corrections via RangeLink references
+
+**2026-02-19 — User sends corrections with precise code references**
+
+The user reviewed the README and sent two corrections using RangeLink-style code references — this exchange itself demonstrates why `code-ref` formatting matters:
+
+> `README.md#L267C134-L267C187` is not completely accurate: re-running `install.sh` script is only needed when you add or delete new skills. Editing a skill gets picked up auto-magically because symlinks are used between this repo and `~/.claude/skills` folder
+>
+> `README.md#L291C55-L291C91` : we need to highlight that the links are clickable when you use RangeLink extension (the default navigator in vscode/cursor will not consider RangeLink links as clickable because the permalink-like suffix we add is not recognized as a file).
+>
+> PS: Make sure TIMELINE.md captures this full prompt I sent you; it will really show how RangeLink provides precise references you can always process with accuracy.
+
+This is a perfect example of the RangeLink workflow in practice: the user selected text in VS Code/Cursor, the extension generated precise `file#line-column` references, and Claude could navigate directly to the exact characters that needed changing. No ambiguity, no "around line 267 somewhere."
+
+**Changes made:**
+
+1. **"No magic" bullet** — replaced "re-run `install.sh`" with an explanation that symlinks mean edits take effect immediately; `install.sh` is only needed when adding or removing skills.
+2. **`code-ref` table row** — replaced "clickable permalinks" with explicit mention that the links are clickable in editors with RangeLink installed, and that VS Code/Cursor don't recognize the suffix natively.
+
+**Artifacts produced:**
+
+- [0021--readme--README-v0004.md](0021--readme--README-v0004.md) — README with both corrections applied.
+- [0022--commit-msg--0006-fix-install-and-rangelink-accuracy-v0001.txt](0022--commit-msg--0006-fix-install-and-rangelink-accuracy-v0001.txt) — Commit message for the user-review corrections.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+---
+
 ## Phase 4: PR and CodeRabbit (pending)
 
 *This section will be filled in when the PR is created and reviewed.*
