@@ -191,9 +191,25 @@ Note: The start-issue plan (6 steps) is a streamlined version of the main plan's
 
 ---
 
-## Phase 3: Implementation (pending — starts with /tackle-scratchpad-block)
+## Phase 3: Implementation
 
-*This section will be filled in as we execute README sections.*
+### Exchange 12 — /tackle-scratchpad-block S001: README Sections 1-3
+
+**2026-02-18 — User invokes `/tackle-scratchpad-block` on S001 of the start-issue plan**
+
+The user ran `/tackle-scratchpad-block demo/real-life/issues-10/0009--scratchpad--0001-start-issue-plan-v0001.txt#L26-L41` to execute S001 ("Write README sections 1-3: opening hook, installation, quick start"). The code reference points Claude at the exact JSON step block to execute — this precision is central to the `/tackle-scratchpad-block` philosophy: you choose which step to work on, and Claude reads the surrounding plan for context. Claude rewrote README.md from 25 lines to ~120 lines with:
+
+1. **Opening hook** — Problem-statement framing: Claude Code is powerful but sessions are ephemeral, context evaporates, commit messages are arbitrary. These skills add structure.
+2. **Installation** — Kept existing content, added inline link to official Claude Code skills docs and a brief explanation of what skills are.
+3. **Quick Start** — Three real commands (`/scratchpad`, `/question`, `/commit-msg`) each with a collapsible `<details>` block showing actual output from this repo's demo artifacts.
+
+The `<details>` blocks link to real files in `demo/real-life/issues-10/` — readers can click through to see the full untruncated artifacts.
+
+**Artifacts produced:**
+
+- [0011--readme--README-v0001.md](0011--readme--README-v0001.md) — First version of the rewritten README with sections 1-3.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 ---
 
