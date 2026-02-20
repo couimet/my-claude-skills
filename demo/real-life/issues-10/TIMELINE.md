@@ -384,7 +384,7 @@ The user ran `/finish-issue to cover demo/real-life/issues-10/0028--scratchpad--
 
 **2026-02-19 — User notices heading inconsistency after reviewing rendered README on GitHub**
 
-The user pointed out that steps 2, 3, and 5 in the "See It In Action" walkthrough use the pattern `### N. `/skill-name` — brief description` which renders prominently on GitHub, but step 1 ("Pre-planning") doesn't promote any skill in its heading. They asked for a `/scratchpad` with pros and cons as a UX/tech writer analysis.
+The user pointed out that steps 2, 3, and 5 in the "See It In Action" walkthrough use the pattern `` ### N. `/skill-name` — brief description `` which renders prominently on GitHub, but step 1 ("Pre-planning") doesn't promote any skill in its heading. They asked for a `/scratchpad` with pros and cons as a UX/tech writer analysis.
 
 The user referenced specific lines using RangeLink:
 
@@ -406,10 +406,10 @@ Claude created a scratchpad with 4 options (A: both skills with `+`, B: `/scratc
 
 **2026-02-19 — User picks Option A from the scratchpad and asks to apply it to step 4 as well**
 
-The user chose Option A from the heading consistency scratchpad and asked Claude to also fix step 4 (`### 4. Side-quests and breadcrumbs`) so all 5 walkthrough headings follow the same `### N. `/skill` — description` pattern. Changes:
+The user chose Option A from the heading consistency scratchpad and asked Claude to also fix step 4 (`### 4. Side-quests and breadcrumbs`) so all 5 walkthrough headings follow the same `` ### N. `/skill` — description `` pattern. Changes:
 
-- Step 1: `### 1. Pre-planning: explore before committing to a plan` → `### 1. `/scratchpad` + `/question` — explore before committing to a plan`
-- Step 4: `### 4. Side-quests and breadcrumbs` → `### 4. `/breadcrumb` + `/start-side-quest` — handle detours without derailing`
+- Step 1: `### 1. Pre-planning: explore before committing to a plan` → `` ### 1. `/scratchpad` + `/question` — explore before committing to a plan ``
+- Step 4: `### 4. Side-quests and breadcrumbs` → `` ### 4. `/breadcrumb` + `/start-side-quest` — handle detours without derailing ``
 
 **Artifacts produced:**
 
@@ -560,6 +560,21 @@ Removed trailing comma after S002's closing brace in the JSON block of the worki
 
 ---
 
+### Exchange 30 — Execute S002: fix broken code spans in TIMELINE.md
+
+**2026-02-19 — `/tackle-scratchpad-block demo/real-life/issues-10/0049--scratchpad--0006-pr-11-review-3829680372-v0002.txt#L59-L70`**
+
+Four lines in TIMELINE.md used single-backtick code spans to wrap heading patterns that themselves contained backticks (e.g., `` ### N. `/skill` — description ``). The inner backticks broke the code span rendering on GitHub. Replaced with double-backtick spans on lines 387, 409, 411, and 412.
+
+**Artifacts produced:**
+
+- [0051--scratchpad--0006-pr-11-review-3829680372-v0003.txt](0051--scratchpad--0006-pr-11-review-3829680372-v0003.txt) — S002 marked done.
+- [0052--commit-msg--0015-fix-broken-code-spans-in-timeline-v0001.txt](0052--commit-msg--0015-fix-broken-code-spans-in-timeline-v0001.txt) — Commit message for the code span fix.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+---
+
 ## Final Artifact Count
 
-51 numbered files + TIMELINE.md. Every numbered file has a corresponding entry in this timeline.
+52 numbered files + TIMELINE.md. Every numbered file has a corresponding entry in this timeline.

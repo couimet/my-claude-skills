@@ -1,0 +1,10 @@
+[PR feedback] Fix broken code spans in TIMELINE.md
+
+Heading patterns like `### N. `/skill` — description` used single backticks,
+but the inner backticks for `/skill` broke the code span rendering. Switched
+to double backticks on lines 387, 409, 411, and 412.
+
+Benefits:
+- Code spans render correctly on GitHub instead of breaking mid-fragment
+
+Ref: https://github.com/couimet/my-claude-skills/pull/11#pullrequestreview-3829680372
