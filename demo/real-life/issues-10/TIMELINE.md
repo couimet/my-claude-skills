@@ -14,8 +14,6 @@ Every numbered file in this folder has a corresponding entry here. Read the fold
 
 The user opened the conversation by asking Claude to look at [github.com/couimet/my-claude-skills/issues/10](https://github.com/couimet/my-claude-skills/issues/10) and build a `/scratchpad` suggesting ways to enrich the issue before implementation. They also asked to use `/question` for improvement ideas. Key context from the prompt: the landing README should be welcoming, provide an intro for beginners, and show advanced examples/scenarios so people can see value in the skills that have been iterated over many times.
 
-<!-- YOUR TERMINAL SNIPPET (optional): paste your actual opening prompt here if you'd like to preserve the exact wording -->
-
 **Claude's response:**
 
 Claude fetched the GitHub issue (which was intentionally bare: "Add meat to readme" with two bullet points about pointing to official skills config and adding a "how I work" section with redacted prompts). In parallel, Claude launched an Explore agent to thoroughly read every skill file, both READMEs, and the install script to understand the full project.
@@ -25,8 +23,6 @@ After gathering context, Claude invoked `/scratchpad` and `/question`:
 **Artifact produced:**
 
 - [0001--scratchpad--0004-readme-enrichment-plan-v0001.txt](0001--scratchpad--0004-readme-enrichment-plan-v0001.txt) — Initial scratchpad with gap analysis (what's missing for beginners, advanced users, and structurally) and 8 enrichment suggestions: opening hook, quick start, full workflow walkthrough, advanced scenarios gallery, philosophy section, restructured skills reference, official references, and visual aids.
-
-<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 ---
 
@@ -39,8 +35,6 @@ As part of the same response, Claude created a question file with 12 design deci
 **Artifact produced:**
 
 - [0002--question--0001-readme-design-decisions-v0001.txt](0002--question--0001-readme-design-decisions-v0001.txt) — 12 questions with `[RECOMMENDED]` markers (unanswered).
-
-<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 ---
 
@@ -62,8 +56,6 @@ Other notable answers: casual first-person tone (A002), collapsible `<details>` 
 
 - [0003--question--0001-readme-design-decisions-v0002.txt](0003--question--0001-readme-design-decisions-v0002.txt) — Same 12 questions, now with user's answers filled in.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 4 — Follow-up Questions on the Demo Approach
@@ -75,8 +67,6 @@ A003's answer was substantial enough to warrant its own question file. Claude cr
 **Artifact produced:**
 
 - [0004--question--0002-demo-approach-v0001.txt](0004--question--0002-demo-approach-v0001.txt) — 5 follow-up questions with `[RECOMMENDED]` markers (unanswered).
-
-<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 ---
 
@@ -92,8 +82,6 @@ The user also pointed to [github.com/couimet/rangeLink](https://github.com/couim
 
 - [0005--question--0002-demo-approach-v0002.txt](0005--question--0002-demo-approach-v0002.txt) — Same 5 questions, now with user's answers.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 6 — Scratchpad Refined with Full Implementation Plan
@@ -105,8 +93,6 @@ Claude rewrote the main scratchpad incorporating all 17 resolved decisions into 
 **Artifact produced:**
 
 - [0006--scratchpad--0004-readme-enrichment-plan-v0002.txt](0006--scratchpad--0004-readme-enrichment-plan-v0002.txt) — Refined plan with key decisions summary, section outline, and 7-step implementation plan.
-
-<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 ---
 
@@ -120,8 +106,6 @@ At this point, the demo artifacts used a simpler naming convention (no global se
 
 *No new numbered artifact from this exchange — TIMELINE.md itself was the output.*
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 8 — Demo File Naming Convention Discussion
@@ -133,8 +117,6 @@ The user noticed the demo filenames were missing file-placement category informa
 **Artifact produced:**
 
 - [0007--scratchpad--0005-demo-file-naming-convention-v0001.txt](0007--scratchpad--0005-demo-file-naming-convention-v0001.txt) — Initial proposal: `<category>--<original-filename>-v<NNNN>.<ext>` with double-dash delimiter and `v` prefix.
-
-<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 ---
 
@@ -148,8 +130,6 @@ The user pointed out that category-first sorting loses the chronological narrati
 
 - [0008--scratchpad--0005-demo-file-naming-convention-v0002.txt](0008--scratchpad--0005-demo-file-naming-convention-v0002.txt) — Final naming convention: `<NNNN>--<category>--<original-filename>-v<NNNN>.<ext>` with chronological mapping table.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 10 — Executing the Rename (S001)
@@ -159,8 +139,6 @@ The user pointed out that category-first sorting loses the chronological narrati
 User approved the naming convention. Claude renamed all 6 existing demo files, created the two new scratchpad artifacts (#0007, #0008), rewrote TIMELINE.md with updated links, and updated the main scratchpad's conventions section.
 
 *No new numbered artifact — this exchange updated existing files and TIMELINE.md.*
-
-<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 ---
 
@@ -182,8 +160,6 @@ Note: The start-issue plan (6 steps) is a streamlined version of the main plan's
 **Artifact produced:**
 
 - [0009--scratchpad--0001-start-issue-plan-v0001.txt](0009--scratchpad--0001-start-issue-plan-v0001.txt) — Formal `/start-issue` implementation plan with 6 JSON-tracked steps covering README sections, CodeRabbit demo, and finish-issue wrap-up.
-
-<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 **Artifact also produced:**
 
@@ -212,8 +188,6 @@ The `<details>` blocks link to real files in `demo/real-life/issues-10/` — rea
 - [0013--scratchpad--0001-start-issue-plan-v0002.txt](0013--scratchpad--0001-start-issue-plan-v0002.txt) — Start-issue plan with S001 marked `"done"` (status was not captured in v0001 — fixed retroactively).
 - [0014--commit-msg--0003-capture-status-in-demo-scratchpad-v0001.txt](0014--commit-msg--0003-capture-status-in-demo-scratchpad-v0001.txt) — Commit message for the retroactive status capture fix.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 13 — /tackle-scratchpad-block S002: README Section 4 (Workflow Walkthrough)
@@ -240,8 +214,6 @@ Note: This exchange happened after context compaction (the conversation had been
 - [0016--scratchpad--0001-start-issue-plan-v0003.txt](0016--scratchpad--0001-start-issue-plan-v0003.txt) — Start-issue plan with S002 marked `"done"`.
 - [0017--commit-msg--0004-readme-section-4-workflow-walkthrough-v0001.txt](0017--commit-msg--0004-readme-section-4-workflow-walkthrough-v0001.txt) — Commit message for the workflow walkthrough section.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 14 — /tackle-scratchpad-block S003: README Sections 5-6 (Philosophy + Skills Reference)
@@ -263,8 +235,6 @@ Note: This exchange also happened after context compaction — Claude reconstruc
 - [0018--readme--README-v0003.md](0018--readme--README-v0003.md) — README with sections 1-6 complete.
 - [0019--scratchpad--0001-start-issue-plan-v0004.txt](0019--scratchpad--0001-start-issue-plan-v0004.txt) — Start-issue plan with S003 marked `"done"`.
 - [0020--commit-msg--0005-readme-philosophy-and-skills-reference-v0001.txt](0020--commit-msg--0005-readme-philosophy-and-skills-reference-v0001.txt) — Commit message for the philosophy and reference sections.
-
-<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 ---
 
@@ -292,8 +262,6 @@ This is a perfect example of the RangeLink workflow in practice: the user select
 - [0021--readme--README-v0004.md](0021--readme--README-v0004.md) — README with both corrections applied.
 - [0022--commit-msg--0006-fix-install-and-rangelink-accuracy-v0001.txt](0022--commit-msg--0006-fix-install-and-rangelink-accuracy-v0001.txt) — Commit message for the user-review corrections.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 16 — /tackle-scratchpad-block S004: README Sections 7-8 (Contributing + Resources)
@@ -313,8 +281,6 @@ With this step, all 8 README sections from the acceptance criteria are complete:
 - [0024--scratchpad--0001-start-issue-plan-v0005.txt](0024--scratchpad--0001-start-issue-plan-v0005.txt) — Start-issue plan with S004 marked `"done"`.
 - [0025--commit-msg--0007-readme-contributing-and-resources-v0001.txt](0025--commit-msg--0007-readme-contributing-and-resources-v0001.txt) — Commit message for the contributing and resources sections.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ## Phase 4: PR and CodeRabbit
@@ -333,8 +299,6 @@ Claude introduced a subtle broken link in the Resources section: the display tex
 - [0027--readme--README-v0006.md](0027--readme--README-v0006.md) — README with intentional broken link (`skill/README.md` instead of `skills/README.md`).
 - [0028--scratchpad--0001-start-issue-plan-v0006.txt](0028--scratchpad--0001-start-issue-plan-v0006.txt) — Start-issue plan with S005 marked `"done"`.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 18 — User catches missed demo protocol
@@ -350,8 +314,6 @@ This is itself a useful data point for the demo — it shows that the protocol r
 - [0029--commit-msg--0009-backfill-demo-protocol-for-s005-v0001.txt](0029--commit-msg--0009-backfill-demo-protocol-for-s005-v0001.txt) — Commit message for the backfilled demo artifacts.
 
 Note: 0027 and 0028 (listed in Exchange 17 above) were also produced during this exchange as backfills. S005 status was corrected to `"done"` in 0028 — the `done_when` criteria ("PR created with a subtle but real error") will be satisfied once the user commits and pushes.
-
-<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 *Remaining S005 tasks (pending CodeRabbit review): wait for review, /tackle-pr-comment, copy artifacts to demo.*
 
@@ -376,8 +338,6 @@ The user ran `/finish-issue to cover demo/real-life/issues-10/0028--scratchpad--
 - [0030--scratchpad--0002-finish-issue-10-v0001.txt](0030--scratchpad--0002-finish-issue-10-v0001.txt) — PR description ready for `gh pr create`.
 - [0031--scratchpad--0001-start-issue-plan-v0007.txt](0031--scratchpad--0001-start-issue-plan-v0007.txt) — Final start-issue plan with all 6 steps marked `"done"`.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 20 — User review: heading consistency in walkthrough steps
@@ -398,8 +358,6 @@ Claude created a scratchpad with 4 options (A: both skills with `+`, B: `/scratc
 
 - [0032--scratchpad--0003-readme-section-4-heading-consistency-v0001.txt](0032--scratchpad--0003-readme-section-4-heading-consistency-v0001.txt) — UX analysis with 4 options and pros/cons for the heading format.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 21 — User applies Option A and extends to step 4
@@ -415,8 +373,6 @@ The user chose Option A from the heading consistency scratchpad and asked Claude
 
 - [0033--readme--README-v0007.md](0033--readme--README-v0007.md) — README with all 5 walkthrough headings consistent.
 - [0034--commit-msg--0010-consistent-walkthrough-headings-v0001.txt](0034--commit-msg--0010-consistent-walkthrough-headings-v0001.txt) — Commit message for the heading consistency fix.
-
-<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 ---
 
@@ -438,8 +394,6 @@ The implementation plan has 3 steps: S001 fixes the link + hyphenation, S002 add
 
 - [0035--scratchpad--0004-pr-11-review-3826186415-v0001.txt](0035--scratchpad--0004-pr-11-review-3826186415-v0001.txt) — Full analysis of CodeRabbit's review with ACCEPT/IGNORE decisions and implementation plan.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 23 — User catches Feedback H: commit message artifact must stay authentic
@@ -453,8 +407,6 @@ This follows the same principle as Feedback E (demo snapshots are historical rec
 **Artifacts produced:**
 
 - [0036--scratchpad--0004-pr-11-review-3826186415-v0002.txt](0036--scratchpad--0004-pr-11-review-3826186415-v0002.txt) — Updated analysis with Feedback H flipped to IGNORE and S003 removed.
-
-<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 ---
 
@@ -476,8 +428,6 @@ Commit message uses `[PR feedback]` type with `Ref:` footer linking to the CodeR
 - [0038--scratchpad--0004-pr-11-review-3826186415-v0003.txt](0038--scratchpad--0004-pr-11-review-3826186415-v0003.txt) — S001 marked done.
 - [0039--commit-msg--0011-fix-broken-link-and-hyphenation-v0001.txt](0039--commit-msg--0011-fix-broken-link-and-hyphenation-v0001.txt) — Commit message with `[PR feedback]` type and ignored feedback section.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 25 — Execute S002: add language identifiers to fenced code blocks
@@ -491,8 +441,6 @@ All 9 bare fenced code blocks in README.md now have `text` language identifiers.
 - [0040--readme--README-v0009.md](0040--readme--README-v0009.md) — README with all code fences having language identifiers.
 - [0041--scratchpad--0004-pr-11-review-3826186415-v0004.txt](0041--scratchpad--0004-pr-11-review-3826186415-v0004.txt) — S002 marked done. Both S001 and S002 now complete.
 - [0042--commit-msg--0012-add-language-identifiers-to-code-fences-v0001.txt](0042--commit-msg--0012-add-language-identifiers-to-code-fences-v0001.txt) — Commit message with `[PR feedback]` type.
-
-<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 ---
 
@@ -508,8 +456,6 @@ Decision: ACCEPT fixing the working scratchpad, IGNORE the demo snapshots (they 
 
 - [0043--scratchpad--0005-pr-11-review-3829645589-v0001.txt](0043--scratchpad--0005-pr-11-review-3829645589-v0001.txt) — Analysis of CodeRabbit's second review with ACCEPT/IGNORE decisions.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 27 — Execute S001: remove stale S003 reference from Recommendations
@@ -523,8 +469,6 @@ Deleted the stale first paragraph from the Recommendations section in the workin
 - [0044--scratchpad--0004-pr-11-review-3826186415-v0005.txt](0044--scratchpad--0004-pr-11-review-3826186415-v0005.txt) — First PR feedback scratchpad with stale Recommendations paragraph removed.
 - [0045--scratchpad--0005-pr-11-review-3829645589-v0002.txt](0045--scratchpad--0005-pr-11-review-3829645589-v0002.txt) — Second PR feedback scratchpad with S001 marked done.
 - [0046--commit-msg--0013-fix-stale-s003-reference-v0001.txt](0046--commit-msg--0013-fix-stale-s003-reference-v0001.txt) — Commit message with `[PR feedback]` type and ignored feedback section.
-
-<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 ---
 
@@ -540,8 +484,6 @@ Two items accepted (A: trailing comma, B: code spans), two ignored (C and D: pro
 
 - [0047--scratchpad--0006-pr-11-review-3829680372-v0001.txt](0047--scratchpad--0006-pr-11-review-3829680372-v0001.txt) — Analysis of CodeRabbit's third review with implementation plan.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 29 — Execute S001: fix trailing comma in scratchpad 0004
@@ -556,8 +498,6 @@ Removed trailing comma after S002's closing brace in the JSON block of the worki
 - [0049--scratchpad--0006-pr-11-review-3829680372-v0002.txt](0049--scratchpad--0006-pr-11-review-3829680372-v0002.txt) — Third PR feedback scratchpad with S001 marked done.
 - [0050--commit-msg--0014-fix-trailing-comma-and-prose-v0001.txt](0050--commit-msg--0014-fix-trailing-comma-and-prose-v0001.txt) — Commit message with `[PR feedback]` type.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 30 — Execute S002: fix broken code spans in TIMELINE.md
@@ -571,8 +511,6 @@ Four lines in TIMELINE.md used single-backtick code spans to wrap heading patter
 - [0051--scratchpad--0006-pr-11-review-3829680372-v0003.txt](0051--scratchpad--0006-pr-11-review-3829680372-v0003.txt) — S002 marked done.
 - [0052--commit-msg--0015-fix-broken-code-spans-in-timeline-v0001.txt](0052--commit-msg--0015-fix-broken-code-spans-in-timeline-v0001.txt) — Commit message for the code span fix.
 
-<!-- YOUR TERMINAL SNIPPET (optional) -->
-
 ---
 
 ### Exchange 31 — /tackle-pr-comment: CodeRabbit's fourth review pass
@@ -584,8 +522,6 @@ CodeRabbit's fourth review found 4 items. Three target frozen demo snapshots (IG
 **Artifacts produced:**
 
 - [0053--scratchpad--0008-pr-11-review-3829795386-v0001.txt](0053--scratchpad--0008-pr-11-review-3829795386-v0001.txt) — Analysis of CodeRabbit's fourth review (S001 pending).
-
-<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 ---
 
@@ -599,8 +535,6 @@ Fixed Exchange 28's narrative to reflect the actual corrected state: 2 items acc
 
 - [0054--commit-msg--0016-fix-stale-exchange-28-narrative-v0001.txt](0054--commit-msg--0016-fix-stale-exchange-28-narrative-v0001.txt) — Commit message for the Exchange 28 narrative fix.
 - [0055--scratchpad--0008-pr-11-review-3829795386-v0002.txt](0055--scratchpad--0008-pr-11-review-3829795386-v0002.txt) — S001 marked done.
-
-<!-- YOUR TERMINAL SNIPPET (optional) -->
 
 ---
 
