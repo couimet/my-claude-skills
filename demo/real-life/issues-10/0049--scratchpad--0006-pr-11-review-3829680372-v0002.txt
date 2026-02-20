@@ -1,0 +1,82 @@
+# PR #11 Comment Response
+
+Source: https://github.com/couimet/my-claude-skills/pull/11#pullrequestreview-3829680372
+
+## Reviewer Feedback Summary
+
+CodeRabbit's third review pass found 4 items: a trailing comma in the JSON block of the PR feedback scratchpad (invalid JSON), broken code spans in TIMELINE.md where inner backticks break rendering, and two prose wordiness nitpicks in demo scratchpad files.
+
+## Analysis
+
+### Feedback A: Trailing comma after last step in JSON block (scratchpad 0044)
+
+The `"steps"` array in the working scratchpad's JSON block has a trailing comma after S002's closing brace (`},` followed by `]`). This makes the JSON technically invalid per RFC 8259. The same issue exists in the working scratchpad.
+
+Decision: ACCEPT
+Reason: Invalid JSON should be fixed in the working scratchpad. The demo copy 0044 is a snapshot and stays as-is.
+
+### Feedback B: Broken code spans in TIMELINE.md lines 387, 409, 411-412
+
+TIMELINE.md uses single backticks for heading patterns like `` `### N. `/skill-name` — brief description` `` but the inner backticks for `/skill-name` break the code span. CodeRabbit suggests double backticks to wrap the entire fragment.
+
+Decision: ACCEPT
+Reason: TIMELINE.md is a living document, not a frozen snapshot. Fixing the code spans improves readability.
+
+### Feedback C: "at each point in time" wordiness in scratchpad 0044
+
+LanguageTool flags "at each point in time" as redundant, suggesting "at each point" instead. CodeRabbit flagged the demo snapshot copy (0044), not the working scratchpad.
+
+Decision: IGNORE
+Reason: CodeRabbit reviewed the committed demo snapshot file, not the ephemeral working scratchpad. Working scratchpads are git-ignored and never committed -- polishing their prose based on feedback aimed at snapshot copies is busywork. The demo protocol creates new versioned copies going forward; it does not retroactively edit snapshots or their source files.
+
+### Feedback D: "at the moment they were taken" wordiness in scratchpad 0045
+
+LanguageTool flags "at the moment they were taken" as wordy, suggesting "when they were taken" instead. Same situation as Feedback C.
+
+Decision: IGNORE
+Reason: Same as C -- CodeRabbit flagged a demo snapshot, not the ephemeral working file. Prose polish on git-ignored scratchpads adds no value.
+
+Note: ACCEPT items flow to Implementation Plan steps. IGNORE items flow to the commit message's "Ignored Feedback" section.
+
+## Implementation Plan
+
+```json
+{
+  "steps": [
+    {
+      "id": "S001",
+      "title": "Fix trailing comma in working scratchpad 0004",
+      "status": "done",
+      "done_when": "JSON block has no trailing comma",
+      "depends_on": [],
+      "files": [".scratchpads/issues/10/0004-pr-11-review-3826186415.txt"],
+      "tasks": [
+        "Remove trailing comma after S002's closing brace (line 100: change `},` to `}`)"
+      ],
+      "addresses": ["A"]
+    },
+    {
+      "id": "S002",
+      "title": "Fix broken code spans in TIMELINE.md",
+      "status": "pending",
+      "done_when": "Lines 387, 409, 411, 412 use double backticks for heading patterns containing inner backticks",
+      "depends_on": [],
+      "files": ["demo/real-life/issues-10/TIMELINE.md"],
+      "tasks": [
+        "Replace single-backtick code spans with double-backtick spans where inner backticks appear",
+        "Affects lines 387, 409, 411, 412 -- heading patterns like ### N. `/skill` — description"
+      ],
+      "addresses": ["B"]
+    }
+  ]
+}
+```
+
+## Recommendations
+
+S001 is done (trailing comma removed). S002 fixes rendering in TIMELINE.md. Prose nitpicks (C, D) ignored since they target ephemeral working files via their demo snapshot copies.
+
+## Files to Modify
+
+- `.scratchpads/issues/10/0004-pr-11-review-3826186415.txt` -- trailing comma fix (S001, done)
+- `demo/real-life/issues-10/TIMELINE.md` -- double-backtick code spans (S002)
