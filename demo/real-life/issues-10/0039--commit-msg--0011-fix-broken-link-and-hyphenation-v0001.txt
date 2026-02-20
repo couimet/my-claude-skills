@@ -1,0 +1,18 @@
+[PR feedback] Fix broken link and compound-modifier hyphenation in README
+
+CodeRabbit caught the intentional broken link in the Resources section
+(`skill/README.md` instead of `skills/README.md`) along with two
+compound-adjective hyphenation issues. All three are straightforward
+grammar/correctness fixes.
+
+Benefits:
+- Resources link now resolves to the actual skills/README.md file
+- "out-of-the-box" and "step-tracking" follow standard compound-modifier rules
+
+Ignored Feedback:
+- Demo snapshot files (0011, 0015, 0018, 0021, 0023, 0027): historical artifacts that must remain frozen-in-time
+- Truncated A005 in question file 0005: authentic user response captured as-is
+- Stale artifact count "29" in finish-issue scratchpad 0030: correct at time of capture
+- Stray backtick in commit message 0034: actual git commit has the same typo, so the demo copy is accurate
+
+Ref: https://github.com/couimet/my-claude-skills/pull/11#pullrequestreview-3826186415

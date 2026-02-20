@@ -420,6 +420,66 @@ The user chose Option A from the heading consistency scratchpad and asked Claude
 
 ---
 
+### Exchange 22 — /tackle-pr-comment: analyze CodeRabbit's automated review
+
+**2026-02-19 — User invokes /tackle-pr-comment on CodeRabbit's PR review**
+
+The user pushed PR #11 and CodeRabbit completed its automated analysis. The user invoked `/tackle-pr-comment https://github.com/couimet/my-claude-skills/pull/11#pullrequestreview-3826186415` to analyze and plan responses to the feedback.
+
+CodeRabbit flagged 11 items. Claude categorized them into 8 distinct feedback items (A through H):
+
+- **ACCEPT (4):** Broken link in Resources section (our intentional bait -- it worked!), two hyphenation fixes ("out-of-the-box," "step-tracking"), and missing language identifiers on 9 fenced code blocks.
+- **IGNORE (3):** Duplicate suggestions for 6 historical demo snapshot files (frozen-in-time artifacts), a truncated user answer in question file 0005 (authentic as captured), and a stale artifact count in the finish-issue scratchpad (correct at time of capture).
+- **ACCEPT (1):** Stray backtick in commit message demo artifact 0034.
+
+The implementation plan has 3 steps: S001 fixes the link + hyphenation, S002 adds language identifiers, S003 fixes the stray backtick in 0034.
+
+**Artifacts produced:**
+
+- [0035--scratchpad--0004-pr-11-review-3826186415-v0001.txt](0035--scratchpad--0004-pr-11-review-3826186415-v0001.txt) — Full analysis of CodeRabbit's review with ACCEPT/IGNORE decisions and implementation plan.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+---
+
+### Exchange 23 — User catches Feedback H: commit message artifact must stay authentic
+
+**2026-02-19 — User verifies the actual git commit has the same stray backtick**
+
+The user questioned whether modifying demo artifact 0034 was valid, pointing out that if the actual git commit contains the same stray backtick, the demo file is an accurate copy and must not be altered. Claude checked `git log` and confirmed the committed message has the identical orphan backtick. Feedback H flipped from ACCEPT to IGNORE, and S003 was removed from the implementation plan.
+
+This follows the same principle as Feedback E (demo snapshots are historical records) but extends it to commit message artifacts: if the committed version has the typo, the demo copy must preserve it.
+
+**Artifacts produced:**
+
+- [0036--scratchpad--0004-pr-11-review-3826186415-v0002.txt](0036--scratchpad--0004-pr-11-review-3826186415-v0002.txt) — Updated analysis with Feedback H flipped to IGNORE and S003 removed.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+---
+
+### Exchange 24 — Execute S001: fix broken link and hyphenation
+
+**2026-02-19 — User invokes `/tackle-scratchpad-block demo/real-life/issues-10/0036--scratchpad--0004-pr-11-review-3826186415-v0002.txt#L74-L87`**
+
+Three fixes applied to README.md:
+
+1. Resources link: `(skill/README.md)` → `(skills/README.md)` — the intentional bait is now fixed
+2. Line 3: "out of the box" → "out-of-the-box" — compound modifier before noun
+3. Line 296: "step tracking" → "step-tracking" — compound modifier before noun
+
+Commit message uses `[PR feedback]` type with `Ref:` footer linking to the CodeRabbit review, and includes an "Ignored Feedback" section documenting the 4 items intentionally declined with reasoning.
+
+**Artifacts produced:**
+
+- [0037--readme--README-v0008.md](0037--readme--README-v0008.md) — README with broken link and hyphenation fixed.
+- [0038--scratchpad--0004-pr-11-review-3826186415-v0003.txt](0038--scratchpad--0004-pr-11-review-3826186415-v0003.txt) — S001 marked done.
+- [0039--commit-msg--0011-fix-broken-link-and-hyphenation-v0001.txt](0039--commit-msg--0011-fix-broken-link-and-hyphenation-v0001.txt) — Commit message with `[PR feedback]` type and ignored feedback section.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+---
+
 ## Final Artifact Count
 
-34 numbered files + TIMELINE.md. Every numbered file has a corresponding entry in this timeline.
+39 numbered files + TIMELINE.md. Every numbered file has a corresponding entry in this timeline.
