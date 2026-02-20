@@ -496,6 +496,38 @@ All 9 bare fenced code blocks in README.md now have `text` language identifiers.
 
 ---
 
+### Exchange 26 — /tackle-pr-comment: CodeRabbit's second review pass
+
+**2026-02-19 — User invokes `/tackle-pr-comment https://github.com/couimet/my-claude-skills/pull/11#pullrequestreview-3829645589`**
+
+CodeRabbit's second review caught a stale Recommendations paragraph in the PR feedback scratchpad. When S003 was removed in Exchange 23, the first paragraph ("All three steps are independent... S003 is a standalone fix") was missed -- only the second paragraph was updated. The stale text then propagated to demo snapshots 0036, 0038, and 0041.
+
+Decision: ACCEPT fixing the working scratchpad, IGNORE the demo snapshots (they accurately capture the oversight at the time they were taken). One step: delete the stale paragraph.
+
+**Artifacts produced:**
+
+- [0043--scratchpad--0005-pr-11-review-3829645589-v0001.txt](0043--scratchpad--0005-pr-11-review-3829645589-v0001.txt) — Analysis of CodeRabbit's second review with ACCEPT/IGNORE decisions.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+---
+
+### Exchange 27 — Execute S001: remove stale S003 reference from Recommendations
+
+**2026-02-19 — User invokes `/tackle-scratchpad-block .scratchpads/issues/10/0005-pr-11-review-3829645589.txt#L34-L46`**
+
+Deleted the stale first paragraph from the Recommendations section in the working PR feedback scratchpad (0004). The paragraph still referenced "All three steps" and S003, which had been removed in Exchange 23 but the first paragraph was missed. The second paragraph already correctly described the two-step plan.
+
+**Artifacts produced:**
+
+- [0044--scratchpad--0004-pr-11-review-3826186415-v0005.txt](0044--scratchpad--0004-pr-11-review-3826186415-v0005.txt) — First PR feedback scratchpad with stale Recommendations paragraph removed.
+- [0045--scratchpad--0005-pr-11-review-3829645589-v0002.txt](0045--scratchpad--0005-pr-11-review-3829645589-v0002.txt) — Second PR feedback scratchpad with S001 marked done.
+- [0046--commit-msg--0013-fix-stale-s003-reference-v0001.txt](0046--commit-msg--0013-fix-stale-s003-reference-v0001.txt) — Commit message with `[PR feedback]` type and ignored feedback section.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+---
+
 ## Final Artifact Count
 
-42 numbered files + TIMELINE.md. Every numbered file has a corresponding entry in this timeline.
+46 numbered files + TIMELINE.md. Every numbered file has a corresponding entry in this timeline.
