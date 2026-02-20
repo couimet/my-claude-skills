@@ -1,0 +1,7 @@
+[fix] Backfill missing demo artifacts for S005 error introduction
+
+The intentional error exchange missed the demo protocol: no versioned README snapshot showing the broken link, no scratchpad snapshot reflecting S005 status, and no commit message. The protocol requires every state change to be captured so readers can follow the full lifecycle.
+
+Benefits:
+- Demo folder now accurately reflects the S005 state transition
+- Readers can diff v0005 vs v0006 to see exactly what the intentional error looks like

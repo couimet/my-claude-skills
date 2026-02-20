@@ -27,7 +27,7 @@ Once installed, try these in any project:
 
 ### `/scratchpad` — Create a working document
 
-```text
+```
 /scratchpad plan the authentication refactor
 ```
 
@@ -36,7 +36,7 @@ Creates a `.scratchpads/0001-plan-the-authentication-refactor.txt` file with str
 <details>
 <summary>See a real scratchpad from this repo</summary>
 
-```text
+```
 Issue #10 — Add Meat to README: Enrichment Plan
 
 This scratchpad analyzes the current README state and suggests ways
@@ -61,7 +61,7 @@ Full file: [demo/real-life/issues-10/0001--scratchpad--0004-readme-enrichment-pl
 
 ### `/question` — Gather design decisions
 
-```text
+```
 /question authentication strategy choices
 ```
 
@@ -70,7 +70,7 @@ Creates a `.claude-questions/0001-authentication-strategy-choices.txt` with stru
 <details>
 <summary>See a real question file from this repo</summary>
 
-```text
+```
 ## Q001: Should the root README be the single comprehensive document,
          or should it stay lean and link to deeper pages?
 
@@ -92,7 +92,7 @@ Full file: [demo/real-life/issues-10/0002--question--0001-readme-design-decision
 
 ### `/commit-msg` — Draft a commit message
 
-```text
+```
 /commit-msg add authentication middleware
 ```
 
@@ -101,7 +101,7 @@ Creates a `.commit-msgs/0001-add-authentication-middleware.txt` focused on WHY, 
 <details>
 <summary>See a real commit message from this repo</summary>
 
-```text
+```
 [docs] Bootstrap demo infrastructure and start-issue plan for README overhaul
 
 Establishes the "eat your own dog food" approach: issue #10's own workflow
@@ -149,7 +149,7 @@ The user answered all 12 questions by editing the file directly — that's the c
 <summary>See how a question evolves from asked to answered</summary>
 
 **Before (Claude's question):**
-```text
+```
 ## Q003: Should inline examples use real artifacts from this repo
          or fabricated/generic snippets?
 
@@ -164,7 +164,7 @@ A003: [RECOMMENDED] A
 ```
 
 **After (user's answer — a game-changer):**
-```text
+```
 A003: A; I'd like to take it further — use the current conversation
 as the demo. "Eat your own dog food." Leave issue #10 bare as-is
 and build the full-cycle demo from it...
@@ -210,7 +210,7 @@ Full file: [demo/real-life/issues-10/0009--scratchpad--0001-start-issue-plan-v00
 
 This is the core loop. You point Claude at a specific step using a code reference — a file path with line numbers:
 
-```text
+```
 /tackle-scratchpad-block .scratchpads/issues/10/0001-start-issue-plan.txt#L26-L41
 ```
 

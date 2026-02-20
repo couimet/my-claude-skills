@@ -1,0 +1,13 @@
+[PR feedback] Add language identifiers to all fenced code blocks in README
+
+CodeRabbit flagged 9 bare fenced code blocks missing language identifiers
+(markdownlint MD040). All blocks contain plain text content (command
+invocations, scratchpad excerpts, question file excerpts, commit messages)
+so `text` is the appropriate identifier for each.
+
+Benefits:
+- GitHub renders syntax-highlighted blocks more consistently
+- Screen readers can announce the content type for accessibility
+- Passes markdownlint MD040 validation
+
+Ref: https://github.com/couimet/my-claude-skills/pull/11#pullrequestreview-3826186415

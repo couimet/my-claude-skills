@@ -1,0 +1,151 @@
+# Issue #10: Add Meat to README
+
+Type/Priority/Scope: documentation, enhancement
+
+## Context
+
+The landing README is 25 lines — clone, install, and a pointer to skills/README.md. It communicates nothing about what problem these skills solve, what using them feels like, or why someone would adopt them. The issue asks to "add meat" by pointing to official skills config references and adding a "how I work" section with real usage examples.
+
+Through pre-planning (scratchpads 0004 and 0005, question files 0001 and 0002), the scope expanded into an "eat your own dog food" approach: we use this very issue's workflow as the demo, persisting all ephemeral artifacts in `demo/real-life/issues-10/` so readers can see the full skill lifecycle in action.
+
+Key decisions (resolved in .claude-questions/0001-readme-design-decisions.txt and .claude-questions/0002-demo-approach.txt):
+- Single comprehensive README, casual first-person voice, problem-statement opening
+- Real artifacts from this conversation as the demo (no fabrication)
+- Collapsible `<details>` blocks for inline depth
+- Mermaid lifecycle diagram
+- "What You Type" / "What Works Automatically" reference structure
+- Philosophy section with RangeLink, crash-recovery, folder-org bullets
+- demo/ folder with `<NNNN>--<category>--<original-filename>-v<NNNN>.<ext>` naming convention
+- TIMELINE.md as narrative spine, 1:1 with demo folder contents
+
+## Implementation Plan
+
+```json
+{
+  "steps": [
+    {
+      "id": "S001",
+      "title": "Write README sections 1-3: opening hook, installation, quick start",
+      "status": "done",
+      "done_when": "README.md has problem-statement hook, updated installation with inline link to official Claude Code skills docs, and Quick Start section with 3 example commands and <details> blocks",
+      "depends_on": [],
+      "files": ["README.md"],
+      "tasks": [
+        "Write problem-statement opening hook (pain points of unstructured Claude Code sessions)",
+        "Update installation section with inline link to official Claude Code skills docs",
+        "Add 'Updating' subsection (keep existing content)",
+        "Write Quick Start section: /scratchpad, /question, /commit-msg examples",
+        "Add <details> blocks with abbreviated output excerpts linking to demo/ artifacts",
+        "Copy updated README to demo/ as next global sequence number"
+      ]
+    },
+    {
+      "id": "S002",
+      "title": "Write README section 4: full workflow walkthrough with Mermaid diagram",
+      "status": "pending",
+      "done_when": "README.md has 'See It In Action' section with Mermaid lifecycle diagram and step-by-step walkthrough linking to real demo/ artifacts from issue #10",
+      "depends_on": ["S001"],
+      "files": ["README.md"],
+      "tasks": [
+        "Create Mermaid diagram showing issue lifecycle: start-issue → tackle blocks → breadcrumbs → side-quests → finish-issue",
+        "Write walkthrough narrative using issue #10's own artifacts",
+        "Link each workflow step to versioned files in demo/real-life/issues-10/",
+        "Add <details> blocks for expanded artifact views",
+        "Copy updated README to demo/"
+      ]
+    },
+    {
+      "id": "S003",
+      "title": "Write README sections 5-6: design philosophy and skills reference",
+      "status": "pending",
+      "done_when": "README.md has philosophy section with 7 bullets and two-group skills reference table",
+      "depends_on": ["S002"],
+      "files": ["README.md"],
+      "tasks": [
+        "Write 'Why I Built These' philosophy section with bullets: files over chat (RangeLink bias), crash-proof context, organized not scattered, user controls execution, ephemeral vs permanent, plan then execute, no magic",
+        "Write 'What You Type' table (9 invocable skills with /command syntax and one-liner)",
+        "Write 'What Works Automatically' table (4 non-invocable skills with when they activate)",
+        "Link to skills/README.md for architecture details",
+        "Copy updated README to demo/"
+      ]
+    },
+    {
+      "id": "S004",
+      "title": "Write README sections 7-8: contributing and resources",
+      "status": "pending",
+      "done_when": "README.md has 'Making These Your Own' section encouraging PRs and 'Resources' section with official Claude Code links",
+      "depends_on": ["S003"],
+      "files": ["README.md"],
+      "tasks": [
+        "Write 'Making These Your Own' paragraph: fork, edit SKILL.md files, re-run install.sh, encourage PRs",
+        "Write 'Resources' section with collected links: official Claude Code skills docs, SKILL.md format spec, Claude Code documentation, this repo's skills/README.md",
+        "Credit standards appropriately — make clear we're leveraging the official ecosystem, not inventing",
+        "Copy updated README to demo/"
+      ]
+    },
+    {
+      "id": "S005",
+      "title": "Introduce intentional error for CodeRabbit demo",
+      "status": "pending",
+      "done_when": "PR created with a subtle but real error that CodeRabbit is likely to catch",
+      "depends_on": ["S004"],
+      "files": ["README.md"],
+      "tasks": [
+        "Introduce a subtle error (grammar, inconsistent formatting, broken link, or similar) that CodeRabbit would flag",
+        "Push branch and create PR",
+        "Wait for CodeRabbit review",
+        "Use /tackle-pr-comment on the CodeRabbit feedback",
+        "Copy all PR-comment artifacts to demo/"
+      ]
+    },
+    {
+      "id": "S006",
+      "title": "Wrap up with /finish-issue",
+      "status": "pending",
+      "done_when": "/finish-issue generates PR description, all demo artifacts collected, TIMELINE.md complete",
+      "depends_on": ["S005"],
+      "files": [
+        "demo/real-life/issues-10/TIMELINE.md"
+      ],
+      "tasks": [
+        "Run /finish-issue to generate PR description",
+        "Copy generated PR description scratchpad to demo/",
+        "Finalize TIMELINE.md with complete narrative",
+        "Review all demo/ artifacts for completeness — folder listing matches TIMELINE.md 1:1",
+        "Update README section 4 links if any artifact filenames changed during the process"
+      ]
+    }
+  ]
+}
+```
+
+## Assumptions Made
+
+- Issue #10 stays bare on GitHub (as stated in design decisions) — the demo shows the full workflow starting from that minimal issue.
+- CodeRabbit is active on this repo and will review PRs automatically. If not, we adapt the /tackle-pr-comment demo using a rangeLink PR as reference (per user's suggestion).
+- Pre-planning scratchpads (0004, 0005) and question files (0001, 0002) live at root `.scratchpads/` and `.claude-questions/` since they were created before the issue branch. This scratchpad and all future artifacts are scoped to `.scratchpads/issues/10/`.
+- TIMELINE.md is updated after every exchange — it's the one file in demo/ that's modified in place rather than versioned.
+- The README content references demo artifacts by their final filenames. Since we add artifacts incrementally and filenames include global sequence numbers, the README's "See It In Action" section may need a final pass to update links once all artifacts exist.
+
+## Files to Modify
+
+**S001-S004:** README.md (iterative rewrites)
+**S005:** README.md (intentional error), then PR creation
+**S006:** demo/real-life/issues-10/TIMELINE.md (finalization)
+
+## Documentation & Discoverability
+
+- [x] README update — this IS the README update
+- [ ] CHANGELOG entry — not applicable (no code changes, documentation only)
+- [ ] skills/README.md — may need minor updates if root README restructures the reference section
+- [ ] install.sh — no changes needed
+
+## Acceptance Criteria
+
+- [ ] README has all 8 sections: hook, install, quick start, full workflow, philosophy, reference, contributing, resources
+- [ ] All demo artifacts in demo/real-life/issues-10/ follow the naming convention
+- [ ] TIMELINE.md entries match demo folder contents 1:1
+- [ ] Mermaid diagram renders correctly on GitHub
+- [ ] Official Claude Code skills documentation is linked (inline + resources section)
+- [ ] `<details>` blocks expand correctly on GitHub
+- [ ] At least one /tackle-pr-comment cycle captured in demo/

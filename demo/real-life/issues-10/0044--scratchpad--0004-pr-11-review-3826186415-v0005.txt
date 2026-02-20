@@ -1,0 +1,111 @@
+# PR #11 Comment Response
+
+Source: https://github.com/couimet/my-claude-skills/pull/11#pullrequestreview-3826186415
+
+## Reviewer Feedback Summary
+
+CodeRabbit's automated review flagged 11 items across README.md and demo snapshot files: a broken link (our intentional bait), two hyphenation fixes, missing language identifiers on 9 fenced code blocks, and duplicate suggestions for 6 historical README snapshots in the demo folder.
+
+## Analysis
+
+### Feedback A: Broken link `skill/README.md` in Resources section
+
+README.md#L315 links to `skill/README.md` instead of `skills/README.md`. This was our intentional bait for CodeRabbit (planted in Exchange 17 / S005), and it successfully caught it.
+
+Decision: ACCEPT
+Reason: The bait served its purpose -- CodeRabbit found it. Time to fix the broken link so the README actually works.
+
+### Feedback B: Hyphenate "out of the box" as compound modifier
+
+README.md#L3 uses "out of the box sessions" where "out-of-the-box" is a compound adjective modifying "sessions." Standard English grammar requires hyphenation.
+
+Decision: ACCEPT
+Reason: CodeRabbit is correct -- compound adjectives before a noun take hyphens.
+
+### Feedback C: Hyphenate "step tracking" as compound modifier
+
+README.md#L296 uses "step tracking schema" where "step-tracking" modifies "schema." Same grammar rule as Feedback B.
+
+Decision: ACCEPT
+Reason: Consistent with accepting B -- both are compound modifiers.
+
+### Feedback D: MD040 -- Missing language identifiers on fenced code blocks
+
+9 fenced code blocks in README.md use bare ``` instead of ```json, ```text, or ```bash. Markdownlint rule MD040 requires language identifiers for accessibility and syntax highlighting.
+
+Decision: ACCEPT
+Reason: Language identifiers improve readability on GitHub (syntax highlighting) and are a low-effort improvement.
+
+### Feedback E: Same issues flagged in demo snapshot files
+
+CodeRabbit flagged the same broken link, hyphenation, and MD040 issues in 6 historical README snapshots: 0011, 0015, 0018, 0021, 0023, 0027. These are frozen-in-time artifacts that document the README's evolution.
+
+Decision: IGNORE
+Reason: Demo snapshots are historical records -- they capture the README as it existed at each point in time. Retroactively "fixing" them would destroy the chronological record and undermine the entire demo's purpose. The final README (committed at the end) contains the fixes; the snapshots show the journey.
+
+### Feedback F: Truncated A005 in question file 0005
+
+`demo/real-life/issues-10/0005--question--0002-demo-approach-v0002.txt` has A005 ending mid-sentence: "...decided in" with no completion. This is the user's raw answer captured verbatim.
+
+Decision: IGNORE
+Reason: The question file captures the user's actual response as-is. The truncation is authentic -- the user trailed off or was interrupted. Editing it would falsify the historical record.
+
+### Feedback G: Stale artifact count "29" in finish-issue scratchpad
+
+`demo/real-life/issues-10/0030--scratchpad--0002-finish-issue-10-v0001.txt` references "29 chronologically numbered artifacts" but the folder now has 34+.
+
+Decision: IGNORE
+Reason: The PR description scratchpad was generated when there were 29 artifacts. It's a snapshot of that moment. The count will be updated in the actual PR description if needed, not in the historical artifact.
+
+### Feedback H: Stray backtick in commit message 0034
+
+`demo/real-life/issues-10/0034--commit-msg--0010-consistent-walkthrough-headings-v0001.txt` line 3 has an unmatched backtick: "the pattern `/skill-name` — description`" -- the trailing backtick after "description" is orphaned.
+
+Decision: IGNORE
+Reason: The actual git commit contains the same stray backtick. The demo artifact is an accurate copy of the committed message -- modifying it would falsify the historical record, same logic as the README snapshots.
+
+Note: ACCEPT items flow to Implementation Plan steps. IGNORE items flow to the commit message's "Ignored Feedback" section.
+
+## Implementation Plan
+
+```json
+{
+  "steps": [
+    {
+      "id": "S001",
+      "title": "Fix broken link and hyphenation in README.md",
+      "status": "done",
+      "done_when": "README.md line 315 links to skills/README.md, line 3 uses out-of-the-box, line 296 uses step-tracking",
+      "depends_on": [],
+      "files": ["README.md"],
+      "tasks": [
+        "Fix README.md#L315: change (skill/README.md) to (skills/README.md)",
+        "Fix README.md#L3: change 'out of the box sessions' to 'out-of-the-box sessions'",
+        "Fix README.md#L296: change 'step tracking schema' to 'step-tracking schema'"
+      ],
+      "addresses": ["A", "B", "C"]
+    },
+    {
+      "id": "S002",
+      "title": "Add language identifiers to all fenced code blocks in README.md",
+      "status": "done",
+      "done_when": "All 9 bare fenced code blocks have language identifiers (text, json, or bash as appropriate)",
+      "depends_on": [],
+      "files": ["README.md"],
+      "tasks": [
+        "Audit all fenced code blocks in README.md",
+        "Add appropriate language identifier to each: text for plain scratchpad content, json for JSON blocks, bash for shell commands"
+      ],
+      "addresses": ["D"]
+    },
+  ]
+}
+```
+
+## Recommendations
+
+S001 and S002 both touch README.md but different parts. Recommend a single commit addressing all README.md fixes.
+
+## Files to Modify
+
+- `README.md` -- fix broken link, hyphenation, and add language identifiers (S001, S002)

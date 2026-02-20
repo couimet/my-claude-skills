@@ -1,0 +1,15 @@
+[PR feedback] Remove stale S003 reference from Recommendations section
+
+When Feedback H was flipped from ACCEPT to IGNORE (removing S003), the
+second Recommendations paragraph was updated but the first paragraph
+still said "All three steps are independent... S003 is a standalone fix."
+Deleted the stale paragraph; the remaining text correctly describes the
+two-step plan.
+
+Benefits:
+- Recommendations section now matches the actual implementation plan
+
+Ignored Feedback:
+- Same stale text in demo snapshots 0036, 0038, 0041: these are frozen-in-time artifacts that accurately capture the oversight when each snapshot was taken
+
+Ref: https://github.com/couimet/my-claude-skills/pull/11#pullrequestreview-3829645589

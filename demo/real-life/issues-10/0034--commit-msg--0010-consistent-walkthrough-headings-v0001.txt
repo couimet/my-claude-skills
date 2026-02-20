@@ -1,0 +1,7 @@
+[fix] Make all walkthrough step headings promote their skills consistently
+
+Steps 2, 3, and 5 used the pattern `/skill-name` — description` but steps 1 and 4 used plain text headings. Readers scanning the walkthrough now see every skill name at heading level, giving an immediate sense of what tools are available at each phase.
+
+Benefits:
+- All 5 walkthrough headings now follow the same visual pattern
+- Skill names render in monospace on GitHub, making them scannable at a glance

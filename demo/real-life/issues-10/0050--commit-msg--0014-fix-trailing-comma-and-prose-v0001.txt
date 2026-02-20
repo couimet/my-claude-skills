@@ -1,0 +1,12 @@
+[PR feedback] Fix trailing comma in PR feedback scratchpad JSON block
+
+The JSON implementation plan had a trailing comma after the last step
+(invalid per RFC 8259).
+
+Benefits:
+- JSON block now parses correctly
+
+Ignored Feedback:
+- Prose wordiness in demo snapshots 0044 and 0045: CodeRabbit flagged committed snapshot files, but these are copies of ephemeral working scratchpads. Polishing git-ignored files based on feedback aimed at their snapshots adds no value.
+
+Ref: https://github.com/couimet/my-claude-skills/pull/11#pullrequestreview-3829680372

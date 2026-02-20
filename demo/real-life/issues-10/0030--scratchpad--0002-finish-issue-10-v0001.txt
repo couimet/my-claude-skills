@@ -1,0 +1,36 @@
+[issues/10] Add meat to README
+
+## Summary
+
+Rewrites the landing README from a 25-line stub into a comprehensive guide with 8 sections: problem-statement hook, installation, quick start with real output, full workflow walkthrough with Mermaid lifecycle diagram, design philosophy, skills reference tables, contributing guide, and resources. Every inline example links to real artifacts from issue #10's own workflow — the README eats its own dog food.
+
+The `demo/real-life/issues-10/` folder contains 29 chronologically numbered artifacts (scratchpads, question files, commit messages, README snapshots) with a TIMELINE.md narrative spine. Readers can follow the entire skill lifecycle from bare issue to finished PR.
+
+## Changes
+
+- Rewrite README.md from 25 lines to ~320 lines across 8 sections
+- Add Mermaid diagram showing the issue lifecycle flow
+- Add collapsible `<details>` blocks with real artifact excerpts
+- Add "Why I Built These" philosophy section (7 principles)
+- Add "Skills Reference" with two tables: 9 invocable commands + 4 auto-consulted skills
+- Add "Making These Your Own" contributing guide and "Resources" with official Claude Code links
+- Create `demo/real-life/issues-10/` with 29 versioned artifacts + TIMELINE.md
+- Remove old `examples/` directory (replaced by `demo/`)
+
+## Test Plan
+
+- [ ] All `<details>` blocks expand correctly on GitHub
+- [ ] Mermaid diagram renders correctly on GitHub
+- [ ] All relative links in README resolve to existing files
+- [ ] Demo folder listing matches TIMELINE.md entries 1:1 (29 numbered files)
+- [ ] Official Claude Code skills documentation linked (inline + resources section)
+
+## Documentation
+
+- CHANGELOG: Not needed — no code changes, documentation only
+- README: This IS the README update
+- skills/README.md: No changes needed — root README links to it for architecture depth
+
+## Related
+
+- Closes #10

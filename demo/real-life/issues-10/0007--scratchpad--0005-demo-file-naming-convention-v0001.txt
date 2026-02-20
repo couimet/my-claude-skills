@@ -1,0 +1,107 @@
+Demo File Naming Convention — File-Placement Prefix + Version Suffix Fix
+
+Two issues to resolve before we start executing implementation steps.
+
+## Issue 1: Missing file-placement category in demo filenames
+
+The flat `demo/real-life/issues-10/` folder needs to be browsable without nested sub-folders. Currently, files like `0004-readme-enrichment-plan-0001.txt` don't tell you at a glance whether it's a scratchpad, question file, commit message, or breadcrumb. The `/file-placement` skill defines 5 categories — we should surface that in the filename.
+
+### Proposal
+
+Prefix each demo artifact with its file-placement category, separated by a delimiter.
+
+The categories from file-placement/SKILL.md:
+- `scratchpad` — from `.scratchpads/`
+- `question` — from `.claude-questions/`
+- `commit-msg` — from `.commit-msgs/`
+- `breadcrumb` — from `.breadcrumbs/`
+- `timeline` — special case for TIMELINE.md (not a skill artifact, but the narrative spine)
+- `readme` — special case for README.md snapshots (the actual deliverable)
+
+### Delimiter options
+
+A) Double-dash: `scratchpad--0004-readme-enrichment-plan-v0001.txt`
+B) Underscore: `scratchpad_0004-readme-enrichment-plan-v0001.txt`
+C) Dot prefix: `scratchpad.0004-readme-enrichment-plan-v0001.txt`
+
+Leaning toward A (double-dash) — it visually separates the category from the original filename without colliding with hyphens already in the slug or the single-underscore convention in some systems. Sorting groups files by category first, then by original name.
+
+## Issue 2: Missing `v` prefix on version suffix
+
+Decision in .claude-questions/0002-demo-approach.txt#L28 says NNNN suffix format, but we forgot the `v` prefix to distinguish the version number from the original NNNN file sequence number.
+
+Current (wrong): `0004-readme-enrichment-plan-0001.txt`
+Correct: `0004-readme-enrichment-plan-v0001.txt`
+
+Without the `v`, a filename like `0001-readme-design-decisions-0001.txt` has two undifferentiated NNNN blocks — confusing. The `v` makes it instantly clear: `0001-readme-design-decisions-v0001.txt` → file #0001, version #0001.
+
+## Combined naming pattern
+
+```
+<category>--<original-filename>-v<NNNN>.<ext>
+```
+
+## What the current demo/ files would become
+
+| Current name | New name |
+|---|---|
+| `0004-readme-enrichment-plan-0001.txt` | `scratchpad--0004-readme-enrichment-plan-v0001.txt` |
+| `0004-readme-enrichment-plan-0002.txt` | `scratchpad--0004-readme-enrichment-plan-v0002.txt` |
+| `0001-readme-design-decisions-0001.txt` | `question--0001-readme-design-decisions-v0001.txt` |
+| `0001-readme-design-decisions-0002.txt` | `question--0001-readme-design-decisions-v0002.txt` |
+| `0002-demo-approach-0001.txt` | `question--0002-demo-approach-v0001.txt` |
+| `0002-demo-approach-0002.txt` | `question--0002-demo-approach-v0002.txt` |
+| `TIMELINE.md` | `TIMELINE.md` (no prefix needed — unique, always one file) |
+
+### How it looks when sorted in the folder
+
+```
+question--0001-readme-design-decisions-v0001.txt
+question--0001-readme-design-decisions-v0002.txt
+question--0002-demo-approach-v0001.txt
+question--0002-demo-approach-v0002.txt
+scratchpad--0004-readme-enrichment-plan-v0001.txt
+scratchpad--0004-readme-enrichment-plan-v0002.txt
+TIMELINE.md
+```
+
+Files naturally group by category. Within each category, the original numbering and version suffix provide chronological order.
+
+## What needs updating once approved
+
+1. Rename the 6 existing files in `demo/real-life/issues-10/`
+2. Update TIMELINE.md artifact links to use new names
+3. Update .scratchpads/0004-readme-enrichment-plan.txt#L27-L38 (demo conventions and examples)
+4. Update .scratchpads/0004-readme-enrichment-plan.txt#L63-L72 (S001 file list)
+
+## Implementation Plan
+
+```json
+{
+  "steps": [
+    {
+      "id": "S001",
+      "title": "Rename existing demo files and update all references",
+      "status": "pending",
+      "done_when": "All 6 demo files renamed with category prefix and v-suffix, TIMELINE.md links updated, main scratchpad conventions section updated",
+      "depends_on": [],
+      "files": [
+        "demo/real-life/issues-10/question--0001-readme-design-decisions-v0001.txt",
+        "demo/real-life/issues-10/question--0001-readme-design-decisions-v0002.txt",
+        "demo/real-life/issues-10/question--0002-demo-approach-v0001.txt",
+        "demo/real-life/issues-10/question--0002-demo-approach-v0002.txt",
+        "demo/real-life/issues-10/scratchpad--0004-readme-enrichment-plan-v0001.txt",
+        "demo/real-life/issues-10/scratchpad--0004-readme-enrichment-plan-v0002.txt",
+        "demo/real-life/issues-10/TIMELINE.md",
+        ".scratchpads/0004-readme-enrichment-plan.txt"
+      ],
+      "tasks": [
+        "Rename 6 files in demo/real-life/issues-10/ to new convention",
+        "Update TIMELINE.md artifact links to use new filenames",
+        "Update main scratchpad Demo Artifact Conventions section and S001 file list",
+        "Copy this scratchpad (0005) and updated main scratchpad (0004) to demo/ with new naming convention"
+      ]
+    }
+  ]
+}
+```

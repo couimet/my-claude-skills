@@ -1,6 +1,6 @@
 # my-claude-skills
 
-Claude Code is powerful, but out-of-the-box sessions are ephemeral — context evaporates between tasks, there's no trail of decisions made along the way, and commit messages end up as whatever the AI felt like writing. I built these skills because I wanted Claude to be a structured development partner, not just a code generator.
+Claude Code is powerful, but out of the box sessions are ephemeral — context evaporates between tasks, there's no trail of decisions made along the way, and commit messages end up as whatever the AI felt like writing. I built these skills because I wanted Claude to be a structured development partner, not just a code generator.
 
 This is a collection of portable [Claude Code skills](https://code.claude.com/docs/en/skills) that add lightweight workflow conventions to every project I work on. They've been iterated over many real issues, PR reviews, and side-quests. Nothing here is theoretical — I use every one of these daily.
 
@@ -27,7 +27,7 @@ Once installed, try these in any project:
 
 ### `/scratchpad` — Create a working document
 
-```text
+```
 /scratchpad plan the authentication refactor
 ```
 
@@ -36,7 +36,7 @@ Creates a `.scratchpads/0001-plan-the-authentication-refactor.txt` file with str
 <details>
 <summary>See a real scratchpad from this repo</summary>
 
-```text
+```
 Issue #10 — Add Meat to README: Enrichment Plan
 
 This scratchpad analyzes the current README state and suggests ways
@@ -61,7 +61,7 @@ Full file: [demo/real-life/issues-10/0001--scratchpad--0004-readme-enrichment-pl
 
 ### `/question` — Gather design decisions
 
-```text
+```
 /question authentication strategy choices
 ```
 
@@ -70,7 +70,7 @@ Creates a `.claude-questions/0001-authentication-strategy-choices.txt` with stru
 <details>
 <summary>See a real question file from this repo</summary>
 
-```text
+```
 ## Q001: Should the root README be the single comprehensive document,
          or should it stay lean and link to deeper pages?
 
@@ -92,7 +92,7 @@ Full file: [demo/real-life/issues-10/0002--question--0001-readme-design-decision
 
 ### `/commit-msg` — Draft a commit message
 
-```text
+```
 /commit-msg add authentication middleware
 ```
 
@@ -101,7 +101,7 @@ Creates a `.commit-msgs/0001-add-authentication-middleware.txt` focused on WHY, 
 <details>
 <summary>See a real commit message from this repo</summary>
 
-```text
+```
 [docs] Bootstrap demo infrastructure and start-issue plan for README overhaul
 
 Establishes the "eat your own dog food" approach: issue #10's own workflow
@@ -139,7 +139,7 @@ graph LR
 
 Every artifact linked below is real — generated while building the README you're reading right now ([issue #10](https://github.com/couimet/my-claude-skills/issues/10)). The full unredacted history lives in [`demo/real-life/issues-10/`](demo/real-life/issues-10/).
 
-### 1. `/scratchpad` + `/question` — explore before committing to a plan
+### 1. Pre-planning: explore before committing to a plan
 
 Before any branch existed, I used `/scratchpad` to analyze the bare issue and `/question` to surface 12 design decisions. The questions file captures things like: should the README be one page or hub-and-spoke? Real examples or fabricated ones? What tone?
 
@@ -149,7 +149,7 @@ The user answered all 12 questions by editing the file directly — that's the c
 <summary>See how a question evolves from asked to answered</summary>
 
 **Before (Claude's question):**
-```text
+```
 ## Q003: Should inline examples use real artifacts from this repo
          or fabricated/generic snippets?
 
@@ -164,7 +164,7 @@ A003: [RECOMMENDED] A
 ```
 
 **After (user's answer — a game-changer):**
-```text
+```
 A003: A; I'd like to take it further — use the current conversation
 as the demo. "Eat your own dog food." Leave issue #10 bare as-is
 and build the full-cycle demo from it...
@@ -210,7 +210,7 @@ Full file: [demo/real-life/issues-10/0009--scratchpad--0001-start-issue-plan-v00
 
 This is the core loop. You point Claude at a specific step using a code reference — a file path with line numbers:
 
-```text
+```
 /tackle-scratchpad-block .scratchpads/issues/10/0001-start-issue-plan.txt#L26-L41
 ```
 
@@ -239,7 +239,7 @@ Compare: [before](demo/real-life/issues-10/0009--scratchpad--0001-start-issue-pl
 
 </details>
 
-### 4. `/breadcrumb` + `/start-side-quest` — handle detours without derailing
+### 4. Side-quests and breadcrumbs
 
 Mid-issue, you'll often notice orthogonal improvements — a helper function that deserves its own PR, a naming inconsistency worth fixing. Instead of polluting the current branch:
 
@@ -254,65 +254,6 @@ When all steps are done, `/finish-issue` verifies the work, collects breadcrumbs
 
 The [`demo/real-life/issues-10/`](demo/real-life/issues-10/) folder contains every artifact from this issue's lifecycle — scratchpads, questions, commit messages, and README snapshots — numbered chronologically. [`TIMELINE.md`](demo/real-life/issues-10/TIMELINE.md) provides the narrative context for each one.
 
-## Why I Built These
+## Skills
 
-I've used Claude Code on dozens of real issues and kept running into the same friction points. These skills encode the patterns that worked:
-
-- **Files over chat.** Every decision, plan, and question lives in a file — not buried in terminal scroll. If you use [RangeLink](https://github.com/couimet/rangeLink) or similar tools, the file references become clickable navigation.
-- **Crash-proof context.** Claude Code sessions can compact, disconnect, or run out of context. Because everything is written to disk as it happens, you can resume from any scratchpad in a fresh session without losing anything.
-- **Organized, not scattered.** Working files go in predictable locations (`.scratchpads/`, `.claude-questions/`, `.commit-msgs/`, `.breadcrumbs/`) with auto-numbering and issue-scoped subdirectories. No manual file management.
-- **You control execution.** Claude proposes plans and drafts commit messages. You review, edit, and execute. No auto-commits, no surprise pushes, no "let me just fix that for you."
-- **Ephemeral vs. permanent.** Working files are git-ignored — they're your private workspace. Only real code and documentation get committed. This distinction is enforced by convention, not tooling.
-- **Plan, then execute.** `/start-issue` creates the plan. `/tackle-scratchpad-block` executes one step at a time. The plan is always visible, always editable, always the source of truth for what's left to do.
-- **No magic.** These are plain markdown files that Claude reads as instructions. There's no framework, no runtime, no dependencies. Fork the repo, edit a `SKILL.md`, and changes take effect immediately — symlinks mean edits are picked up without re-running anything. You only run `install.sh` again when adding or removing skills.
-
-## Skills Reference
-
-### What You Type
-
-| Command | What It Does |
-| --- | --- |
-| `/scratchpad <desc>` | Create a working document — plans, analysis, PR drafts, anything temporary |
-| `/question <topic>` | Surface design decisions as a structured Q&A file you edit in-place |
-| `/commit-msg <desc>` | Draft a commit message focused on WHY, not WHAT |
-| `/breadcrumb <note>` | Drop a timestamped note collected by `/finish-issue` for the PR description |
-| `/start-issue <url>` | Analyze a GitHub issue, create a branch, and produce an implementation plan |
-| `/tackle-scratchpad-block <path#lines>` | Execute a specific step from a plan — the core implementation loop |
-| `/start-side-quest <desc>` | Branch off for an orthogonal improvement without polluting the current issue |
-| `/tackle-pr-comment <url>` | Analyze PR feedback and create a plan to address it |
-| `/finish-issue` | Verify work, collect breadcrumbs, check docs, and generate a PR description |
-
-### What Works Automatically
-
-These skills aren't invoked directly — Claude consults them when the context matches.
-
-| Skill | When It Activates |
-| --- | --- |
-| `code-ref` | When generating file/line references — formats them as GitHub-style permalinks, clickable in editors with [RangeLink](https://github.com/couimet/rangeLink) installed (VS Code/Cursor don't recognize the suffix natively) |
-| `file-placement` | When deciding where to put a new file — routes to the right directory |
-| `issue-context` | When on an `issues/<N>` branch — scopes working files to issue subdirectories |
-| `prose-style` | When writing prose to working files — applies consistent formatting conventions |
-
-For architecture details, the two-tier design, and step-tracking schema, see [skills/README.md](skills/README.md).
-
-## Making These Your Own
-
-These skills are designed to be forked and adapted. Each skill is a standalone `SKILL.md` file — plain markdown with instructions Claude follows. There's no coupling between them beyond naming conventions.
-
-To customize:
-
-1. **Fork this repo** and clone it locally
-2. **Edit any `SKILL.md`** in `skills/` — changes take effect immediately through symlinks
-3. **Add new skills** by creating a new directory under `skills/` with a `SKILL.md`, then re-run `install.sh`
-4. **Remove skills** by deleting the directory and re-running `install.sh`
-
-If you build something useful, PRs are welcome. These skills evolved from my own workflow friction — yours will be different, and that's the point.
-
-## Resources
-
-- [Claude Code skills documentation](https://code.claude.com/docs/en/skills) — the official guide to how skills work, including the `SKILL.md` format spec
-- [Claude Code documentation](https://code.claude.com/docs/en/) — full Claude Code reference
-- [skills/README.md](skills/README.md) — this repo's skill inventory, architecture notes, and step tracking schema
-- [RangeLink](https://github.com/couimet/rangeLink) — VS Code/Cursor extension that makes `file#line` references clickable (used throughout these skills via the `code-ref` convention)
-
-Everything here builds on Claude Code's official skills system — we're not inventing a framework, just adding conventions on top of what Anthropic already provides.
+See [skills/README.md](skills/README.md) for the full inventory and architecture.

@@ -1,0 +1,17 @@
+[PR feedback] Fix stale Exchange 28 narrative in TIMELINE.md
+
+Exchange 28 still described the pre-correction plan ("All 4 items accepted,"
+"Three steps: S001...S003") after we had corrected artifacts 0047-0050 to
+reflect only 2 accepted items and 2 steps. Updated the narrative and artifact
+description to match the corrected state.
+
+Benefits:
+- TIMELINE.md now accurately describes what the artifacts contain
+- No cross-artifact inconsistencies remain
+
+Ignored Feedback:
+- Stale "pending" status in 0047 v0001: this is the intentional "before" state in our versioned artifact pairs, not a stale field.
+- "11 items" count in demo snapshot 0048: frozen snapshot, not retroactively editable.
+- "at each point in time" wordiness in demo snapshot 0048: frozen snapshot, same nitpick as previous review.
+
+Ref: https://github.com/couimet/my-claude-skills/pull/11#pullrequestreview-3829795386

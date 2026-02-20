@@ -1,0 +1,7 @@
+[fix] Capture S001 status transition in demo scratchpad snapshot
+
+When /tackle-scratchpad-block executed against the demo copy of the start-issue plan, it updated the working scratchpad but failed to persist a new versioned snapshot reflecting the status change from "pending" to "done". The demo folder should show every state transition so readers can follow how step tracking evolves.
+
+Benefits:
+- Demo folder now accurately reflects the full lifecycle of a scratchpad through execution
+- Readers can diff v0001 vs v0002 to see exactly what /tackle-scratchpad-block changes

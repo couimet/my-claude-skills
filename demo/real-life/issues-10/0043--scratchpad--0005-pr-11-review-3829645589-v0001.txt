@@ -1,0 +1,57 @@
+# PR #11 Comment Response
+
+Source: https://github.com/couimet/my-claude-skills/pull/11#pullrequestreview-3829645589
+
+## Reviewer Feedback Summary
+
+CodeRabbit's second review pass caught a stale Recommendations paragraph in the PR feedback scratchpad: the text still references "all three steps" and S003, even though S003 was removed when Feedback H was flipped from ACCEPT to IGNORE. The same stale text appears in 3 demo snapshot versions (0036, 0038, 0041) because it was present in the working scratchpad when each snapshot was taken.
+
+## Analysis
+
+### Feedback A: Stale S003 reference in Recommendations section of scratchpad 0036 (v0002)
+
+The Recommendations section in 0036 has two paragraphs: the first says "All three steps are independent and straightforward... S003 is a standalone fix" while the second (updated in Exchange 23) correctly says only S001 and S002 remain. The first paragraph was missed during the S003 removal.
+
+This is a genuine oversight in the working scratchpad that then propagated to demo copies.
+
+Decision: ACCEPT
+Reason: The working scratchpad still has the stale text and should be corrected. However, the fix only applies to the working file and the next demo copy forward -- not to historical snapshots.
+
+### Feedback B: Same stale text in demo snapshots 0038 (v0003) and 0041 (v0004)
+
+CodeRabbit flags the same stale paragraph in two later demo snapshots. These inherited the issue from the working scratchpad.
+
+Decision: IGNORE
+Reason: Demo snapshots are frozen-in-time records. They accurately capture the state of the working scratchpad at the moment they were taken -- including the oversight. Retroactively fixing them would falsify the historical record. The correction will appear in the next version (v0005).
+
+Note: ACCEPT items flow to Implementation Plan steps. IGNORE items flow to the commit message's "Ignored Feedback" section.
+
+## Implementation Plan
+
+```json
+{
+  "steps": [
+    {
+      "id": "S001",
+      "title": "Fix stale Recommendations paragraph in working scratchpad",
+      "status": "pending",
+      "done_when": "Recommendations section no longer references S003 or 'three steps'",
+      "depends_on": [],
+      "files": [".scratchpads/issues/10/0004-pr-11-review-3826186415.txt"],
+      "tasks": [
+        "Remove the stale first paragraph ('All three steps are independent...S003 is a standalone fix to a demo artifact.')",
+        "The second paragraph already correctly describes the two-step plan"
+      ],
+      "addresses": ["A"]
+    }
+  ]
+}
+```
+
+## Recommendations
+
+Single-line fix: delete the stale paragraph. The second paragraph already captures the correct state.
+
+## Files to Modify
+
+- `.scratchpads/issues/10/0004-pr-11-review-3826186415.txt` -- remove stale Recommendations paragraph referencing S003
