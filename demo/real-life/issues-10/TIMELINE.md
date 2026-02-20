@@ -170,7 +170,7 @@ User approved the naming convention. Claude renamed all 6 existing demo files, c
 
 **2026-02-18 — User invokes `/tackle-scratchpad-block` on S002 of the main plan**
 
-The user ran `/tackle-scratchpad-block .scratchpads/0004-readme-enrichment-plan.txt#L132-L147` to execute S002 ("Create feature branch and formal start-issue flow"). This triggered:
+The user ran `/tackle-scratchpad-block demo/real-life/issues-10/0006--scratchpad--0004-readme-enrichment-plan-v0002.txt#L125-L140` to execute S002 ("Create feature branch and formal start-issue flow"). This triggered:
 
 1. Created `issues/10` branch from `origin/main`
 2. Invoked `/start-issue` against the GitHub issue, which created the formal implementation plan scratchpad at `.scratchpads/issues/10/0001-start-issue-plan.txt`
@@ -514,7 +514,7 @@ Decision: ACCEPT fixing the working scratchpad, IGNORE the demo snapshots (they 
 
 ### Exchange 27 — Execute S001: remove stale S003 reference from Recommendations
 
-**2026-02-19 — User invokes `/tackle-scratchpad-block .scratchpads/issues/10/0005-pr-11-review-3829645589.txt#L34-L46`**
+**2026-02-19 — User invokes `/tackle-scratchpad-block demo/real-life/issues-10/0043--scratchpad--0005-pr-11-review-3829645589-v0001.txt#L34-L46`**
 
 Deleted the stale first paragraph from the Recommendations section in the working PR feedback scratchpad (0004). The paragraph still referenced "All three steps" and S003, which had been removed in Exchange 23 but the first paragraph was missed. The second paragraph already correctly described the two-step plan.
 
