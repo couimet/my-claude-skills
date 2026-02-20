@@ -1,0 +1,70 @@
+# PR #11 Comment Response
+
+Source: https://github.com/couimet/my-claude-skills/pull/11#pullrequestreview-3829795386
+
+## Reviewer Feedback Summary
+
+CodeRabbit's fourth review pass found 4 items: a stale "pending" status in demo artifact 0047, an "11 items" vs "12 items" count discrepancy in demo artifact 0048, a stale Exchange 28 narrative in TIMELINE.md that still describes the pre-correction plan, and a repeated prose wordiness nitpick on a demo snapshot.
+
+## Analysis
+
+### Feedback A: Stale "pending" status in 0047 scratchpad v0001 (line 49)
+
+CodeRabbit flags that S001's status is "pending" in 0047 but the Recommendations section says S001 is done. It suggests changing the status to "done."
+
+Decision: IGNORE
+Reason: 0047 is the v0001 copy -- the "before" state. It intentionally shows S001 as `pending` so the diff to v0002 (0049) reveals only the status transition to `done`. CodeRabbit sees v0001 in isolation and misreads the stale-looking status. The versioning convention is working as designed.
+
+### Feedback B: "11 items" count discrepancy in 0048 (line 7)
+
+CodeRabbit flags that the summary says "11 items" but the breakdown (1 broken link + 2 hyphenation + 9 code fences) sums to 12. It suggests fixing the count.
+
+Decision: IGNORE
+Reason: 0048 is a frozen demo snapshot of working scratchpad 0004. Frozen snapshots are historical records that capture the file as it existed at a point in time. Retroactively fixing them would falsify the chronological record.
+
+### Feedback C: Stale Exchange 28 narrative in TIMELINE.md (~lines 535-537)
+
+Exchange 28 still reads: "All 4 items accepted. [...] Three steps: S001 fixes trailing comma + prose in scratchpad 0004, S002 fixes prose in scratchpad 0005, S003 fixes code spans in TIMELINE.md." This describes the pre-correction plan. The corrected plan has only 2 items accepted (A and B), 2 ignored (C and D), and 2 steps (S001 trailing comma, S002 code spans). We updated artifacts 0047-0050 when altering the past but missed the TIMELINE narrative and artifact description.
+
+Decision: ACCEPT
+Reason: TIMELINE.md is a living document. Exchange 28's narrative must match the corrected artifacts it references. This is a genuine oversight from our "altering the past" work.
+
+### Feedback D: "at each point in time" wordiness in 0048 (line 44)
+
+Same prose nitpick as the previous review (Feedback C in scratchpad 0006). LanguageTool flags "at each point in time" as redundant.
+
+Decision: IGNORE
+Reason: Same as before -- 0048 is a frozen demo snapshot. Prose polish on historical records adds no value.
+
+Note: ACCEPT items flow to Implementation Plan steps. IGNORE items flow to the commit message's "Ignored Feedback" section.
+
+## Implementation Plan
+
+```json
+{
+  "steps": [
+    {
+      "id": "S001",
+      "title": "Fix stale Exchange 28 narrative in TIMELINE.md",
+      "status": "pending",
+      "done_when": "Exchange 28 reflects the corrected plan: 2 items accepted (A, B), 2 ignored (C, D), 2 steps (S001 trailing comma, S002 code spans), and artifact description no longer says 'all 4 items accepted'",
+      "depends_on": [],
+      "files": ["demo/real-life/issues-10/TIMELINE.md"],
+      "tasks": [
+        "Rewrite TIMELINE.md lines 535-537: replace 'All 4 items accepted' with accurate summary (A and B accepted, C and D ignored)",
+        "Replace 'Three steps: S001...S003' with 'Two steps: S001 fixes trailing comma in scratchpad 0004, S002 fixes code spans in TIMELINE.md'",
+        "Update artifact description on line 541: remove 'all 4 items accepted'"
+      ],
+      "addresses": ["C"]
+    }
+  ]
+}
+```
+
+## Recommendations
+
+S001 is a straightforward text correction in TIMELINE.md. The other three items (A, B, D) are all correctly ignored: A misunderstands the versioning convention, B and D target frozen demo snapshots.
+
+## Files to Modify
+
+- `demo/real-life/issues-10/TIMELINE.md` -- fix Exchange 28 narrative and artifact description (S001)

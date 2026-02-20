@@ -534,11 +534,11 @@ Deleted the stale first paragraph from the Recommendations section in the workin
 
 CodeRabbit's third pass found 4 items: a trailing comma making the JSON block invalid in the PR feedback scratchpad, broken code spans in TIMELINE.md where inner backticks for skill names break rendering, and two LanguageTool wordiness nitpicks ("at each point in time" and "at the moment they were taken").
 
-All 4 items accepted. Demo snapshot copies (0044, 0045) stay frozen; fixes apply to the working scratchpads and TIMELINE.md. Three steps: S001 fixes trailing comma + prose in scratchpad 0004, S002 fixes prose in scratchpad 0005, S003 fixes code spans in TIMELINE.md.
+Two items accepted (A: trailing comma, B: code spans), two ignored (C and D: prose wordiness in demo snapshots targeting ephemeral working files). Two steps: S001 fixes trailing comma in scratchpad 0004, S002 fixes code spans in TIMELINE.md.
 
 **Artifacts produced:**
 
-- [0047--scratchpad--0006-pr-11-review-3829680372-v0001.txt](0047--scratchpad--0006-pr-11-review-3829680372-v0001.txt) — Analysis of CodeRabbit's third review with all 4 items accepted.
+- [0047--scratchpad--0006-pr-11-review-3829680372-v0001.txt](0047--scratchpad--0006-pr-11-review-3829680372-v0001.txt) — Analysis of CodeRabbit's third review with implementation plan.
 
 <!-- YOUR TERMINAL SNIPPET (optional) -->
 
@@ -575,6 +575,35 @@ Four lines in TIMELINE.md used single-backtick code spans to wrap heading patter
 
 ---
 
+### Exchange 31 — /tackle-pr-comment: CodeRabbit's fourth review pass
+
+**2026-02-20 — User invokes `/tackle-pr-comment https://github.com/couimet/my-claude-skills/pull/11#pullrequestreview-3829795386`**
+
+CodeRabbit's fourth review found 4 items. Three target frozen demo snapshots (IGNORE): a "pending" status in v0001 that is the intentional before-state, an "11 items" count discrepancy, and a repeated prose wordiness nitpick. The fourth was legitimate: Exchange 28's narrative still described the pre-correction plan ("All 4 items accepted," "Three steps: S001...S003") after artifacts 0047-0050 had been corrected.
+
+**Artifacts produced:**
+
+- [0053--scratchpad--0008-pr-11-review-3829795386-v0001.txt](0053--scratchpad--0008-pr-11-review-3829795386-v0001.txt) — Analysis of CodeRabbit's fourth review (S001 pending).
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+---
+
+### Exchange 32 — Execute S001: fix stale Exchange 28 narrative
+
+**2026-02-20 — User invokes `/tackle-scratchpad-block demo/real-life/issues-10/0053--scratchpad--0008-pr-11-review-3829795386-v0001.txt#L46C5-L59C6`**
+
+Fixed Exchange 28's narrative to reflect the actual corrected state: 2 items accepted (A: trailing comma, B: code spans), 2 ignored (C and D: prose wordiness targeting ephemeral files), and 2 steps (S001 trailing comma, S002 code spans). Also updated the artifact description on the same exchange.
+
+**Artifacts produced:**
+
+- [0054--commit-msg--0016-fix-stale-exchange-28-narrative-v0001.txt](0054--commit-msg--0016-fix-stale-exchange-28-narrative-v0001.txt) — Commit message for the Exchange 28 narrative fix.
+- [0055--scratchpad--0008-pr-11-review-3829795386-v0002.txt](0055--scratchpad--0008-pr-11-review-3829795386-v0002.txt) — S001 marked done.
+
+<!-- YOUR TERMINAL SNIPPET (optional) -->
+
+---
+
 ## Final Artifact Count
 
-52 numbered files + TIMELINE.md. Every numbered file has a corresponding entry in this timeline.
+55 numbered files + TIMELINE.md. Every numbered file has a corresponding entry in this timeline.
