@@ -22,12 +22,12 @@
 
 | Skill | Invocation | Foundation Dependencies |
 | --- | --- | --- |
-| `start-issue` | `/start-issue <url>` | `/scratchpad`, `/question` |
+| `create-github-issue` | `/create-github-issue <title-or-path>` | `/scratchpad` (reads), `/question` |
 | `finish-issue` | `/finish-issue [number]` | `/scratchpad` (reads), `/question`, breadcrumbs (reads) |
-| `tackle-scratchpad-block` | `/tackle-scratchpad-block <path#lines>` | `/question`, `/commit-msg`, `/scratchpad` (reads) |
+| `start-issue` | `/start-issue <url>` | `/scratchpad`, `/question` |
 | `start-side-quest` | `/start-side-quest <desc>` | `/scratchpad`, `/question`, `/commit-msg` (ref) |
 | `tackle-pr-comment` | `/tackle-pr-comment <url>` | `/scratchpad`, `/question`, `/commit-msg` |
-| `create-github-issue` | `/create-github-issue <title-or-path>` | `/scratchpad` (reads), `/question` |
+| `tackle-scratchpad-block` | `/tackle-scratchpad-block <path#lines>` | `/question`, `/commit-msg`, `/scratchpad` (reads) |
 
 ## Architecture
 
