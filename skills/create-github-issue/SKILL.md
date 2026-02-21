@@ -44,7 +44,7 @@ Strip references to ephemeral local paths that don't exist on GitHub:
 
 **Print the list of stripped references** so the user can verify nothing important was removed. Format as:
 
-```
+```text
 Stripped ephemeral references:
 - .scratchpads/issues/42/0001-plan.txt (line 12)
 - .claude-questions/issues/42/0001-scope.txt (line 28)
@@ -52,7 +52,7 @@ Stripped ephemeral references:
 
 If no ephemeral references were found, print:
 
-```
+```text
 No ephemeral references found — body is clean.
 ```
 
@@ -84,7 +84,7 @@ Tell the user the repo uses structured labels and present them grouped by prefix
 
 Example prompt:
 
-```
+```text
 This repo uses structured labels beyond GitHub defaults:
 
   type: bug, enhancement, feature, refactor
@@ -112,6 +112,8 @@ Omit the `--label` flag entirely when no labels are selected. Capture the return
 
 If a parent issue number was extracted in Step 2, link the new issue as a sub-issue using the GitHub GraphQL API.
 
+Parse `OWNER` and `REPO` from the issue URL returned in Step 6 (`https://github.com/{OWNER}/{REPO}/issues/{NUMBER}`).
+
 First, get the node IDs:
 
 ```bash
@@ -138,13 +140,19 @@ gh api graphql -H 'GraphQL-Features: sub_issues' -f query='
 ' -f parentId=PARENT_NODE_ID -f childId=CHILD_NODE_ID
 ```
 
+If either `gh api graphql` call returns an error (e.g., `"NOT_FOUND"`, `"FORBIDDEN"`, or an unknown field/mutation), skip sub-issue linking and note the failure in the Step 8 report as:
+
+```text
+Sub-issue linking: failed (<error summary>) — link manually if needed.
+```
+
 If no parent was specified, skip this step.
 
 ## Step 8: Report
 
 Print a summary:
 
-```
+```text
 Created: <ISSUE_URL>
 Title: <TITLE>
 Labels: <LABEL1>, <LABEL2>
