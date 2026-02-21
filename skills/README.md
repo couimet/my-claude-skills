@@ -27,6 +27,7 @@
 | `tackle-scratchpad-block` | `/tackle-scratchpad-block <path#lines>` | `/question`, `/commit-msg`, `/scratchpad` (reads) |
 | `start-side-quest` | `/start-side-quest <desc>` | `/scratchpad`, `/question`, `/commit-msg` (ref) |
 | `tackle-pr-comment` | `/tackle-pr-comment <url>` | `/scratchpad`, `/question`, `/commit-msg` |
+| `create-github-issue` | `/create-github-issue <title-or-path>` | `/scratchpad` (reads), `/question` |
 
 ## Architecture
 
