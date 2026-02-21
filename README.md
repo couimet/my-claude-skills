@@ -272,15 +272,16 @@ I've used Claude Code on dozens of real issues and kept running into the same fr
 
 | Command | What It Does |
 | --- | --- |
-| `/scratchpad <desc>` | Create a working document — plans, analysis, PR drafts, anything temporary |
-| `/question <topic>` | Surface design decisions as a structured Q&A file you edit in-place |
-| `/commit-msg <desc>` | Draft a commit message focused on WHY, not WHAT |
 | `/breadcrumb <note>` | Drop a timestamped note collected by `/finish-issue` for the PR description |
+| `/commit-msg <desc>` | Draft a commit message focused on WHY, not WHAT |
+| `/create-github-issue <title-or-path>` | Create a GitHub issue from a scratchpad draft or inline description |
+| `/finish-issue` | Verify work, collect breadcrumbs, check docs, and generate a PR description |
+| `/question <topic>` | Surface design decisions as a structured Q&A file you edit in-place |
+| `/scratchpad <desc>` | Create a working document — plans, analysis, PR drafts, anything temporary |
 | `/start-issue <url>` | Analyze a GitHub issue, create a branch, and produce an implementation plan |
-| `/tackle-scratchpad-block <path#lines>` | Execute a specific step from a plan — the core implementation loop |
 | `/start-side-quest <desc>` | Branch off for an orthogonal improvement without polluting the current issue |
 | `/tackle-pr-comment <url>` | Analyze PR feedback and create a plan to address it |
-| `/finish-issue` | Verify work, collect breadcrumbs, check docs, and generate a PR description |
+| `/tackle-scratchpad-block <path#lines>` | Execute a specific step from a plan — the core implementation loop |
 
 ### What Works Automatically
 
