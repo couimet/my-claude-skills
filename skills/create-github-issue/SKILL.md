@@ -1,33 +1,33 @@
 ---
 name: create-github-issue
-description: Create a GitHub issue from a scratchpad draft or inline description — with smart label discovery and sub-issue linking
-argument-hint: <scratchpad-path-or-title>
+description: Create a GitHub issue from a file draft or inline description — with smart label discovery and sub-issue linking
+argument-hint: <file-path-or-title>
 allowed-tools: Read, Glob, Bash(gh label list *), Bash(gh issue create *), Bash(gh api graphql *)
 ---
 
 # Create GitHub Issue
 
-Create a GitHub issue with smart label discovery and optional sub-issue linking. Reads from a scratchpad draft or accepts inline input.
+Create a GitHub issue with smart label discovery and optional sub-issue linking. Reads from any file (scratchpad, markdown, extensionless — including drag-dropped paths) or accepts an inline title.
 
-**Input:** $ARGUMENTS (a `.scratchpads/` file path, or a title for interactive creation)
+**Input:** $ARGUMENTS (a file path, or a title for interactive creation)
 
 ## Step 1: Parse Input
 
 Determine the input mode from `$ARGUMENTS`:
 
-- **Scratchpad path** — if the argument starts with `.scratchpads/` or ends with `.txt` and the file exists, treat it as a draft to extract from.
+- **File path** — if the argument points to an existing file (any path, any extension or none), treat it as a draft to extract from. This covers `.scratchpads/*.txt`, markdown files, extensionless files, and drag-dropped paths from the terminal.
 - **Inline title** — otherwise, treat the entire argument as the issue title for interactive creation.
 
 ## Step 2: Extract Issue Content
 
-### From Scratchpad Draft
+### From File
 
-Read the scratchpad file and extract:
+Read the file and extract:
 
 - **Title** — the first `#`-level heading (strip the `#` prefix)
 - **Body** — everything after the title heading
 
-If the scratchpad contains a `## Parent` or `Parent: #NN` line, extract the parent issue number for sub-issue linking in Step 7.
+If the file contains a `## Parent` or `Parent: #NN` line, extract the parent issue number for sub-issue linking in Step 7.
 
 ### From Inline Title
 
