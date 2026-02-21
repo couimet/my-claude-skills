@@ -102,6 +102,10 @@ Source: {FULL_PR_COMMENT_URL}
 
 {1-3 sentence summary of what the reviewer is asking for}
 
+## Recommendations
+
+{Your recommendations for the best approach, with reasoning}
+
 ## Analysis
 
 ### Feedback A: {short title}
@@ -156,10 +160,6 @@ Note: ACCEPT items flow to Implementation Plan steps. IGNORE items flow to the c
 Note: A single step can address multiple feedback items (as shown in S001 above).
 Feedback items marked IGNORE in the Analysis section should not appear in any step.
 Always set `"status": "pending"` — `/tackle-scratchpad-block` manages status transitions during execution.
-
-## Recommendations
-
-{Your recommendations for the best approach, with reasoning}
 
 ## Files to Modify
 
