@@ -56,6 +56,12 @@ Type/Priority/Scope: from labels
 - Parent issue context: how this fits into broader plan (if applicable)
 - Key insight from codebase exploration that shapes the implementation
 
+## Assumptions Made
+
+List any reasonable defaults assumed to avoid blocking on minor decisions:
+
+- "Assuming X because Y" — document reasoning
+
 ## Implementation Plan
 
 Numbered steps that are:
@@ -111,12 +117,6 @@ Steps are embedded as a fenced JSON block (see `/scratchpad` Step Tracking secti
 ```
 
 Note: Always set `"status": "pending"` when planning — `/tackle-scratchpad-block` manages status transitions during execution.
-
-## Assumptions Made
-
-List any reasonable defaults assumed to avoid blocking on minor decisions:
-
-- "Assuming X because Y" — document reasoning
 
 ## Files to Modify
 
