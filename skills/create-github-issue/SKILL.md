@@ -61,7 +61,7 @@ No ephemeral references found — body is clean.
 Fetch all labels from the current repository:
 
 ```bash
-gh label list --json name,description --limit 100
+gh label list --json name,description --limit 200
 ```
 
 Classify labels into two groups:
@@ -101,10 +101,12 @@ Use `/question` if the label choice requires extended discussion. Otherwise, use
 ## Step 6: Create the Issue
 
 ```bash
-gh issue create --title "<TITLE>" --body "<SANITIZED_BODY>" --label "<LABEL1>,<LABEL2>"
+gh issue create --title "<TITLE>" --label "<LABEL1>,<LABEL2>" --body-file - <<'EOF'
+<SANITIZED_BODY>
+EOF
 ```
 
-Capture the returned issue URL.
+Omit the `--label` flag entirely when no labels are selected. Capture the returned issue URL.
 
 ## Step 7: Link as Sub-Issue (If Parent Specified)
 
@@ -113,7 +115,7 @@ If a parent issue number was extracted in Step 2, link the new issue as a sub-is
 First, get the node IDs:
 
 ```bash
-gh api graphql -f query='
+gh api graphql -H 'GraphQL-Features: sub_issues' -f query='
   query($owner: String!, $repo: String!, $parent: Int!, $child: Int!) {
     repository(owner: $owner, name: $repo) {
       parent: issue(number: $parent) { id }
@@ -126,7 +128,7 @@ gh api graphql -f query='
 Then link them:
 
 ```bash
-gh api graphql -f query='
+gh api graphql -H 'GraphQL-Features: sub_issues' -f query='
   mutation($parentId: ID!, $childId: ID!) {
     addSubIssue(input: {issueId: $parentId, subIssueId: $childId}) {
       issue { number title }
