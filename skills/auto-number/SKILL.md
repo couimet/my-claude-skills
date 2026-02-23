@@ -43,6 +43,7 @@ skills/auto-number/auto-number.sh some/dir --width 6
 - Finds the highest existing number and returns max + 1
 - Gaps are preserved (0001, 0005 → next is 0006, not 0002)
 - Non-matching filenames are ignored
+- Suffix mode strips only the last extension (e.g., `report-0042.tar.gz` becomes `report-0042.tar`), so files with compound extensions are silently skipped
 - Width is a minimum -- if the next value needs more digits than requested, the output expands (e.g., `--width 3` with max 999 outputs `1000`)
 
 ## Design
@@ -60,4 +61,4 @@ All errors exit 1 with a message on stderr in the format `auto-number EXXX error
 - **E102** -- directory does not exist
 - **E103** -- path is not a directory
 - **E104** -- directory not readable
-- **E105** -- invalid or missing glob pattern
+- **E105** -- missing value for `--glob`

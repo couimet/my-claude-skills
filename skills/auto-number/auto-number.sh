@@ -123,7 +123,7 @@ for filepath in "$directory"/*; do
   # Skip if glob matched nothing (the literal glob string)
   [ -e "$filepath" ] || continue
 
-  filename="$(basename "$filepath")"
+  filename="${filepath##*/}"
 
   # Apply glob_pattern filter if provided
   if [ -n "$glob_pattern" ]; then
