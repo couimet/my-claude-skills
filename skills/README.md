@@ -13,6 +13,7 @@
 
 | Skill | Purpose |
 | --- | --- |
+| `auto-number` | Reusable file sequence numbering with prefix (`NNNN-name`) and suffix (`name-NNNN`) modes. Auto-consulted by `/issue-context` and available for direct use by other skills. |
 | `code-ref` | Defines permalink format for code references (`path/to/file.ts#L10-L20`). Claude auto-consults when generating file/line references. |
 | `file-placement` | Decision tree for where to put different file types. Claude auto-consults when deciding output locations. |
 | `issue-context` | Detects issue context from git branch name, determines subdirectory organization and `NNNN` file numbering. Claude auto-consults when foundation skills need directory placement. |
