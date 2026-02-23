@@ -16,6 +16,9 @@
 #   E1xx — parameter validation
 #     E100 — invalid mode
 #     E101 — invalid width
+#     E102 — directory does not exist
+#     E103 — path is not a directory
+#     E104 — directory not readable
 #
 # Output: A single line containing the next number, zero-padded to width (e.g., "0001", "000042")
 
@@ -67,6 +70,21 @@ done
 if [ -z "$directory" ]; then
   echo "auto-number E001 error: missing directory argument" >&2
   echo "Usage: auto-number.sh <directory> [--mode prefix|suffix] [--glob PATTERN] [--width N]" >&2
+  exit 1
+fi
+
+if [ ! -e "$directory" ]; then
+  echo "auto-number E102 error: directory does not exist: '$directory'" >&2
+  exit 1
+fi
+
+if [ ! -d "$directory" ]; then
+  echo "auto-number E103 error: path is not a directory: '$directory'" >&2
+  exit 1
+fi
+
+if [ ! -r "$directory" ]; then
+  echo "auto-number E104 error: directory not readable: '$directory'" >&2
   exit 1
 fi
 

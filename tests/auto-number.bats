@@ -180,6 +180,28 @@ SCRIPT="$PROJECT_ROOT/skills/auto-number/auto-number.sh"
   [[ "$output" == "auto-number E001 error: "* ]]
 }
 
+@test "directory does not exist exits with E102" {
+  run "$SCRIPT" "$TEST_TEMP_DIR/nonexistent"
+  [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E102 error: "* ]]
+}
+
+@test "path is not a directory exits with E103" {
+  touch "$TEST_TEMP_DIR/a-file.txt"
+  run "$SCRIPT" "$TEST_TEMP_DIR/a-file.txt"
+  [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E103 error: "* ]]
+}
+
+@test "directory not readable exits with E104" {
+  mkdir "$TEST_TEMP_DIR/locked"
+  chmod 000 "$TEST_TEMP_DIR/locked"
+  run "$SCRIPT" "$TEST_TEMP_DIR/locked"
+  [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E104 error: "* ]]
+  chmod 755 "$TEST_TEMP_DIR/locked"
+}
+
 @test "invalid --mode argument exits with E100" {
   run "$SCRIPT" "$TEST_TEMP_DIR" --mode badmode
   [ "$status" -eq 1 ]
