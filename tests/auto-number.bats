@@ -222,3 +222,23 @@ SCRIPT="$PROJECT_ROOT/skills/auto-number/auto-number.sh"
   [ "$status" -eq 1 ]
   [[ "$output" == "auto-number E002 error: "* ]]
 }
+
+# --- Flag without value (last argument) ---
+
+@test "--mode as last arg without value exits with E100" {
+  run "$SCRIPT" "$TEST_TEMP_DIR" --mode
+  [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E100 error: "* ]]
+}
+
+@test "--glob as last arg without value exits with E105" {
+  run "$SCRIPT" "$TEST_TEMP_DIR" --glob
+  [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E105 error: "* ]]
+}
+
+@test "--width as last arg without value exits with E101" {
+  run "$SCRIPT" "$TEST_TEMP_DIR" --width
+  [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E101 error: "* ]]
+}
