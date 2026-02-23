@@ -206,9 +206,9 @@ SCRIPT="$PROJECT_ROOT/skills/auto-number/auto-number.sh"
   mkdir "$TEST_TEMP_DIR/locked"
   chmod 000 "$TEST_TEMP_DIR/locked"
   run "$SCRIPT" "$TEST_TEMP_DIR/locked"
+  chmod 755 "$TEST_TEMP_DIR/locked"
   [ "$status" -eq 1 ]
   [[ "$output" == "auto-number E104 error: "* ]]
-  chmod 755 "$TEST_TEMP_DIR/locked"
 }
 
 @test "invalid --mode argument exits with E100" {

@@ -12,5 +12,5 @@ setup() {
 }
 
 teardown() {
-  rm -rf "$TEST_TEMP_DIR"
+  rm -rf "${TEST_TEMP_DIR:?}"
 }
