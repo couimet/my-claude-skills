@@ -47,7 +47,7 @@ skills/auto-number/auto-number.sh some/dir --width 6
 
 ## Design
 
-This skill uses a Bash script instead of inline SKILL.md instructions. Most skills describe an algorithm in markdown and let Claude reason through it each invocation. That works well for complex decisions but wastes tokens on deterministic logic like "scan directory, find max number, add 1, zero-pad." The script executes in one Bash call and returns a single line of stdout -- Claude spends zero tokens on the algorithm itself. This matters because auto-numbering runs on every `/scratchpad`, `/commit-msg`, and `/question` invocation.
+This skill uses a Bash script instead of inline SKILL.md instructions. Most skills describe an algorithm in Markdown and let Claude reason through it each invocation. That works well for complex decisions but wastes tokens on deterministic logic like "scan directory, find max number, add 1, zero-pad." The script executes in one Bash call and returns a single line of stdout -- Claude spends zero tokens on the algorithm itself. This matters because auto-numbering runs on every `/scratchpad`, `/commit-msg`, and `/question` invocation.
 
 ## Error Codes
 

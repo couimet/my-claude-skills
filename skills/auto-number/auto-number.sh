@@ -9,7 +9,7 @@
 #   --glob     — File filter pattern (e.g., "*.txt"). Default: all files
 #   --width    — Output width, 1-10. Default: 4. Safety: never truncates if next value needs more digits.
 #
-# Output: A single line containing the next number, zero-padded to width (e.g., "0001", "000042")
+# Output: A single line containing the next number, zero-padded to width (e.g., "0001" at default width)
 
 set -euo pipefail
 
@@ -34,8 +34,8 @@ readonly ERR_INVALID_MODE="E100"
 readonly ERR_INVALID_WIDTH="E101"
 readonly ERR_DIR_NOT_FOUND="E102"
 readonly ERR_NOT_A_DIR="E103"
-readonly ERR_INVALID_GLOB="E105"
 readonly ERR_DIR_NOT_READABLE="E104"
+readonly ERR_INVALID_GLOB="E105"
 
 # --- Defaults ---
 mode="prefix"
