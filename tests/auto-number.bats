@@ -148,46 +148,46 @@ SCRIPT="$PROJECT_ROOT/skills/auto-number/auto-number.sh"
 
 # --- Width: validation errors ---
 
-@test "width: --width 0 exits with error" {
+@test "width: --width 0 exits with E003" {
   run "$SCRIPT" "$TEST_TEMP_DIR" --width 0
-  [ "$status" -ne 0 ]
-  [[ "$output" == "auto-number error: "* ]]
+  [ "$status" -eq 3 ]
+  [[ "$output" == "auto-number E003 error: "* ]]
 }
 
-@test "width: --width -1 exits with error" {
+@test "width: --width -1 exits with E003" {
   run "$SCRIPT" "$TEST_TEMP_DIR" --width -1
-  [ "$status" -ne 0 ]
-  [[ "$output" == "auto-number error: "* ]]
+  [ "$status" -eq 3 ]
+  [[ "$output" == "auto-number E003 error: "* ]]
 }
 
-@test "width: --width 11 exits with error (exceeds cap)" {
+@test "width: --width 11 exits with E003 (exceeds cap)" {
   run "$SCRIPT" "$TEST_TEMP_DIR" --width 11
-  [ "$status" -ne 0 ]
-  [[ "$output" == "auto-number error: "* ]]
+  [ "$status" -eq 3 ]
+  [[ "$output" == "auto-number E003 error: "* ]]
 }
 
-@test "width: --width abc exits with error (non-integer)" {
+@test "width: --width abc exits with E003 (non-integer)" {
   run "$SCRIPT" "$TEST_TEMP_DIR" --width abc
-  [ "$status" -ne 0 ]
-  [[ "$output" == "auto-number error: "* ]]
+  [ "$status" -eq 3 ]
+  [[ "$output" == "auto-number E003 error: "* ]]
 }
 
 # --- Error handling ---
 
-@test "missing directory argument exits with error" {
+@test "missing directory argument exits with E001" {
   run "$SCRIPT"
-  [ "$status" -ne 0 ]
-  [[ "$output" == "auto-number error: "* ]]
+  [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E001 error: "* ]]
 }
 
-@test "invalid --mode argument exits with error" {
+@test "invalid --mode argument exits with E002" {
   run "$SCRIPT" "$TEST_TEMP_DIR" --mode badmode
-  [ "$status" -ne 0 ]
-  [[ "$output" == "auto-number error: "* ]]
+  [ "$status" -eq 2 ]
+  [[ "$output" == "auto-number E002 error: "* ]]
 }
 
-@test "unknown flag exits with error" {
+@test "unknown flag exits with E004" {
   run "$SCRIPT" "$TEST_TEMP_DIR" --bogus
-  [ "$status" -ne 0 ]
-  [[ "$output" == "auto-number error: "* ]]
+  [ "$status" -eq 4 ]
+  [[ "$output" == "auto-number E004 error: "* ]]
 }
