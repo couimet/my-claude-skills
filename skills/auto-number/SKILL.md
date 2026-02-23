@@ -22,7 +22,7 @@ skills/auto-number/auto-number.sh <directory> [--mode prefix|suffix] [--glob PAT
 - `--glob` (optional) -- file filter pattern (e.g., `*.txt`). Default: all files
 - `--width` (optional) -- output width, 1-10. Default: 4. Safety: never truncates if next value needs more digits
 
-**Output:** A single line with the next number, zero-padded to width (e.g., `0001`, `000042`).
+**Output:** A single line with the next number, zero-padded to width (e.g., `0001` at default width, or `000042` with `--width 6`).
 
 ## Examples
 
@@ -39,7 +39,7 @@ skills/auto-number/auto-number.sh some/dir --width 6
 
 ## Behavior
 
-- Starts at `0001` if the directory is empty or has no matching files
+- Starts at `0001` (at default width) if the directory is empty or has no matching files
 - Finds the highest existing number and returns max + 1
 - Gaps are preserved (0001, 0005 → next is 0006, not 0002)
 - Non-matching filenames are ignored
@@ -51,7 +51,7 @@ This skill uses a Bash script instead of inline SKILL.md instructions. Most skil
 
 ## Error Codes
 
-All errors exit 1 with a message on stderr in the format `auto-number EXXX error: <details>`.
+All errors exit 1 with a message on stderr in the format `auto-number EXXX error: <details>`. Codes use two ranges: E0xx for generic errors (missing required arguments, unknown flags) and E1xx for parameter validation (invalid values, directory problems).
 
 - **E001** -- missing directory argument
 - **E002** -- unknown flag or unexpected argument
