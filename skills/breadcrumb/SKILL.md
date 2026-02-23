@@ -40,9 +40,12 @@ Extract the breadcrumb identifier based on branch pattern:
 
 ## Step 3: Append Breadcrumb
 
-**File location:** `.breadcrumbs/<identifier>.md`
+**File location depends on branch pattern:**
 
-Where `<identifier>` is the value extracted in Step 1.
+- Issues: `.claude-work/issues/<ID>/breadcrumb.md`
+- Side-quests: `.claude-work/breadcrumb-<slug>.md`
+
+Where `<ID>` or `<slug>` is the value extracted in Step 1.
 
 **If file doesn't exist**, create it with header:
 
@@ -65,11 +68,10 @@ date "+%Y-%m-%d %H:%M:%S"
 
 ## Step 4: Confirm
 
-Print a brief confirmation:
+Print a brief confirmation with the file path:
 
-```text
-Breadcrumb dropped in .breadcrumbs/<identifier>.md
-```
+- Issues: `Breadcrumb dropped in .claude-work/issues/<ID>/breadcrumb.md`
+- Side-quests: `Breadcrumb dropped in .claude-work/breadcrumb-<slug>.md`
 
 Do NOT print the full file contents — keep it minimal.
 
