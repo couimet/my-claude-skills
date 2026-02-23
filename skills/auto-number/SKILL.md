@@ -1,36 +1,40 @@
 ---
 name: auto-number
 user-invocable: false
-description: Reusable file sequence numbering with prefix (NNNN-name) and suffix (name-NNNN) modes. Returns the next available zero-padded 4-digit number for a given directory.
+description: Reusable file sequence numbering with prefix (NNNN-name) and suffix (name-NNNN) modes. Returns the next available zero-padded sequence number for a given directory.
 allowed-tools: Bash(*/skills/auto-number/auto-number.sh *)
 ---
 
 # Auto-Number
 
-Returns the next available 4-digit sequence number for files in a directory. Run the script and use its stdout directly -- do not reimplement the numbering logic.
+Returns the next available sequence number for files in a directory. Run the script and use its stdout directly -- do not reimplement the numbering logic.
 
 ## Usage
 
 ```bash
-skills/auto-number/auto-number.sh <directory> <mode> [glob_pattern]
+skills/auto-number/auto-number.sh <directory> [--mode prefix|suffix] [--glob PATTERN] [--width N]
 ```
 
 **Arguments:**
 
-- `directory` (required) -- path to scan for existing numbered files
-- `mode` (required) -- `prefix` for `NNNN-name.ext` or `suffix` for `name-NNNN.ext`
-- `glob_pattern` (optional) -- file filter (e.g., `*.txt`); omit to scan all files
+- `directory` (required, positional) -- path to scan for existing numbered files
+- `--mode` (optional) -- `prefix` for `NNNN-name.ext` or `suffix` for `name-NNNN.ext`. Default: `prefix`
+- `--glob` (optional) -- file filter pattern (e.g., `*.txt`). Default: all files
+- `--width` (optional) -- output width, 1-10. Default: 4. Safety: never truncates if next value needs more digits
 
-**Output:** A single line with the next NNNN (e.g., `0001`, `0042`).
+**Output:** A single line with the next number, zero-padded to width (e.g., `0001`, `000042`).
 
 ## Examples
 
 ```bash
-# Next prefix number in .commit-msgs/issues/5/
-skills/auto-number/auto-number.sh .commit-msgs/issues/5 prefix
+# Next prefix number in .commit-msgs/issues/5/ (default mode, default width)
+skills/auto-number/auto-number.sh .commit-msgs/issues/5
 
 # Next suffix number, only counting .json files
-skills/auto-number/auto-number.sh some/dir suffix "*.json"
+skills/auto-number/auto-number.sh some/dir --mode suffix --glob "*.json"
+
+# Next number with 6-digit padding
+skills/auto-number/auto-number.sh some/dir --width 6
 ```
 
 ## Behavior
@@ -39,3 +43,16 @@ skills/auto-number/auto-number.sh some/dir suffix "*.json"
 - Finds the highest existing number and returns max + 1
 - Gaps are preserved (0001, 0005 → next is 0006, not 0002)
 - Non-matching filenames are ignored
+- Width is a minimum -- if the next value needs more digits than requested, the output expands (e.g., `--width 3` with max 999 outputs `1000`)
+
+## Error Codes
+
+All errors exit 1 with a message on stderr in the format `auto-number EXXX error: <details>`.
+
+- **E001** -- missing directory argument
+- **E002** -- unknown flag or unexpected argument
+- **E100** -- invalid mode (not `prefix` or `suffix`)
+- **E101** -- invalid width (not an integer 1-10)
+- **E102** -- directory does not exist
+- **E103** -- path is not a directory
+- **E104** -- directory not readable
