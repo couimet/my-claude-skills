@@ -2,7 +2,7 @@
 name: issue-context
 user-invocable: false
 description: Detects issue context from git branch name and determines subdirectory organization for working files. Auto-consulted by foundation skills (/scratchpad, /question, /commit-msg, /breadcrumb) when deciding where to place files.
-allowed-tools: Read, Write, Bash(git branch --show-current), Glob
+allowed-tools: Read, Write, Bash(git branch --show-current), Bash(*/skills/auto-number/auto-number.sh *), Glob
 ---
 
 # Issue Context
@@ -78,15 +78,14 @@ Examples:
 
 ## Auto-Numbering (`NNNN`)
 
-The `NNNN` file sequence number is always scoped to the target directory:
+The `NNNN` file sequence number is always scoped to the target directory. Use `/auto-number` to get the next number -- do not reimplement the algorithm.
 
-1. Determine target directory using the rules above
-2. Find the highest existing NNNN in that directory:
+1. Determine the target directory using the File Placement rules above
+2. Run `/auto-number` against that directory:
+   ```bash
+   skills/auto-number/auto-number.sh <target-directory> --glob "*.txt" --width 4
    ```
-   Glob(pattern="*.txt", path="<target-directory>")
-   ```
-3. Increment by 1, zero-padded to 4 digits
-4. If no files exist in the target directory, start at `0001`
+3. Use the script's stdout as the `NNNN` value
 
 ## Breadcrumbs
 
