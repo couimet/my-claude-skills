@@ -172,6 +172,14 @@ SCRIPT="$PROJECT_ROOT/skills/auto-number/auto-number.sh"
   [[ "$output" == "auto-number E101 error: "* ]]
 }
 
+# --- Help ---
+
+@test "--help prints usage and exits 0" {
+  run "$SCRIPT" --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Usage: auto-number.sh"* ]]
+}
+
 # --- Error handling ---
 
 @test "missing directory argument exits with E001" {

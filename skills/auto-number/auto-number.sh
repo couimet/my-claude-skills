@@ -13,6 +13,18 @@
 
 set -euo pipefail
 
+usage() {
+  cat <<'EOF'
+Usage: auto-number.sh <directory> [--mode prefix|suffix] [--glob PATTERN] [--width N]
+
+  directory  Path to scan for existing numbered files (required)
+  --mode     "prefix" (NNNN-name.ext) or "suffix" (name-NNNN.ext). Default: prefix
+  --glob     File filter pattern (e.g., "*.txt"). Default: all files
+  --width    Output width, 1-10. Default: 4. Never truncates if next value needs more digits.
+  --help     Show this help message
+EOF
+}
+
 # --- Error codes (all exit 1) ---
 # E0xx: generic errors
 readonly ERR_MISSING_DIR="E001"
@@ -50,6 +62,10 @@ while [ $# -gt 0 ]; do
       width="$2"
       shift 2
       ;;
+    --help)
+      usage
+      exit 0
+      ;;
     --*)
       echo "auto-number $ERR_UNKNOWN_FLAG error: unknown flag '$1'" >&2
       exit 1
@@ -69,7 +85,6 @@ done
 # --- Validate directory ---
 if [ -z "$directory" ]; then
   echo "auto-number $ERR_MISSING_DIR error: missing directory argument" >&2
-  echo "Usage: auto-number.sh <directory> [--mode prefix|suffix] [--glob PATTERN] [--width N]" >&2
   exit 1
 fi
 
