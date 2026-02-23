@@ -289,6 +289,7 @@ These skills aren't invoked directly — Claude consults them when the context m
 
 | Skill | When It Activates |
 | --- | --- |
+| `auto-number` | When a skill needs the next file sequence number — runs a Bash script that scans a directory and returns the next `NNNN`, supporting prefix/suffix modes and configurable width |
 | `code-ref` | When generating file/line references — formats them as GitHub-style permalinks, clickable in editors with [RangeLink](https://github.com/couimet/rangeLink) installed (VS Code/Cursor don't recognize the suffix natively) |
 | `file-placement` | When deciding where to put a new file — routes to the right directory |
 | `issue-context` | When on an `issues/<N>` branch — scopes working files to issue subdirectories |
