@@ -15,20 +15,13 @@ Create a questions file in `.claude-questions/` for gathering user input.
 
 Questions are NEVER printed in terminal output. They go to a file that the user edits directly. The file is the single source of truth for both questions and answers.
 
-## Auto-Numbering
+## Directory and Numbering
 
-1. Find the highest existing number:
-   ```text
-   Glob(pattern="*.txt", path=".claude-questions/")
-   ```
-2. Increment by 1, zero-padded to 4 digits (e.g., `0001`, `0042`)
-3. If no files exist, start at `0001`
+Follow the `/issue-context` skill to determine the target directory and `NNNN` file sequence number. The base directory is `.claude-questions/`.
 
 ## Naming Pattern
 
-Follow the `/issue-context` skill conventions for directory organization when on an issue branch.
-
-Base pattern: `NNNN-description.txt`
+The filename is `NNNN-description.txt` where `NNNN` comes from `/issue-context` auto-numbering.
 
 Derive the description slug from $ARGUMENTS (lowercase, hyphens, no special chars).
 
