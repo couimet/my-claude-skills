@@ -36,6 +36,8 @@
 
 **Non-invocable skills** (`user-invocable: false`) don't appear in the `/` menu but their descriptions load into Claude's context. Claude auto-consults them when the context matches (e.g., generating code references, deciding where to put files).
 
+**Script-backed skills:** When a skill's logic is purely deterministic (no judgment calls, no context-dependent decisions), a Bash script is more token-efficient than inline markdown instructions. Claude executes one Bash call instead of reasoning through the algorithm each time. `auto-number` is the first skill to use this pattern — see its `## Design` section for the rationale.
+
 ## Step Tracking
 
 Implementation plan steps are embedded as a fenced JSON block inside the scratchpad's `## Implementation Plan` section. Each step has:
