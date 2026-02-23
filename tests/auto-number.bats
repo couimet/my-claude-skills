@@ -93,9 +93,11 @@ SCRIPT="$PROJECT_ROOT/skills/auto-number/auto-number.sh"
 @test "missing directory argument exits with error" {
   run "$SCRIPT"
   [ "$status" -ne 0 ]
+  [[ "$output" == "auto-number error: "* ]]
 }
 
 @test "invalid mode argument exits with error" {
   run "$SCRIPT" "$TEST_TEMP_DIR" "badmode"
   [ "$status" -ne 0 ]
+  [[ "$output" == "auto-number error: "* ]]
 }
