@@ -9,20 +9,20 @@
 #   --glob     — File filter pattern (e.g., "*.txt"). Default: all files
 #   --width    — Output width, 1-10. Default: 4. Safety: never truncates if next value needs more digits.
 #
-# Error codes (all exit 1):
-#   E0xx — generic errors
-#     E001 — missing directory argument
-#     E002 — unknown flag / unexpected argument
-#   E1xx — parameter validation
-#     E100 — invalid mode
-#     E101 — invalid width
-#     E102 — directory does not exist
-#     E103 — path is not a directory
-#     E104 — directory not readable
-#
 # Output: A single line containing the next number, zero-padded to width (e.g., "0001", "000042")
 
 set -euo pipefail
+
+# --- Error codes (all exit 1) ---
+# E0xx: generic errors
+readonly ERR_MISSING_DIR="E001"
+readonly ERR_UNKNOWN_FLAG="E002"
+# E1xx: parameter validation
+readonly ERR_INVALID_MODE="E100"
+readonly ERR_INVALID_WIDTH="E101"
+readonly ERR_DIR_NOT_FOUND="E102"
+readonly ERR_NOT_A_DIR="E103"
+readonly ERR_DIR_NOT_READABLE="E104"
 
 # --- Defaults ---
 mode="prefix"
@@ -36,29 +36,29 @@ directory=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --mode)
-      [ $# -ge 2 ] || { echo "auto-number E100 error: --mode requires a value" >&2; exit 1; }
+      [ $# -ge 2 ] || { echo "auto-number $ERR_INVALID_MODE error: --mode requires a value" >&2; exit 1; }
       mode="$2"
       shift 2
       ;;
     --glob)
-      [ $# -ge 2 ] || { echo "auto-number E002 error: --glob requires a value" >&2; exit 1; }
+      [ $# -ge 2 ] || { echo "auto-number $ERR_UNKNOWN_FLAG error: --glob requires a value" >&2; exit 1; }
       glob_pattern="$2"
       shift 2
       ;;
     --width)
-      [ $# -ge 2 ] || { echo "auto-number E101 error: --width requires a value" >&2; exit 1; }
+      [ $# -ge 2 ] || { echo "auto-number $ERR_INVALID_WIDTH error: --width requires a value" >&2; exit 1; }
       width="$2"
       shift 2
       ;;
     --*)
-      echo "auto-number E002 error: unknown flag '$1'" >&2
+      echo "auto-number $ERR_UNKNOWN_FLAG error: unknown flag '$1'" >&2
       exit 1
       ;;
     *)
       if [ -z "$directory" ]; then
         directory="$1"
       else
-        echo "auto-number E002 error: unexpected argument '$1'" >&2
+        echo "auto-number $ERR_UNKNOWN_FLAG error: unexpected argument '$1'" >&2
         exit 1
       fi
       shift
@@ -68,35 +68,35 @@ done
 
 # --- Validate directory ---
 if [ -z "$directory" ]; then
-  echo "auto-number E001 error: missing directory argument" >&2
+  echo "auto-number $ERR_MISSING_DIR error: missing directory argument" >&2
   echo "Usage: auto-number.sh <directory> [--mode prefix|suffix] [--glob PATTERN] [--width N]" >&2
   exit 1
 fi
 
 if [ ! -e "$directory" ]; then
-  echo "auto-number E102 error: directory does not exist: '$directory'" >&2
+  echo "auto-number $ERR_DIR_NOT_FOUND error: directory does not exist: '$directory'" >&2
   exit 1
 fi
 
 if [ ! -d "$directory" ]; then
-  echo "auto-number E103 error: path is not a directory: '$directory'" >&2
+  echo "auto-number $ERR_NOT_A_DIR error: path is not a directory: '$directory'" >&2
   exit 1
 fi
 
 if [ ! -r "$directory" ]; then
-  echo "auto-number E104 error: directory not readable: '$directory'" >&2
+  echo "auto-number $ERR_DIR_NOT_READABLE error: directory not readable: '$directory'" >&2
   exit 1
 fi
 
 # --- Validate mode ---
 if [[ "$mode" != "prefix" && "$mode" != "suffix" ]]; then
-  echo "auto-number E100 error: invalid mode '$mode' (expected prefix or suffix)" >&2
+  echo "auto-number $ERR_INVALID_MODE error: invalid mode '$mode' (expected prefix or suffix)" >&2
   exit 1
 fi
 
 # --- Validate width ---
 if ! [[ "$width" =~ ^[0-9]+$ ]] || [ "$width" -lt 1 ] || [ "$width" -gt 10 ]; then
-  echo "auto-number E101 error: --width must be an integer between 1 and 10 (got '$width')" >&2
+  echo "auto-number $ERR_INVALID_WIDTH error: --width must be an integer between 1 and 10 (got '$width')" >&2
   exit 1
 fi
 
