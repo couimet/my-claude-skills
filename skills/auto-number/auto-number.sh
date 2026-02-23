@@ -34,6 +34,7 @@ readonly ERR_INVALID_MODE="E100"
 readonly ERR_INVALID_WIDTH="E101"
 readonly ERR_DIR_NOT_FOUND="E102"
 readonly ERR_NOT_A_DIR="E103"
+readonly ERR_INVALID_GLOB="E105"
 readonly ERR_DIR_NOT_READABLE="E104"
 
 # --- Defaults ---
@@ -53,7 +54,7 @@ while [ $# -gt 0 ]; do
       shift 2
       ;;
     --glob)
-      [ $# -ge 2 ] || { echo "auto-number $ERR_UNKNOWN_FLAG error: --glob requires a value" >&2; exit 1; }
+      [ $# -ge 2 ] || { echo "auto-number $ERR_INVALID_GLOB error: --glob requires a value" >&2; exit 1; }
       glob_pattern="$2"
       shift 2
       ;;

@@ -60,3 +60,4 @@ All errors exit 1 with a message on stderr in the format `auto-number EXXX error
 - **E102** -- directory does not exist
 - **E103** -- path is not a directory
 - **E104** -- directory not readable
+- **E105** -- invalid or missing glob pattern
