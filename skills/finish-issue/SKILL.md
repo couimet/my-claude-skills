@@ -68,8 +68,8 @@ Check if documentation updates are needed. Common touchpoints:
 
 Collect information from:
 
-- Breadcrumbs file (if exists): `.breadcrumbs/<identifier>.md` (where `<identifier>` is the issue number or side-quest slug per `/issue-context`)
-- Scratchpads matching the work: use Glob to find `*<identifier>*` in `.scratchpads/`
+- Breadcrumbs file (if exists): `.claude-work/issues/<identifier>/breadcrumb.md` (where `<identifier>` is the issue number per `/issue-context`)
+- Scratchpads matching the work: use Glob to find `*<identifier>*` in `.claude-work/`
 - Commit history: `git log --oneline origin/main..HEAD`
 - Commit details: `git log origin/main..HEAD`
 
@@ -124,7 +124,7 @@ Format all prose output per the `/prose-style` skill conventions.
 
 ### PR Description Rules
 
-- **NEVER** reference `.scratchpads/`, `.claude-questions/`, or `.breadcrumbs/` files
+- **NEVER** reference `.claude-work/` files (scratchpads, questions, commit-msgs, breadcrumbs)
 - These are local/ephemeral and inaccessible from GitHub
 - Capture all relevant information directly in the PR body
 
@@ -152,12 +152,12 @@ Documentation:
 - README: [updated / not needed - reason]
 
 Files created:
-- .scratchpads/NNNN-finish-issue-NUMBER.txt (PR description)
+- .claude-work/issues/NUMBER/scratchpads/NNNN-finish-issue-NUMBER.txt (PR description)
 
 ---
 
 Ready for PR. Review the scratchpad and:
-1. Create PR: gh pr create --title "..." --body-file .scratchpads/NNNN-finish-issue-NUMBER.txt
+1. Create PR: gh pr create --title "..." --body-file .claude-work/issues/NUMBER/scratchpads/NNNN-finish-issue-NUMBER.txt
 2. Or ask Claude to create the PR
 ```
 
