@@ -148,28 +148,28 @@ SCRIPT="$PROJECT_ROOT/skills/auto-number/auto-number.sh"
 
 # --- Width: validation errors ---
 
-@test "width: --width 0 exits with E003" {
+@test "width: --width 0 exits with E101" {
   run "$SCRIPT" "$TEST_TEMP_DIR" --width 0
-  [ "$status" -eq 3 ]
-  [[ "$output" == "auto-number E003 error: "* ]]
+  [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E101 error: "* ]]
 }
 
-@test "width: --width -1 exits with E003" {
+@test "width: --width -1 exits with E101" {
   run "$SCRIPT" "$TEST_TEMP_DIR" --width -1
-  [ "$status" -eq 3 ]
-  [[ "$output" == "auto-number E003 error: "* ]]
+  [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E101 error: "* ]]
 }
 
-@test "width: --width 11 exits with E003 (exceeds cap)" {
+@test "width: --width 11 exits with E101 (exceeds cap)" {
   run "$SCRIPT" "$TEST_TEMP_DIR" --width 11
-  [ "$status" -eq 3 ]
-  [[ "$output" == "auto-number E003 error: "* ]]
+  [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E101 error: "* ]]
 }
 
-@test "width: --width abc exits with E003 (non-integer)" {
+@test "width: --width abc exits with E101 (non-integer)" {
   run "$SCRIPT" "$TEST_TEMP_DIR" --width abc
-  [ "$status" -eq 3 ]
-  [[ "$output" == "auto-number E003 error: "* ]]
+  [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E101 error: "* ]]
 }
 
 # --- Error handling ---
@@ -180,14 +180,14 @@ SCRIPT="$PROJECT_ROOT/skills/auto-number/auto-number.sh"
   [[ "$output" == "auto-number E001 error: "* ]]
 }
 
-@test "invalid --mode argument exits with E002" {
+@test "invalid --mode argument exits with E100" {
   run "$SCRIPT" "$TEST_TEMP_DIR" --mode badmode
-  [ "$status" -eq 2 ]
-  [[ "$output" == "auto-number E002 error: "* ]]
+  [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E100 error: "* ]]
 }
 
-@test "unknown flag exits with E004" {
+@test "unknown flag exits with E002" {
   run "$SCRIPT" "$TEST_TEMP_DIR" --bogus
-  [ "$status" -eq 4 ]
-  [[ "$output" == "auto-number E004 error: "* ]]
+  [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E002 error: "* ]]
 }
