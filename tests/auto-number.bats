@@ -202,6 +202,7 @@ SCRIPT="$PROJECT_ROOT/skills/auto-number/auto-number.sh"
 }
 
 @test "directory not readable exits with E104" {
+  [ "$EUID" -ne 0 ] || skip "chmod 000 is bypassed for root"
   mkdir "$TEST_TEMP_DIR/locked"
   chmod 000 "$TEST_TEMP_DIR/locked"
   run "$SCRIPT" "$TEST_TEMP_DIR/locked"

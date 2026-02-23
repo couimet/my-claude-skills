@@ -2,7 +2,7 @@
 name: question
 description: Create a questions file in .claude-questions/ for gathering user input on design decisions. Questions go to file (never terminal) — user edits answers in-file as the single source of truth.
 argument-hint: <topic>
-allowed-tools: Read, Write, Glob, Bash(git branch --show-current)
+allowed-tools: Read, Write, Bash(git branch --show-current)
 ---
 
 # Question

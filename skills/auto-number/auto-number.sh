@@ -126,8 +126,9 @@ for filepath in "$directory"/*; do
 
   # Apply glob_pattern filter if provided
   if [ -n "$glob_pattern" ]; then
+    # shellcheck disable=SC2254
     case "$filename" in
-      $glob_pattern) ;;  # matches — continue
+      $glob_pattern) ;;  # matches — intentionally unquoted for glob matching
       *) continue ;;     # doesn't match — skip
     esac
   fi

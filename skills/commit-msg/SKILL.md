@@ -2,7 +2,7 @@
 name: commit-msg
 description: Create a commit message file in .commit-msgs/ with auto-numbered filenames. Focuses on WHY not WHAT — the diff already shows what changed. User reviews and commits manually.
 argument-hint: <description>
-allowed-tools: Read, Write, Glob, Bash(git branch --show-current)
+allowed-tools: Read, Write, Bash(git branch --show-current)
 ---
 
 # Commit Message
