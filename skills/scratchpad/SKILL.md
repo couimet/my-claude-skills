@@ -1,19 +1,22 @@
 ---
 name: scratchpad
-description: Create a working document in .scratchpads/ with auto-numbered filenames. Use for implementation plans, PR descriptions, analysis notes, architecture decisions, GitHub issue drafts, or any temporary working document. Not for questions (use /question), commit messages (use /commit-msg), or permanent docs.
+description: Create a working document in .claude-work/scratchpads/ with auto-numbered filenames. Use for implementation plans, PR descriptions, analysis notes, architecture decisions, GitHub issue drafts, or any temporary working document. Not for questions (use /question), commit messages (use /commit-msg), or permanent docs.
 argument-hint: <description>
 allowed-tools: Read, Write, Glob, Bash(git branch --show-current)
 ---
 
 # Scratchpad
 
-Create or update a working document in `.scratchpads/`.
+Create or update a working document in `.claude-work/`.
 
 **Input:** $ARGUMENTS (a short description for the filename)
 
 ## Directory and Numbering
 
-Follow the `/issue-context` skill to determine the target directory and `NNNN` file sequence number. The base directory is `.scratchpads/`.
+Follow the `/issue-context` skill to determine the target directory and `NNNN` file sequence number. The type subdirectory is `scratchpads/`.
+
+- Issue-scoped: `.claude-work/issues/<ID>/scratchpads/NNNN-description.txt`
+- Flat (no issue context): `.claude-work/scratchpads/NNNN-description.txt`
 
 ## Naming Pattern
 

@@ -27,8 +27,8 @@ skills/auto-number/auto-number.sh <directory> [--mode prefix|suffix] [--glob PAT
 ## Examples
 
 ```bash
-# Next prefix number in .commit-msgs/issues/5/ (default mode, default width)
-skills/auto-number/auto-number.sh .commit-msgs/issues/5
+# Next prefix number in .claude-work/issues/5/commit-msgs/ (default mode, default width)
+skills/auto-number/auto-number.sh .claude-work/issues/5/commit-msgs
 
 # Next suffix number, only counting .json files
 skills/auto-number/auto-number.sh some/dir --mode suffix --glob "*.json"

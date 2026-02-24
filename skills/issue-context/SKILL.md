@@ -7,7 +7,7 @@ allowed-tools: Read, Write, Bash(git branch --show-current), Bash(*/skills/auto-
 
 # Issue Context
 
-Determines file placement based on the current git branch. Foundation skills consult this to organize working files into issue-scoped subdirectories.
+Determines file placement based on the current git branch. Foundation skills consult this to organize working files into issue-scoped subdirectories under a single `.claude-work/` directory.
 
 ## Branch Detection
 
@@ -42,39 +42,39 @@ These branch patterns produce no issue context — files use flat root placement
 
 ## File Placement
 
-Foundation skills (scratchpad, question, commit-msg) use this to determine the target directory:
+Foundation skills (scratchpad, question, commit-msg) use this to determine the target directory. All working files live under `.claude-work/`, organized by type subdirectory.
 
 ### When issue context is detected
 
-Files go in an issue-scoped subdirectory:
+Files go in a type subdirectory within the issue directory:
 
+```text
+.claude-work/issues/<ID>/<type>/NNNN-description.txt
 ```
-<root>/issues/<ID>/NNNN-description.txt
-```
 
-Where `<root>` is the skill's base directory (`.scratchpads/`, `.claude-questions/`, `.commit-msgs/`).
+Where `<type>` is the skill's type subdirectory (`scratchpads/`, `questions/`, `commit-msgs/`).
 
-- Create the `issues/<ID>/` subdirectory if it doesn't exist
-- The `NNNN` file sequence number is scoped to this subdirectory (each issue starts fresh at `0001`)
+- Create the `.claude-work/issues/<ID>/<type>/` path if it doesn't exist
+- The `NNNN` file sequence number is scoped to the type subdirectory (each issue + type combination starts fresh at `0001`)
 
 Examples:
-- `.scratchpads/issues/332/0001-implementation-plan.txt`
-- `.claude-questions/issues/332/0001-api-design.txt`
-- `.commit-msgs/issues/332/0001-add-parser.txt`
+- `.claude-work/issues/332/scratchpads/0001-implementation-plan.txt`
+- `.claude-work/issues/332/questions/0001-api-design.txt`
+- `.claude-work/issues/332/commit-msgs/0001-add-parser.txt`
 
 ### When no issue context
 
-Files go directly in the root directory with global numbering:
+Files go in a type subdirectory at the `.claude-work/` root with global numbering:
 
-```
-<root>/NNNN-description.txt
+```text
+.claude-work/<type>/NNNN-description.txt
 ```
 
-- The `NNNN` file sequence number is global across all files in the root directory
+- The `NNNN` file sequence number is global across all files in the type subdirectory
 
 Examples:
-- `.scratchpads/0042-refactoring-analysis.txt`
-- `.claude-questions/0003-architecture-options.txt`
+- `.claude-work/scratchpads/0042-refactoring-analysis.txt`
+- `.claude-work/questions/0003-architecture-options.txt`
 
 ## Auto-Numbering (`NNNN`)
 
@@ -92,14 +92,20 @@ The `NNNN` file sequence number is always scoped to the target directory. Use `/
 Breadcrumbs use a different pattern — a single file per issue rather than numbered files:
 
 ```
-.breadcrumbs/<ID>.md
+.claude-work/issues/<ID>/breadcrumb.md
+```
+
+When no issue context (side-quests, flat root):
+
+```text
+.claude-work/breadcrumb-<slug>.md
 ```
 
 The `/breadcrumb` skill handles this directly, but still uses issue-context for branch detection and ID extraction.
 
 ## Ensure `.gitignore`
 
-Foundation skills already consult issue-context for directory placement — this check runs as part of that same consultation. Before creating any ephemeral file, ensure the project's `.gitignore` includes entries for all skill working directories. This prevents SCM noise in consuming projects.
+Foundation skills already consult issue-context for directory placement — this check runs as part of that same consultation. Before creating any ephemeral file, ensure the project's `.gitignore` includes an entry for the unified working directory. This prevents SCM noise in consuming projects.
 
 1. Read `.gitignore` in the project root (if it doesn't exist, treat contents as empty)
 2. Check if the sentinel comment `# Claude skill working directories` is present
@@ -108,10 +114,7 @@ Foundation skills already consult issue-context for directory placement — this
 
 ```text
 # Claude skill working directories
-.scratchpads/
-.claude-questions/
-.commit-msgs/
-.breadcrumbs/
+.claude-work/
 ```
 
 This runs once per project — subsequent skill invocations find the sentinel and skip.

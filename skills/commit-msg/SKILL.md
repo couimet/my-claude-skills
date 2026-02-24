@@ -1,13 +1,13 @@
 ---
 name: commit-msg
-description: Create a commit message file in .commit-msgs/ with auto-numbered filenames. Focuses on WHY not WHAT — the diff already shows what changed. User reviews and commits manually.
+description: Create a commit message file in .claude-work/commit-msgs/ with auto-numbered filenames. Focuses on WHY not WHAT — the diff already shows what changed. User reviews and commits manually.
 argument-hint: <description>
 allowed-tools: Read, Write, Bash(git branch --show-current)
 ---
 
 # Commit Message
 
-Create a commit message file in `.commit-msgs/`. The user reviews and runs `git commit` themselves.
+Create a commit message file in `.claude-work/`. The user reviews and runs `git commit` themselves.
 
 **Input:** $ARGUMENTS (a short description for the filename)
 
@@ -17,7 +17,10 @@ Focus on **WHY**, not **WHAT**. The git diff already shows what changed — the 
 
 ## Directory and Numbering
 
-Follow the `/issue-context` skill to determine the target directory and `NNNN` file sequence number. The base directory is `.commit-msgs/`.
+Follow the `/issue-context` skill to determine the target directory and `NNNN` file sequence number. The type subdirectory is `commit-msgs/`.
+
+- Issue-scoped: `.claude-work/issues/<ID>/commit-msgs/NNNN-description.txt`
+- Flat (no issue context): `.claude-work/commit-msgs/NNNN-description.txt`
 
 ## Naming Pattern
 
@@ -48,7 +51,7 @@ Benefits:
 3. **Benefits**: Bulleted list of key outcomes
 4. **Length**: Keep under 15 lines total
 5. **No file lists**: Redundant with the diff
-6. **No ephemeral file paths**: Never reference `.scratchpads/`, `.claude-questions/`, `.commit-msgs/`, or `.breadcrumbs/` paths — these are local working files that don't exist on GitHub
+6. **No ephemeral file paths**: Never reference `.claude-work/` paths — these are local working files that don't exist on GitHub
 
 Format all prose output per the `/prose-style` skill conventions.
 

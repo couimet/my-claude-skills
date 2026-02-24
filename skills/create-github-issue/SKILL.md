@@ -15,7 +15,7 @@ Create a GitHub issue with smart label discovery and optional sub-issue linking.
 
 Determine the input mode from `$ARGUMENTS`:
 
-- **File path** — if the argument points to an existing file (any path, any extension or none), treat it as a draft to extract from. This covers `.scratchpads/*.txt`, markdown files, extensionless files, and drag-dropped paths from the terminal.
+- **File path** — if the argument points to an existing file (any path, any extension or none), treat it as a draft to extract from. This covers `.claude-work/scratchpads/*.txt`, markdown files, extensionless files, and drag-dropped paths from the terminal.
 - **Inline title** — otherwise, treat the entire argument as the issue title for interactive creation.
 
 ## Step 2: Extract Issue Content
@@ -37,17 +37,14 @@ Use the argument as the title. Prompt the user to provide a body — either inli
 
 Strip references to ephemeral local paths that don't exist on GitHub:
 
-- `.scratchpads/` paths
-- `.claude-questions/` paths
-- `.commit-msgs/` paths
-- `.breadcrumbs/` paths
+- `.claude-work/` paths (scratchpads, questions, commit-msgs, breadcrumbs)
 
 **Print the list of stripped references** so the user can verify nothing important was removed. Format as:
 
 ```text
 Stripped ephemeral references:
-- .scratchpads/issues/42/0001-plan.txt (line 12)
-- .claude-questions/issues/42/0001-scope.txt (line 28)
+- .claude-work/issues/42/scratchpads/0001-plan.txt (line 12)
+- .claude-work/issues/42/questions/0001-scope.txt (line 28)
 ```
 
 If no ephemeral references were found, print:

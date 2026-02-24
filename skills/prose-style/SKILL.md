@@ -1,7 +1,7 @@
 ---
 name: prose-style
 user-invocable: false
-description: Defines prose formatting conventions for skill-generated text files. Auto-consulted when any skill writes prose content to .scratchpads/, .commit-msgs/, .claude-questions/, .breadcrumbs/, or PR descriptions.
+description: Defines prose formatting conventions for skill-generated text files. Auto-consulted when any skill writes prose content to .claude-work/ (scratchpads, commit-msgs, questions, breadcrumbs) or PR descriptions.
 ---
 
 # Prose Style

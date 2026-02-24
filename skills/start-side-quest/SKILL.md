@@ -54,7 +54,7 @@ Examples:
 
 ## Step 3: Create Implementation Scratchpad
 
-Use `/scratchpad` to create a working document. Since side-quest branches don't match `issues/*`, the scratchpad will be placed in the flat `.scratchpads/` directory per `/issue-context` rules.
+Use `/scratchpad` to create a working document. Since side-quest branches don't match `issues/*`, the scratchpad will be placed in the flat `.claude-work/scratchpads/` directory per `/issue-context` rules.
 
 Use description: `side-quest-<slug>`
 
@@ -113,8 +113,8 @@ Branch: side-quest/<slug>
 Parent: <original branch> (stashed if had changes)
 
 Files created:
-- .scratchpads/<file>.txt (implementation plan)
-- .claude-questions/<file>.txt (if questions needed)
+- .claude-work/scratchpads/<file>.txt (implementation plan)
+- .claude-work/questions/<file>.txt (if questions needed)
 
 Stash: <stash message if applicable>
 

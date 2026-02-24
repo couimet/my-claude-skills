@@ -1,13 +1,13 @@
 ---
 name: question
-description: Create a questions file in .claude-questions/ for gathering user input on design decisions. Questions go to file (never terminal) — user edits answers in-file as the single source of truth.
+description: Create a questions file in .claude-work/questions/ for gathering user input on design decisions. Questions go to file (never terminal) — user edits answers in-file as the single source of truth.
 argument-hint: <topic>
 allowed-tools: Read, Write, Bash(git branch --show-current)
 ---
 
 # Question
 
-Create a questions file in `.claude-questions/` for gathering user input.
+Create a questions file in `.claude-work/` for gathering user input.
 
 **Input:** $ARGUMENTS (a short topic description for the filename)
 
@@ -17,7 +17,10 @@ Questions are NEVER printed in terminal output. They go to a file that the user 
 
 ## Directory and Numbering
 
-Follow the `/issue-context` skill to determine the target directory and `NNNN` file sequence number. The base directory is `.claude-questions/`.
+Follow the `/issue-context` skill to determine the target directory and `NNNN` file sequence number. The type subdirectory is `questions/`.
+
+- Issue-scoped: `.claude-work/issues/<ID>/questions/NNNN-description.txt`
+- Flat (no issue context): `.claude-work/questions/NNNN-description.txt`
 
 ## Naming Pattern
 
