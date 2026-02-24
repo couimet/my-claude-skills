@@ -586,8 +586,220 @@ pre code {
   }
 }
 
-/* --- Artifact Panel (placeholder for S004) --- */
+/* --- Artifact Panel --- */
+.artifact-panel {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  margin-bottom: var(--space-xs);
+}
 
-/* --- Diff Block (placeholder for S004) --- */
+.artifact-panel:last-child {
+  margin-bottom: 0;
+}
+
+.artifact-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-gutter);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.artifact-toggle:hover {
+  background: var(--border);
+}
+
+.artifact-toggle[aria-expanded="true"] {
+  border-bottom: 1px solid var(--border);
+}
+
+.artifact-toggle-icon {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  width: 1em;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.artifact-toggle .artifact-seq {
+  background: none;
+  padding: 0;
+}
+
+.artifact-toggle .artifact-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artifact-version {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.artifact-has-diff {
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--phase-3);
+  border: 1px solid var(--phase-3);
+  padding: 0.05em 0.4em;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.artifact-content {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.artifact-content[hidden] {
+  display: none;
+}
+
+/* View toggle controls (diff vs full) */
+.artifact-view-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-gutter);
+}
+
+.view-toggle {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.2em 0.5em;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-toggle:hover {
+  color: var(--text-secondary);
+  border-color: var(--border-strong);
+}
+
+.view-toggle--active {
+  color: var(--text);
+  border-color: var(--text);
+  background: var(--bg-card);
+}
+
+.diff-from {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-tertiary);
+  margin-left: auto;
+}
+
+/* Artifact code block */
+.artifact-code {
+  margin: 0;
+  padding: 0.75rem;
+  background: var(--bg-gutter);
+  border: none;
+  border-radius: 0;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  max-height: 30rem;
+  overflow: auto;
+}
+
+.artifact-code code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* --- Diff Block --- */
+.diff-block {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.55;
+  max-height: 30rem;
+  overflow: auto;
+}
+
+.diff-line {
+  display: flex;
+  padding: 0 0.75rem;
+  min-height: 1.55em;
+}
+
+.diff-marker {
+  flex-shrink: 0;
+  width: 1.5em;
+  text-align: center;
+  color: var(--text-tertiary);
+  user-select: none;
+}
+
+.diff-text {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.diff-line--add {
+  background: var(--diff-add-bg);
+}
+
+.diff-line--add .diff-marker {
+  color: var(--phase-3);
+}
+
+.diff-line--remove {
+  background: var(--diff-remove-bg);
+}
+
+.diff-line--remove .diff-marker {
+  color: #c53030;
+}
+
+@media (prefers-color-scheme: dark) {
+  .diff-line--remove .diff-marker {
+    color: #fc8181;
+  }
+}
+
+.diff-line--hunk {
+  background: var(--bg-gutter);
+  color: var(--text-tertiary);
+  font-style: italic;
+  padding-top: 0.25em;
+  padding-bottom: 0.25em;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.diff-line--hunk .diff-marker {
+  color: var(--text-tertiary);
+}
+
+.diff-line--header {
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
 
 /* --- Progress Bar (placeholder for S005) --- */

@@ -14,15 +14,9 @@
     {% if exchange.artifacts %}
     <div class="card-artifacts">
       <p class="artifacts-label">Artifacts</p>
-      <ul class="artifact-list">
-        {% for artifact in exchange.artifacts %}
-        <li class="artifact-ref">
-          <code class="artifact-seq">{{ artifact.sequence }}</code>
-          <span class="artifact-category">{{ artifact.category }}</span>
-          <span class="artifact-name">{{ artifact.filename }}</span>
-        </li>
-        {% endfor %}
-      </ul>
+      {% for artifact_html in exchange.artifact_panels %}
+      {{ artifact_html }}
+      {% endfor %}
     </div>
     {% endif %}
   </div>

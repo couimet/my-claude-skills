@@ -1,0 +1,33 @@
+<div class="artifact-panel" id="artifact-{{ artifact.sequence }}">
+  <button class="artifact-toggle" aria-expanded="false" aria-controls="artifact-content-{{ artifact.sequence }}">
+    <span class="artifact-toggle-icon">+</span>
+    <code class="artifact-seq">{{ artifact.sequence }}</code>
+    <span class="artifact-category">{{ artifact.category }}</span>
+    <span class="artifact-name">{{ artifact.filename }}</span>
+    {% if artifact.version %}
+    <span class="artifact-version">{{ artifact.version }}</span>
+    {% endif %}
+    {% if artifact.diff_lines %}
+    <span class="artifact-has-diff" title="Has diff from previous version">diff</span>
+    {% endif %}
+  </button>
+  <div class="artifact-content" id="artifact-content-{{ artifact.sequence }}" hidden>
+    {% if artifact.diff_lines %}
+    <div class="artifact-view-controls">
+      <button class="view-toggle view-toggle--active" data-view="diff" data-target="artifact-content-{{ artifact.sequence }}">Diff</button>
+      <button class="view-toggle" data-view="full" data-target="artifact-content-{{ artifact.sequence }}">Full</button>
+      {% if artifact.prev_filename %}
+      <span class="diff-from">vs {{ artifact.prev_filename }}</span>
+      {% endif %}
+    </div>
+    <div class="artifact-diff-view">
+      {{ diff_html }}
+    </div>
+    <div class="artifact-full-view" hidden>
+      <pre class="artifact-code"><code>{{ artifact.highlighted_html }}</code></pre>
+    </div>
+    {% else %}
+    <pre class="artifact-code"><code>{{ artifact.highlighted_html }}</code></pre>
+    {% endif %}
+  </div>
+</div>

@@ -1,0 +1,8 @@
+<div class="diff-block">
+  {% for line in diff_lines %}
+  <div class="diff-line diff-line--{{ line.type }}">
+    <span class="diff-marker">{% if line.type == 'add' %}+{% elif line.type == 'remove' %}-{% elif line.type == 'hunk' %}@@{% else %} {% endif %}</span>
+    <span class="diff-text">{{ line.content }}</span>
+  </div>
+  {% endfor %}
+</div>

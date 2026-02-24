@@ -13,6 +13,7 @@ Usage:
 """
 
 import argparse
+import difflib
 import http.server
 import json
 import os
@@ -31,6 +32,13 @@ try:
     import mistune
 except ImportError:
     sys.exit("Missing dependency: pip install mistune")
+
+try:
+    from pygments import highlight
+    from pygments.formatters import HtmlFormatter
+    from pygments.lexers import get_lexer_for_filename, TextLexer
+except ImportError:
+    sys.exit("Missing dependency: pip install pygments")
 
 # Project root is one level above this script's directory.
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -227,6 +235,101 @@ def group_artifacts_for_diffing(phases):
     return groups
 
 
+def highlight_content(content, filename):
+    """Syntax-highlight file content using Pygments."""
+    try:
+        lexer = get_lexer_for_filename(filename, stripall=True)
+    except Exception:
+        lexer = TextLexer(stripall=True)
+    formatter = HtmlFormatter(nowrap=True, classprefix="hl-")
+    return highlight(content, lexer, formatter)
+
+
+def compute_diff(old_content, new_content, old_name, new_name):
+    """Compute a unified diff between two file contents.
+
+    Returns a list of diff line dicts with 'type' (add/remove/context/header)
+    and 'content' fields.
+    """
+    old_lines = old_content.splitlines(keepends=True)
+    new_lines = new_content.splitlines(keepends=True)
+
+    diff_lines = list(difflib.unified_diff(
+        old_lines, new_lines,
+        fromfile=old_name, tofile=new_name,
+        lineterm="",
+    ))
+
+    result = []
+    for line in diff_lines:
+        text = line.rstrip("\n")
+        if line.startswith("@@"):
+            result.append({"type": "hunk", "content": text})
+        elif line.startswith("---") or line.startswith("+++"):
+            result.append({"type": "header", "content": text})
+        elif line.startswith("+"):
+            result.append({"type": "add", "content": text[1:]})
+        elif line.startswith("-"):
+            result.append({"type": "remove", "content": text[1:]})
+        else:
+            # Context line — strip leading space.
+            result.append({"type": "context", "content": text[1:] if text.startswith(" ") else text})
+
+    return result
+
+
+def enrich_artifacts(phases, demo_dir):
+    """Read artifact file contents and compute diffs for versioned artifacts.
+
+    Mutates each artifact dict in-place, adding:
+      - content: raw file content (str)
+      - highlighted_html: Pygments-highlighted HTML (str)
+      - diff_lines: list of diff line dicts (if a previous version exists)
+      - prev_filename: the previous version's filename (if diff exists)
+      - is_first_version: True if this is v0001 or unversioned
+    """
+    # Build the version group index: category--basename -> [artifact, ...]
+    groups = group_artifacts_for_diffing(phases)
+
+    # Build a lookup from filename -> content for diff computation.
+    content_cache = {}
+
+    for phase in phases:
+        for exchange in phase["exchanges"]:
+            for art in exchange["artifacts"]:
+                filepath = demo_dir / art["filename"]
+                if filepath.is_file():
+                    content = filepath.read_text(encoding="utf-8", errors="replace")
+                else:
+                    content = f"(file not found: {art['filename']})"
+
+                art["content"] = content
+                art["highlighted_html"] = highlight_content(content, art["filename"])
+                content_cache[art["filename"]] = content
+
+                # Determine if this is the first version.
+                key = f"{art['category']}--{art['basename']}"
+                group = groups.get(key, [])
+                idx = next(
+                    (i for i, a in enumerate(group) if a["filename"] == art["filename"]),
+                    0,
+                )
+                art["is_first_version"] = (idx == 0)
+
+                # Compute diff against previous version if one exists.
+                if idx > 0:
+                    prev = group[idx - 1]
+                    prev_content = content_cache.get(prev["filename"], "")
+                    art["diff_lines"] = compute_diff(
+                        prev_content, content,
+                        prev["filename"], art["filename"],
+                    )
+                    art["prev_filename"] = prev["filename"]
+                else:
+                    art["diff_lines"] = []
+                    art["prev_filename"] = None
+
+
 def render_prose(markdown_text):
     """Convert Markdown prose to HTML using mistune."""
     md = mistune.create_markdown()
@@ -257,9 +360,14 @@ def build_demo(demo_dir, env):
         for e in p["exchanges"]
     )
 
+    # Enrich artifacts with file content, highlighting, and diffs.
+    enrich_artifacts(data["phases"], demo_dir)
+
     # Render exchange cards and phase dividers.
     card_template = env.get_template("card.html")
     phase_template = env.get_template("phase_divider.html")
+    artifact_template = env.get_template("artifact.html")
+    diff_template = env.get_template("diff.html")
 
     content_parts = []
     for phase in data["phases"]:
@@ -270,6 +378,21 @@ def build_demo(demo_dir, env):
         for exchange in phase["exchanges"]:
             # Convert prose markdown to HTML.
             exchange["prose_html"] = Markup(render_prose(exchange.get("prose", "")))
+
+            # Render artifact panels.
+            artifact_panels = []
+            for art in exchange.get("artifacts", []):
+                # Render diff block if diff lines exist.
+                diff_html = Markup("")
+                if art.get("diff_lines"):
+                    diff_html = Markup(diff_template.render(diff_lines=art["diff_lines"]))
+
+                panel_html = artifact_template.render(
+                    artifact=art,
+                    diff_html=diff_html,
+                )
+                artifact_panels.append(Markup(panel_html))
+            exchange["artifact_panels"] = artifact_panels
 
             content_parts.append(card_template.render(
                 exchange=exchange,
