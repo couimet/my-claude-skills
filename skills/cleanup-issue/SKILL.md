@@ -1,13 +1,13 @@
 ---
 name: cleanup-issue
-description: Delete an issue's working directory (.claude-work/issues/<ID>/) after confirming with the user via /question
+description: Delete an issue's working directory (.claude-work/issues/<ID>/) after confirming with the user via interactive prompt
 argument-hint: [optional: issue-number]
-allowed-tools: Read, Write, Glob, Bash(git branch --show-current), Bash(rm -rf *)
+allowed-tools: Read, Glob, AskUserQuestion, Bash(git branch --show-current), Bash(rm -rf *)
 ---
 
 # Cleanup Issue
 
-Remove an issue's working directory after the work is done. Uses `/question` to confirm before deleting anything.
+Remove an issue's working directory after the work is done. Uses `AskUserQuestion` to confirm before deleting anything.
 
 **Input:** $ARGUMENTS (optional issue number; if omitted, detects from branch)
 
@@ -46,41 +46,22 @@ Glob(pattern="**/*", path=".claude-work/issues/<ID>")
 
 ## Step 3: Confirm Deletion
 
-Use `/question` to create a confirmation file. This ensures the user sees exactly what will be deleted and makes a deliberate choice.
+Use `AskUserQuestion` to prompt for confirmation. Include the full directory path and file list in the question so the user knows exactly what will be deleted.
 
-Create a questions file with topic `cleanup-issue-<ID>`:
-
-```text
-# Cleanup Issue #<ID>
-
-## Q001: Delete the working directory for issue #<ID>?
-
-Context: The directory .claude-work/issues/<ID>/ contains the following files:
-
-<list all files found by Glob in Step 2, indented>
-
-This action is irreversible — all scratchpads, questions, commit messages, and breadcrumbs for this issue will be permanently deleted.
-
-Options:
-A) Delete - Remove .claude-work/issues/<ID>/ and all contents
-B) Keep - Leave everything untouched
-
-Recommendation: A - The issue work is complete and these files are no longer needed.
-
-A001: [RECOMMENDED] A
-
----
+```
+AskUserQuestion(
+  question: "Delete working directory for issue #<ID>?\n\n.claude-work/issues/<ID>/ contains:\n<file list from Step 2>\n\nThis is irreversible.",
+  options: [
+    { label: "Delete", description: "Remove .claude-work/issues/<ID>/ and all contents" },
+    { label: "Keep", description: "Leave everything untouched" }
+  ]
+)
 ```
 
-Print ONLY the questions file path and wait for the user to answer.
+## Step 4: Act on Answer
 
-## Step 4: Read Answer and Act
-
-Read the questions file back. Check `A001`:
-
-- **`A` or `Delete`** → proceed to deletion
-- **`B` or `Keep`** → print "Keeping `.claude-work/issues/<ID>/` untouched." and STOP
-- **Still `[RECOMMENDED]`** → print "Please review and acknowledge the answer in the questions file before proceeding." and STOP
+- **Delete** → proceed to deletion
+- **Keep** → print "Keeping `.claude-work/issues/<ID>/` untouched." and STOP
 
 ### Delete
 
