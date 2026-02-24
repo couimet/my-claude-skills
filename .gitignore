@@ -1,2 +1,5 @@
 # Claude skill working directories
 .claude-work/
+
+# Generated demo site output (regenerate with: python demo/generate.py)
+demo/site/
