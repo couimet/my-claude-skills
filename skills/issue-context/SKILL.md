@@ -66,7 +66,7 @@ Examples:
 
 Files go in a type subdirectory at the `.claude-work/` root with global numbering:
 
-```
+```text
 .claude-work/<type>/NNNN-description.txt
 ```
 
@@ -97,7 +97,7 @@ Breadcrumbs use a different pattern — a single file per issue rather than numb
 
 When no issue context (side-quests, flat root):
 
-```
+```text
 .claude-work/breadcrumb-<slug>.md
 ```
 
