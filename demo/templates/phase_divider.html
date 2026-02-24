@@ -1,0 +1,5 @@
+<section class="phase-divider" id="phase-{{ phase.number }}">
+  <div class="phase-number">Phase {{ phase.number }}</div>
+  <h2 class="phase-title">{{ phase.title }}</h2>
+  <div class="phase-count">{{ phase.exchanges | length }} exchange{{ 's' if phase.exchanges | length != 1 else '' }}</div>
+</section>

@@ -16,21 +16,34 @@
 <body>
 
   <header class="site-header">
+    <div class="header-rule"></div>
+    <p class="header-label">Case Study</p>
     <h1>{{ title }}</h1>
     <p class="subtitle">{{ subtitle }}</p>
+    <div class="header-meta">
+      <span>{{ exchange_count }} exchanges</span>
+      <span class="meta-sep">/</span>
+      <span>{{ phase_count }} phases</span>
+      <span class="meta-sep">/</span>
+      <span>{{ artifact_count }} artifacts</span>
+    </div>
   </header>
 
-  <main class="site-content">
-    {{ content }}
-  </main>
+  <div class="timeline-spine">
+    <main class="site-content">
+      {{ content }}
+    </main>
+  </div>
 
   <footer class="site-footer">
-    <p>
-      <a href="https://github.com/couimet/my-claude-skills">Repository</a> &middot;
-      <a href="https://github.com/couimet/my-claude-skills/blob/main/README.md">README</a> &middot;
+    <div class="footer-rule"></div>
+    <div class="footer-links">
+      <a href="https://github.com/couimet/my-claude-skills">Repository</a>
+      <a href="https://github.com/couimet/my-claude-skills/blob/main/README.md">README</a>
       <a href="https://github.com/couimet/my-claude-skills/pull/11">PR #11</a>
-    </p>
-    <p>Built with a Python script from raw <a href="https://github.com/couimet/my-claude-skills/tree/main/demo/real-life">demo artifacts</a>.</p>
+      <a href="https://github.com/couimet/my-claude-skills/tree/main/demo/real-life">Raw Artifacts</a>
+    </div>
+    <p class="footer-colophon">Generated from <code>TIMELINE.md</code> by a Python script. No hand-editing.</p>
   </footer>
 
   <script src="{{ js_path }}"></script>

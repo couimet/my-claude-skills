@@ -1,132 +1,593 @@
 /* ============================================================
-   Demo Site — Core Styles
+   Demo Site — Archival Editorial
    ============================================================
-   Design direction: Stripe docs meets Linear changelogs.
-   Clean, developer-credible, not flashy.
+   Aesthetic: Technical journal meets court transcript.
+   Source Serif 4 for prose, JetBrains Mono for code/numbers.
+   Restrained palette. Impeccable vertical rhythm.
    ============================================================ */
+
+/* --- Font Faces (self-hosted, no external CDN) --- */
+@font-face {
+  font-family: 'Source Serif 4';
+  src: url('fonts/SourceSerif4-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Source Serif 4';
+  src: url('fonts/SourceSerif4-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Source Serif 4';
+  src: url('fonts/SourceSerif4-Italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('fonts/JetBrainsMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('fonts/JetBrainsMono-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* --- Custom Properties (Light Mode) --- */
 :root {
-  --bg: #fafafa;
+  /* Palette: warm parchment base, deep ink text */
+  --bg: #faf8f5;
   --bg-card: #ffffff;
-  --text: #24292f;
-  --text-secondary: #57606a;
-  --border: #d0d7de;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --bg-gutter: #f3f0eb;
+  --text: #1a1a1a;
+  --text-secondary: #6b6560;
+  --text-tertiary: #9b9590;
+  --border: #e5e0d8;
+  --border-strong: #c8c0b5;
+  --rule: #1a1a1a;
 
-  /* Phase badge colors */
-  --phase-planning: #0969da;
-  --phase-implementation: #1a7f37;
-  --phase-review: #bf8700;
-  --phase-wrapup: #8250df;
+  /* Phase accent colors — muted, editorial */
+  --phase-1: #2563a0;   /* Planning: deep blue */
+  --phase-2: #1a7f6e;   /* Formal Workflow: teal */
+  --phase-3: #2d7a3a;   /* Implementation: forest */
+  --phase-4: #b5760a;   /* PR & Review: amber */
+  --phase-5: #7c4dbd;   /* Wrap-up: muted purple */
 
   /* Diff colors */
-  --diff-add-bg: #e6ffec;
-  --diff-add-text: #116329;
-  --diff-remove-bg: #ffebe9;
-  --diff-remove-text: #82071e;
+  --diff-add-bg: #eaf5ec;
+  --diff-add-border: #a3d9a5;
+  --diff-remove-bg: #fceced;
+  --diff-remove-border: #e8a9ab;
 
   /* Typography */
-  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-  --font-size-base: 1rem;
-  --font-size-title: 1.25rem;
-  --line-height: 1.6;
+  --font-serif: 'Source Serif 4', 'Georgia', 'Times New Roman', serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+
+  /* Spacing scale (based on 1.5rem baseline) */
+  --space-xs: 0.375rem;
+  --space-sm: 0.75rem;
+  --space-md: 1.5rem;
+  --space-lg: 3rem;
+  --space-xl: 6rem;
 }
 
-/* --- Dark Mode (System Preference) --- */
+/* --- Dark Mode --- */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0d1117;
-    --bg-card: #161b22;
-    --text: #c9d1d9;
-    --text-secondary: #8b949e;
-    --border: #30363d;
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --bg: #111110;
+    --bg-card: #1a1918;
+    --bg-gutter: #151413;
+    --text: #e8e4df;
+    --text-secondary: #a09890;
+    --text-tertiary: #706860;
+    --border: #2a2825;
+    --border-strong: #3d3a35;
+    --rule: #e8e4df;
 
-    --diff-add-bg: #12261e;
-    --diff-add-text: #3fb950;
-    --diff-remove-bg: #2d1215;
-    --diff-remove-text: #f85149;
+    --phase-1: #5b9bd5;
+    --phase-2: #4db8a4;
+    --phase-3: #5dba6a;
+    --phase-4: #dda040;
+    --phase-5: #a07de0;
+
+    --diff-add-bg: #132a16;
+    --diff-add-border: #2d5a30;
+    --diff-remove-bg: #2a1315;
+    --diff-remove-border: #5a2d30;
   }
 }
 
-/* --- Reset & Base --- */
-*,
-*::before,
-*::after {
+/* --- Reset --- */
+*, *::before, *::after {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* --- Base --- */
+html {
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  margin: 0;
-  padding: 0;
-  font-family: var(--font-body);
-  font-size: var(--font-size-base);
-  line-height: var(--line-height);
+  font-family: var(--font-serif);
+  line-height: 1.65;
   color: var(--text);
   background: var(--bg);
 }
 
-code, pre {
-  font-family: var(--font-mono);
-}
-
 a {
-  color: var(--phase-planning);
-  text-decoration: none;
+  color: var(--text);
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 0.15em;
+  transition: text-decoration-color 0.2s ease;
 }
 
 a:hover {
-  text-decoration: underline;
+  text-decoration-color: var(--text);
 }
 
-/* --- Layout --- */
-.site-header {
-  max-width: 48rem;
-  margin: 0 auto;
-  padding: 3rem 1.5rem 2rem;
+code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--bg-gutter);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
 }
 
-.site-header h1 {
-  margin: 0 0 0.5rem;
-  font-size: 1.75rem;
+pre {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  background: var(--bg-gutter);
+  padding: var(--space-md);
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+/* --- Headings in prose --- */
+.card-prose h1,
+.card-prose h2,
+.card-prose h3,
+.card-prose h4 {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+
+.card-prose p {
+  margin-bottom: var(--space-sm);
+}
+
+.card-prose ul, .card-prose ol {
+  margin-bottom: var(--space-sm);
+  padding-left: 1.5em;
+}
+
+.card-prose li {
+  margin-bottom: 0.25em;
+}
+
+.card-prose strong {
   font-weight: 700;
 }
 
-.site-header .subtitle {
-  color: var(--text-secondary);
-  font-size: 1.1rem;
-  margin: 0;
+.card-prose em {
+  font-style: italic;
 }
 
+/* --- Site Header --- */
+.site-header {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-md) var(--space-lg);
+}
+
+.header-rule {
+  width: 4rem;
+  height: 3px;
+  background: var(--rule);
+  margin-bottom: var(--space-lg);
+}
+
+.header-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-sm);
+}
+
+.site-header h1 {
+  font-family: var(--font-serif);
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-sm);
+}
+
+.subtitle {
+  font-size: 1.15rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 36rem;
+}
+
+.header-meta {
+  margin-top: var(--space-md);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.meta-sep {
+  color: var(--border-strong);
+}
+
+/* --- Timeline Spine --- */
+.timeline-spine {
+  position: relative;
+}
+
+.timeline-spine::before {
+  content: '';
+  position: absolute;
+  left: calc(50% - 26rem + 2.75rem);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+@media (max-width: 56rem) {
+  .timeline-spine::before {
+    left: 2.75rem;
+  }
+}
+
+/* --- Site Content --- */
 .site-content {
-  max-width: 48rem;
+  max-width: 52rem;
   margin: 0 auto;
-  padding: 0 1.5rem 4rem;
+  padding: 0 var(--space-md) var(--space-lg);
 }
 
-.site-footer {
-  max-width: 48rem;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
+/* --- Phase Divider --- */
+.phase-divider {
+  padding: var(--space-xl) 0 var(--space-lg);
+  position: relative;
+}
+
+.phase-divider::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: var(--border-strong);
+  margin-bottom: var(--space-lg);
+}
+
+.phase-number {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-xs);
+}
+
+.phase-title {
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.phase-count {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  margin-top: var(--space-xs);
+}
+
+/* Phase-specific accent colors on dividers */
+.phase-divider#phase-1 .phase-number { color: var(--phase-1); }
+.phase-divider#phase-2 .phase-number { color: var(--phase-2); }
+.phase-divider#phase-3 .phase-number { color: var(--phase-3); }
+.phase-divider#phase-4 .phase-number { color: var(--phase-4); }
+.phase-divider#phase-5 .phase-number { color: var(--phase-5); }
+
+/* --- Exchange Card --- */
+.exchange-card {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: var(--space-md);
+  padding: var(--space-lg) 0;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.exchange-card:last-child {
+  border-bottom: none;
+}
+
+/* Left border accent per phase */
+.exchange-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--space-lg);
+  bottom: var(--space-lg);
+  width: 2px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.exchange-card.phase-1::before { background: var(--phase-1); }
+.exchange-card.phase-2::before { background: var(--phase-2); }
+.exchange-card.phase-3::before { background: var(--phase-3); }
+.exchange-card.phase-4::before { background: var(--phase-4); }
+.exchange-card.phase-5::before { background: var(--phase-5); }
+
+/* --- Card Gutter (exchange number) --- */
+.card-gutter {
+  padding-top: 0.15rem;
+}
+
+.exchange-number {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  display: block;
+  text-align: center;
+}
+
+/* --- Card Body --- */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.phase-badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.15em 0.6em;
+  border-radius: 2px;
+  border: 1px solid;
+}
+
+.phase-badge--1 { color: var(--phase-1); border-color: var(--phase-1); }
+.phase-badge--2 { color: var(--phase-2); border-color: var(--phase-2); }
+.phase-badge--3 { color: var(--phase-3); border-color: var(--phase-3); }
+.phase-badge--4 { color: var(--phase-4); border-color: var(--phase-4); }
+.phase-badge--5 { color: var(--phase-5); border-color: var(--phase-5); }
+
+.card-date {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
+.card-title {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: var(--space-md);
+}
+
+.card-prose {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+.card-prose a {
+  color: var(--text-secondary);
+}
+
+/* --- Artifact List --- */
+.card-artifacts {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
   border-top: 1px solid var(--border);
-  color: var(--text-secondary);
-  font-size: 0.875rem;
 }
 
-.site-footer a {
-  color: var(--text-secondary);
+.artifacts-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-sm);
 }
 
-/* --- Phase Divider (placeholder for S003) --- */
+.artifact-list {
+  list-style: none;
+  padding: 0;
+}
 
-/* --- Exchange Card (placeholder for S003) --- */
+.artifact-ref {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  padding: 0.3rem 0;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.artifact-ref:last-child {
+  border-bottom: none;
+}
+
+.artifact-seq {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  background: var(--bg-gutter);
+  padding: 0.1em 0.4em;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.artifact-category {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.artifact-name {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Footer --- */
+.site-footer {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 0 var(--space-md) var(--space-xl);
+}
+
+.footer-rule {
+  width: 4rem;
+  height: 1px;
+  background: var(--border-strong);
+  margin-bottom: var(--space-lg);
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.footer-links a {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  text-decoration: none;
+  letter-spacing: 0.03em;
+}
+
+.footer-links a:hover {
+  color: var(--text);
+}
+
+.footer-colophon {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+/* --- Staggered Card Entrance (CSS-only, progressive) --- */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.exchange-card {
+  animation: card-enter 0.4s ease both;
+}
+
+/* --- Responsive --- */
+@media (max-width: 56rem) {
+  html { font-size: 16px; }
+
+  .site-header {
+    padding: var(--space-lg) var(--space-md) var(--space-md);
+  }
+
+  .site-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .exchange-card {
+    grid-template-columns: 2.5rem 1fr;
+    gap: var(--space-sm);
+  }
+}
+
+@media (max-width: 36rem) {
+  .site-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+  }
+
+  .exchange-card {
+    grid-template-columns: 1fr;
+  }
+
+  .card-gutter {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+  }
+
+  .exchange-number {
+    text-align: left;
+  }
+
+  .card-title {
+    font-size: 1.15rem;
+  }
+}
 
 /* --- Artifact Panel (placeholder for S004) --- */
 
 /* --- Diff Block (placeholder for S004) --- */
 
 /* --- Progress Bar (placeholder for S005) --- */
-
-/* --- Responsive (placeholder for S006) --- */

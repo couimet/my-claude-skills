@@ -23,8 +23,14 @@ from pathlib import Path
 
 try:
     from jinja2 import Environment, FileSystemLoader
+    from markupsafe import Markup
 except ImportError:
     sys.exit("Missing dependency: pip install jinja2")
+
+try:
+    import mistune
+except ImportError:
+    sys.exit("Missing dependency: pip install mistune")
 
 # Project root is one level above this script's directory.
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -178,11 +184,15 @@ def parse_timeline(timeline_path):
                     parse_artifact_ref(art_match)
                 )
 
-        # Accumulate prose lines (skip horizontal rules and blank-only sections
-        # at the start, but keep everything else).
+        # Accumulate prose lines (skip horizontal rules, artifact reference
+        # lines, and blank-only sections at the start).
         if current_exchange is not None and seen_date:
             # Skip the "---" dividers between exchanges.
             if line.strip() == "---":
+                continue
+            # Skip lines that are artifact reference list items — these are
+            # displayed separately in the card-artifacts section.
+            if RE_ARTIFACT_LINK.search(line) and line.lstrip().startswith("- ["):
                 continue
             prose_lines.append(line)
 
@@ -217,6 +227,12 @@ def group_artifacts_for_diffing(phases):
     return groups
 
 
+def render_prose(markdown_text):
+    """Convert Markdown prose to HTML using mistune."""
+    md = mistune.create_markdown()
+    return md(markdown_text)
+
+
 def build_demo(demo_dir, env):
     """Generate the site for a single demo directory."""
     timeline_path = demo_dir / "TIMELINE.md"
@@ -233,6 +249,35 @@ def build_demo(demo_dir, env):
     css_path = "../style.css"
     js_path = "../demo.js"
 
+    # Compute stats.
+    total_exchanges = sum(len(p["exchanges"]) for p in data["phases"])
+    total_artifacts = sum(
+        len(e["artifacts"])
+        for p in data["phases"]
+        for e in p["exchanges"]
+    )
+
+    # Render exchange cards and phase dividers.
+    card_template = env.get_template("card.html")
+    phase_template = env.get_template("phase_divider.html")
+
+    content_parts = []
+    for phase in data["phases"]:
+        # Phase divider.
+        content_parts.append(phase_template.render(phase=phase))
+
+        # Exchange cards.
+        for exchange in phase["exchanges"]:
+            # Convert prose markdown to HTML.
+            exchange["prose_html"] = Markup(render_prose(exchange.get("prose", "")))
+
+            content_parts.append(card_template.render(
+                exchange=exchange,
+                phase=phase,
+            ))
+
+    content_html = Markup("\n".join(content_parts))
+
     # Render the page.
     template = env.get_template("base.html")
     html = template.render(
@@ -241,7 +286,10 @@ def build_demo(demo_dir, env):
         description="Step-by-step walkthrough of how Claude Code skills were used to build a real project.",
         css_path=css_path,
         js_path=js_path,
-        content="<!-- Exchange cards will be rendered here by S003 -->",
+        content=content_html,
+        exchange_count=total_exchanges,
+        phase_count=len(data["phases"]),
+        artifact_count=total_artifacts,
     )
 
     index_path = output_dir / "index.html"
@@ -250,13 +298,22 @@ def build_demo(demo_dir, env):
 
 
 def copy_static_assets():
-    """Copy shared CSS and JS to the site root."""
+    """Copy shared CSS, JS, and fonts to the site root."""
     SITE_DIR.mkdir(parents=True, exist_ok=True)
     for filename in ["style.css", "demo.js"]:
         src = STATIC_DIR / filename
         dst = SITE_DIR / filename
         if src.is_file():
             shutil.copy2(src, dst)
+
+    # Copy fonts directory.
+    fonts_src = STATIC_DIR / "fonts"
+    fonts_dst = SITE_DIR / "fonts"
+    if fonts_src.is_dir():
+        if fonts_dst.exists():
+            shutil.rmtree(fonts_dst)
+        shutil.copytree(fonts_src, fonts_dst)
+
     print(f"  Copied static assets to {SITE_DIR.relative_to(PROJECT_ROOT)}/")
 
 
