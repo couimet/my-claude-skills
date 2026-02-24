@@ -1,0 +1,47 @@
+name: Changelog reminder
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  changelog-reminder:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+      - name: Check for CHANGELOG.md changes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="origin/${{ github.base_ref }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+
+          if ! git diff --name-only "$BASE"...HEAD | grep -q '^CHANGELOG.md$'; then
+            echo "::warning::CHANGELOG.md was not updated. Consider adding a changelog entry."
+            exit 0
+          fi
+
+          DIFF=$(git diff "$BASE"...HEAD -- CHANGELOG.md)
+
+          # Check that the diff adds at least one list item (a real entry, not just whitespace)
+          if ! echo "$DIFF" | grep -qE '^\+- '; then
+            echo "::warning::CHANGELOG.md was modified but no new entry found. Add a line starting with \"- \" under a category."
+            exit 0
+          fi
+
+          # Validate that any added section headers follow CalVer format (YYYY.0M.0D with optional .N suffix)
+          BAD_HEADERS=$(echo "$DIFF" | grep -E '^\+## [0-9]' | grep -vE '^\+## [0-9]{4}\.[0-9]{2}\.[0-9]{2}(\.[0-9]+)?$' || true)
+          if [ -n "$BAD_HEADERS" ]; then
+            echo "::warning::CHANGELOG.md has section headers that don't follow CalVer (YYYY.0M.0D). Found: $BAD_HEADERS"
+            exit 0
+          fi
+
+          echo "::notice::CHANGELOG.md was updated with a valid entry."
