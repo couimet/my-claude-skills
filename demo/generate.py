@@ -410,6 +410,7 @@ def build_demo(demo_dir, env):
         css_path=css_path,
         js_path=js_path,
         content=content_html,
+        phases=data["phases"],
         exchange_count=total_exchanges,
         phase_count=len(data["phases"]),
         artifact_count=total_artifacts,

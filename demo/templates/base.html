@@ -29,6 +29,18 @@
     </div>
   </header>
 
+  <nav class="progress-bar" aria-label="Phase navigation">
+    <div class="progress-bar-inner">
+      {% for phase in phases %}
+      <a class="progress-phase" href="#phase-{{ phase.number }}" data-phase="{{ phase.number }}">
+        <span class="progress-dot progress-dot--{{ phase.number }}"></span>
+        <span class="progress-label">{{ phase.title | truncate(20, true, '…') }}</span>
+        <span class="progress-count">{{ phase.exchanges | length }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </nav>
+
   <div class="timeline-spine">
     <main class="site-content">
       {{ content }}

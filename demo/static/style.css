@@ -802,4 +802,102 @@ pre code {
   font-weight: 500;
 }
 
-/* --- Progress Bar (placeholder for S005) --- */
+/* --- Progress Bar / Phase Navigation --- */
+.progress-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Slight transparency so content peeks through the blur */
+@supports (backdrop-filter: blur(8px)) {
+  .progress-bar {
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+  }
+}
+
+.progress-bar-inner {
+  max-width: 52rem;
+  margin: 0 auto;
+  display: flex;
+  padding: 0 var(--space-md);
+}
+
+.progress-phase {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 0.75rem;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.2s ease, opacity 0.2s ease;
+  opacity: 0.5;
+}
+
+.progress-phase:hover {
+  opacity: 0.8;
+}
+
+.progress-phase.is-active {
+  opacity: 1;
+  border-bottom-color: currentColor;
+}
+
+.progress-phase.is-active.phase-active--1 { border-bottom-color: var(--phase-1); }
+.progress-phase.is-active.phase-active--2 { border-bottom-color: var(--phase-2); }
+.progress-phase.is-active.phase-active--3 { border-bottom-color: var(--phase-3); }
+.progress-phase.is-active.phase-active--4 { border-bottom-color: var(--phase-4); }
+.progress-phase.is-active.phase-active--5 { border-bottom-color: var(--phase-5); }
+
+.progress-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.progress-dot--1 { background: var(--phase-1); }
+.progress-dot--2 { background: var(--phase-2); }
+.progress-dot--3 { background: var(--phase-3); }
+.progress-dot--4 { background: var(--phase-4); }
+.progress-dot--5 { background: var(--phase-5); }
+
+.progress-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.progress-count {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 56rem) {
+  .progress-label {
+    display: none;
+  }
+
+  .progress-phase {
+    padding: 0.5rem 0.6rem;
+  }
+
+  .progress-count {
+    font-size: 0.55rem;
+  }
+}
+
+@media (max-width: 36rem) {
+  .progress-bar-inner {
+    justify-content: center;
+  }
+}
