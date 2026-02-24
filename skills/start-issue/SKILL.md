@@ -13,9 +13,9 @@ Analyze a GitHub issue, explore the codebase, and create a detailed implementati
 
 ## Step 0: Clean Up Current Issue Artifacts
 
-Before starting new work, use `/issue-context` to detect whether the current branch has an associated issue directory. If the current branch is `issues/<ID>` and `.claude-work/issues/<ID>/` exists, invoke `/cleanup-issue` to offer cleanup of that specific directory. Other issue directories are left untouched -- the user may return to them later.
+Before starting new work, use `/issue-context` to detect whether the current branch is `issues/<ID>`. If so, use `Glob(pattern="*", path=".claude-work/issues/<ID>")` to check whether the issue's working directory has contents. If the directory exists and has files, invoke `/cleanup-issue` to offer cleanup of that specific directory. Other issue directories are left untouched -- the user may return to them later.
 
-**If no issue context on the current branch, or the directory doesn't exist:** proceed directly to Step 1.
+**If no issue context on the current branch, or the directory doesn't exist or is empty:** proceed directly to Step 1.
 
 ## Step 1: Fetch Issue Details
 

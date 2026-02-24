@@ -48,7 +48,7 @@ Foundation skills (scratchpad, question, commit-msg) use this to determine the t
 
 Files go in a type subdirectory within the issue directory:
 
-```
+```text
 .claude-work/issues/<ID>/<type>/NNNN-description.txt
 ```
 

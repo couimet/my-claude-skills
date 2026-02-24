@@ -2,7 +2,7 @@
 name: cleanup-issue
 description: Delete an issue's working directory (.claude-work/issues/<ID>/) after confirming with the user via interactive prompt
 argument-hint: [optional: issue-number]
-allowed-tools: Read, Glob, AskUserQuestion, Bash(git branch --show-current), Bash(rm -rf *)
+allowed-tools: Read, Glob, AskUserQuestion, Bash(git branch --show-current), Bash(rm -rf .claude-work/issues/*)
 ---
 
 # Cleanup Issue
@@ -29,26 +29,26 @@ Extract the issue ID from `issues/<ID>` pattern. If the branch doesn't match `is
 
 Check if the issue directory exists:
 
-```
+```text
 .claude-work/issues/<ID>/
 ```
 
 Use Glob to list contents:
 
-```
+```text
 Glob(pattern="**/*", path=".claude-work/issues/<ID>")
 ```
 
 **If directory doesn't exist or is empty:**
 
 - Print: "No working directory found for issue #`<ID>` at `.claude-work/issues/<ID>/`."
-- STOP
+- Skip to Step 5
 
 ## Step 3: Confirm Deletion
 
 Use `AskUserQuestion` to prompt for confirmation. Include the full directory path and file list in the question so the user knows exactly what will be deleted.
 
-```
+```text
 AskUserQuestion(
   question: "Delete working directory for issue #<ID>?\n\n.claude-work/issues/<ID>/ contains:\n<file list from Step 2>\n\nThis is irreversible.",
   options: [
@@ -77,9 +77,9 @@ Cleaned up .claude-work/issues/<ID>/ — all working files removed.
 
 ## Step 5: Check for Side-Quest Artifacts
 
-After handling the issue directory (or if it didn't exist), scan for orphaned side-quest files in the `.claude-work/` root:
+Regardless of whether the issue directory existed or was deleted, scan for orphaned side-quest files in the `.claude-work/` root:
 
-```
+```text
 Glob(pattern="breadcrumb-*.md", path=".claude-work")
 Glob(pattern="scratchpads/*side-quest*", path=".claude-work")
 Glob(pattern="commit-msgs/*side-quest*", path=".claude-work")

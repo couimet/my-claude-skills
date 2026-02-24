@@ -69,7 +69,7 @@ Check if documentation updates are needed. Common touchpoints:
 Collect information from:
 
 - Breadcrumbs file (if exists): `.claude-work/issues/<identifier>/breadcrumb.md` (where `<identifier>` is the issue number per `/issue-context`)
-- Scratchpads matching the work: use Glob to find `*<identifier>*` in `.claude-work/`
+- Scratchpads: list all files in `.claude-work/issues/<identifier>/` using `Glob(pattern="**/*", path=".claude-work/issues/<identifier>")`
 - Commit history: `git log --oneline origin/main..HEAD`
 - Commit details: `git log origin/main..HEAD`
 

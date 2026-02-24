@@ -261,7 +261,7 @@ I've used Claude Code on dozens of real issues and kept running into the same fr
 
 - **Files over chat.** Every decision, plan, and question lives in a file — not buried in terminal scroll. If you use [RangeLink](https://github.com/couimet/rangeLink) or similar tools, the file references become clickable navigation.
 - **Crash-proof context.** Claude Code sessions can compact, disconnect, or run out of context. Because everything is written to disk as it happens, you can resume from any scratchpad in a fresh session without losing anything.
-- **Organized, not scattered.** Working files go under `.claude-work/` with type subdirectories (`scratchpads/`, `questions/`, `commit-msgs/`), auto-numbering, and issue-scoped organization. No manual file management — and `/cleanup-issue` removes everything when you're done.
+- **Organized, not scattered.** Working files go under `.claude-work/` with type subdirectories (`scratchpads/`, `questions/`, `commit-msgs/`), auto-numbering, and issue-scoped organization. No manual file management — and `/cleanup-issue` removes the issue's working directory when you're done.
 - **You control execution.** Claude proposes plans and drafts commit messages. You review, edit, and execute. No auto-commits, no surprise pushes, no "let me just fix that for you."
 - **Ephemeral vs. permanent.** Working files are git-ignored — they're your private workspace. Only real code and documentation get committed. This distinction is enforced by convention, not tooling.
 - **Plan, then execute.** `/start-issue` creates the plan. `/tackle-scratchpad-block` executes one step at a time. The plan is always visible, always editable, always the source of truth for what's left to do.
@@ -274,7 +274,7 @@ I've used Claude Code on dozens of real issues and kept running into the same fr
 | Command | What It Does |
 | --- | --- |
 | `/breadcrumb <note>` | Drop a timestamped note collected by `/finish-issue` for the PR description |
-| `/cleanup-issue [number]` | Delete an issue's `.claude-work/` directory after confirming with the user |
+| `/cleanup-issue [number]` | Delete an issue's working directory (`.claude-work/issues/<ID>/`) after confirming with the user |
 | `/commit-msg <desc>` | Draft a commit message focused on WHY, not WHAT |
 | `/create-github-issue <title-or-path>` | Create a GitHub issue from a scratchpad draft or inline description |
 | `/finish-issue` | Verify work, collect breadcrumbs, check docs, and generate a PR description |
