@@ -1,0 +1,132 @@
+/* ============================================================
+   Demo Site — Core Styles
+   ============================================================
+   Design direction: Stripe docs meets Linear changelogs.
+   Clean, developer-credible, not flashy.
+   ============================================================ */
+
+/* --- Custom Properties (Light Mode) --- */
+:root {
+  --bg: #fafafa;
+  --bg-card: #ffffff;
+  --text: #24292f;
+  --text-secondary: #57606a;
+  --border: #d0d7de;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  /* Phase badge colors */
+  --phase-planning: #0969da;
+  --phase-implementation: #1a7f37;
+  --phase-review: #bf8700;
+  --phase-wrapup: #8250df;
+
+  /* Diff colors */
+  --diff-add-bg: #e6ffec;
+  --diff-add-text: #116329;
+  --diff-remove-bg: #ffebe9;
+  --diff-remove-text: #82071e;
+
+  /* Typography */
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-size-base: 1rem;
+  --font-size-title: 1.25rem;
+  --line-height: 1.6;
+}
+
+/* --- Dark Mode (System Preference) --- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --bg-card: #161b22;
+    --text: #c9d1d9;
+    --text-secondary: #8b949e;
+    --border: #30363d;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+
+    --diff-add-bg: #12261e;
+    --diff-add-text: #3fb950;
+    --diff-remove-bg: #2d1215;
+    --diff-remove-text: #f85149;
+  }
+}
+
+/* --- Reset & Base --- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height);
+  color: var(--text);
+  background: var(--bg);
+}
+
+code, pre {
+  font-family: var(--font-mono);
+}
+
+a {
+  color: var(--phase-planning);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* --- Layout --- */
+.site-header {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 2rem;
+}
+
+.site-header h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.site-header .subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.site-content {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 0 1.5rem 4rem;
+}
+
+.site-footer {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.site-footer a {
+  color: var(--text-secondary);
+}
+
+/* --- Phase Divider (placeholder for S003) --- */
+
+/* --- Exchange Card (placeholder for S003) --- */
+
+/* --- Artifact Panel (placeholder for S004) --- */
+
+/* --- Diff Block (placeholder for S004) --- */
+
+/* --- Progress Bar (placeholder for S005) --- */
+
+/* --- Responsive (placeholder for S006) --- */

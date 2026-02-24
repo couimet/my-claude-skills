@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  <meta name="description" content="{{ description }}">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="{{ title }}">
+  <meta property="og:description" content="{{ description }}">
+  <meta property="og:type" content="article">
+
+  <link rel="stylesheet" href="{{ css_path }}">
+</head>
+<body>
+
+  <header class="site-header">
+    <h1>{{ title }}</h1>
+    <p class="subtitle">{{ subtitle }}</p>
+  </header>
+
+  <main class="site-content">
+    {{ content }}
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      <a href="https://github.com/couimet/my-claude-skills">Repository</a> &middot;
+      <a href="https://github.com/couimet/my-claude-skills/blob/main/README.md">README</a> &middot;
+      <a href="https://github.com/couimet/my-claude-skills/pull/11">PR #11</a>
+    </p>
+    <p>Built with a Python script from raw <a href="https://github.com/couimet/my-claude-skills/tree/main/demo/real-life">demo artifacts</a>.</p>
+  </footer>
+
+  <script src="{{ js_path }}"></script>
+</body>
+</html>
