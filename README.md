@@ -312,6 +312,12 @@ To customize:
 
 If you build something useful, PRs are welcome. These skills evolved from my own workflow friction — yours will be different, and that's the point.
 
+## Versioning
+
+This project uses [Calendar Versioning](https://calver.org/) (`YYYY.0M.0D`). When multiple versions land on the same day, a micro suffix is appended: `2026.02.24.2`, `2026.02.24.3`, etc. CalVer was chosen over SemVer because skills are prompt-based tools without formal API contracts — "breaking change" semantics don't map cleanly to "a skill's wording changed."
+
+Changelog entries are free-form and contributor-driven. CI will nudge you with a non-blocking reminder if a PR doesn't update the changelog, but it won't block the merge. See [CHANGELOG.md](CHANGELOG.md) for the full history.
+
 ## Resources
 
 - [Claude Code skills documentation](https://code.claude.com/docs/en/skills) — the official guide to how skills work, including the `SKILL.md` format spec
