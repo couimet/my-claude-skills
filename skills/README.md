@@ -4,10 +4,10 @@
 
 | Skill | Invocation | What It Does |
 | --- | --- | --- |
-| `scratchpad` | `/scratchpad <desc>` | Creates `.scratchpads/NNNN-description.txt` with auto-numbering |
-| `question` | `/question <topic>` | Creates `.claude-questions/NNNN-topic.txt` for user Q&A |
-| `commit-msg` | `/commit-msg <desc>` | Creates `.commit-msgs/NNNN-description.txt` |
-| `breadcrumb` | `/breadcrumb <note>` | Appends timestamped note to `.breadcrumbs/<ISSUE>.md` |
+| `scratchpad` | `/scratchpad <desc>` | Creates `.claude-work/scratchpads/NNNN-description.txt` with auto-numbering |
+| `question` | `/question <topic>` | Creates `.claude-work/questions/NNNN-topic.txt` for user Q&A |
+| `commit-msg` | `/commit-msg <desc>` | Creates `.claude-work/commit-msgs/NNNN-description.txt` |
+| `breadcrumb` | `/breadcrumb <note>` | Appends timestamped note to `.claude-work/issues/<ID>/breadcrumb.md` |
 
 ## Non-Invocable Skills (auto-consulted by Claude)
 
@@ -23,9 +23,10 @@
 
 | Skill | Invocation | Foundation Dependencies |
 | --- | --- | --- |
+| `cleanup-issue` | `/cleanup-issue [number]` | `/issue-context` |
 | `create-github-issue` | `/create-github-issue <title-or-path>` | `/scratchpad` (reads), `/question` |
 | `finish-issue` | `/finish-issue` | `/scratchpad` (reads), `/question`, breadcrumbs (reads) |
-| `start-issue` | `/start-issue <url>` | `/scratchpad`, `/question` |
+| `start-issue` | `/start-issue <url>` | `/scratchpad`, `/question`, `/cleanup-issue` |
 | `start-side-quest` | `/start-side-quest <desc>` | `/scratchpad`, `/question`, `/commit-msg` (ref) |
 | `tackle-pr-comment` | `/tackle-pr-comment <url>` | `/scratchpad`, `/question`, `/commit-msg` |
 | `tackle-scratchpad-block` | `/tackle-scratchpad-block <path#lines>` | `/question`, `/commit-msg`, `/scratchpad` (reads) |

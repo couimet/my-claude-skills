@@ -31,7 +31,7 @@ Once installed, try these in any project:
 /scratchpad plan the authentication refactor
 ```
 
-Creates a `.scratchpads/0001-plan-the-authentication-refactor.txt` file with structured step tracking. The file is git-ignored — it's your private workspace.
+Creates a `.claude-work/scratchpads/0001-plan-the-authentication-refactor.txt` file with structured step tracking. The file is git-ignored — it's your private workspace.
 
 <details>
 <summary>See a real scratchpad from this repo</summary>
@@ -65,7 +65,7 @@ Full file: [demo/real-life/issues-10/0001--scratchpad--0004-readme-enrichment-pl
 /question authentication strategy choices
 ```
 
-Creates a `.claude-questions/0001-authentication-strategy-choices.txt` with structured Q&A. Claude pre-fills recommendations; you edit answers in-file as the single source of truth.
+Creates a `.claude-work/questions/0001-authentication-strategy-choices.txt` with structured Q&A. Claude pre-fills recommendations; you edit answers in-file as the single source of truth.
 
 <details>
 <summary>See a real question file from this repo</summary>
@@ -96,7 +96,7 @@ Full file: [demo/real-life/issues-10/0002--question--0001-readme-design-decision
 /commit-msg add authentication middleware
 ```
 
-Creates a `.commit-msgs/0001-add-authentication-middleware.txt` focused on WHY, not WHAT — the diff already shows what changed. You review and commit manually; Claude never auto-commits.
+Creates a `.claude-work/commit-msgs/0001-add-authentication-middleware.txt` focused on WHY, not WHAT — the diff already shows what changed. You review and commit manually; Claude never auto-commits.
 
 <details>
 <summary>See a real commit message from this repo</summary>
@@ -119,7 +119,7 @@ Full file: [demo/real-life/issues-10/0010--commit-msg--0001-bootstrap-demo-and-s
 
 </details>
 
-All working files (`.scratchpads/`, `.claude-questions/`, `.commit-msgs/`, `.breadcrumbs/`) are git-ignored automatically. They're your private workspace — only real code and docs get committed.
+All working files live under `.claude-work/` and are git-ignored automatically. They're your private workspace — only real code and docs get committed.
 
 ## See It In Action
 
@@ -135,6 +135,7 @@ graph LR
     B -.-> F["/start-side-quest"]
     B -.-> G["/question"]
     F --> B
+    D -.-> H["/cleanup-issue"]
 ```
 
 Every artifact linked below is real — generated while building the README you're reading right now ([issue #10](https://github.com/couimet/my-claude-skills/issues/10)). The full unredacted history lives in [`demo/real-life/issues-10/`](demo/real-life/issues-10/).
@@ -211,7 +212,7 @@ Full file: [demo/real-life/issues-10/0009--scratchpad--0001-start-issue-plan-v00
 This is the core loop. You point Claude at a specific step using a code reference — a file path with line numbers:
 
 ```text
-/tackle-scratchpad-block .scratchpads/issues/10/0001-start-issue-plan.txt#L26-L41
+/tackle-scratchpad-block .claude-work/issues/10/scratchpads/0001-start-issue-plan.txt#L26-L41
 ```
 
 Claude reads the step, checks its status and dependencies, marks it `in_progress`, executes the work, runs tests, marks it `done`, and drafts a commit message. You review everything and commit manually.
@@ -260,7 +261,7 @@ I've used Claude Code on dozens of real issues and kept running into the same fr
 
 - **Files over chat.** Every decision, plan, and question lives in a file — not buried in terminal scroll. If you use [RangeLink](https://github.com/couimet/rangeLink) or similar tools, the file references become clickable navigation.
 - **Crash-proof context.** Claude Code sessions can compact, disconnect, or run out of context. Because everything is written to disk as it happens, you can resume from any scratchpad in a fresh session without losing anything.
-- **Organized, not scattered.** Working files go in predictable locations (`.scratchpads/`, `.claude-questions/`, `.commit-msgs/`, `.breadcrumbs/`) with auto-numbering and issue-scoped subdirectories. No manual file management.
+- **Organized, not scattered.** Working files go under `.claude-work/` with type subdirectories (`scratchpads/`, `questions/`, `commit-msgs/`), auto-numbering, and issue-scoped organization. No manual file management — and `/cleanup-issue` removes everything when you're done.
 - **You control execution.** Claude proposes plans and drafts commit messages. You review, edit, and execute. No auto-commits, no surprise pushes, no "let me just fix that for you."
 - **Ephemeral vs. permanent.** Working files are git-ignored — they're your private workspace. Only real code and documentation get committed. This distinction is enforced by convention, not tooling.
 - **Plan, then execute.** `/start-issue` creates the plan. `/tackle-scratchpad-block` executes one step at a time. The plan is always visible, always editable, always the source of truth for what's left to do.
@@ -273,6 +274,7 @@ I've used Claude Code on dozens of real issues and kept running into the same fr
 | Command | What It Does |
 | --- | --- |
 | `/breadcrumb <note>` | Drop a timestamped note collected by `/finish-issue` for the PR description |
+| `/cleanup-issue [number]` | Delete an issue's `.claude-work/` directory after confirming with the user |
 | `/commit-msg <desc>` | Draft a commit message focused on WHY, not WHAT |
 | `/create-github-issue <title-or-path>` | Create a GitHub issue from a scratchpad draft or inline description |
 | `/finish-issue` | Verify work, collect breadcrumbs, check docs, and generate a PR description |
