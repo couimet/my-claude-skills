@@ -55,6 +55,8 @@ Benefits:
 
 Format all prose output per the `/prose-style` skill conventions.
 
+Format all GitHub references per the `/github-ref` skill conventions.
+
 ### Good Example
 
 ```

@@ -159,3 +159,5 @@ Parent: #<PARENT_NUMBER> (linked as sub-issue)  ← only if applicable
 Format all code references per the `/code-ref` skill conventions.
 
 Format all prose output per the `/prose-style` skill conventions.
+
+Format all GitHub references per the `/github-ref` skill conventions.

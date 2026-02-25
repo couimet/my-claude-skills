@@ -95,6 +95,8 @@ Use `Q001`, `Q002` etc. to reference questions and `A001`, `A002` to reference a
 
 Format all prose output per the `/prose-style` skill conventions.
 
+Format all GitHub references per the `/github-ref` skill conventions.
+
 ## Process
 
 1. Create the file with questions formatted as above

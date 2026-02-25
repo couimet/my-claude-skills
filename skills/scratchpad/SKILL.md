@@ -86,6 +86,8 @@ When referencing code in scratchpad content, format all file/line references per
 
 Format all prose output per the `/prose-style` skill conventions.
 
+Format all GitHub references per the `/github-ref` skill conventions.
+
 ## Questions Trigger
 
 If design questions arise while creating or updating a scratchpad:

@@ -171,6 +171,8 @@ Format all code references per the `/code-ref` skill conventions.
 
 Format all prose output per the `/prose-style` skill conventions.
 
+Format all GitHub references per the `/github-ref` skill conventions.
+
 **STOP HERE** - The scratchpad template ends above. Do NOT add commit message sections to scratchpads. Commit messages are created separately in Step 8 (after user approval) using `/commit-msg`.
 
 ## Step 6: Questions (If Needed)
