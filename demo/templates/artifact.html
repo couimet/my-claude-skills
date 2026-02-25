@@ -1,6 +1,6 @@
 <div class="artifact-panel" id="artifact-{{ artifact.sequence }}">
-  <button class="artifact-toggle" aria-expanded="false" aria-controls="artifact-content-{{ artifact.sequence }}">
-    <span class="artifact-toggle-icon">+</span>
+  <button class="artifact-toggle" aria-expanded="true" aria-controls="artifact-content-{{ artifact.sequence }}">
+    <span class="artifact-toggle-icon">&minus;</span>
     <code class="artifact-seq">{{ artifact.sequence }}</code>
     <span class="artifact-category">{{ artifact.category }}</span>
     <span class="artifact-name">{{ artifact.filename }}</span>
@@ -11,7 +11,7 @@
     <span class="artifact-has-diff" title="Has diff from previous version">diff</span>
     {% endif %}
   </button>
-  <div class="artifact-content" id="artifact-content-{{ artifact.sequence }}" hidden>
+  <div class="artifact-content" id="artifact-content-{{ artifact.sequence }}">
     {% if artifact.diff_lines %}
     <div class="artifact-view-controls">
       <button class="view-toggle view-toggle--active" data-view="diff" data-target="artifact-content-{{ artifact.sequence }}">Diff</button>

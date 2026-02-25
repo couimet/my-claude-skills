@@ -11,6 +11,17 @@
 
   // --- Artifact expand/collapse ---
 
+  // Collapse all panels on init — without JS they render open (no-JS fallback).
+  document.querySelectorAll('.artifact-toggle').forEach(function (btn) {
+    var contentId = btn.getAttribute('aria-controls');
+    var content = document.getElementById(contentId);
+    if (content) {
+      content.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+      btn.querySelector('.artifact-toggle-icon').textContent = '+';
+    }
+  });
+
   document.querySelectorAll('.artifact-toggle').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var expanded = btn.getAttribute('aria-expanded') === 'true';
