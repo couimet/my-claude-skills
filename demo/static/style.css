@@ -875,7 +875,7 @@ pre code {
 
 .progress-phase.is-active {
   opacity: 1;
-  border-bottom-color: currentColor;
+  border-bottom-color: currentcolor;
 }
 
 .progress-phase.is-active.phase-active--1 { border-bottom-color: var(--phase-1); }

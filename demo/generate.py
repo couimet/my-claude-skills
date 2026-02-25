@@ -40,6 +40,10 @@ try:
 except ImportError:
     sys.exit("Missing dependency: pip install pygments")
 
+# Module-level Markdown renderer — instantiated once, reused on every call to
+# render_prose() to avoid repeated parser/renderer construction overhead.
+_md = mistune.create_markdown()
+
 # Project root is one level above this script's directory.
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR
@@ -270,6 +274,11 @@ def compute_diff(old_content, new_content, old_name, new_name):
     Returns a list of diff line dicts with 'type' (add/remove/context/header)
     and 'content' fields.
     """
+    # keepends=True is required here: unified_diff with lineterm="" suppresses
+    # its own newline appending, so input lines must already carry their own
+    # line endings. Without keepends=True, context lines in the diff output
+    # would have no trailing newline and rstrip("\n") below would strip nothing
+    # — but more importantly, unified_diff would concatenate lines incorrectly.
     old_lines = old_content.splitlines(keepends=True)
     new_lines = new_content.splitlines(keepends=True)
 
@@ -323,7 +332,7 @@ def enrich_artifacts(phases, demo_dir):
                     content = f"(file not found: {art['filename']})"
 
                 art["content"] = content
-                art["highlighted_html"] = highlight_content(content, art["filename"])
+                art["highlighted_html"] = Markup(highlight_content(content, art["filename"]))
                 content_cache[art["filename"]] = content
 
                 # Determine if this is the first version.
@@ -351,8 +360,7 @@ def enrich_artifacts(phases, demo_dir):
 
 def render_prose(markdown_text):
     """Convert Markdown prose to HTML using mistune."""
-    md = mistune.create_markdown()
-    return md(markdown_text)
+    return _md(markdown_text)
 
 
 def build_demo(demo_dir, env):

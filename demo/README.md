@@ -4,7 +4,7 @@ A Python build script that turns a `TIMELINE.md` narrative + numbered artifacts 
 
 ## Folder Structure
 
-```
+```text
 demo/
 ├── real-life/
 │   └── issues-10/              # Raw material (source of truth)
@@ -117,7 +117,7 @@ Rendered as Markdown → HTML. Supports **bold**, `code`, lists, etc.
 
 ### Artifact naming convention
 
-```
+```text
 NNNN--category--basename-vNNNN.ext
 ```
 
@@ -175,12 +175,11 @@ The `demo/site/` directory is fully self-contained. No build server, no CDN, no 
 
 ### GitHub Pages
 
-1. Repo Settings → Pages → Source: "Deploy from a branch"
-2. Branch: `main`, folder: `/demo/site`
-3. Optional custom domain: add `demo/site/CNAME` containing `my-claude-skills.ouimet.info`
-4. DNS: CNAME record `my-claude-skills.ouimet.info` → `couimet.github.io`
+A GitHub Actions workflow (`.github/workflows/deploy-demo.yml`) builds and deploys the site automatically on every push to `main` that touches `demo/` source files.
 
-For `demo/site/` to be available from `main`, you need to regenerate and commit it before merging — or use a GitHub Actions workflow to run `python demo/generate.py` on push.
+**One-time setup required:** Repo Settings → Pages → Source must be set to **"GitHub Actions"** (not "Deploy from a branch"). This cannot be automated via the workflow itself.
+
+Optional custom domain: add `demo/site/CNAME` containing `my-claude-skills.ouimet.info` and set a DNS CNAME record `my-claude-skills.ouimet.info` → `couimet.github.io`.
 
 ### ouimet.info (VPS)
 
