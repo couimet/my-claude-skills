@@ -8,6 +8,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.02.25
+
+### Added
+
+- `/github-ref` shared rule skill — all 9 output-generating skills now require full GitHub URLs for issue and PR references; never short-form `#NNN` or `PR #NNN` ([issues/25](https://github.com/couimet/my-claude-skills/issues/25))
+
 ## 2026.02.24
 
 ### Added
