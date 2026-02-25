@@ -129,6 +129,8 @@ def parse_timeline(timeline_path):
 
     # Accumulator for prose lines within an exchange.
     prose_lines = []
+    # Accumulator for intro lines between a phase heading and its first exchange.
+    phase_intro_lines = []
     # Track whether we've seen the date line for the current exchange.
     seen_date = False
 
@@ -138,6 +140,13 @@ def parse_timeline(timeline_path):
         if current_exchange is not None and prose_lines:
             current_exchange["prose"] = "\n".join(prose_lines).strip()
         prose_lines = []
+
+    def flush_phase_intro():
+        """Save accumulated phase intro lines to the current phase."""
+        nonlocal phase_intro_lines
+        if current_phase is not None and phase_intro_lines:
+            current_phase["intro"] = "\n".join(phase_intro_lines).strip()
+        phase_intro_lines = []
 
     for line in lines:
         # H1: document title.
@@ -150,9 +159,11 @@ def parse_timeline(timeline_path):
         m = RE_PHASE.match(line)
         if m:
             flush_prose()
+            flush_phase_intro()
             current_phase = {
                 "number": int(m.group(1)),
                 "title": m.group(2).strip(),
+                "intro": "",
                 "exchanges": [],
             }
             phases.append(current_phase)
@@ -164,6 +175,7 @@ def parse_timeline(timeline_path):
         m = RE_EXCHANGE.match(line)
         if m:
             flush_prose()
+            flush_phase_intro()
             current_exchange = {
                 "number": int(m.group(1)),
                 "title": m.group(2).strip(),
@@ -192,6 +204,12 @@ def parse_timeline(timeline_path):
                     parse_artifact_ref(art_match)
                 )
 
+        # Accumulate phase intro lines (between ## phase heading and first ### exchange).
+        if current_phase is not None and current_exchange is None:
+            if line.strip() not in ("", "---"):
+                phase_intro_lines.append(line)
+            continue
+
         # Accumulate prose lines (skip horizontal rules, artifact reference
         # lines, and blank-only sections at the start).
         if current_exchange is not None and seen_date:
@@ -204,8 +222,9 @@ def parse_timeline(timeline_path):
                 continue
             prose_lines.append(line)
 
-    # Flush any remaining prose from the last exchange.
+    # Flush any remaining prose from the last exchange or phase intro.
     flush_prose()
+    flush_phase_intro()
 
     return {
         "title": title,
@@ -499,6 +518,7 @@ def main():
         loader=FileSystemLoader(str(TEMPLATES_DIR)),
         autoescape=True,
     )
+    env.filters["markdown"] = render_prose
 
     if args.debug:
         for demo_dir in demos:

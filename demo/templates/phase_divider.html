@@ -2,4 +2,7 @@
   <div class="phase-number">Phase {{ phase.number }}</div>
   <h2 class="phase-title">{{ phase.title }}</h2>
   <div class="phase-count">{{ phase.exchanges | length }} exchange{{ 's' if phase.exchanges | length != 1 else '' }}</div>
+  {% if phase.intro %}
+  <div class="phase-intro">{{ phase.intro | markdown | safe }}</div>
+  {% endif %}
 </section>

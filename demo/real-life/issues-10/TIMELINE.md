@@ -374,10 +374,10 @@ The user chose Option A from the heading consistency scratchpad and asked Claude
 
 ---
 
-> **Event — PR #11 pushed to GitHub**
-> The user committed and pushed all branch work, then opened [PR #11](https://github.com/couimet/my-claude-skills/pull/11). This is the manual step that transitions from preparation to review — it triggers CodeRabbit's automated analysis and starts Phase 5.
-
 ## Phase 5: PR Review
+
+> **Event — PR #11 pushed to GitHub**
+> The user committed and pushed all branch work, then opened [PR #11](https://github.com/couimet/my-claude-skills/pull/11). This is the manual step that transitions from preparation to review — it triggers CodeRabbit's automated analysis and starts this phase.
 
 ### Exchange 22 — /tackle-pr-comment: analyze CodeRabbit's automated review
 

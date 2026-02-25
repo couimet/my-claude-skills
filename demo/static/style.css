@@ -323,6 +323,27 @@ pre code {
   margin-top: var(--space-xs);
 }
 
+/* Phase intro — rendered between the phase heading and its first exchange */
+.phase-intro {
+  margin-top: var(--space-md);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.phase-intro blockquote {
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  border-left: 2px solid var(--border-strong);
+  background: var(--bg-card);
+  border-radius: 0 3px 3px 0;
+}
+
+.phase-intro blockquote p {
+  margin: 0;
+  line-height: 1.6;
+}
+
 /* Phase-specific accent colors on dividers */
 .phase-divider#phase-1 .phase-number { color: var(--phase-1); }
 .phase-divider#phase-2 .phase-number { color: var(--phase-2); }
