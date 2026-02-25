@@ -283,8 +283,6 @@ With this step, all 8 README sections from the acceptance criteria are complete:
 
 ---
 
-## Phase 4: PR and CodeRabbit
-
 ### Exchange 17 — /tackle-scratchpad-block S005 (partial): Introduce intentional error
 
 **2026-02-19 — User invokes `/tackle-scratchpad-block` on S005 of the start-issue plan**
@@ -319,7 +317,7 @@ Note: 0027 and 0028 (listed in Exchange 17 above) were also produced during this
 
 ---
 
-## Phase 5: Wrap-up
+## Phase 4: PR Preparation
 
 ### Exchange 19 — /finish-issue
 
@@ -375,6 +373,11 @@ The user chose Option A from the heading consistency scratchpad and asked Claude
 - [0034--commit-msg--0010-consistent-walkthrough-headings-v0001.txt](0034--commit-msg--0010-consistent-walkthrough-headings-v0001.txt) — Commit message for the heading consistency fix.
 
 ---
+
+> **Event — PR #11 pushed to GitHub**
+> The user committed and pushed all branch work, then opened [PR #11](https://github.com/couimet/my-claude-skills/pull/11). This is the manual step that transitions from preparation to review — it triggers CodeRabbit's automated analysis and starts Phase 5.
+
+## Phase 5: PR Review
 
 ### Exchange 22 — /tackle-pr-comment: analyze CodeRabbit's automated review
 

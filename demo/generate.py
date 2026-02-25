@@ -405,8 +405,8 @@ def build_demo(demo_dir, env):
     template = env.get_template("base.html")
     html = template.render(
         title=data.get("title", f"Demo: {demo_name}"),
-        subtitle="A real-time record of Claude Code skills in action",
-        description="Step-by-step walkthrough of how Claude Code skills were used to build a real project.",
+        subtitle="Every exchange, every artifact, every diff — captured as it happened.",
+        description=f"A real-time case study of building {data.get('title', demo_name)} with Claude Code skills.",
         css_path=css_path,
         js_path=js_path,
         content=content_html,
@@ -417,6 +417,33 @@ def build_demo(demo_dir, env):
     )
 
     index_path = output_dir / "index.html"
+    index_path.write_text(html, encoding="utf-8")
+    print(f"  Generated {index_path.relative_to(PROJECT_ROOT)}")
+
+
+def build_landing(demo_dirs, env):
+    """Generate demo/site/index.html — a landing page listing all demos."""
+    demos = []
+    for demo_dir in demo_dirs:
+        data = parse_timeline(demo_dir / "TIMELINE.md")
+        total_exchanges = sum(len(p["exchanges"]) for p in data["phases"])
+        total_artifacts = sum(
+            len(e["artifacts"])
+            for p in data["phases"]
+            for e in p["exchanges"]
+        )
+        demos.append({
+            "name": demo_dir.name,
+            "title": data.get("title", demo_dir.name),
+            "phase_count": len(data["phases"]),
+            "exchange_count": total_exchanges,
+            "artifact_count": total_artifacts,
+            "url": f"{demo_dir.name}/index.html",
+        })
+
+    template = env.get_template("landing.html")
+    html = template.render(demos=demos)
+    index_path = SITE_DIR / "index.html"
     index_path.write_text(html, encoding="utf-8")
     print(f"  Generated {index_path.relative_to(PROJECT_ROOT)}")
 
@@ -498,6 +525,11 @@ def main():
     for demo_dir in demos:
         print(f"\n  Processing {demo_dir.name}/")
         build_demo(demo_dir, env)
+
+    # Landing page — only when generating all demos (not --demo <single>).
+    if args.demo is None:
+        all_demos = discover_demos()
+        build_landing(all_demos, env)
 
     print("\nDone.")
 
