@@ -179,7 +179,7 @@ A GitHub Actions workflow (`.github/workflows/deploy-demo.yml`) builds and deplo
 
 **One-time setup required:** Repo Settings → Pages → Source must be set to **"GitHub Actions"** (not "Deploy from a branch"). This cannot be automated via the workflow itself.
 
-Optional custom domain: add `demo/site/CNAME` containing `my-claude-skills.ouimet.info` and set a DNS CNAME record `my-claude-skills.ouimet.info` → `couimet.github.io`.
+Optional custom domain: add `demo/static/CNAME` containing `my-claude-skills.ouimet.info` and set a DNS CNAME record `my-claude-skills.ouimet.info` → `couimet.github.io`.
 
 ### ouimet.info (VPS)
 

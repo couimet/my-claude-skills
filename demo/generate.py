@@ -44,7 +44,7 @@ except ImportError:
 # render_prose() to avoid repeated parser/renderer construction overhead.
 _md = mistune.create_markdown()
 
-# Project root is one level above this script's directory.
+# SCRIPT_DIR and PROJECT_ROOT both point to the demo/ directory (where this script lives).
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR
 REAL_LIFE_DIR = PROJECT_ROOT / "real-life"
@@ -492,6 +492,11 @@ def copy_static_assets():
             shutil.rmtree(fonts_dst)
         shutil.copytree(fonts_src, fonts_dst)
 
+    # Copy CNAME if present — enables custom domain without manual post-build steps.
+    cname_src = STATIC_DIR / "CNAME"
+    if cname_src.is_file():
+        shutil.copy2(cname_src, SITE_DIR / "CNAME")
+
     print(f"  Copied static assets to {SITE_DIR.relative_to(PROJECT_ROOT)}/")
 
 
@@ -526,7 +531,7 @@ def main():
         loader=FileSystemLoader(str(TEMPLATES_DIR)),
         autoescape=True,
     )
-    env.filters["markdown"] = render_prose
+    env.filters["markdown"] = lambda t: Markup(render_prose(t))
 
     if args.debug:
         for demo_dir in demos:
