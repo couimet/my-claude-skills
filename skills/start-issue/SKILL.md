@@ -50,7 +50,7 @@ Use `/scratchpad` to create a working document. The `/issue-context` skill will 
 
 The scratchpad for issues MUST contain these sections:
 
-```markdown
+````markdown
 # Issue #NUMBER: Title
 
 Parent: https://github.com/{owner}/{repo}/issues/{XX} (if applicable; full URL per /github-ref)
@@ -140,7 +140,8 @@ Check the project's documentation and discoverability conventions. Common touchp
 ## Acceptance Criteria
 
 Checklist from the issue (copy verbatim if provided).
-```
+
+````
 
 Format all code references per the `/code-ref` skill conventions.
 

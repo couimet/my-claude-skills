@@ -22,7 +22,7 @@ git branch --show-current
 Extract the breadcrumb identifier based on branch pattern:
 
 | Branch pattern | Identifier | Example |
-|---|---|---|
+| --- | --- | --- |
 | `issues/*` | Issue ID per `/issue-context` rules | `issues/332` → `332` |
 | `side-quest/*` | Full slug after `side-quest/` | `side-quest/cleanup-test-mocks` → `cleanup-test-mocks` |
 

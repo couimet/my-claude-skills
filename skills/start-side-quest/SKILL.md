@@ -60,7 +60,7 @@ Use description: `side-quest-<slug>`
 
 The scratchpad MUST contain:
 
-```
+```markdown
 # Side-Quest: <Title>
 
 Parent branch: <issues/XXX or main> (branch to return to after)

@@ -11,7 +11,7 @@ When referencing code locations in working documents, use GitHub-style permalink
 ## Format
 
 | Reference Type | Syntax | Example |
-|---|---|---|
+| --- | --- | --- |
 | Single line | `path/to/file.ts#L10` | src/parser.ts#L42 |
 | Line range | `path/to/file.ts#L10-L20` | src/parser.ts#L42-L58 |
 | Character precision | `path/to/file.ts#L10C5-L20C15` | src/parser.ts#L42C3-L42C28 |
@@ -33,5 +33,6 @@ When referencing code locations in working documents, use GitHub-style permalink
 
 - src/parser.ts#L26-L37
 - src/parser.ts#L539 mentions "TextInserter"
+<!-- markdownlint-disable-next-line MD050 -->
 - Remove the standalone logging tests at src/utils/__tests__/helper.test.ts#L54-L85
 - The validation logic at src/validator.ts#L12C5-L12C42 should use strict equality
