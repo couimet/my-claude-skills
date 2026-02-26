@@ -2,10 +2,7 @@
 #
 # stamp-skills.sh — Stamps version: field into all skills/*/SKILL.md frontmatters.
 #
-# Usage: stamp-skills.sh <VERSION> [--dry-run]
-#
-#   VERSION   Version string in CALVER@SHA format (e.g., 2026.02.25@abc1234)
-#   --dry-run Preview changes without writing files
+# Usage: stamp-skills.sh [VERSION] [--dry-run]
 #
 # Output (one line per skill, in alphabetical order):
 #   skills/X/SKILL.md    (no change)              already at target version
@@ -20,9 +17,10 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: stamp-skills.sh <VERSION> [--dry-run]
+Usage: stamp-skills.sh [VERSION] [--dry-run]
 
-  VERSION   Version string in CALVER@SHA format (e.g., 2026.02.25@abc1234)
+  VERSION   Optional CalVer@SHA string (e.g., 2026.02.25@abc1234)
+            If omitted, derived from CHANGELOG.md + git HEAD SHA
   --dry-run Preview changes without writing files
   --help    Show this help message
 EOF
@@ -60,8 +58,17 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$VERSION" ]]; then
-  echo "Error: VERSION argument required" >&2
-  usage >&2
+  CALVER=$(grep -m1 '^## [0-9]' CHANGELOG.md | sed 's/^## //')
+  if [[ -z "$CALVER" ]]; then
+    echo "Error: No CalVer version found in CHANGELOG.md. Run from the project root or pass VERSION explicitly." >&2
+    exit 1
+  fi
+  SHA=$(git rev-parse --short HEAD)
+  VERSION="${CALVER}@${SHA}"
+fi
+
+if [[ ! "$VERSION" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}(\.[0-9]+)?@[0-9a-f]{7,40}$ ]]; then
+  echo "Error: VERSION must match CalVer@SHA format (e.g., 2026.02.25.3@abc1234), got: $VERSION" >&2
   exit 1
 fi
 
@@ -145,8 +152,12 @@ rest = "\n".join(lines[close_idx:])
 new_content = f"---\n{new_frontmatter}\n{rest}"
 
 if not dry_run:
-    with open(file_path, "w") as f:
-        f.write(new_content)
+    try:
+        with open(file_path, "w") as f:
+            f.write(new_content)
+    except OSError as e:
+        print(f"warning|error writing file: {e}|{file_path}")
+        sys.exit(0)
 
 print(f"{status}|{old_version}|{file_path}")
 PYEOF
@@ -177,7 +188,7 @@ PYEOF
       ;;
   esac
 
-done < <(find skills -name 'SKILL.md' | sort)
+done < <(find skills -mindepth 2 -maxdepth 2 -name 'SKILL.md' | sort)
 
 dry_run_label=""
 if [[ "$DRY_RUN" == "true" ]]; then

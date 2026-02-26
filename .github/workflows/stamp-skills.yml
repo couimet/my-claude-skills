@@ -16,24 +16,18 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Derive version
-        id: version
-        run: |
-          CALVER=$(grep -m1 '^## [0-9]' CHANGELOG.md | sed 's/^## //')
-          SHA=$(git rev-parse --short HEAD)
-          echo "value=${CALVER}@${SHA}" >> "$GITHUB_OUTPUT"
-
       - name: Stamp SKILL.md files
-        run: scripts/stamp-skills.sh "${{ steps.version.outputs.value }}"
+        run: scripts/stamp-skills.sh
 
       - name: Commit stamped files (if changed)
         run: |
           if git diff --quiet skills/; then
-            echo "All skills already at version ${{ steps.version.outputs.value }}, nothing to commit"
+            echo "All skills already at current version, nothing to commit"
           else
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add skills/
-            git commit -m "chore: stamp skills with version ${{ steps.version.outputs.value }} [skip ci]"
-            git push
+            VERSION=$(grep -m1 '^## [0-9]' CHANGELOG.md | sed 's/^## //')@$(git rev-parse --short HEAD)
+            git commit -m "chore: stamp skills with version ${VERSION} [skip ci]"
+            git push --force-with-lease
           fi
