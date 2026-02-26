@@ -26,13 +26,33 @@ Parse the issue number from `issues/<NUMBER>` pattern (per `/issue-context`) or 
 
 Run the project's standard verification commands from the project root:
 
-1. **Format** — run the project's formatter (fix mode)
-2. **Tests** — run the full test suite; all must pass
-3. **Check status** — `git status` for uncommitted changes
+1. **Scratchpad step check** — scan for unfinished steps before running anything else
+2. **Format** — run the project's formatter (fix mode)
+3. **Tests** — run the full test suite; all must pass
+4. **Check status** — `git status` for uncommitted changes
+
+**Check 1 — Scratchpad step check:** Glob all `*.txt` files in `.claude-work/issues/<ID>/scratchpads/`. For each file, scan for the fenced JSON step block and collect all steps where `"status"` is `"pending"` or `"in_progress"`.
+
+If any unfinished steps are found, print a warning:
+
+```text
+Warning: unfinished steps found in scratchpad:
+  - S003 "Add integration tests" (pending)
+  - S004 "Update CHANGELOG" (in_progress)
+```
+
+Then use `AskUserQuestion` with two options:
+
+- **Proceed anyway** — continue to format, tests, and PR description generation
+- **Stop — I'll finish the steps first** — halt and print: "Stopping. Finish the outstanding steps, then re-run `/finish-issue`."
+
+If no unfinished steps are found, or if the scratchpads directory does not exist or contains no files, proceed silently.
 
 ```bash
 git status
 ```
+
+**Checks 2–4 outcomes:**
 
 - If formatting makes changes → prepare a commit
 - If tests fail → investigate and fix before proceeding
@@ -178,6 +198,7 @@ Before finishing, verify:
 - [ ] Project's formatter ran successfully
 - [ ] Project's test suite passes
 - [ ] No uncommitted changes (or user has been notified)
+- [ ] No pending/in-progress steps in scratchpad (or user confirmed to proceed)
 - [ ] PR description doesn't reference ephemeral files
 - [ ] Documentation needs to be assessed
 - [ ] Scratchpad created with PR description
