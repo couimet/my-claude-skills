@@ -1,6 +1,6 @@
 ---
 name: prose-style
-version: 2026.02.25.2@b1fe038
+version: 2026.02.25.3@2084976
 user-invocable: false
 description: Defines prose formatting conventions for skill-generated text files. Auto-consulted when any skill writes prose content to .claude-work/ (scratchpads, commit-msgs, questions, breadcrumbs) or PR descriptions.
 ---
