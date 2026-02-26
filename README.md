@@ -134,6 +134,7 @@ graph LR
     B -.-> E["/breadcrumb"]
     B -.-> F["/start-side-quest"]
     B -.-> G["/question"]
+    B -.-> I["/create-github-issue"]
     F --> B
     D -.-> H["/cleanup-issue"]
 ```
@@ -254,6 +255,18 @@ Mid-issue, you'll often notice orthogonal improvements — a helper function tha
 ### 5. `/finish-issue` — wrap up with a PR description
 
 When all steps are done, `/finish-issue` verifies the work, collects breadcrumbs, checks documentation needs, and generates a PR description. The description links back to the plan and summarizes what was done and why.
+
+### 6. `/create-github-issue` — file follow-ups without losing context
+
+Implementation work surfaces issues: a helper that deserves its own PR, a follow-up improvement that's out of scope for the current branch, a bug noticed along the way. Mental notes get lost. `/create-github-issue` files them as real GitHub issues — from a scratchpad draft, a markdown file, or an inline title.
+
+The skill handles the friction that makes developers put it off: it strips local `.claude-work/` paths from the body before sending (with an audit trail so you can verify nothing important was removed), discovers the repo's label conventions automatically, and optionally links the new issue as a sub-issue of a parent.
+
+```text
+/create-github-issue .claude-work/issues/10/scratchpads/follow-up-idea.txt
+```
+
+Scratchpad drafted during implementation → real GitHub issue, labels applied, sub-issue linked — without leaving the terminal.
 
 ### Following along
 
