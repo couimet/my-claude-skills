@@ -10,6 +10,14 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.02.25.3
+
+### Added
+
+- `scripts/stamp-skills.sh` — stamps a `version: CALVER@SHA` field into every `skills/*/SKILL.md` frontmatter; supports `--dry-run`, rich per-file output (`old → new`, `(no change)`, `(new)`), and warn-and-skip for malformed frontmatter ([issues/26](https://github.com/couimet/my-claude-skills/issues/26))
+- `.github/workflows/stamp-skills.yml` — CI workflow that runs the stamp script on every push to main and commits back with `[skip ci]`; no-op if all skills already carry the target version ([issues/26](https://github.com/couimet/my-claude-skills/issues/26))
+- `Makefile` — `make stamp` target for local invocation with the same CalVer@SHA derivation used by CI ([issues/26](https://github.com/couimet/my-claude-skills/issues/26))
+
 ## 2026.02.25.2
 
 ### Added
