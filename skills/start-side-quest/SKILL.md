@@ -1,5 +1,6 @@
 ---
 name: start-side-quest
+version: 2026.02.25.3@2084976
 description: Start a side-quest branch for orthogonal improvements discovered while working on an issue
 argument-hint: <description | path/to/file.ts#L10-L20>
 allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *), Bash(git branch --show-current), Bash(git status *), Bash(git stash *)
