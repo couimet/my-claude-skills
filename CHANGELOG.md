@@ -14,7 +14,7 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 ### Added
 
-- `.github/workflows/markdownlint.yml` — standalone CI workflow that gates PRs on markdown formatting ([issues/30](https://github.com/couimet/my-claude-skills/issues/30))
+- `.github/workflows/markdownlint.yml` — standalone CI workflow that gates PRs on Markdown formatting ([issues/30](https://github.com/couimet/my-claude-skills/issues/30))
 - `setup.sh` — installs `markdownlint-cli2` via Homebrew for local validation ([issues/30](https://github.com/couimet/my-claude-skills/issues/30))
 - `Makefile` — `make lint` and `make test` targets as canonical local entry points ([issues/30](https://github.com/couimet/my-claude-skills/issues/30))
 - `README` Contributing section — documents the `./setup.sh` + `make lint` + `make test` local workflow ([issues/30](https://github.com/couimet/my-claude-skills/issues/30))
