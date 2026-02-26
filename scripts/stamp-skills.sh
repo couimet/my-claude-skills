@@ -58,7 +58,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$VERSION" ]]; then
-  CALVER=$(grep -m1 '^## [0-9]' CHANGELOG.md | sed 's/^## //')
+  CALVER=$(grep -m1 '^## [0-9]' CHANGELOG.md | sed 's/^## //' || true)
   if [[ -z "$CALVER" ]]; then
     echo "Error: No CalVer version found in CHANGELOG.md. Run from the project root or pass VERSION explicitly." >&2
     exit 1
