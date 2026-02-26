@@ -326,11 +326,12 @@ Run the setup script once to install dev tools:
 ```
 
 ```bash
-make lint   # check markdown formatting
-make test   # run the bats test suite
+make lint    # check markdown formatting
+make test    # run the bats test suite
+make stamp   # stamp all SKILL.md files with the current version (CalVer@SHA)
 ```
 
-CI runs the same checks on every PR.
+CI runs the same checks on every PR. After each merge to main, the stamp workflow automatically updates the `version:` field in every `skills/*/SKILL.md` frontmatter with the current CalVer release and commit SHA.
 
 ## Versioning
 
