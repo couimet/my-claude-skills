@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.02.26.3
+
+### Added
+
+- `/finish-issue` — added scratchpad step-status check as the first item in Pre-PR Verification; warns on pending or in-progress steps and asks for confirmation before proceeding to format, tests, and PR description generation ([issues/36](https://github.com/couimet/my-claude-skills/issues/36))
+
 ## 2026.02.26.2
 
 ### Added
