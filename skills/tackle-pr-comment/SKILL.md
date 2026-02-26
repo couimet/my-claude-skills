@@ -94,7 +94,7 @@ Where:
 This avoids confusion when referencing "Feedback B" vs "S002".
 
 ```markdown
-# PR #{PR_NUMBER} Comment Response
+# PR https://github.com/{owner}/{repo}/pull/{PR_NUMBER} Comment Response  ← full URL per /github-ref
 
 Source: {FULL_PR_COMMENT_URL}
 

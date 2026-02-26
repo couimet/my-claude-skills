@@ -53,7 +53,7 @@ The scratchpad for issues MUST contain these sections:
 ```markdown
 # Issue #NUMBER: Title
 
-Parent: #XX (if applicable)
+Parent: https://github.com/{owner}/{repo}/issues/{XX} (if applicable; full URL per /github-ref)
 Type/Priority/Scope: from labels
 
 ## Context

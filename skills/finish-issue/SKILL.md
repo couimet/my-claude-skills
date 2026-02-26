@@ -115,7 +115,7 @@ The PR description MUST follow this template:
 
 ## Related
 
-- Closes #NUMBER
+- Closes https://github.com/{owner}/{repo}/issues/{NUMBER}  ← full URL per /github-ref
 ```
 
 Format all code references per the `/code-ref` skill conventions.
