@@ -20,7 +20,7 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 ### Added
 
-- `/tackle-scratchpad-block` — added step-ID targeting forms (`#S00N` and space-separated) and bare-path auto-select for the first pending, unblocked step; line-range form (`#L`) unchanged ([issues/33](https://github.com/couimet/my-claude-skills/issues/33))
+- `/tackle-scratchpad-block` — added step-ID targeting forms (`#S00N` and space-separated) and bare-path targeting for pending/unblocked steps (auto-select when unique, otherwise list candidates); line-range form (`#L`) unchanged ([issues/33](https://github.com/couimet/my-claude-skills/issues/33))
 
 ## 2026.02.26
 
