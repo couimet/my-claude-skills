@@ -266,7 +266,7 @@ The skill handles the friction that makes developers put it off: it strips local
 /create-github-issue .claude-work/issues/10/scratchpads/follow-up-idea.txt
 ```
 
-Scratchpad drafted during implementation → real GitHub issue, labels applied, sub-issue linked — without leaving the terminal.
+Scratchpad drafted during implementation → real GitHub issue, labels applied, and (optionally) linked as a sub-issue — without leaving the terminal.
 
 ### Following along
 
