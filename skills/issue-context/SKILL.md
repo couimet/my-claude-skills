@@ -58,6 +58,7 @@ Where `<type>` is the skill's type subdirectory (`scratchpads/`, `questions/`, `
 - The `NNNN` file sequence number is scoped to the type subdirectory (each issue + type combination starts fresh at `0001`)
 
 Examples:
+
 - `.claude-work/issues/332/scratchpads/0001-implementation-plan.txt`
 - `.claude-work/issues/332/questions/0001-api-design.txt`
 - `.claude-work/issues/332/commit-msgs/0001-add-parser.txt`
@@ -73,6 +74,7 @@ Files go in a type subdirectory at the `.claude-work/` root with global numberin
 - The `NNNN` file sequence number is global across all files in the type subdirectory
 
 Examples:
+
 - `.claude-work/scratchpads/0042-refactoring-analysis.txt`
 - `.claude-work/questions/0003-architecture-options.txt`
 
@@ -82,16 +84,18 @@ The `NNNN` file sequence number is always scoped to the target directory. Use `/
 
 1. Determine the target directory using the File Placement rules above
 2. Run `/auto-number` against that directory:
+
    ```bash
    skills/auto-number/auto-number.sh <target-directory> --glob "*.txt" --width 4
    ```
+
 3. Use the script's stdout as the `NNNN` value
 
 ## Breadcrumbs
 
 Breadcrumbs use a different pattern — a single file per issue rather than numbered files:
 
-```
+```text
 .claude-work/issues/<ID>/breadcrumb.md
 ```
 

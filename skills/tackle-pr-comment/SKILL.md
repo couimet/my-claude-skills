@@ -93,7 +93,7 @@ Where:
 **Naming convention**: Use letters (A, B, C) for feedback items in text headings, and `S001`, `S002` IDs for implementation steps in the JSON block.
 This avoids confusion when referencing "Feedback B" vs "S002".
 
-```markdown
+````markdown
 # PR https://github.com/{owner}/{repo}/pull/{PR_NUMBER} Comment Response  ← full URL per /github-ref
 
 Source: {FULL_PR_COMMENT_URL}
@@ -165,7 +165,8 @@ Always set `"status": "pending"` — `/tackle-scratchpad-block` manages status t
 
 - `path/to/file1.ts` - {what changes}
 - `path/to/file2.ts` - {what changes}
-```
+
+````
 
 Format all code references per the `/code-ref` skill conventions.
 

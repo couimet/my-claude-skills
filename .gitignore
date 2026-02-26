@@ -3,3 +3,6 @@
 
 # Generated demo site output (regenerate with: python demo/generate.py)
 demo/site/
+demo/__pycache__/
+
+.claude/

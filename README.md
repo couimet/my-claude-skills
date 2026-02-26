@@ -150,6 +150,7 @@ The user answered all 12 questions by editing the file directly — that's the c
 <summary>See how a question evolves from asked to answered</summary>
 
 **Before (Claude's question):**
+
 ```text
 ## Q003: Should inline examples use real artifacts from this repo
          or fabricated/generic snippets?
@@ -165,6 +166,7 @@ A003: [RECOMMENDED] A
 ```
 
 **After (user's answer — a game-changer):**
+
 ```text
 A003: A; I'd like to take it further — use the current conversation
 as the demo. "Eat your own dog food." Leave issue #10 bare as-is
@@ -223,6 +225,7 @@ The precision matters: you choose which step to work on, and Claude reads the su
 <summary>See a step transition from pending to done</summary>
 
 **Before executing S001:**
+
 ```json
 "id": "S001",
 "title": "Write README sections 1-3: opening hook, installation, quick start",
@@ -230,6 +233,7 @@ The precision matters: you choose which step to work on, and Claude reads the su
 ```
 
 **After execution:**
+
 ```json
 "id": "S001",
 "title": "Write README sections 1-3: opening hook, installation, quick start",
@@ -312,6 +316,21 @@ To customize:
 4. **Remove skills** by deleting the directory and re-running `install.sh`
 
 If you build something useful, PRs are welcome. These skills evolved from my own workflow friction — yours will be different, and that's the point.
+
+## Contributing
+
+Run the setup script once to install dev tools:
+
+```bash
+./setup.sh
+```
+
+```bash
+make lint   # check markdown formatting
+make test   # run the bats test suite
+```
+
+CI runs the same checks on every PR.
 
 ## Versioning
 

@@ -32,7 +32,7 @@ Derive the description slug from $ARGUMENTS (lowercase, hyphens, no special char
 
 Files use `.txt` extension (not `.md`).
 
-```
+```text
 [type] Short summary
 
 <Body: Why this change? What problem does it solve? 1-3 sentences.>
@@ -59,7 +59,7 @@ Format all GitHub references per the `/github-ref` skill conventions.
 
 ### Good Example
 
-```
+```text
 [refactor] Separate dist/ and out/ to follow VSCode conventions
 
 Prevents "Cannot find module" errors by separating development and production builds.
