@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.02.26
+
+### Added
+
+- `README` See It In Action — added `/create-github-issue` to the Mermaid lifecycle diagram and as new section 6, explaining when to use it for filing follow-up issues discovered during implementation ([issues/19](https://github.com/couimet/my-claude-skills/issues/19))
+
 ## 2026.02.25.3
 
 ### Added
