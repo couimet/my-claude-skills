@@ -25,7 +25,7 @@
 | --- | --- | --- |
 | `cleanup-issue` | `/cleanup-issue [number]` | `/issue-context` |
 | `create-github-issue` | `/create-github-issue <title-or-path>` | `/scratchpad` (reads), `/question` |
-| `finish-issue` | `/finish-issue` | `/scratchpad` (reads), `/question`, breadcrumbs (reads) |
+| `finish-issue` | `/finish-issue` | `/scratchpad` (reads), `/question`, breadcrumbs (reads); handles both `issues/*` and `side-quest/*` branches |
 | `start-issue` | `/start-issue <url>` | `/scratchpad`, `/question`, `/cleanup-issue` |
 | `start-side-quest` | `/start-side-quest <desc>` | `/scratchpad`, `/question`, `/commit-msg` (ref) |
 | `tackle-pr-comment` | `/tackle-pr-comment <url>` | `/scratchpad`, `/question`, `/commit-msg` |

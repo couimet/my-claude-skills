@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.02.27
+
+### Changed
+
+- `/finish-issue` — extended to support `side-quest/*` branches in addition to `issues/*`; detects branch mode in Step 1, reads breadcrumbs from `.claude-work/breadcrumb-<slug>.md` in side-quest mode, writes PR description to flat `.claude-work/scratchpads/` in side-quest mode; `start-side-quest` Step 5 now references `/finish-issue` for wrap-up ([issues/39](https://github.com/couimet/my-claude-skills/issues/39))
+
 ## 2026.02.26.5
 
 ### Changed

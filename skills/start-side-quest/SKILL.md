@@ -40,9 +40,11 @@ git stash push -m "WIP: <parent-branch> - paused for side-quest"
 
 Derive a slug from the description (lowercase, hyphens, no special chars).
 
+The base branch for the side-quest is the branch that was active when `/start-side-quest` was invoked (captured in Step 1). This is typically `origin/main` but may be any branch — for example, when working in a stack of PRs.
+
 ```bash
 git fetch origin
-git checkout -b side-quest/<slug> origin/main
+git checkout -b side-quest/<slug> <base-branch>
 ```
 
 Branch naming pattern: `side-quest/<descriptive-slug>`
@@ -64,7 +66,7 @@ The scratchpad MUST contain:
 ```markdown
 # Side-Quest: <Title>
 
-Parent branch: <issues/XXX or main> (branch to return to after)
+Base branch: <branch this was cut from — origin/main, issues/XXX, or another branch>
 Origin: <what triggered this - code review, refactoring discovery, etc.>
 
 ## Goal
@@ -124,10 +126,9 @@ Stash: <stash message if applicable>
 ---
 
 Ready to implement. When done:
-1. Run the project's test suite
-2. Create commit message with /commit-msg
-3. Commit and create PR
-4. Return to parent: git checkout <parent-branch>
+1. Commit your changes
+2. Run `/finish-issue` to verify, generate PR description, and wrap up
+3. Return to parent: git checkout <parent-branch>
    (run `git stash pop` only if changes were stashed)
 ```
 
