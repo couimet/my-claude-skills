@@ -106,7 +106,7 @@ Check if documentation updates are needed. Common touchpoints:
 
 Collect information from:
 
-- Commit history: `git log --oneline origin/main..HEAD`
+- Commit history: read `Base branch:` from the scratchpad (recorded by `/start-issue` or `/start-side-quest`); fall back to `origin/main` if absent. Run: `git log --oneline <base-branch>..HEAD`
 - Scratchpads — read to extract the goal and rationale; use the paths below based on mode
 - Breadcrumbs (if exists) — incorporate highlights into the PR description; use the paths below based on mode
 
@@ -290,5 +290,5 @@ Before finishing, verify:
 - [ ] No uncommitted changes (or user has been notified)
 - [ ] No pending/in-progress steps in scratchpad (or user confirmed to proceed)
 - [ ] PR description doesn't reference ephemeral files
-- [ ] Documentation needs assessed
+- [ ] Documentation needs have been assessed
 - [ ] Scratchpad created with PR description

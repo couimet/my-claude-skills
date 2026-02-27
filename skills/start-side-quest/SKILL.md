@@ -144,7 +144,7 @@ This skill sets up the side-quest context. Wait for user to:
 Before finishing, verify:
 
 - [ ] Current work stashed (if on a work branch with changes)
-- [ ] Side-quest branch created from origin/main
+- [ ] Side-quest branch created from `<base-branch>`
 - [ ] Scratchpad has specific file/change details
 - [ ] Parent branch noted for easy return
 

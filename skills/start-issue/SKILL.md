@@ -26,13 +26,13 @@ gh issue view $ARGUMENTS --json title,body,number,state,labels
 
 ## Step 2: Create Feature Branch
 
-Create a feature branch from the latest remote main:
+Create a feature branch from the latest remote main (or another base branch if instructed):
 
 ```bash
 git fetch origin && git checkout -b issues/<NUMBER> origin/main
 ```
 
-Where `<NUMBER>` is the GitHub issue number (e.g., `issues/223`).
+Where `<NUMBER>` is the GitHub issue number (e.g., `issues/223`). Record the actual base branch used in the scratchpad's `Base branch:` field — it defaults to `origin/main` but may differ in stacked-PR workflows.
 
 ## Step 3: Gather Full Context
 
@@ -56,6 +56,7 @@ The scratchpad for issues MUST contain these sections:
 
 Parent: https://github.com/{owner}/{repo}/issues/{XX} (if applicable; full URL per /github-ref)
 Type/Priority/Scope: from labels
+Base branch: <branch this was cut from — origin/main, or another branch if instructed>
 
 ## Context
 
