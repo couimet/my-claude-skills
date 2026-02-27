@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.02.26.4
+
+### Added
+
+- `/start-issue` — Step 6 report now includes a "Next" line pointing to `/tackle-scratchpad-block` with a bare-path example (auto-selects first pending, unblocked step), bridging the gap between planning and execution ([issues/37](https://github.com/couimet/my-claude-skills/issues/37))
+
 ## 2026.02.26.3
 
 ### Added
