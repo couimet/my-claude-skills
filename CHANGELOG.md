@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.02.26.5
+
+### Changed
+
+- `/scratchpad` — `done_when` field description updated from "Optional" to "Recommended for implementation plans"; clarifies when to omit and explicitly notes its role in helping `/tackle-scratchpad-block` confirm step completion ([issues/38](https://github.com/couimet/my-claude-skills/issues/38))
+
 ## 2026.02.26.4
 
 ### Added
