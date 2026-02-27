@@ -1,6 +1,6 @@
 ---
 name: issue-context
-version: 2026.02.26.5@b1920b1
+version: 2026.02.27@dfba974
 user-invocable: false
 description: Detects issue context from git branch name and determines subdirectory organization for working files. Auto-consulted by foundation skills (/scratchpad, /question, /commit-msg, /breadcrumb) when deciding where to place files.
 allowed-tools: Read, Write, Bash(git branch --show-current), Bash(*/skills/auto-number/auto-number.sh *), Glob

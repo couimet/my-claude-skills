@@ -1,6 +1,6 @@
 ---
 name: question
-version: 2026.02.26.5@b1920b1
+version: 2026.02.27@dfba974
 description: Create a questions file in .claude-work/questions/ for gathering user input on design decisions. Questions go to file (never terminal) — user edits answers in-file as the single source of truth.
 argument-hint: <topic>
 allowed-tools: Read, Write, Bash(git branch --show-current)
