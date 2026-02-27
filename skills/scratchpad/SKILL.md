@@ -73,7 +73,7 @@ When a scratchpad contains an implementation plan, embed the steps inside a fenc
 - **`id`** — `S001`, `S002`, etc. Zero-padded 3-digit IDs mirroring the `/question` skill's `Q001`/`A001` pattern. Use `S001` as the short form in cross-references.
 - **`title`** — Short description of the step.
 - **`status`** — `pending` | `in_progress` | `done` | `blocked`. Planning skills always write `"pending"`. Only `/tackle-scratchpad-block` transitions status during execution.
-- **`done_when`** — Concrete completion criteria. Optional — omit for self-evident steps.
+- **`done_when`** — Concrete completion criteria. Recommended for implementation plans. Omit only for steps where completion is self-evident (e.g., "Delete file X"). A concrete criterion here helps `/tackle-scratchpad-block` confirm the step is truly done.
 - **`depends_on`** — Array of step IDs that must be `"done"` first. Empty array means no dependencies.
 - **`files`** — Array of file paths this step touches.
 - **`tasks`** — Array of concrete action items within the step.
