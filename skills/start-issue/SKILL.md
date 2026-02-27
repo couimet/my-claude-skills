@@ -172,7 +172,7 @@ If questions are needed, use `/question` to create a questions file. Add a `**Pl
 
 Print the branch name and paths of any created scratchpad/questions files, followed by a "Next" line:
 
-```
+```text
 Next: use `/tackle-scratchpad-block` to execute steps one at a time.
 Example: /tackle-scratchpad-block <path-to-scratchpad>
 (auto-selects first pending, unblocked step)
