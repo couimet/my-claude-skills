@@ -170,7 +170,15 @@ If questions are needed, use `/question` to create a questions file. Add a `**Pl
 
 ## Step 6: Report Status and STOP
 
-Print the branch name and paths of any created scratchpad/questions files.
+Print the branch name and paths of any created scratchpad/questions files, followed by a "Next" line:
+
+```
+Next: use `/tackle-scratchpad-block` to execute steps one at a time.
+Example: /tackle-scratchpad-block <path-to-scratchpad>
+(auto-selects first pending, unblocked step)
+```
+
+Replace `<path-to-scratchpad>` with the actual path of the scratchpad file created in Step 4.
 
 **IMPORTANT: Do NOT proceed with implementation.**
 
