@@ -1,4 +1,9 @@
-.PHONY: lint lint-fix test stamp
+.PHONY: all clean lint lint-fix test stamp
+
+all: lint test
+
+clean:
+	# No build artifacts — placeholder for future use
 
 lint:
 	markdownlint-cli2 "**/*.md"
