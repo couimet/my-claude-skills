@@ -112,33 +112,37 @@ If a parent issue number was extracted in Step 2, link the new issue as a sub-is
 
 Parse `OWNER` and `REPO` from the issue URL returned in Step 6 (`https://github.com/{OWNER}/{REPO}/issues/{NUMBER}`).
 
-First, get the node IDs:
+Capture the node IDs into shell variables and link in a single script — do not transcribe IDs manually:
 
 ```bash
-gh api graphql -H 'GraphQL-Features: sub_issues' -f query='
+NODES=$(gh api graphql -H 'GraphQL-Features: sub_issues' -f query='
   query($owner: String!, $repo: String!, $parent: Int!, $child: Int!) {
     repository(owner: $owner, name: $repo) {
       parent: issue(number: $parent) { id }
-      child: issue(number: $child) { id }
+      child:  issue(number: $child)  { id }
     }
   }
-' -f owner=OWNER -f repo=REPO -F parent=PARENT_NUMBER -F child=CHILD_NUMBER
-```
+' -f owner=OWNER -f repo=REPO -F parent=PARENT_NUMBER -F child=CHILD_NUMBER)
 
-Then link them:
+PARENT_NODE_ID=$(echo "$NODES" | jq -r '.data.repository.parent.id')
+CHILD_NODE_ID=$(echo "$NODES"  | jq -r '.data.repository.child.id')
 
-```bash
+if [[ -z "$PARENT_NODE_ID" || -z "$CHILD_NODE_ID" ]]; then
+  echo "Sub-issue linking: failed (could not extract node IDs) — link manually if needed."
+  exit 0
+fi
+
 gh api graphql -H 'GraphQL-Features: sub_issues' -f query='
   mutation($parentId: ID!, $childId: ID!) {
     addSubIssue(input: {issueId: $parentId, subIssueId: $childId}) {
-      issue { number title }
+      issue    { number title }
       subIssue { number title }
     }
   }
-' -f parentId=PARENT_NODE_ID -f childId=CHILD_NODE_ID
+' -f parentId="$PARENT_NODE_ID" -f childId="$CHILD_NODE_ID"
 ```
 
-If either `gh api graphql` call returns an error (e.g., `"NOT_FOUND"`, `"FORBIDDEN"`, or an unknown field/mutation), skip sub-issue linking and note the failure in the Step 8 report as:
+If the script returns an error (e.g., `"NOT_FOUND"`, `"FORBIDDEN"`, or an unknown field/mutation), skip sub-issue linking and note the failure in the Step 8 report as:
 
 ```text
 Sub-issue linking: failed (<error summary>) — link manually if needed.

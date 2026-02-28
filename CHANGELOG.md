@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.02.28
+
+### Fixed
+
+- `/create-github-issue` — Step 7 sub-issue linking no longer requires manual transcription of opaque base64 node IDs; a single shell script now captures IDs into variables via `jq` and passes them programmatically to the mutation, eliminating the copy-paste error mode that caused `NOT_FOUND` failures ([issues/52](https://github.com/couimet/my-claude-skills/issues/52))
+
 ## 2026.02.27
 
 ### Changed
