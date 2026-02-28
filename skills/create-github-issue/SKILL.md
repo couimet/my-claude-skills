@@ -124,8 +124,8 @@ NODES=$(gh api graphql -H 'GraphQL-Features: sub_issues' -f query='
   }
 ' -f owner=OWNER -f repo=REPO -F parent=PARENT_NUMBER -F child=CHILD_NUMBER)
 
-PARENT_NODE_ID=$(echo "$NODES" | jq -r '.data.repository.parent.id')
-CHILD_NODE_ID=$(echo "$NODES"  | jq -r '.data.repository.child.id')
+PARENT_NODE_ID=$(echo "$NODES" | jq -r '.data.repository.parent.id // empty')
+CHILD_NODE_ID=$(echo "$NODES"  | jq -r '.data.repository.child.id // empty')
 
 if [[ -z "$PARENT_NODE_ID" || -z "$CHILD_NODE_ID" ]]; then
   echo "Sub-issue linking: failed (could not extract node IDs) — link manually if needed."
