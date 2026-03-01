@@ -34,6 +34,7 @@ Derive the description slug from $ARGUMENTS (lowercase, hyphens, no special char
 Files use `.txt` extension (not `.md`).
 
 ```text
+<!-- markdownlint-disable MD013 -->
 [type] Short summary
 
 <Body: Why this change? What problem does it solve? 1-3 sentences.>

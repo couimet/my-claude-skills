@@ -34,6 +34,7 @@ Derive the description slug from $ARGUMENTS (lowercase, hyphens, no special char
 Files use `.txt` extension (not `.md`).
 
 ```text
+<!-- markdownlint-disable MD013 -->
 # Question Topic
 
 ## Q001: <clear, specific question ending with ?>
