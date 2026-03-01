@@ -29,8 +29,6 @@ Derive the description slug from $ARGUMENTS (lowercase, hyphens, no special char
 
 Files use `.txt` extension (not `.md`).
 
-Start every generated file with `<!-- markdownlint-disable MD013 -->` as the very first line. This is the prose meta-instruction: it signals to Claude and markdown-aware tools that line length is not enforced, so prose flows without hard wrapping.
-
 The content is freeform — structure it for the purpose at hand (plan, analysis, PR description, etc.).
 
 ## Step Tracking

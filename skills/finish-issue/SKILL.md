@@ -133,7 +133,6 @@ The PR description MUST follow this template, adjusted for mode:
 **Issue mode:**
 
 ```markdown
-<!-- markdownlint-disable MD013 -->
 [issues/NUMBER] Title
 
 ## Summary
@@ -171,7 +170,6 @@ The PR description MUST follow this template, adjusted for mode:
 **Side-quest mode:**
 
 ```markdown
-<!-- markdownlint-disable MD013 -->
 [side-quest/<slug>] Title
 
 ## Summary

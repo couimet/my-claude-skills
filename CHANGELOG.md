@@ -10,6 +10,16 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.01
+
+### Changed
+
+- All prose-generating skills — removed the `/prose-style` sub-skill reference pattern; each skill now embeds the no-wrap rule directly as an explicit inline instruction ("Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only."); the `breadcrumb` skill's generated `.md` file additionally starts with `<!-- markdownlint-disable MD013 -->` to signal intent to markdown-aware tools ([issues/51](https://github.com/couimet/my-claude-skills/issues/51))
+
+### Removed
+
+- `prose-style` skill — deleted; its rules are now embedded directly in each skill that generates prose content rather than maintained as a separately referenced skill
+
 ## 2026.02.28
 
 ### Fixed
