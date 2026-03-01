@@ -55,7 +55,7 @@ Benefits:
 5. **No file lists**: Redundant with the diff
 6. **No ephemeral file paths**: Never reference `.claude-work/` paths — these are local working files that don't exist on GitHub
 
-Format all prose output per the `/prose-style` skill conventions.
+Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
 
 Format all GitHub references per the `/github-ref` skill conventions.
 

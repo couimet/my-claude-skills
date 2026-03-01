@@ -147,7 +147,7 @@ Checklist from the issue (copy verbatim if provided).
 
 Format all code references per the `/code-ref` skill conventions.
 
-Format all prose output per the `/prose-style` skill conventions.
+Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
 
 Format all GitHub references per the `/github-ref` skill conventions.
 

@@ -78,6 +78,6 @@ Do NOT print the full file contents — keep it minimal.
 
 ## Prose Style
 
-Format all prose output per the `/prose-style` skill conventions.
+Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
 
 Format all GitHub references per the `/github-ref` skill conventions.
