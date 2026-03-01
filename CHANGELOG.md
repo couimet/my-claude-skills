@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.01.1
+
+### Added
+
+- `CLAUDE.md` — project-level guidance for AI agents covering development commands, skills architecture (SKILL.md front matter, invocable vs foundation skills, `/skill-name` cross-reference syntax), the issue workflow chain, working files policy, CHANGELOG conventions, and prose formatting rules ([issues/42](https://github.com/couimet/my-claude-skills/issues/42))
+
 ## 2026.03.01
 
 ### Changed
