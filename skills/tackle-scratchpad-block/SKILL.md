@@ -105,13 +105,13 @@ Use the Edit tool to replace `"status": "in_progress"` with `"status": "done"`. 
 
 After marking the step done, count the total number of steps in the scratchpad's JSON block.
 
-**If the total step count is exactly 1:** the work is complete — there is nothing left to do in this scratchpad. Print a notice and invoke `/finish-issue` instead of creating a commit message file:
+**If the total step count is exactly 1:** the work is complete. Print a notice and invoke `/finish-issue` instead of creating a commit message file:
 
 ```text
-Single-step scratchpad complete. Invoking /finish-issue...
+Single-step scratchpad complete — invoking /finish-issue
 ```
 
-**If the total step count is more than 1:** create a commit message file as below.
+**If the total step count exceeds 1:** create a commit message file as below.
 
 **IMPORTANT**: Always create a NEW commit message file for this block. Never reuse commit message files from previous steps.
 
