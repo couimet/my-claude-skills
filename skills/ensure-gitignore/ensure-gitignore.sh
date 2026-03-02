@@ -22,7 +22,7 @@ GITIGNORE="${1:-.gitignore}"
 SENTINEL="# Claude skill working directories"
 BLOCK=".claude-work/"
 
-if grep -qF "$SENTINEL" "$GITIGNORE" 2>/dev/null; then
+if grep -qF "$SENTINEL" "$GITIGNORE" 2>/dev/null && grep -qF "$BLOCK" "$GITIGNORE" 2>/dev/null; then
   echo "present"
   exit 0
 fi

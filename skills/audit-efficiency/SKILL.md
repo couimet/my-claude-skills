@@ -1,5 +1,6 @@
 ---
 name: audit-efficiency
+version: 2026.03.02@5576c47
 description: Audit a skills directory for token-consumption inefficiencies — shell-script candidates, parallelization opportunities, and cross-reference loading overhead. Outputs a structured report with HIGH/MEDIUM/LOW impact ratings.
 argument-hint: [skills-dir]
 allowed-tools: Read, Glob, Grep
@@ -83,7 +84,7 @@ For each finding, record:
 
 ## Step 4: Cross-Reference Loading Overhead
 
-Identify foundation skills (those with `user-invocable: false` or no `user-invocable` field and referenced only via `/skill-name` in prose). For each, count how many other skills reference it.
+Identify foundation skills (those with an explicit `user-invocable: false` in their front matter, referenced via `/skill-name` in prose). For each, count how many other skills reference it.
 
 **High-overhead pattern:** A foundation skill that:
 
