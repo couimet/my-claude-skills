@@ -290,6 +290,7 @@ I've used Claude Code on dozens of real issues and kept running into the same fr
 
 | Command | What It Does |
 | --- | --- |
+| `/audit-efficiency [skills-dir]` | Scan a skills directory for token-consumption inefficiencies — shell-script candidates, parallelizable steps, cross-reference overhead — and output a structured HIGH/MEDIUM/LOW report |
 | `/breadcrumb <note>` | Drop a timestamped note collected by `/finish-issue` for the PR description |
 | `/cleanup-issue [number]` | Delete an issue's working directory (`.claude-work/issues/<ID>/`) after confirming with the user |
 | `/commit-msg <desc>` | Draft a commit message focused on WHY, not WHAT |
@@ -310,10 +311,10 @@ These skills aren't invoked directly — Claude consults them when the context m
 | --- | --- |
 | `auto-number` | When a skill needs the next file sequence number — runs a Bash script that scans a directory and returns the next `NNNN`, supporting prefix/suffix modes and configurable width |
 | `code-ref` | When generating file/line references — formats them as GitHub-style permalinks, clickable in editors with [RangeLink](https://github.com/couimet/rangeLink) installed (VS Code/Cursor don't recognize the suffix natively) |
+| `ensure-gitignore` | When a foundation skill is about to create a working file — checks/appends the `.claude-work/` sentinel to `.gitignore` in one Bash call |
 | `file-placement` | When deciding where to put a new file — routes to the right directory |
 | `github-ref` | When skill-generated text contains issue or PR references — requires full GitHub URLs, never short-form `#NNN` or `PR #NNN` |
 | `issue-context` | When on an `issues/<N>` branch — scopes working files to issue subdirectories |
-| `prose-style` | When writing prose to working files — applies consistent formatting conventions |
 
 For architecture details, the two-tier design, and step-tracking schema, see [skills/README.md](skills/README.md).
 
