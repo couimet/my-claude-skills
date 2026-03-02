@@ -113,7 +113,7 @@ Single-step scratchpad complete — invoking /finish-issue
 
 **If the total step count exceeds 1:** create a commit message file as below.
 
-**IMPORTANT**: Always create a NEW commit message file for this block. Never reuse commit message files from previous steps.
+**For multi-step scratchpads only:** Create a **NEW** commit message file for this block. Never reuse commit message files from previous steps.
 
 Use `/commit-msg` to create the commit message file.
 
@@ -131,8 +131,9 @@ Print:
 1. Summary of changes made
 2. Files modified
 3. Test results (pass/fail count)
-4. **Single-step scratchpad:** `/finish-issue` was invoked — no commit message file
-   **Multi-step scratchpad:** Commit message file path
+4. Either:
+   - **Single-step scratchpad:** `/finish-issue` was invoked — no commit message file, or
+   - **Multi-step scratchpad:** Commit message file path
 
 **IMPORTANT: Do NOT run `git commit`.**
 
