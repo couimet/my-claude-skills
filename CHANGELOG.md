@@ -10,6 +10,17 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.02
+
+### Added
+
+- `ensure-gitignore` skill — shell script that checks/appends the `.claude-work/` sentinel to `.gitignore` in one Bash call; replaces the previous read-check-append instructions in `/issue-context` that loaded file contents into Claude's context on every foundation skill invocation ([issues/43](https://github.com/couimet/my-claude-skills/issues/43))
+- `audit-efficiency` skill — user-invocable; scans any project's `skills/` directory for token-consumption inefficiencies: shell-script candidates (read-check-append patterns, pure computation, existence checks), step sequence parallelization opportunities, and cross-reference loading overhead; outputs a structured HIGH/MEDIUM/LOW impact report ([issues/43](https://github.com/couimet/my-claude-skills/issues/43))
+
+### Changed
+
+- `/issue-context` — `## Ensure .gitignore` section now delegates to `skills/ensure-gitignore/ensure-gitignore.sh` instead of instructing Claude to read the file manually; consistent with the script-backed skill pattern established by `/auto-number` ([issues/43](https://github.com/couimet/my-claude-skills/issues/43))
+
 ## 2026.03.01.1
 
 ### Added

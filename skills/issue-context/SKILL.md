@@ -1,9 +1,9 @@
 ---
 name: issue-context
-version: 2026.03.01.1@4410344
+version: 2026.03.02@5576c47
 user-invocable: false
 description: Detects issue context from git branch name and determines subdirectory organization for working files. Auto-consulted by foundation skills (/scratchpad, /question, /commit-msg, /breadcrumb) when deciding where to place files.
-allowed-tools: Read, Write, Bash(git branch --show-current), Bash(*/skills/auto-number/auto-number.sh *), Glob
+allowed-tools: Read, Write, Bash(git branch --show-current), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Glob
 ---
 
 # Issue Context
@@ -110,16 +110,10 @@ The `/breadcrumb` skill handles this directly, but still uses issue-context for 
 
 ## Ensure `.gitignore`
 
-Foundation skills already consult issue-context for directory placement — this check runs as part of that same consultation. Before creating any ephemeral file, ensure the project's `.gitignore` includes an entry for the unified working directory. This prevents SCM noise in consuming projects.
+Foundation skills already consult issue-context for directory placement — this check runs as part of that same consultation. Before creating any ephemeral file, use `/ensure-gitignore` to add the working directory sentinel if missing:
 
-1. Read `.gitignore` in the project root (if it doesn't exist, treat contents as empty)
-2. Check if the sentinel comment `# Claude skill working directories` is present
-3. If **already present** → do nothing (idempotent)
-4. If **missing** → append the following block (with a leading blank line if the file is non-empty):
-
-```text
-# Claude skill working directories
-.claude-work/
+```bash
+skills/ensure-gitignore/ensure-gitignore.sh
 ```
 
-This runs once per project — subsequent skill invocations find the sentinel and skip.
+The script handles check-and-append atomically in one Bash call. It prints `present` (no change) or `added` (block appended). No file contents are loaded into context.
