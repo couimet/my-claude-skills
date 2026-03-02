@@ -87,7 +87,7 @@ Run the project's test suite after making changes.
 
 **Exception**: Skip tests only if the scratchpad block explicitly says not to run them for this step.
 
-## Step 5: Mark Done and Create Commit Message File
+## Step 5: Mark Done and Wrap Up
 
 After successful execution and passing tests, update the step's status in the scratchpad's JSON block:
 
@@ -100,6 +100,18 @@ After successful execution and passing tests, update the step's status in the sc
 Use the Edit tool to replace `"status": "in_progress"` with `"status": "done"`. Include the `"id"` and `"title"` fields in the old_string for Edit uniqueness.
 
 **If tests fail or execution is incomplete**, leave the step as `"in_progress"` — do NOT mark it `"done"`.
+
+### Single-Step Shortcut
+
+After marking the step done, count the total number of steps in the scratchpad's JSON block.
+
+**If the total step count is exactly 1:** the work is complete — there is nothing left to do in this scratchpad. Print a notice and invoke `/finish-issue` instead of creating a commit message file:
+
+```text
+Single-step scratchpad complete. Invoking /finish-issue...
+```
+
+**If the total step count is more than 1:** create a commit message file as below.
 
 **IMPORTANT**: Always create a NEW commit message file for this block. Never reuse commit message files from previous steps.
 
@@ -119,14 +131,15 @@ Print:
 1. Summary of changes made
 2. Files modified
 3. Test results (pass/fail count)
-4. Commit message file path
+4. **Single-step scratchpad:** `/finish-issue` was invoked — no commit message file
+   **Multi-step scratchpad:** Commit message file path
 
 **IMPORTANT: Do NOT run `git commit`.**
 
 Wait for user to:
 
 - Review the changes
-- Review the commit message
+- Review the commit message (multi-step) or the finish-issue output (single-step)
 - Manually commit when ready
 
 ## Quality Checklist
@@ -135,6 +148,6 @@ Before finishing:
 
 - [ ] All steps in the target block were executed
 - [ ] Tests pass (unless scratchpad explicitly skipped them)
-- [ ] NEW commit message file created with clear "why" context
+- [ ] NEW commit message file created with clear "why" context (or `/finish-issue` invoked for single-step scratchpads)
 - [ ] Changes align with scratchpad's stated goal
 - [ ] No unrelated changes included
