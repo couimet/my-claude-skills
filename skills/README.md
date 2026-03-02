@@ -15,6 +15,7 @@
 | --- | --- |
 | `auto-number` | Reusable file sequence numbering with prefix (`NNNN-name`) and suffix (`name-NNNN`) modes. Auto-consulted by `/issue-context` and available for direct use by other skills. |
 | `code-ref` | Defines permalink format for code references (`path/to/file.ts#L10-L20`). Claude auto-consults when generating file/line references. |
+| `ensure-gitignore` | Checks that `.gitignore` contains the Claude working directory sentinel and appends it if missing. One Bash call — no file contents loaded into context. Auto-consulted by `/issue-context`. |
 | `file-placement` | Decision tree for where to put different file types. Claude auto-consults when deciding output locations. |
 | `issue-context` | Detects issue context from git branch name, determines subdirectory organization and `NNNN` file numbering. Claude auto-consults when foundation skills need directory placement. |
 
@@ -22,6 +23,7 @@
 
 | Skill | Invocation | Foundation Dependencies |
 | --- | --- | --- |
+| `audit-efficiency` | `/audit-efficiency [skills-dir]` | Read, Glob, Grep |
 | `cleanup-issue` | `/cleanup-issue [number]` | `/issue-context` |
 | `create-github-issue` | `/create-github-issue <title-or-path>` | `/scratchpad` (reads), `/question` |
 | `finish-issue` | `/finish-issue` | `/scratchpad` (reads), `/question`, breadcrumbs (reads); handles both `issues/*` and `side-quest/*` branches |
@@ -36,7 +38,7 @@
 
 **Non-invocable skills** (`user-invocable: false`) don't appear in the `/` menu but their descriptions load into Claude's context. Claude auto-consults them when the context matches (e.g., generating code references, deciding where to put files).
 
-**Script-backed skills:** When a skill's logic is purely deterministic (no judgment calls, no context-dependent decisions), a Bash script is more token-efficient than inline markdown instructions. Claude executes one Bash call instead of reasoning through the algorithm each time. `auto-number` is the first skill to use this pattern — see its `## Design` section for the rationale.
+**Script-backed skills:** When a skill's logic is purely deterministic (no judgment calls, no context-dependent decisions), a Bash script is more token-efficient than inline markdown instructions. Claude executes one Bash call instead of reasoning through the algorithm each time. `auto-number` and `ensure-gitignore` use this pattern — see their `## Design` sections for the rationale.
 
 ## Step Tracking
 
