@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.03
+
+### Fixed
+
+- `/create-github-issue` — Step 7 sub-issue linking no longer fails in zsh due to `!` being stripped from GraphQL type annotations (`String!`, `Int!`, `ID!`) by history expansion inside `$()` command substitutions; the node-ID query is now written to `/tmp/gql-nodes.json` via a `<<'GRAPHQL'` heredoc and read with `--input`, and the mutation file is built with `jq -n --arg` and read with `--input` ([issues/56](https://github.com/couimet/my-claude-skills/issues/56))
+
 ## 2026.03.02.1
 
 ### Changed
