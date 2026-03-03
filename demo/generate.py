@@ -475,6 +475,7 @@ def build_landing(demo_dirs, env):
         demos.append({
             "name": demo_dir.name,
             "title": data.get("title", demo_dir.name),
+            "description": data.get("description", ""),
             "phase_count": len(data["phases"]),
             "exchange_count": total_exchanges,
             "artifact_count": total_artifacts,
