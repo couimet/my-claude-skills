@@ -486,10 +486,13 @@ def build_landing(demo_dirs, env):
             for p in data["phases"]
             for e in p["exchanges"]
         )
+        # Strip markdown link syntax for the landing card: the card is itself
+        # an <a> element, so nested anchors would be invalid HTML.
+        description_plain = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", data["description"])
         demos.append({
             "name": demo_dir.name,
             "title": data.get("title", demo_dir.name),
-            "description": data.get("description", ""),
+            "description": description_plain,
             "phase_count": len(data["phases"]),
             "exchange_count": total_exchanges,
             "artifact_count": total_artifacts,

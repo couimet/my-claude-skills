@@ -115,7 +115,7 @@
       <a class="demo-card" href="{{ demo.url }}">
         <p class="demo-card-label">Case Study</p>
         <h2 class="demo-card-title">{{ demo.title }}</h2>
-        {% if demo.description %}<p class="demo-card-description">{{ demo.description | inline_md }}</p>{% endif %}
+        {% if demo.description %}<p class="demo-card-description">{{ demo.description }}</p>{% endif %}
         <div class="demo-card-stats">
           <span>{{ demo.exchange_count }} exchanges</span>
           <span class="meta-sep">/</span>
