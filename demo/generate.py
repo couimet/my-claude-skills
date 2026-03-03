@@ -390,6 +390,9 @@ def build_demo(demo_dir, env):
             "Add a description paragraph after the H1 and before the first ## Phase heading."
         )
 
+    # Plain-text description for meta tags: strip markdown link syntax [text](url) → text.
+    description_plain = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", data["description"])
+
     # Prepare output directory.
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -451,7 +454,7 @@ def build_demo(demo_dir, env):
     html = template.render(
         title=data.get("title", f"Demo: {demo_name}"),
         subtitle=data["description"],
-        description=data["description"],
+        description=description_plain,
         css_path=css_path,
         js_path=js_path,
         content=content_html,
