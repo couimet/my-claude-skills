@@ -137,7 +137,8 @@ def parse_timeline(timeline_path):
     phase_intro_lines = []
     # Accumulator for the document-level intro paragraph (between H1 and first ## Phase).
     doc_intro_lines = []
-    doc_intro_done = False  # True once the first blank line after content is seen
+    doc_intro_done = False    # True once the first blank line after content is seen
+    doc_intro_started = False  # True once the first prose line is seen
     # Track whether we've seen the date line for the current exchange.
     seen_date = False
 
@@ -212,12 +213,25 @@ def parse_timeline(timeline_path):
                 )
 
         # Accumulate document intro (between H1 and first ## Phase heading).
+        # Skip structural/non-prose lines (horizontal rules, headings, fenced
+        # code fences, lines with no alphanumeric characters) both before the
+        # first prose line is seen and within the paragraph.
         if title and current_phase is None and not doc_intro_done:
-            if line.strip() == "":
-                if doc_intro_lines:
-                    doc_intro_done = True
+            stripped = line.strip()
+            if not doc_intro_started:
+                # Before prose begins: skip blank lines and structural markers.
+                if stripped and re.search(r'[A-Za-z0-9]', stripped) \
+                        and not re.match(r'^[-=*`#]{3,}', stripped):
+                    doc_intro_started = True
+                    doc_intro_lines.append(stripped)
             else:
-                doc_intro_lines.append(line.strip())
+                # Inside the paragraph: blank line ends it; structural lines
+                # are skipped; prose lines are appended.
+                if stripped == "":
+                    doc_intro_done = True
+                elif re.search(r'[A-Za-z0-9]', stripped) \
+                        and not re.match(r'^[-=*`#]{3,}', stripped):
+                    doc_intro_lines.append(stripped)
             continue
 
         # Accumulate phase intro lines (between ## phase heading and first ### exchange).
