@@ -1,6 +1,6 @@
 ---
 name: breadcrumb
-version: 2026.03.02.1@76d3e29
+version: 2026.03.03@709a4f0
 description: Drop a timestamped note for the current issue - collected by /finish-issue for PR descriptions
 argument-hint: <note text>
 allowed-tools: Read, Write, Bash(git branch --show-current), Bash(date *)
