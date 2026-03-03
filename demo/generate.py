@@ -557,6 +557,9 @@ def main():
         autoescape=True,
     )
     env.filters["markdown"] = lambda t: Markup(render_prose(t))
+    env.filters["inline_md"] = lambda t: Markup(
+        re.sub(r"^\s*<p>(.*)</p>\s*$", r"\1", render_prose(t), flags=re.DOTALL)
+    )
 
     if args.debug:
         for demo_dir in demos:
