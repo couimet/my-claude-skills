@@ -135,6 +135,9 @@ def parse_timeline(timeline_path):
     prose_lines = []
     # Accumulator for intro lines between a phase heading and its first exchange.
     phase_intro_lines = []
+    # Accumulator for the document-level intro paragraph (between H1 and first ## Phase).
+    doc_intro_lines = []
+    doc_intro_done = False  # True once the first blank line after content is seen
     # Track whether we've seen the date line for the current exchange.
     seen_date = False
 
@@ -208,6 +211,15 @@ def parse_timeline(timeline_path):
                     parse_artifact_ref(art_match)
                 )
 
+        # Accumulate document intro (between H1 and first ## Phase heading).
+        if title and current_phase is None and not doc_intro_done:
+            if line.strip() == "":
+                if doc_intro_lines:
+                    doc_intro_done = True
+            else:
+                doc_intro_lines.append(line.strip())
+            continue
+
         # Accumulate phase intro lines (between ## phase heading and first ### exchange).
         if current_phase is not None and current_exchange is None:
             if line.strip() not in ("", "---"):
@@ -232,6 +244,7 @@ def parse_timeline(timeline_path):
 
     return {
         "title": title,
+        "description": " ".join(doc_intro_lines).strip(),
         "phases": phases,
     }
 
