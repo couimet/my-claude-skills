@@ -1,6 +1,6 @@
 # Building a README with Claude Code Skills — Full Issue Lifecycle
 
-This is a real, unredacted record of how Claude Code skills were used to plan and implement issue #10 on this very repository. Every artifact linked below was generated during the actual workflow — nothing fabricated.
+This is a real, unredacted record of how Claude Code skills were used to plan and implement [issue #10](https://github.com/couimet/my-claude-skills/issues/10) on [this very repository](https://github.com/couimet/my-claude-skills). Every artifact linked below was generated during the actual workflow — nothing fabricated.
 
 Every numbered file in this folder has a corresponding entry here. Read the folder listing top-to-bottom for the chronological story; read this file for the narrative context behind each artifact.
 
