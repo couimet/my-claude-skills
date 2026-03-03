@@ -5,4 +5,6 @@
 demo/site/
 demo/__pycache__/
 
+.venv/
+
 .claude/
