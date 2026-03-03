@@ -384,6 +384,11 @@ def build_demo(demo_dir, env):
 
     # Parse the timeline.
     data = parse_timeline(timeline_path)
+    if not data.get("description"):
+        sys.exit(
+            f"Error: {timeline_path} has no intro paragraph. "
+            "Add a description paragraph after the H1 and before the first ## Phase heading."
+        )
 
     # Prepare output directory.
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -445,8 +450,8 @@ def build_demo(demo_dir, env):
     template = env.get_template("base.html")
     html = template.render(
         title=data.get("title", f"Demo: {demo_name}"),
-        subtitle="Every exchange, every artifact, every diff — captured as it happened.",
-        description=f"A real-time case study of building {data.get('title', demo_name)} with Claude Code skills.",
+        subtitle=data["description"],
+        description=data["description"],
         css_path=css_path,
         js_path=js_path,
         content=content_html,
@@ -465,7 +470,13 @@ def build_landing(demo_dirs, env):
     """Generate demo/site/index.html — a landing page listing all demos."""
     demos = []
     for demo_dir in demo_dirs:
-        data = parse_timeline(demo_dir / "TIMELINE.md")
+        timeline_path = demo_dir / "TIMELINE.md"
+        data = parse_timeline(timeline_path)
+        if not data.get("description"):
+            sys.exit(
+                f"Error: {timeline_path} has no intro paragraph. "
+                "Add a description paragraph after the H1 and before the first ## Phase heading."
+            )
         total_exchanges = sum(len(p["exchanges"]) for p in data["phases"])
         total_artifacts = sum(
             len(e["artifacts"])
