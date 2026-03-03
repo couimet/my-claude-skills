@@ -131,14 +131,11 @@ if [[ -z "$PARENT_NODE_ID" || -z "$CHILD_NODE_ID" ]]; then
   exit 0
 fi
 
-gh api graphql -H 'GraphQL-Features: sub_issues' -f query='
-  mutation($parentId: ID!, $childId: ID!) {
-    addSubIssue(input: {issueId: $parentId, subIssueId: $childId}) {
-      issue    { number title }
-      subIssue { number title }
-    }
-  }
-' -f parentId="$PARENT_NODE_ID" -f childId="$CHILD_NODE_ID"
+jq -n --arg parentId "$PARENT_NODE_ID" --arg childId "$CHILD_NODE_ID" \
+  '{"query": "mutation($parentId: ID!, $childId: ID!) { addSubIssue(input: {issueId: $parentId, subIssueId: $childId}) { issue { number title } subIssue { number title } } }", "variables": {"parentId": $parentId, "childId": $childId}}' \
+  > /tmp/gql-mutation.json
+
+gh api graphql -H 'GraphQL-Features: sub_issues' --input /tmp/gql-mutation.json
 ```
 
 If the script returns an error (e.g., `"NOT_FOUND"`, `"FORBIDDEN"`, or an unknown field/mutation), skip sub-issue linking and note the failure in the Step 8 report as:
