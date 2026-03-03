@@ -115,12 +115,13 @@ Parse `OWNER` and `REPO` from the issue URL returned in Step 6 (`https://github.
 Capture the node IDs into shell variables and link in a single script — do not transcribe IDs manually:
 
 ```bash
-cat > /tmp/gql-nodes.json <<'GRAPHQL'
-{
-  "query": "query($owner: String!, $repo: String!, $parent: Int!, $child: Int!) { repository(owner: $owner, name: $repo) { parent: issue(number: $parent) { id } child: issue(number: $child) { id } } }",
-  "variables": { "owner": "OWNER", "repo": "REPO", "parent": PARENT_NUMBER, "child": CHILD_NUMBER }
-}
-GRAPHQL
+jq -n \
+  --arg owner "$OWNER" \
+  --arg repo "$REPO" \
+  --argjson parent "$PARENT_NUMBER" \
+  --argjson child "$CHILD_NUMBER" \
+  '{"query": "query($owner: String!, $repo: String!, $parent: Int!, $child: Int!) { repository(owner: $owner, name: $repo) { parent: issue(number: $parent) { id } child: issue(number: $child) { id } } }", "variables": {"owner": $owner, "repo": $repo, "parent": $parent, "child": $child}}' \
+  > /tmp/gql-nodes.json
 NODES=$(gh api graphql -H 'GraphQL-Features: sub_issues' --input /tmp/gql-nodes.json)
 
 PARENT_NODE_ID=$(echo "$NODES" | jq -r '.data.repository.parent.id // empty')
