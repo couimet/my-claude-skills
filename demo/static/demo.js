@@ -72,6 +72,12 @@
 
   var exchangeCards = document.querySelectorAll('.exchange-card');
   var currentHash = '';
+  // Only update the URL hash after the user has scrolled — prevents the
+  // IntersectionObserver from writing #exchange-1 into history on initial
+  // page load, which would cause the browser to scroll past the page intro
+  // on subsequent visits.
+  var userHasScrolled = false;
+  window.addEventListener('scroll', function () { userHasScrolled = true; }, { once: true, passive: true });
 
   if (exchangeCards.length > 0 && 'IntersectionObserver' in window) {
     var hashObserver = new IntersectionObserver(function (entries) {
@@ -89,7 +95,9 @@
         var id = best.target.id;
         if (id && id !== currentHash) {
           currentHash = id;
-          history.replaceState(null, '', '#' + id);
+          if (userHasScrolled) {
+            history.replaceState(null, '', '#' + id);
+          }
           updateProgressBar(best.target);
         }
       }
