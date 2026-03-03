@@ -1,4 +1,4 @@
-# Issue #10 — Add Meat to README: Timeline
+# Building a README with Claude Code Skills — Full Issue Lifecycle
 
 This is a real, unredacted record of how Claude Code skills were used to plan and implement issue #10 on this very repository. Every artifact linked below was generated during the actual workflow — nothing fabricated.
 
