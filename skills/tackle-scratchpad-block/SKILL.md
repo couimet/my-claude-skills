@@ -1,6 +1,6 @@
 ---
 name: tackle-scratchpad-block
-version: 2026.03.03@709a4f0
+version: 2026.03.03@63045e2
 description: Execute steps from a scratchpad block and create commit message
 argument-hint: <path/to/scratchpad.txt [#S00N | S00N | #L10-L20]>
 allowed-tools: Read, Write, Edit, Bash(*), Glob, Grep
