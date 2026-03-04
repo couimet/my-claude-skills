@@ -83,6 +83,7 @@ Steps are embedded as a fenced JSON block (see `/scratchpad` Step Tracking secti
 
 ```json
 {
+  "finish_issue_on_complete": true,
   "steps": [
     {
       "id": "S001",
