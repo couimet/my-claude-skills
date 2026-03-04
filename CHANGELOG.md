@@ -10,6 +10,15 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.04
+
+### Changed
+
+- `/tackle-scratchpad-block` — replaces the single-step shortcut (step-count proxy) with an explicit `"finish_issue_on_complete"` metadata check: `/finish-issue` is now invoked only when all steps are `"done"` AND the top-level `"finish_issue_on_complete": true` field is present in the JSON block; absent or `false` always produces a `/commit-msg` file regardless of step count, preventing premature `/finish-issue` invocations from CI fix scratchpads and `/tackle-pr-comment` scratchpads ([issues/62](https://github.com/couimet/my-claude-skills/issues/62))
+- `/start-issue` — adds `"finish_issue_on_complete": true` to the generated JSON block in the implementation plan template, opting the primary issue deliverable into the automatic `/finish-issue` flow ([issues/62](https://github.com/couimet/my-claude-skills/issues/62))
+- `/start-side-quest` — replaces the freeform `## Changes` numbered list with a JSON steps block carrying `"finish_issue_on_complete": true`, making side-quest scratchpads consistent with `/start-issue` and enabling `/tackle-scratchpad-block` step tracking ([issues/62](https://github.com/couimet/my-claude-skills/issues/62))
+- `/scratchpad` — documents `"finish_issue_on_complete"` in the JSON schema example (default `false`) and Field Reference, with a new "Top-level fields" / "Step-level fields" split for clarity ([issues/62](https://github.com/couimet/my-claude-skills/issues/62))
+
 ## 2026.03.03
 
 ### Fixed
