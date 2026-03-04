@@ -63,7 +63,7 @@ Use description: `side-quest-<slug>`
 
 The scratchpad MUST contain:
 
-```markdown
+````markdown
 # Side-Quest: <Title>
 
 Base branch: <branch this was cut from — origin/main, issues/XXX, or another branch>
@@ -73,12 +73,26 @@ Origin: <what triggered this - code review, refactoring discovery, etc.>
 
 1-2 sentences explaining what improvement this side-quest delivers.
 
-## Changes
+## Implementation Plan
 
-Numbered list of specific changes:
-
-1. <File>: <what changes>
-2. <File>: <what changes>
+```json
+{
+  "finish_issue_on_complete": true,
+  "steps": [
+    {
+      "id": "S001",
+      "title": "<brief description>",
+      "status": "pending",
+      "done_when": "<concrete criteria>",
+      "depends_on": [],
+      "files": ["<file>"],
+      "tasks": [
+        "<action>"
+      ]
+    }
+  ]
+}
+```
 
 ## Why Split This Out
 
@@ -93,7 +107,7 @@ Brief explanation of why this is orthogonal to the parent work:
 - [ ] All tests pass
 - [ ] Changes are minimal and focused
 - [ ] Ready for independent PR
-```
+````
 
 Format all code references per the `/code-ref` skill conventions.
 
