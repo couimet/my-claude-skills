@@ -101,17 +101,20 @@ Use the Edit tool to replace `"status": "in_progress"` with `"status": "done"`. 
 
 **If tests fail or execution is incomplete**, leave the step as `"in_progress"` — do NOT mark it `"done"`.
 
-### Single-Step Shortcut
+### Completion Check
 
-After marking the step done, count the total number of steps in the scratchpad's JSON block.
+After marking the step done, check two conditions in the scratchpad's JSON block:
 
-**If the total step count is exactly 1:** the work is complete. Print a notice and invoke `/finish-issue` instead of creating a commit message file:
+1. All steps have `"status": "done"`
+2. The top-level field `"finish_issue_on_complete": true` is present
+
+**If both conditions are true:** the issue work is complete. Print a notice and invoke `/finish-issue` instead of creating a commit message file:
 
 ```text
-Single-step scratchpad complete — invoking /finish-issue
+All steps complete (finish_issue_on_complete: true) — invoking /finish-issue
 ```
 
-**If the total step count exceeds 1:** create a commit message file as below.
+**Otherwise** (any step still pending/in_progress/blocked, OR the field is absent or false): create a commit message file as below.
 
 **For multi-step scratchpads only:** Create a **NEW** commit message file for this block. Never reuse commit message files from previous steps.
 
@@ -132,15 +135,15 @@ Print:
 2. Files modified
 3. Test results (pass/fail count)
 4. Either:
-   - **Single-step scratchpad:** `/finish-issue` was invoked — no commit message file, or
-   - **Multi-step scratchpad:** Commit message file path
+   - **All steps done + `finish_issue_on_complete: true`:** `/finish-issue` was invoked — no commit message file, or
+   - **Otherwise:** Commit message file path
 
 **IMPORTANT: Do NOT run `git commit`.**
 
 Wait for user to:
 
 - Review the changes
-- Review the commit message (multi-step) or the finish-issue output (single-step)
+- Review the commit message or the finish-issue output (if all steps done and `finish_issue_on_complete: true`)
 - Manually commit when ready
 
 ## Quality Checklist
@@ -149,6 +152,6 @@ Before finishing:
 
 - [ ] All steps in the target block were executed
 - [ ] Tests pass (unless scratchpad explicitly skipped them)
-- [ ] NEW commit message file created with clear "why" context (or `/finish-issue` invoked for single-step scratchpads)
+- [ ] NEW commit message file created with clear "why" context (or `/finish-issue` invoked when all steps done and `finish_issue_on_complete: true`)
 - [ ] Changes align with scratchpad's stated goal
 - [ ] No unrelated changes included
