@@ -14,6 +14,7 @@ Usage:
 
 import argparse
 import difflib
+import html as html_lib
 import http.server
 import json
 import os
@@ -390,6 +391,17 @@ def render_prose(markdown_text):
     return _md(markdown_text)
 
 
+def markdown_to_plain_text(markdown_text):
+    """Render markdown to HTML then strip tags and decode entities.
+
+    Used for meta descriptions and plain-text surfaces (e.g. the landing card,
+    which is an <a> element and cannot contain nested anchors).
+    """
+    rendered = render_prose(markdown_text)
+    text = re.sub(r"<[^>]+>", "", rendered)
+    return html_lib.unescape(" ".join(text.split()))
+
+
 def build_demo(demo_dir, env):
     """Generate the site for a single demo directory."""
     timeline_path = demo_dir / "TIMELINE.md"
@@ -404,8 +416,8 @@ def build_demo(demo_dir, env):
             "Add a description paragraph after the H1 and before the first ## Phase heading."
         )
 
-    # Plain-text description for meta tags: strip markdown link syntax [text](url) → text.
-    description_plain = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", data["description"])
+    # Plain-text description for meta tags: render markdown then strip HTML tags.
+    description_plain = markdown_to_plain_text(data["description"])
 
     # Prepare output directory.
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -500,9 +512,9 @@ def build_landing(demo_dirs, env):
             for p in data["phases"]
             for e in p["exchanges"]
         )
-        # Strip markdown link syntax for the landing card: the card is itself
+        # Strip markdown to plain text for the landing card: the card is itself
         # an <a> element, so nested anchors would be invalid HTML.
-        description_plain = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", data["description"])
+        description_plain = markdown_to_plain_text(data["description"])
         demos.append({
             "name": demo_dir.name,
             "title": data.get("title", demo_dir.name),
@@ -577,9 +589,12 @@ def main():
         autoescape=True,
     )
     env.filters["markdown"] = lambda t: Markup(render_prose(t))
-    env.filters["inline_md"] = lambda t: Markup(
-        re.sub(r"^\s*<p>(.*)</p>\s*$", r"\1", render_prose(t), flags=re.DOTALL)
-    )
+    def inline_md(text):
+        rendered = render_prose(text)
+        m = re.fullmatch(r"\s*<p>(.*?)</p>\s*", rendered, flags=re.DOTALL)
+        return Markup(m.group(1) if m else rendered)
+
+    env.filters["inline_md"] = inline_md
 
     if args.debug:
         for demo_dir in demos:
