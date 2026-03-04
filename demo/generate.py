@@ -221,7 +221,7 @@ def parse_timeline(timeline_path):
             stripped = line.strip()
             if not doc_intro_started:
                 # Before prose begins: skip blank lines and structural markers.
-                if stripped and re.search(r'[A-Za-z0-9]', stripped) \
+                if stripped and any(ch.isalnum() for ch in stripped) \
                         and not re.match(r'^[-=*`#]{3,}', stripped):
                     doc_intro_started = True
                     doc_intro_lines.append(stripped)
@@ -230,7 +230,7 @@ def parse_timeline(timeline_path):
                 # are skipped; prose lines are appended.
                 if stripped == "":
                     doc_intro_done = True
-                elif re.search(r'[A-Za-z0-9]', stripped) \
+                elif any(ch.isalnum() for ch in stripped) \
                         and not re.match(r'^[-=*`#]{3,}', stripped):
                     doc_intro_lines.append(stripped)
             continue
