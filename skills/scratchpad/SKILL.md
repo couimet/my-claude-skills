@@ -39,6 +39,7 @@ When a scratchpad contains an implementation plan, embed the steps inside a fenc
 
 ```json
 {
+  "finish_issue_on_complete": false,
   "steps": [
     {
       "id": "S001",
@@ -69,6 +70,12 @@ When a scratchpad contains an implementation plan, embed the steps inside a fenc
 ```
 
 ### Field Reference
+
+Top-level fields (siblings of `steps`):
+
+- **`finish_issue_on_complete`** — Boolean, default `false` (omit to default). When `true`, `/tackle-scratchpad-block` invokes `/finish-issue` automatically after all steps reach `"done"`. Only `/start-issue` and `/start-side-quest` set this to `true` — they mark the scratchpad as the primary issue deliverable. Every other skill that creates scratchpads (ad-hoc `/scratchpad`, `/tackle-pr-comment`, CI fix scratchpads) omits it.
+
+Step-level fields (inside each `steps` entry):
 
 - **`id`** — `S001`, `S002`, etc. Zero-padded 3-digit IDs mirroring the `/question` skill's `Q001`/`A001` pattern. Use `S001` as the short form in cross-references.
 - **`title`** — Short description of the step.
