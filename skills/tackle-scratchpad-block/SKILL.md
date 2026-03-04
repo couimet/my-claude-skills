@@ -116,7 +116,7 @@ All steps complete (finish_issue_on_complete: true) — invoking /finish-issue
 
 **Otherwise** (any step still pending/in_progress/blocked, OR the field is absent or false): create a commit message file as below.
 
-**For multi-step scratchpads only:** Create a **NEW** commit message file for this block. Never reuse commit message files from previous steps.
+Create a **NEW** commit message file for this block whenever the completion check above does not invoke `/finish-issue`. Never reuse commit message files from previous steps.
 
 Use `/commit-msg` to create the commit message file.
 
