@@ -226,12 +226,14 @@ SCRIPT="$PROJECT_ROOT/skills/auto-number/auto-number.sh"
 @test "positional 'prefix' exits E002 with did-you-mean hint" {
   run "$SCRIPT" "$TEST_TEMP_DIR" prefix
   [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E002 error: "* ]]
   [[ "$output" == *"did you mean: --mode prefix"* ]]
 }
 
 @test "positional 'suffix' exits E002 with did-you-mean hint" {
   run "$SCRIPT" "$TEST_TEMP_DIR" suffix
   [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E002 error: "* ]]
   [[ "$output" == *"did you mean: --mode suffix"* ]]
 }
 
