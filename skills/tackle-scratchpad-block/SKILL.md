@@ -108,7 +108,19 @@ After marking the step done, check two conditions in the scratchpad's JSON block
 1. All steps have `"status": "done"`
 2. The top-level field `"finish_issue_on_complete": true` is present
 
-**If both conditions are true:** the issue work is complete. Print a notice and invoke `/finish-issue` instead of creating a commit message file:
+Count the total number of steps in the `"steps"` array (regardless of status) to determine the branch:
+
+**If both conditions are true AND the scratchpad has more than one step:**
+
+Create a `/commit-msg` file for this step first (as described below), then invoke `/finish-issue`. Print:
+
+```text
+All steps complete (finish_issue_on_complete: true) — invoking /finish-issue
+```
+
+**If both conditions are true AND the scratchpad has exactly one step:**
+
+Invoke `/finish-issue` directly — no commit message file needed. Print:
 
 ```text
 All steps complete (finish_issue_on_complete: true) — invoking /finish-issue
@@ -116,7 +128,7 @@ All steps complete (finish_issue_on_complete: true) — invoking /finish-issue
 
 **Otherwise** (any step still pending/in_progress/blocked, OR the field is absent or false): create a commit message file as below.
 
-Create a **NEW** commit message file for this block whenever the completion check above does not invoke `/finish-issue`. Never reuse commit message files from previous steps.
+Create a **NEW** commit message file for this block in all cases except a single-step scratchpad that triggers `/finish-issue`. Never reuse commit message files from previous steps.
 
 Use `/commit-msg` to create the commit message file.
 
@@ -135,7 +147,8 @@ Print:
 2. Files modified
 3. Test results (pass/fail count)
 4. Either:
-   - **All steps done + `finish_issue_on_complete: true`:** `/finish-issue` was invoked — no commit message file, or
+   - **All steps done + `finish_issue_on_complete: true` + multi-step scratchpad:** Commit message file path, then PR description path from `/finish-issue`
+   - **All steps done + `finish_issue_on_complete: true` + single-step scratchpad:** `/finish-issue` was invoked — no commit message file
    - **Otherwise:** Commit message file path
 
 **IMPORTANT: Do NOT run `git commit`.**
@@ -152,6 +165,6 @@ Before finishing:
 
 - [ ] All steps in the target block were executed
 - [ ] Tests pass (unless scratchpad explicitly skipped them)
-- [ ] NEW commit message file created with clear "why" context (or `/finish-issue` invoked when all steps done and `finish_issue_on_complete: true`)
+- [ ] NEW commit message file created with clear "why" context (skipped only for single-step scratchpads when `finish_issue_on_complete: true` triggers `/finish-issue`)
 - [ ] Changes align with scratchpad's stated goal
 - [ ] No unrelated changes included
