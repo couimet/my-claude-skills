@@ -10,6 +10,13 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.05
+
+### Changed
+
+- `auto-number`: improved E002 error message when `prefix` or `suffix` is passed as a positional argument; message now includes a did-you-mean hint (`--mode prefix`/`--mode suffix`) and notes that prefix is the default so `--mode` can be omitted entirely ([issues/64](https://github.com/couimet/my-claude-skills/issues/64))
+- `auto-number` SKILL.md: added "Common Mistakes" section with WRONG vs RIGHT examples to prevent Claude from passing `prefix`/`suffix` positionally; added explicit note that prefix is the default and `--mode` should be omitted for prefix mode ([issues/64](https://github.com/couimet/my-claude-skills/issues/64))
+
 ## 2026.03.04
 
 ### Changed
