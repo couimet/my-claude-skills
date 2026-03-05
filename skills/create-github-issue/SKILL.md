@@ -112,7 +112,7 @@ If a parent issue number was extracted in Step 2, link the new issue as a sub-is
 
 Parse `OWNER` and `REPO` from the issue URL returned in Step 6 (`https://github.com/{OWNER}/{REPO}/issues/{NUMBER}`).
 
-Capture the node IDs into shell variables and link in a single script — do not transcribe IDs manually:
+Capture the node IDs into shell variables and link in a single script — do not transcribe IDs manually. The query is written to a temp file via `jq -n` and passed with `--input` to avoid zsh history expansion stripping `!` from GraphQL type annotations (`String!`, `Int!`, `ID!`) inside `$()` command substitutions:
 
 ```bash
 jq -n \
