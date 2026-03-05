@@ -1,6 +1,6 @@
 ---
 name: create-github-issue
-version: 2026.03.03@63045e2
+version: 2026.03.04@827b5e7
 description: Create a GitHub issue from a file draft or inline description — with smart label discovery and sub-issue linking
 argument-hint: <file-path-or-title>
 allowed-tools: Read, Glob, Bash(gh label list *), Bash(gh issue create *), Bash(gh api graphql *)
