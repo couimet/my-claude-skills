@@ -19,7 +19,7 @@ skills/auto-number/auto-number.sh <directory> [--mode prefix|suffix] [--glob PAT
 **Arguments:**
 
 - `directory` (required, positional) -- path to scan for existing numbered files
-- `--mode` (optional) -- `prefix` for `NNNN-name.ext` or `suffix` for `name-NNNN.ext`. Default: `prefix`
+- `--mode` (optional) -- `prefix` for `NNNN-name.ext` or `suffix` for `name-NNNN.ext`. Default: `prefix`. **Omit `--mode` entirely when you want prefix mode** — it is the default.
 - `--glob` (optional) -- file filter pattern (e.g., `*.txt`). Default: all files
 - `--width` (optional) -- output width, 1-10. Default: 4. Safety: never truncates if next value needs more digits
 
@@ -29,6 +29,7 @@ skills/auto-number/auto-number.sh <directory> [--mode prefix|suffix] [--glob PAT
 
 ```bash
 # Next prefix number in .claude-work/issues/5/commit-msgs/ (default mode, default width)
+# NOTE: do NOT pass "prefix" as a positional argument — just omit --mode
 skills/auto-number/auto-number.sh .claude-work/issues/5/commit-msgs
 
 # Next suffix number, only counting .json files
@@ -36,6 +37,27 @@ skills/auto-number/auto-number.sh some/dir --mode suffix --glob "*.json"
 
 # Next number with 6-digit padding
 skills/auto-number/auto-number.sh some/dir --width 6
+```
+
+## Common Mistakes
+
+**WRONG** — `prefix` is not a positional argument:
+
+```bash
+# This will fail with: E002 error: unexpected argument 'prefix'
+skills/auto-number/auto-number.sh .claude-work/issues/5/scratchpads prefix
+```
+
+**RIGHT** — omit `--mode` entirely for prefix (it is the default):
+
+```bash
+skills/auto-number/auto-number.sh .claude-work/issues/5/scratchpads
+```
+
+**RIGHT** — use `--mode` flag when explicitly specifying a mode:
+
+```bash
+skills/auto-number/auto-number.sh .claude-work/issues/5/scratchpads --mode suffix
 ```
 
 ## Behavior

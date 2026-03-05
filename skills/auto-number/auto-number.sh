@@ -75,7 +75,14 @@ while [ $# -gt 0 ]; do
       if [ -z "$directory" ]; then
         directory="$1"
       else
-        echo "auto-number $ERR_UNKNOWN_FLAG error: unexpected argument '$1'" >&2
+        case "$1" in
+          prefix|suffix)
+            echo "auto-number $ERR_UNKNOWN_FLAG error: unexpected argument '$1' — did you mean: --mode $1? (prefix is the default; omit --mode entirely for prefix mode)" >&2
+            ;;
+          *)
+            echo "auto-number $ERR_UNKNOWN_FLAG error: unexpected argument '$1'" >&2
+            ;;
+        esac
         exit 1
       fi
       shift
