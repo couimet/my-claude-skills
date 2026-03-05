@@ -1,6 +1,6 @@
 ---
 name: commit-msg
-version: 2026.03.04@827b5e7
+version: 2026.03.05@a554fe9
 description: Create a commit message file in .claude-work/commit-msgs/ with auto-numbered filenames. Focuses on WHY not WHAT — the diff already shows what changed. User reviews and commits manually.
 argument-hint: <description>
 allowed-tools: Read, Write, Bash(git branch --show-current)
