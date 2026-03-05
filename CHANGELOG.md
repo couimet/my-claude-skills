@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.05.2
+
+### Changed
+
+- `/create-github-issue` Step 7: added prose note explaining that the `jq -n --input` pattern is used to avoid zsh history-expansion stripping `!` from GraphQL type annotations (`String!`, `Int!`, `ID!`) inside `$()` command substitutions ([issues/63](https://github.com/couimet/my-claude-skills/issues/63))
+
 ## 2026.03.05
 
 ### Changed
