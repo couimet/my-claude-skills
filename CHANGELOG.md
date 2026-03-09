@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.05.3
+
+### Changed
+
+- `/tackle-scratchpad-block` — final step of multi-step scratchpads now creates a `/commit-msg` file before invoking `/finish-issue`; single-step scratchpads with `finish_issue_on_complete: true` skip `/commit-msg` and go straight to `/finish-issue` (scratchpads without that qualifier always create a `/commit-msg` file, regardless of step count) ([issues/68](https://github.com/couimet/my-claude-skills/issues/68))
+
 ## 2026.03.05.2
 
 ### Changed
