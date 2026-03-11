@@ -10,6 +10,13 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.11
+
+### Changed
+
+- `/code-ref` and `/github-ref` conventions are now inlined directly into each referencing skill instead of being loaded as separate foundation skills on every invocation, eliminating repeated context-window overhead across sessions ([issues/70](https://github.com/couimet/my-claude-skills/issues/70))
+- "## Prose Style" section renamed to "## Output Format" in breadcrumb, cleanup-issue, question, and scratchpad skills — the section now covers code ref and GitHub ref formatting in addition to prose wrapping ([issues/70](https://github.com/couimet/my-claude-skills/issues/70))
+
 ## 2026.03.05.3
 
 ### Changed
