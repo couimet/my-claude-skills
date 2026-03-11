@@ -113,7 +113,7 @@ Code refs: path/to/file.ts#L10-L20 (workspace-relative, no backticks wrapping th
 
 Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
 
-GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `/pull/{N}`, never `#NNN`.
+GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
 
 ## Step 4: Create Questions File (Only If Necessary)
 
