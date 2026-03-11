@@ -15,7 +15,7 @@ Start a "side-quest" — a focused branch for orthogonal improvements discovered
 This can be:
 
 - A description of the side-quest (e.g., "BookmarksStore API improvements")
-- A code reference (e.g., `src/bookmarks/BookmarksStore.ts#L216-L254`)
+- A code reference (e.g., src/bookmarks/BookmarksStore.ts#L216-L254)
 - Both combined
 
 ## Step 1: Capture Current State
