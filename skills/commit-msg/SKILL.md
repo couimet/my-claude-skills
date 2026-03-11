@@ -56,7 +56,7 @@ Benefits:
 
 Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
 
-Format all GitHub references per the `/github-ref` skill conventions.
+GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `/pull/{N}`, never `#NNN`.
 
 ### Good Example
 

@@ -54,7 +54,7 @@ The scratchpad for issues MUST contain these sections:
 ````markdown
 # Issue #NUMBER: Title
 
-Parent: https://github.com/{owner}/{repo}/issues/{XX} (if applicable; full URL per /github-ref)
+Parent: https://github.com/{owner}/{repo}/issues/{XX} (if applicable)
 Type/Priority/Scope: from labels
 Base branch: <branch this was cut from — origin/main, or another branch if instructed>
 
@@ -146,11 +146,11 @@ Checklist from the issue (copy verbatim if provided).
 
 ````
 
-Format all code references per the `/code-ref` skill conventions.
+Code refs: path/to/file.ts#L10-L20 (workspace-relative, no backticks wrapping the ref).
 
 Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
 
-Format all GitHub references per the `/github-ref` skill conventions.
+GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `/pull/{N}`, never `#NNN`.
 
 ## Step 5: Create Questions File (Only If Necessary)
 
