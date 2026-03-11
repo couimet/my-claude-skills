@@ -95,7 +95,7 @@ Where:
 This avoids confusion when referencing "Feedback B" vs "S002".
 
 ````markdown
-# PR https://github.com/{owner}/{repo}/pull/{PR_NUMBER} Comment Response  ← full URL per /github-ref
+# PR https://github.com/{owner}/{repo}/pull/{PR_NUMBER} Comment Response
 
 Source: {FULL_PR_COMMENT_URL}
 
@@ -169,11 +169,11 @@ Always set `"status": "pending"` — `/tackle-scratchpad-block` manages status t
 
 ````
 
-Format all code references per the `/code-ref` skill conventions.
+Code refs: path/to/file.ts#L10-L20 (workspace-relative, no backticks wrapping the ref).
 
 Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
 
-Format all GitHub references per the `/github-ref` skill conventions.
+GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
 
 **STOP HERE** - The scratchpad template ends above. Do NOT add commit message sections to scratchpads. Commit messages are created separately in Step 8 (after user approval) using `/commit-msg`.
 

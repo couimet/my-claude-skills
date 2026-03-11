@@ -155,11 +155,12 @@ Print a summary:
 Created: <ISSUE_URL>
 Title: <TITLE>
 Labels: <LABEL1>, <LABEL2>
-Parent: https://github.com/{OWNER}/{REPO}/issues/{PARENT_NUMBER} (linked as sub-issue)  ← only if applicable; full URL per /github-ref
+Parent: https://github.com/{OWNER}/{REPO}/issues/{PARENT_NUMBER} (linked as sub-issue)  ← only if parent specified AND linking succeeded
+Sub-issue linking: failed (<error summary>) — link manually if needed.  ← only if parent specified AND linking failed
 ```
 
-Format all code references per the `/code-ref` skill conventions.
+Code refs: path/to/file.ts#L10-L20 (workspace-relative, no backticks wrapping the ref).
 
 Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
 
-Format all GitHub references per the `/github-ref` skill conventions.
+GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.

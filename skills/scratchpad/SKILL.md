@@ -88,13 +88,13 @@ Step-level fields (inside each `steps` entry):
 
 ## Code References
 
-When referencing code in scratchpad content, format all file/line references per the `/code-ref` skill conventions. This makes references clickable when tools like RangeLink are installed.
+Code refs: path/to/file.ts#L10-L20 (workspace-relative, no backticks wrapping the ref).
 
-## Prose Style
+## Output Format
 
 Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
 
-Format all GitHub references per the `/github-ref` skill conventions.
+GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
 
 ## Questions Trigger
 

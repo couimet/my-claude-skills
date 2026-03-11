@@ -50,7 +50,7 @@ Where `<ID>` or `<slug>` is the value extracted in Step 1.
 
 **If file doesn't exist**, create it with `<!-- markdownlint-disable MD013 -->` as the very first line, then the header:
 
-- For issues: `# Breadcrumbs for Issue https://github.com/{owner}/{repo}/issues/{identifier}`  ← full URL per /github-ref
+- For issues: `# Breadcrumbs for Issue https://github.com/{owner}/{repo}/issues/{identifier}`
 - For side-quests: `# Breadcrumbs for Side-Quest: <identifier>`
 
 **Append the entry:**
@@ -76,8 +76,8 @@ Print a brief confirmation with the file path:
 
 Do NOT print the full file contents — keep it minimal.
 
-## Prose Style
+## Output Format
 
 Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
 
-Format all GitHub references per the `/github-ref` skill conventions.
+GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.

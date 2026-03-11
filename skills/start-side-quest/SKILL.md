@@ -15,7 +15,7 @@ Start a "side-quest" — a focused branch for orthogonal improvements discovered
 This can be:
 
 - A description of the side-quest (e.g., "BookmarksStore API improvements")
-- A code reference per `/code-ref` format (e.g., `src/bookmarks/BookmarksStore.ts#L216-L254`)
+- A code reference (e.g., src/bookmarks/BookmarksStore.ts#L216-L254)
 - Both combined
 
 ## Step 1: Capture Current State
@@ -109,11 +109,11 @@ Brief explanation of why this is orthogonal to the parent work:
 - [ ] Ready for independent PR
 ````
 
-Format all code references per the `/code-ref` skill conventions.
+Code refs: path/to/file.ts#L10-L20 (workspace-relative, no backticks wrapping the ref).
 
 Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
 
-Format all GitHub references per the `/github-ref` skill conventions.
+GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
 
 ## Step 4: Create Questions File (Only If Necessary)
 

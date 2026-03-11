@@ -12,7 +12,7 @@ Execute a specific block of implementation steps from a scratchpad file, then cr
 
 **Note on `Bash(*)` permission:** This skill intentionally uses unrestricted Bash access because it executes arbitrary implementation steps and test suites from user-authored scratchpad content. Other skills use allowlisted commands for their specific workflows. Users should review scratchpad content before invoking this skill.
 
-**Input:** $ARGUMENTS (a code reference to scratchpad lines, per `/code-ref` format)
+**Input:** $ARGUMENTS (a code reference to scratchpad lines, e.g. `.claude-work/issues/70/scratchpads/0001-plan.txt#L25-L67` or `path/to/plan.txt#S003`)
 
 ## Step 1: Read the Target Block
 

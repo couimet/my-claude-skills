@@ -92,11 +92,11 @@ When reading answers back, treat any answer still containing `[RECOMMENDED]` as 
 
 Use `Q001`, `Q002` etc. to reference questions and `A001`, `A002` to reference answers — both within the questions file and from other documents (scratchpads, commit messages, etc.).
 
-## Prose Style
+## Output Format
 
 Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
 
-Format all GitHub references per the `/github-ref` skill conventions.
+GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
 
 ## Process
 

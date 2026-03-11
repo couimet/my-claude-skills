@@ -93,6 +93,6 @@ Glob(pattern="commit-msgs/*side-quest*", path=".claude-work")
 
 **If no side-quest artifacts found:** skip silently.
 
-## Prose Style
+## Output Format
 
 Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
