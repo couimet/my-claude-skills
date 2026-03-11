@@ -155,7 +155,8 @@ Print a summary:
 Created: <ISSUE_URL>
 Title: <TITLE>
 Labels: <LABEL1>, <LABEL2>
-Parent: https://github.com/{OWNER}/{REPO}/issues/{PARENT_NUMBER} (linked as sub-issue; only if applicable)
+Parent: https://github.com/{OWNER}/{REPO}/issues/{PARENT_NUMBER} (linked as sub-issue)  ← only if parent specified AND linking succeeded
+Sub-issue linking: failed (<error summary>) — link manually if needed.  ← only if parent specified AND linking failed
 ```
 
 Code refs: path/to/file.ts#L10-L20 (workspace-relative, no backticks wrapping the ref).
