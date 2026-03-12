@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.12.1
+
+### Changed
+
+- `/finish-issue`: PR descriptions now use the repo's `pull_request_template.md` when present, falling back to the built-in template when none is found ([issues/74](https://github.com/couimet/my-claude-skills/issues/74))
+
 ## 2026.03.12
 
 ### Changed

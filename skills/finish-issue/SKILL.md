@@ -110,6 +110,14 @@ Collect information from:
 - Scratchpads — read to extract the goal and rationale; use the paths below based on mode
 - Breadcrumbs (if exists) — incorporate highlights into the PR description; use the paths below based on mode
 
+**PR template detection:** Check the following locations in order and read the first file found:
+
+1. `.github/pull_request_template.md`
+2. `pull_request_template.md`
+3. `docs/pull_request_template.md`
+
+Note whether a template was found and its path — this is used in Step 5. If none of these files exist, proceed without a template. The `.github/PULL_REQUEST_TEMPLATE/` directory (multiple templates) is out of scope.
+
 **Issue mode (path differences):**
 
 - Breadcrumbs: `.claude-work/issues/<ID>/breadcrumb.md`
@@ -128,9 +136,11 @@ Use `/scratchpad` to create a working document. The `/issue-context` skill will 
 
 **Side-quest mode** — use description: `finish-<slug>` (flat placement since side-quest branches don't match `issues/*`)
 
-The PR description MUST follow this template, adjusted for mode:
+**If a PR template was detected in Step 4:** use it as the structural base. Preserve its section headers and checkbox structure verbatim — only replace placeholder content with the actual information gathered (summary, changes, test plan, etc.). In issue mode, add a `Closes https://github.com/{owner}/{repo}/issues/{NUMBER}` line at the end if the template doesn't already include one. In side-quest mode, omit the Closes line.
 
-**Issue mode:**
+**If no PR template was found:** use the built-in template below, adjusted for mode.
+
+**Issue mode (built-in fallback):**
 
 ```markdown
 [issues/NUMBER] Title
@@ -167,7 +177,7 @@ The PR description MUST follow this template, adjusted for mode:
 - Closes https://github.com/{owner}/{repo}/issues/{NUMBER}
 ```
 
-**Side-quest mode:**
+**Side-quest mode (built-in fallback):**
 
 ```markdown
 [side-quest/<slug>] Title
