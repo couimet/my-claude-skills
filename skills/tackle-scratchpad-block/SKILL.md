@@ -53,6 +53,8 @@ Read the full scratchpad to understand:
 - Parent issue context (if noted)
 - Files to modify (from "Files to Modify" section if present)
 
+**Done-step collapsing:** For any step in the JSON block whose `"status"` is `"done"`, only note its `id`, `title`, and `status` — discard its `done_when`, `depends_on`, `files`, and `tasks`. Done steps carry no actionable information for the current execution step; collapsing them keeps the working context lean as the plan progresses.
+
 Note: User controls execution order. Do not verify or block based on previous steps.
 
 ## Step 3: Assess Clarity
