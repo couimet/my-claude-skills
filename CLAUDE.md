@@ -95,7 +95,7 @@ All ephemeral working files live under `.claude-work/` (git-ignored). Never comm
 
 This project uses [Calendar Versioning](https://calver.org/): `YYYY.MM.DD`. When multiple releases land the same day, append a micro suffix: `2026.03.01.2`, `2026.03.01.3`, etc.
 
-**Heading format:** `## YYYY.MM.DD` (or `## YYYY.MM.DD.N`)
+**Heading format:** `## YYYY.MM.DD` (or `## YYYY.MM.DD.N`). Before adding an entry, check whether a heading for today already exists — if it does, create a new heading with the next micro suffix rather than adding to the existing one.
 
 **Category subsections** (only include ones that apply):
 
