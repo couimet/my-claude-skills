@@ -1,6 +1,6 @@
 ---
 name: start-issue
-version: 2026.03.12@b8dc3bc
+version: 2026.03.12.1@cf0a4fe
 description: Start working on a GitHub issue - analyze, explore codebase, and create detailed implementation plan
 argument-hint: <github-issue-url>
 allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *)
