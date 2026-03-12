@@ -136,7 +136,7 @@ Use `/scratchpad` to create a working document. The `/issue-context` skill will 
 
 **Side-quest mode** — use description: `finish-<slug>` (flat placement since side-quest branches don't match `issues/*`)
 
-**If a PR template was detected in Step 4:** use it as the structural base. Preserve its section headers and checkbox structure verbatim — only replace placeholder content with the actual information gathered (summary, changes, test plan, etc.). Add a `Closes` line at the end if the template doesn't already include one.
+**If a PR template was detected in Step 4:** use it as the structural base. Preserve its section headers and checkbox structure verbatim — only replace placeholder content with the actual information gathered (summary, changes, test plan, etc.). In issue mode, add a `Closes https://github.com/{owner}/{repo}/issues/{NUMBER}` line at the end if the template doesn't already include one. In side-quest mode, omit the Closes line.
 
 **If no PR template was found:** use the built-in template below, adjusted for mode.
 
