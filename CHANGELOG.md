@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.12
+
+### Changed
+
+- `/tackle-scratchpad-block`: done steps are now collapsed in working context (id/title/status only), discarding tasks/files/done_when/depends_on that carry no actionable information once a step is complete — reduces token usage on multi-step plans ([issues/71](https://github.com/couimet/my-claude-skills/issues/71))
+
 ## 2026.03.11
 
 ### Changed
