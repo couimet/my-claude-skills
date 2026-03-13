@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.13.1
+
+### Fixed
+
+- `/tackle-pr-comment`: `allowed-tools` patterns for listing PR and issue comments were missing trailing wildcards, causing approval prompts when `--jq` flags were appended ([issues/77](https://github.com/couimet/my-claude-skills/issues/77))
+
 ## 2026.03.13
 
 ### Changed
