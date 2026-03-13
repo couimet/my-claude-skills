@@ -3,7 +3,7 @@ name: create-github-issue
 version: 2026.03.12.1@cf0a4fe
 description: Create a GitHub issue from a file draft or inline description — with smart label discovery and sub-issue linking
 argument-hint: <file-path-or-title>
-allowed-tools: Read, Write, Glob, Bash(gh label list *), Bash(gh issue create *), Bash(*/skills/create-github-issue/link-sub-issue.sh *)
+allowed-tools: Read, Write, Glob, Bash(gh repo view *), Bash(gh label list *), Bash(gh issue create *), Bash(*/skills/create-github-issue/link-sub-issue.sh *)
 ---
 
 # Create GitHub Issue
@@ -116,7 +116,7 @@ Omit the `--label` flag entirely when no labels are selected. Capture the return
 
 If a parent issue number was extracted in Step 2, link the new issue as a sub-issue using the `link-sub-issue.sh` script.
 
-Parse `OWNER` and `REPO` from the issue URL returned in Step 6 (`https://github.com/{OWNER}/{REPO}/issues/{NUMBER}`). If a target repo override was extracted in Step 2, use that owner/repo instead.
+Parse `OWNER`, `REPO`, and `CHILD_NUMBER` from the issue URL returned in Step 6 (`https://github.com/{OWNER}/{REPO}/issues/{CHILD_NUMBER}`). If a target repo override was extracted in Step 2, use that owner/repo instead.
 
 Run the script once per child issue to link:
 
