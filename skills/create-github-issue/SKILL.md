@@ -98,10 +98,12 @@ Use `/question` if the label choice requires extended discussion. Otherwise, use
 
 ## Step 6: Create the Issue
 
+Use the Write tool to save the sanitized body to an auto-numbered file in the issue's scratchpads folder via `/scratchpad` (e.g., `.claude-work/issues/<ID>/scratchpads/NNNN-issue-body.txt`). This keeps the body traceable alongside other working files and avoids heredoc compound commands that don't match `allowed-tools` globs.
+
+Then create the issue with a simple one-liner:
+
 ```bash
-gh issue create --title "<TITLE>" --label "<LABEL1>,<LABEL2>" --body-file - <<'EOF'
-<SANITIZED_BODY>
-EOF
+gh issue create --title "<TITLE>" --label "<LABEL1>,<LABEL2>" --body-file <BODY_FILE_PATH>
 ```
 
 Omit the `--label` flag entirely when no labels are selected. Capture the returned issue URL.
