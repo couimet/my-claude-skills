@@ -110,6 +110,11 @@ if ! [[ "$child" =~ ^[0-9]+$ ]]; then
   exit 1
 fi
 
+# --- Temp files for GraphQL payloads ---
+nodes_payload="$(mktemp "${TMPDIR:-/tmp}/link-sub-issue.nodes.XXXXXX.json")"
+mutation_payload="$(mktemp "${TMPDIR:-/tmp}/link-sub-issue.mutation.XXXXXX.json")"
+trap 'rm -f "$nodes_payload" "$mutation_payload"' EXIT
+
 # --- Step 1: Fetch node IDs ---
 jq -n \
   --arg owner "$owner" \
@@ -117,9 +122,9 @@ jq -n \
   --argjson parent "$parent" \
   --argjson child "$child" \
   '{"query": "query($owner: String!, $repo: String!, $parent: Int!, $child: Int!) { repository(owner: $owner, name: $repo) { parent: issue(number: $parent) { id } child: issue(number: $child) { id } } }", "variables": {"owner": $owner, "repo": $repo, "parent": $parent, "child": $child}}' \
-  > /tmp/gql-nodes.json
+  > "$nodes_payload"
 
-NODES=$(gh api graphql -H 'GraphQL-Features: sub_issues' --input /tmp/gql-nodes.json 2>&1) || {
+NODES=$(gh api graphql -H 'GraphQL-Features: sub_issues' --input "$nodes_payload" 2>&1) || {
   echo "link-sub-issue $ERR_NODE_LOOKUP error: node ID lookup failed — $NODES" >&2
   exit 1
 }
@@ -142,9 +147,9 @@ jq -n \
   --arg parentId "$PARENT_NODE_ID" \
   --arg childId "$CHILD_NODE_ID" \
   '{"query": "mutation($parentId: ID!, $childId: ID!) { addSubIssue(input: {issueId: $parentId, subIssueId: $childId}) { issue { number title } subIssue { number title } } }", "variables": {"parentId": $parentId, "childId": $childId}}' \
-  > /tmp/gql-mutation.json
+  > "$mutation_payload"
 
-RESULT=$(gh api graphql -H 'GraphQL-Features: sub_issues' --input /tmp/gql-mutation.json 2>&1) || {
+RESULT=$(gh api graphql -H 'GraphQL-Features: sub_issues' --input "$mutation_payload" 2>&1) || {
   echo "link-sub-issue $ERR_MUTATION error: addSubIssue mutation failed — $RESULT" >&2
   exit 1
 }
