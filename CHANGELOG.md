@@ -10,6 +10,17 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.12.2
+
+### Changed
+
+- `/create-github-issue`: sub-issue linking moved to `link-sub-issue.sh` script, eliminating permission prompts from compound bash commands that didn't match `allowed-tools` globs ([issues/76](https://github.com/couimet/my-claude-skills/issues/76))
+- `/create-github-issue`: issue body written to scratchpads folder via Write tool instead of heredoc, keeping the body traceable and avoiding compound command permission prompts ([issues/76](https://github.com/couimet/my-claude-skills/issues/76))
+
+### Added
+
+- `/create-github-issue`: optional `**Target repo:** owner/repo` line in file drafts to create issues in a different repository ([issues/76](https://github.com/couimet/my-claude-skills/issues/76))
+
 ## 2026.03.12.1
 
 ### Changed
