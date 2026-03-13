@@ -10,6 +10,13 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.13.2
+
+### Fixed
+
+- Propagated `allowed-tools` patterns for `auto-number.sh` and `ensure-gitignore.sh` to all skills that trigger them — foundation skills (`/scratchpad`, `/commit-msg`, `/question`, `/breadcrumb`) and top-level skills (`/start-issue`, `/finish-issue`, `/start-side-quest`, `/tackle-pr-comment`, `/create-github-issue`) — eliminating permission prompts during workflow execution ([issues/79](https://github.com/couimet/my-claude-skills/issues/79))
+- `auto-number.sh` now tolerates `prefix` and `suffix` as positional arguments (treated as `--mode` value) instead of erroring with E002, preventing failures from LLM-generated invocations ([issues/79](https://github.com/couimet/my-claude-skills/issues/79))
+
 ## 2026.03.13.1
 
 ### Fixed
