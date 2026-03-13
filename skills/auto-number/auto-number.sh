@@ -77,13 +77,14 @@ while [ $# -gt 0 ]; do
       else
         case "$1" in
           prefix|suffix)
-            echo "auto-number $ERR_UNKNOWN_FLAG error: unexpected argument '$1' — did you mean: --mode $1? (prefix is the default; omit --mode entirely for prefix mode)" >&2
+            # Tolerate positional prefix/suffix — treat as --mode value
+            mode="$1"
             ;;
           *)
             echo "auto-number $ERR_UNKNOWN_FLAG error: unexpected argument '$1'" >&2
+            exit 1
             ;;
         esac
-        exit 1
       fi
       shift
       ;;
