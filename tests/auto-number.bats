@@ -237,6 +237,20 @@ SCRIPT="$PROJECT_ROOT/skills/auto-number/auto-number.sh"
   [ "$output" = "0004" ]
 }
 
+@test "duplicate positional mode 'prefix suffix' exits with E002" {
+  run "$SCRIPT" "$TEST_TEMP_DIR" prefix suffix
+  [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E002 error: "* ]]
+  [[ "$output" == *"mode already set"* ]]
+}
+
+@test "positional mode after --mode flag exits with E002" {
+  run "$SCRIPT" "$TEST_TEMP_DIR" --mode prefix suffix
+  [ "$status" -eq 1 ]
+  [[ "$output" == "auto-number E002 error: "* ]]
+  [[ "$output" == *"mode already set"* ]]
+}
+
 # --- Flag without value (last argument) ---
 
 @test "--mode as last arg without value exits with E100" {

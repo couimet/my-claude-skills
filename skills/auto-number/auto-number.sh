@@ -41,6 +41,7 @@ readonly ERR_INVALID_GLOB="E105"
 mode="prefix"
 glob_pattern=""
 width=4
+mode_set=false
 
 # --- Parse arguments ---
 # First non-flag argument is the directory
@@ -51,6 +52,7 @@ while [ $# -gt 0 ]; do
     --mode)
       [ $# -ge 2 ] || { echo "auto-number $ERR_INVALID_MODE error: --mode requires a value" >&2; exit 1; }
       mode="$2"
+      mode_set=true
       shift 2
       ;;
     --glob)
@@ -77,8 +79,13 @@ while [ $# -gt 0 ]; do
       else
         case "$1" in
           prefix|suffix)
+            if [ "$mode_set" = true ]; then
+              echo "auto-number $ERR_UNKNOWN_FLAG error: unexpected argument '$1' (mode already set)" >&2
+              exit 1
+            fi
             # Tolerate positional prefix/suffix — treat as --mode value
             mode="$1"
+            mode_set=true
             ;;
           *)
             echo "auto-number $ERR_UNKNOWN_FLAG error: unexpected argument '$1'" >&2
