@@ -30,6 +30,8 @@ Read the file and extract:
 
 If the file contains a `## Parent` or `Parent: #NN` line, extract the parent issue number for sub-issue linking in Step 7.
 
+If the file contains a `**Target repo:** owner/repo` line (e.g., `**Target repo:** couimet/my-claude-skills`), extract it as the target repository override. When no target repo line is present, infer owner/repo from the current git remote (`gh repo view --json owner,name`).
+
 ### From Inline Title
 
 Use the argument as the title. Prompt the user to provide a body — either inline or by pointing to an existing file.
@@ -56,10 +58,11 @@ No ephemeral references found — body is clean.
 
 ## Step 4: Discover Repo Labels
 
-Fetch all labels from the current repository:
+Fetch all labels from the target repository (pass `--repo owner/repo` when a target repo override was extracted in Step 2; omit it to use the current git remote):
 
 ```bash
 gh label list --json name,description --limit 200
+gh label list --repo owner/repo --json name,description --limit 200
 ```
 
 Classify labels into two groups:
@@ -100,10 +103,11 @@ Use `/question` if the label choice requires extended discussion. Otherwise, use
 
 Use the Write tool to save the sanitized body to an auto-numbered file in the issue's scratchpads folder via `/scratchpad` (e.g., `.claude-work/issues/<ID>/scratchpads/NNNN-issue-body.txt`). This keeps the body traceable alongside other working files and avoids heredoc compound commands that don't match `allowed-tools` globs.
 
-Then create the issue with a simple one-liner:
+Then create the issue with a simple one-liner (pass `--repo owner/repo` when a target repo override was extracted in Step 2; omit it to use the current git remote):
 
 ```bash
 gh issue create --title "<TITLE>" --label "<LABEL1>,<LABEL2>" --body-file <BODY_FILE_PATH>
+gh issue create --repo owner/repo --title "<TITLE>" --label "<LABEL1>,<LABEL2>" --body-file <BODY_FILE_PATH>
 ```
 
 Omit the `--label` flag entirely when no labels are selected. Capture the returned issue URL.
@@ -112,7 +116,7 @@ Omit the `--label` flag entirely when no labels are selected. Capture the return
 
 If a parent issue number was extracted in Step 2, link the new issue as a sub-issue using the `link-sub-issue.sh` script.
 
-Parse `OWNER` and `REPO` from the issue URL returned in Step 6 (`https://github.com/{OWNER}/{REPO}/issues/{NUMBER}`).
+Parse `OWNER` and `REPO` from the issue URL returned in Step 6 (`https://github.com/{OWNER}/{REPO}/issues/{NUMBER}`). If a target repo override was extracted in Step 2, use that owner/repo instead.
 
 Run the script once per child issue to link:
 
