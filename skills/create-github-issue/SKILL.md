@@ -110,38 +110,19 @@ Omit the `--label` flag entirely when no labels are selected. Capture the return
 
 ## Step 7: Link as Sub-Issue (If Parent Specified)
 
-If a parent issue number was extracted in Step 2, link the new issue as a sub-issue using the GitHub GraphQL API.
+If a parent issue number was extracted in Step 2, link the new issue as a sub-issue using the `link-sub-issue.sh` script.
 
 Parse `OWNER` and `REPO` from the issue URL returned in Step 6 (`https://github.com/{OWNER}/{REPO}/issues/{NUMBER}`).
 
-Capture the node IDs into shell variables and link in a single script — do not transcribe IDs manually. The query is written to a temp file via `jq -n` and passed with `--input` to avoid zsh history expansion stripping `!` from GraphQL type annotations (`String!`, `Int!`, `ID!`) inside `$()` command substitutions:
+Run the script once per child issue to link:
 
 ```bash
-jq -n \
-  --arg owner "$OWNER" \
-  --arg repo "$REPO" \
-  --argjson parent "$PARENT_NUMBER" \
-  --argjson child "$CHILD_NUMBER" \
-  '{"query": "query($owner: String!, $repo: String!, $parent: Int!, $child: Int!) { repository(owner: $owner, name: $repo) { parent: issue(number: $parent) { id } child: issue(number: $child) { id } } }", "variables": {"owner": $owner, "repo": $repo, "parent": $parent, "child": $child}}' \
-  > /tmp/gql-nodes.json
-NODES=$(gh api graphql -H 'GraphQL-Features: sub_issues' --input /tmp/gql-nodes.json)
-
-PARENT_NODE_ID=$(echo "$NODES" | jq -r '.data.repository.parent.id // empty')
-CHILD_NODE_ID=$(echo "$NODES"  | jq -r '.data.repository.child.id // empty')
-
-if [[ -z "$PARENT_NODE_ID" || -z "$CHILD_NODE_ID" ]]; then
-  echo "Sub-issue linking: failed (could not extract node IDs) — link manually if needed."
-  exit 0
-fi
-
-jq -n --arg parentId "$PARENT_NODE_ID" --arg childId "$CHILD_NODE_ID" \
-  '{"query": "mutation($parentId: ID!, $childId: ID!) { addSubIssue(input: {issueId: $parentId, subIssueId: $childId}) { issue { number title } subIssue { number title } } }", "variables": {"parentId": $parentId, "childId": $childId}}' \
-  > /tmp/gql-mutation.json
-
-gh api graphql -H 'GraphQL-Features: sub_issues' --input /tmp/gql-mutation.json
+skills/create-github-issue/link-sub-issue.sh --owner "$OWNER" --repo "$REPO" --parent "$PARENT_NUMBER" --child "$CHILD_NUMBER"
 ```
 
-If the script returns an error (e.g., `"NOT_FOUND"`, `"FORBIDDEN"`, or an unknown field/mutation), skip sub-issue linking and note the failure in the Step 8 report as:
+The script handles all GraphQL calls internally, using `jq -n` to build payloads via temp files to avoid zsh history expansion stripping `!` from GraphQL type annotations (`String!`, `Int!`, `ID!`). It prints `linked #<child> → #<parent>` on success or an error message on failure (exit 1).
+
+If the script fails, note it in the Step 8 report as:
 
 ```text
 Sub-issue linking: failed (<error summary>) — link manually if needed.
