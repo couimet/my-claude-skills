@@ -10,6 +10,16 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.14
+
+### Added
+
+- New `/scratchpad-ref-format` foundation skill — defines the 4 invocation forms for referencing scratchpad steps (`#S`, `#L`, space-separated, bare-path auto-select) in one place ([issues/82](https://github.com/couimet/my-claude-skills/issues/82))
+
+### Changed
+
+- `/tackle-scratchpad-block`: replaced 17 lines of inline invocation-form parsing with a single cross-reference to `/scratchpad-ref-format`, reducing token overhead on the most-invoked composite skill ([issues/82](https://github.com/couimet/my-claude-skills/issues/82))
+
 ## 2026.03.13.2
 
 ### Fixed
