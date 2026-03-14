@@ -32,9 +32,3 @@ skills/ensure-gitignore/ensure-gitignore.sh [GITIGNORE_PATH]
 ## Idempotent
 
 Safe to run on every foundation skill invocation. If the sentinel is already present, the script exits 0 immediately without reading the full file.
-
-## Design
-
-Foundation skills (`/scratchpad`, `/question`, `/commit-msg`, `/breadcrumb`) each ensure the working directory is git-ignored before creating any file. The naive approach — read `.gitignore`, check for a sentinel string, append if missing — loads file contents into Claude's context unnecessarily. That's wasted tokens for a purely deterministic read-check-append operation.
-
-This script executes the entire operation in one Bash call and returns a single word. Claude spends zero tokens reasoning about the algorithm. The pattern mirrors `/auto-number`: offload deterministic logic to a script, let Claude focus on decisions only it can make.

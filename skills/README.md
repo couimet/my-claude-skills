@@ -39,7 +39,9 @@
 
 **Non-invocable skills** (`user-invocable: false`) don't appear in the `/` menu but their descriptions load into Claude's context. Claude auto-consults them when the context matches (e.g., generating code references, deciding where to put files).
 
-**Script-backed skills:** When a skill's logic is purely deterministic (no judgment calls, no context-dependent decisions), a Bash script is more token-efficient than inline markdown instructions. Claude executes one Bash call instead of reasoning through the algorithm each time. `auto-number` and `ensure-gitignore` use this pattern — see their `## Design` sections for the rationale.
+**Script-backed skills:** When a skill's logic is purely deterministic (no judgment calls, no context-dependent decisions), a Bash script is more token-efficient than inline markdown instructions. Most skills describe an algorithm in Markdown and let Claude reason through it each invocation. That works well for complex decisions but wastes tokens on deterministic logic. A script executes in one Bash call and returns a single line of stdout — Claude spends zero tokens on the algorithm itself.
+
+`auto-number` uses this pattern because "scan directory, find max number, add 1, zero-pad" is purely mechanical, and auto-numbering runs on every `/scratchpad`, `/commit-msg`, and `/question` invocation. `ensure-gitignore` does the same for its read-check-append operation — foundation skills call it before creating any file, so the naive approach (read `.gitignore` into context, check for a sentinel, append if missing) would waste tokens on every invocation. Both scripts return a single word and let Claude focus on decisions only it can make.
 
 ## Step Tracking
 

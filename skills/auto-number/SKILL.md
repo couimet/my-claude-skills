@@ -69,10 +69,6 @@ skills/auto-number/auto-number.sh .claude-work/issues/5/scratchpads --mode suffi
 - Suffix mode strips only the last extension (e.g., `report-0042.tar.gz` becomes `report-0042.tar`), so files with compound extensions are silently skipped
 - Width is a minimum -- if the next value needs more digits than requested, the output expands (e.g., `--width 3` with max 999 outputs `1000`)
 
-## Design
-
-This skill uses a Bash script instead of inline SKILL.md instructions. Most skills describe an algorithm in Markdown and let Claude reason through it each invocation. That works well for complex decisions but wastes tokens on deterministic logic like "scan directory, find max number, add 1, zero-pad." The script executes in one Bash call and returns a single line of stdout -- Claude spends zero tokens on the algorithm itself. This matters because auto-numbering runs on every `/scratchpad`, `/commit-msg`, and `/question` invocation.
-
 ## Error Codes
 
 All errors exit 1 with a message on stderr in the format `auto-number EXXX error: <details>`. Codes use two ranges: E0xx for generic errors (missing required arguments, unknown flags) and E1xx for parameter validation (invalid values, directory problems).
