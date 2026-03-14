@@ -16,23 +16,7 @@ Execute a specific block of implementation steps from a scratchpad file, then cr
 
 ## Step 1: Read the Target Block
 
-Parse the argument to determine the invocation form, then locate the target step.
-
-**If the argument contains `#L`** (e.g., `path/to/plan.txt#L10-L20`):
-Line-range form. Read those exact lines from the file. This is the existing behaviour and the power-user escape hatch for re-running or overriding a step.
-
-**If the argument contains `#S`** (e.g., `path/to/plan.txt#S003`):
-Step-ID form (preferred). Extract the ID after `#S` (e.g., `S003`), read the full scratchpad, and locate the step whose `"id"` field matches exactly.
-
-**If the argument ends with a space followed by a token matching `S\d+`** (e.g., `path/to/plan.txt S003`):
-Space-separated step-ID form. Equivalent to the `#S` form; useful in environments where `#` in arguments is awkward. Locate the step by `"id"` in the JSON block.
-
-**If the argument is a bare file path** (no `#` fragment, no trailing step ID):
-Auto-select form. Read the full scratchpad, find all steps in the JSON block where `"status"` is `"pending"` and every entry in `"depends_on"` resolves to a step with `"status": "done"`.
-
-- If exactly one candidate exists: proceed with it.
-- If multiple candidates exist: list them and STOP. Wait for the user to pick one.
-- If none exist: report "All steps are done or blocked." and STOP.
+Parse the argument using the rules defined in `/scratchpad-ref-format`, then locate the target step.
 
 **If the reference doesn't resolve** (file not found, step ID not in JSON, lines don't exist, or content isn't actionable steps): STOP immediately and report the issue. Do not attempt to guess, search for alternatives, or infer intent.
 
