@@ -317,6 +317,7 @@ These skills aren't invoked directly — Claude consults them when the context m
 | `file-placement` | When deciding where to put a new file — routes to the right directory |
 | `github-ref` | When skill-generated text contains issue or PR references — requires full GitHub URLs, never short-form `#NNN` or `PR #NNN` |
 | `issue-context` | When on an `issues/<N>` branch — scopes working files to issue subdirectories |
+| `scratchpad-ref-format` | When `/tackle-scratchpad-block` parses its argument — defines the 4 invocation forms (`#S`, `#L`, space-separated, bare-path auto-select) |
 
 For architecture details, the two-tier design, and step-tracking schema, see [skills/README.md](skills/README.md).
 
