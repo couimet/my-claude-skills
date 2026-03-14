@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.14.1
+
+### Changed
+
+- Moved design rationale from `/auto-number` and `/ensure-gitignore` SKILL.md files into `skills/README.md` Architecture section — removes ~22 lines from per-invocation context while keeping the rationale discoverable ([issues/84](https://github.com/couimet/my-claude-skills/issues/84))
+
 ## 2026.03.14
 
 ### Added
