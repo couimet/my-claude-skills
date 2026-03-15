@@ -172,8 +172,12 @@ Use `/scratchpad` to create a working document. The `/issue-context` skill will 
 
 ## Related
 
-- Issue mode: `Closes https://github.com/{owner}/{repo}/issues/{NUMBER}`
-- Side-quest mode: `Orthogonal improvement discovered during active development` + `Base branch: <branch this was cut from>`
+If issue mode:
+- Closes https://github.com/{owner}/{repo}/issues/{NUMBER}
+
+If side-quest mode:
+- Orthogonal improvement discovered during active development
+- Base branch: <branch this was cut from>
 ```
 
 Code refs: path/to/file.ts#L10-L20 (workspace-relative, no backticks wrapping the ref).
