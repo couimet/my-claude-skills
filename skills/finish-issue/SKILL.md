@@ -138,12 +138,10 @@ Use `/scratchpad` to create a working document. The `/issue-context` skill will 
 
 **If a PR template was detected in Step 4:** use it as the structural base. Preserve its section headers and checkbox structure verbatim — only replace placeholder content with the actual information gathered (summary, changes, test plan, etc.). In issue mode, add a `Closes https://github.com/{owner}/{repo}/issues/{NUMBER}` line at the end if the template doesn't already include one. In side-quest mode, omit the Closes line.
 
-**If no PR template was found:** use the built-in template below, adjusted for mode.
-
-**Issue mode (built-in fallback):**
+**If no PR template was found:** use the built-in template below.
 
 ```markdown
-[issues/NUMBER] Title
+[<branch-name>] Title
 
 ## Summary
 
@@ -174,45 +172,8 @@ Use `/scratchpad` to create a working document. The `/issue-context` skill will 
 
 ## Related
 
-- Closes https://github.com/{owner}/{repo}/issues/{NUMBER}
-```
-
-**Side-quest mode (built-in fallback):**
-
-```markdown
-[side-quest/<slug>] Title
-
-## Summary
-
-2-3 sentences on what this accomplishes.
-
-## Changes
-
-- Bulleted list of key changes
-- Omit file lists (PR shows modified files)
-- Group related changes
-
-## Key Discoveries (if breadcrumbs exist)
-
-- [Notable finding that shaped the approach]
-- [Key decision made and rationale]
-- (Omit this section if no breadcrumbs)
-
-## Test Plan
-
-- [ ] All existing tests pass
-- [ ] New tests added for: [list]
-- [ ] Manual testing: [describe if applicable]
-
-## Documentation
-
-- [ ] CHANGELOG: [entry added / not needed - reason]
-- [ ] README: [updated / not needed - reason]
-
-## Related
-
-- Orthogonal improvement discovered during active development
-- Base branch: <branch this was cut from>
+- Issue mode: `Closes https://github.com/{owner}/{repo}/issues/{NUMBER}`
+- Side-quest mode: `Orthogonal improvement discovered during active development` + `Base branch: <branch this was cut from>`
 ```
 
 Code refs: path/to/file.ts#L10-L20 (workspace-relative, no backticks wrapping the ref).
