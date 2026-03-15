@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.15
+
+### Changed
+
+- Consolidated `/finish-issue` PR description templates — replaced two nearly identical issue-mode and side-quest-mode templates with a single unified template using conditional notes in the Related section, saving ~40 lines per invocation ([issues/83](https://github.com/couimet/my-claude-skills/issues/83))
+
 ## 2026.03.14.1
 
 ### Changed
