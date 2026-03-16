@@ -73,6 +73,8 @@ But here's what I've found: once you give the AI proper guidance through structu
 
 That's supercharged vibe guiding. You're not fighting the AI or replacing it. You're giving it rails to run on — and then it runs far.
 
+*Inspired by [Boris Tane's workflow article](https://boristane.com/blog/how-i-use-claude-code/), this post was built with the same skills it describes — starting from [issue #20](https://github.com/couimet/my-claude-skills/issues/20). Over or under 10 skill invocations to go from blank file to what you're reading? Leave your guess below.*
+
 ---
 
 ## About RangeLink
