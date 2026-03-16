@@ -10,21 +10,23 @@ cover_image:
 
 "Vide" means *empty* in French. And that's exactly what unstructured AI coding produces when the vibes run out.
 
-I run multiple Claude Code agents in parallel across git worktrees every day. I'm not here to tell you to stop using AI for development. But when a SaaStr founder [lost his production database](https://fortune.com/2025/07/23/ai-coding-tool-replit-wiped-database-called-it-a-catastrophic-failure/) to an AI coding agent in July 2025, it confirmed something I'd already learned: vibes alone aren't enough.
+I run multiple [Claude Code](https://code.claude.com/docs) agents in parallel across git worktrees every day. I'm not here to tell you to stop using AI for development. But when a SaaStr founder [lost his production database](https://fortune.com/2025/07/23/ai-coding-tool-replit-wiped-database-called-it-a-catastrophic-failure/) to an AI coding agent in July 2025, it confirmed something I'd already learned: vibes alone aren't enough.
 
 The answer isn't less AI. It's more guidance.
 
-## The Missing Piece: A Workflow
+## The Missing Piece: Guidance
 
-I use [Claude Code](https://code.claude.com/docs) daily. It's powerful, but out-of-the-box sessions are ephemeral — context evaporates between tasks, there's no trail of decisions, and commits happen whenever the AI feels like it.
+Claude Code is powerful, but out-of-the-box sessions are ephemeral — context evaporates between tasks, there's no trail of decisions, and commits happen whenever the AI feels like it.
 
-So I built a set of [custom skills](https://github.com/couimet/my-claude-skills) — portable markdown instructions that Claude follows when invoked ([skills are a standard Claude Code extension mechanism](https://code.claude.com/docs/en/skills)). They live in `~/.claude/skills/` — install once, use everywhere. They encode a simple contract:
+So I built a set of [custom skills](https://github.com/couimet/my-claude-skills) — portable markdown instructions that Claude follows when you type `/skill-name` in Claude Code ([skills are a standard Claude Code extension mechanism](https://code.claude.com/docs/en/skills)). They live in `~/.claude/skills/` — install once, use everywhere. They encode a simple contract:
 
 - **Questions go to files, not the terminal.** `/question` creates a structured document I edit directly — not a chat that scrolls away.
-- **Never implement before the plan is approved.** `/scratchpad` saves plans to files I control. I iterate until I'm satisfied, and every block the AI tackles comes from a plan I've reviewed. The skills work on their own, but I complement them with [RangeLink](https://github.com/couimet/rangeLink#rangelink) (full disclosure: I built it) for precise line-level navigation into scratchpads and commit messages.
+- **Never implement before the plan is approved.** `/scratchpad` saves plans to files I control. I iterate until I'm satisfied, and every block the AI tackles comes from a plan I've reviewed.
 - **Never auto-commit.** `/commit-msg` writes a draft file. I review and commit manually.
 
 These aren't complicated rules. But they're the difference between vide coding and what I call *vibe guiding* — you steer the AI through a structured workflow instead of hoping it gets the next thing right.
+
+*Optional but useful: I also use [RangeLink](#about-rangelink) to navigate scratchpads with precise line references — it makes reviewing plans faster, but the skills work perfectly without it.*
 
 ## What This Looks Like in Practice
 
@@ -34,13 +36,13 @@ These aren't complicated rules. But they're the difference between vide coding a
 
 I documented a [full issue lifecycle](https://ouimet.info/follow-alongs/my-claude-skills-issues-10.html) — every artifact real, nothing fabricated. Here's the compressed version:
 
-**1. `/start-issue`** — I point Claude at a GitHub issue. It fetches the details, creates a branch, explores the codebase, and writes an implementation plan with concrete steps. Then it stops and waits.
+**1. `/start-issue`** — I point Claude at a GitHub issue. It fetches the details, creates a branch, explores the codebase, and writes an implementation plan via `/scratchpad` with concrete steps — each with its own status and defined interdependencies. Then it stops and waits.
 
-**2. I review the plan.** Sometimes I adjust scope. Sometimes I ask questions. The plan lives in a file I can read, edit, and come back to — not buried in a chat transcript.
+**2. I review the plan.** Sometimes I adjust scope. Sometimes I use `/question` to surface design decisions in a structured file. The plan lives in a file I can read, edit, and come back to — not buried in a chat transcript. With RangeLink, I can reference specific lines in the plan to guide my review.
 
-**3. `/tackle-scratchpad-block`** — I point at a step. Claude executes it, runs tests, and writes a commit message draft. It does not commit. I review the diff, review the message, and commit when I'm satisfied.
+**3. `/tackle-scratchpad-block`** — I point Claude at one step or a set of steps from the plan. It executes them, runs tests, updates each step's status in the scratchpad, and writes a commit message draft. It does not commit. I review the diff, review the message, and commit when I'm satisfied.
 
-**4. Repeat** until all steps are done. The scratchpad is a living document — I might spin off a `/scratchpad` with pros and cons to evaluate an approach, then integrate the decision back into the main plan. The thought process evolves in files, not in my head.
+**4. Repeat** until all steps are done. Because steps have explicit interdependencies, independent ones can be tackled by parallel agents within the same worktree for faster throughput. One caveat: parallel agents may touch the same files across different tasks, so hand-picking staged blocks for truly atomic commits gets tricky. The practical trade-off is to embrace the parallelism and accept slightly larger commits. The scratchpad evolves as I iterate — I might spin off a new `/scratchpad` with pros and cons to evaluate an approach, then integrate the decision back into the main plan. The thought process lives in files, not in my head.
 
 **5. `/finish-issue`** — Claude runs verification (lint, tests), checks if documentation needs updating, and generates a PR description. It does not create the PR. I review and submit.
 
