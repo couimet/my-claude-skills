@@ -46,11 +46,7 @@ At every stage, I'm in the loop. The AI does the heavy lifting. I do the steerin
 
 ## Why This Works
 
-The Replit incident wasn't a freak accident — it was the logical endpoint of unsupervised AI coding. The agent *had* been told not to make changes without permission. It ignored the instruction because there was no structural enforcement.
-
-Skills are structural enforcement. They're not suggestions in a system prompt that the AI might forget. They're workflow steps with hard stops built in. Claude literally cannot auto-commit because the commit-message skill writes to a file and exits. There's no `git commit` in the flow.
-
-This is the difference between telling someone "please be careful" and designing a process where being careless isn't an option.
+Skills are workflow steps with hard stops built in. Every skill produces a file I review before anything becomes permanent — plans, questions, commit messages, PR descriptions. Nothing reaches the repo without passing through my eyes first. That's what makes it vibe *guiding*: the AI brings the force, the workflow lets me guide it.
 
 ## Try It
 
