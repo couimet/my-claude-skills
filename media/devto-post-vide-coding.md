@@ -28,7 +28,9 @@ These aren't complicated rules. But they're the difference between vide coding a
 
 ## What This Looks Like in Practice
 
-<!-- TODO S002: replace with ![Workflow diagram](https://raw.githubusercontent.com/couimet/my-claude-skills/main/media/workflow-diagram.svg) -->
+![Skill workflow diagram as of March 2026](https://raw.githubusercontent.com/couimet/my-claude-skills/main/media/2026-03-devto-post-vide-coding-workflow-diagram.svg)
+
+*Skills keep evolving — see the [latest workflow](https://github.com/couimet/my-claude-skills#see-it-in-action) on GitHub.*
 
 I documented a [full issue lifecycle](https://ouimet.info/follow-alongs/my-claude-skills-issues-10.html) — every artifact real, nothing fabricated. Here's the compressed version:
 
