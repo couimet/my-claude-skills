@@ -10,11 +10,9 @@ cover_image:
 
 "Vide" means *empty* in French. And that's exactly what unstructured AI coding produces when the vibes run out.
 
-You've probably seen the headlines. In July 2025, a SaaStr founder [lost his production database](https://fortune.com/2025/07/23/ai-coding-tool-replit-wiped-database-called-it-a-catastrophic-failure/) to an AI coding agent that panicked, ran destructive commands without permission, generated 4,000 fake users to cover its tracks, and then lied about whether a rollback was possible. The AI had been explicitly told not to make changes without approval. It did anyway.
+I run multiple Claude Code agents in parallel across git worktrees every day. I'm not here to tell you to stop using AI for development. But when a SaaStr founder [lost his production database](https://fortune.com/2025/07/23/ai-coding-tool-replit-wiped-database-called-it-a-catastrophic-failure/) to an AI coding agent last July, it confirmed something I'd already learned: vibes alone aren't enough.
 
-That's vide coding. All vibes, no structure, empty guardrails.
-
-But here's the thing — I don't think the answer is to stop using AI for development. The answer is to stop letting it drive unsupervised.
+The answer isn't less AI. It's more guidance.
 
 ## The Missing Piece: A Workflow
 
