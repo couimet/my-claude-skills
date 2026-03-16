@@ -20,7 +20,7 @@ Claude Code is powerful, but out-of-the-box sessions are ephemeral — context e
 
 So I built a set of [custom skills](https://github.com/couimet/my-claude-skills) — portable markdown instructions that Claude follows when you type `/skill-name` in Claude Code ([skills are a standard Claude Code extension mechanism](https://code.claude.com/docs/en/skills)). They live in `~/.claude/skills/` — install once, use everywhere. They encode a simple contract:
 
-- **Questions go to files, not the terminal.** `/question` creates a structured document I edit directly — not a chat that scrolls away.
+- **Questions go to files, not chat.** `/question` creates a structured document I edit directly — not a conversation that scrolls away.
 - **Never implement before the plan is approved.** `/scratchpad` saves plans to files I control. I iterate until I'm satisfied, and every block the AI tackles comes from a plan I've reviewed.
 - **Never auto-commit.** `/commit-msg` writes a draft file. I review and commit manually.
 
@@ -38,11 +38,13 @@ I documented a [full issue lifecycle](https://ouimet.info/follow-alongs/my-claud
 
 **1. `/start-issue`** — I point Claude at a GitHub issue. It fetches the details, creates a branch, explores the codebase, and writes an implementation plan via `/scratchpad` with concrete steps — each with its own status and defined interdependencies. Then it stops and waits.
 
-**2. I review the plan.** Sometimes I adjust scope. Sometimes I use `/question` to surface design decisions in a structured file. The plan lives in a file I can read, edit, and come back to — not buried in a chat transcript. With RangeLink, I can reference specific lines in the plan to guide my review.
+**2. I review the plan.** Sometimes I adjust scope. Sometimes I use `/question` to surface design decisions in a structured file. The plan lives in a file I can read, edit, and come back to — not buried in a chat transcript.
 
 **3. `/tackle-scratchpad-block`** — I point Claude at one step or a set of steps from the plan. It executes them, runs tests, updates each step's status in the scratchpad, and writes a commit message draft. It does not commit. I review the diff, review the message, and commit when I'm satisfied.
 
-**4. Repeat** until all steps are done. Because steps have explicit interdependencies, independent ones can be tackled by parallel agents within the same worktree for faster throughput. One caveat: parallel agents may touch the same files across different tasks, so hand-picking staged blocks for truly atomic commits gets tricky. The practical trade-off is to embrace the parallelism and accept slightly larger commits. The scratchpad evolves as I iterate — I might spin off a new `/scratchpad` with pros and cons to evaluate an approach, then integrate the decision back into the main plan. The thought process lives in files, not in my head.
+**4. Repeat** until all steps are done. Because steps have explicit interdependencies, independent ones can be tackled by parallel agents within the same worktree for faster throughput. One caveat: parallel agents may touch the same files across different tasks, so hand-picking staged blocks for truly atomic commits gets tricky — the practical trade-off is to embrace the parallelism and accept slightly larger commits.
+
+The scratchpad evolves as I iterate — I might spin off a new `/scratchpad` with pros and cons to evaluate an approach, then integrate the decision back into the main plan. The thought process lives in files, not in my head.
 
 **5. `/finish-issue`** — Claude runs verification (lint, tests), checks if documentation needs updating, and generates a PR description. It does not create the PR. I review and submit.
 
@@ -65,7 +67,7 @@ For the full "show the work" follow-along: [ouimet.info/follow-alongs/my-claude-
 
 ## Vide → Vibe Guiding
 
-Vibe coding is fun until the vibes run out. When they do, you're left with duplicated code instead of refactored, missing dependency injection, untestable first drafts, and — in extreme cases — deleted production databases.
+Vibe coding is fun until the vibes run out. When they do, you're left with duplicated code instead of refactored, missing dependency injection, and untestable first drafts.
 
 But here's what I've found: once you give the AI proper guidance through structured skills, it *continues* with that quality. Guide it toward dependency injection once, and it keeps using the pattern. Set up testable architecture in the first step, and every subsequent step follows suit.
 
