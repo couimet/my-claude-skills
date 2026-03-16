@@ -57,9 +57,7 @@ git clone git@github.com:couimet/my-claude-skills.git ~/src/my-claude-skills
 ~/src/my-claude-skills/install.sh
 ```
 
-For the full "show the work" follow-along with every artifact from a real issue lifecycle: [couimet.github.io/my-claude-skills](https://couimet.github.io/my-claude-skills/issues-10/index.html)
-
-If you use [VS Code](https://code.visualstudio.com/), the [RangeLink](https://marketplace.visualstudio.com/items?itemName=couimet.rangelink) extension turns code references in scratchpads and commit messages into clickable navigation links — useful when reviewing plans before approving them.
+For the full "show the work" follow-along: [ouimet.info/follow-alongs/my-claude-skills-issues-10](https://ouimet.info/follow-alongs/my-claude-skills-issues-10.html)
 
 ## Vide → Vibe Guiding
 
@@ -68,3 +66,9 @@ Vibe coding is fun until the vibes run out. When they do, you're left with dupli
 But here's what I've found: once you give the AI proper guidance through structured skills, it *continues* with that quality. Guide it toward dependency injection once, and it keeps using the pattern. Set up testable architecture in the first step, and every subsequent step follows suit.
 
 That's supercharged vibe guiding. You're not fighting the AI or replacing it. You're giving it rails to run on — and then it runs far.
+
+---
+
+## About RangeLink
+
+[RangeLink](https://github.com/couimet/rangeLink#rangelink) is an extension I built to create precise code references for AI assistants. One keybinding. Any AI, any tool. Character-level precision. Available for [VS Code](https://marketplace.visualstudio.com/items?itemName=couimet.rangelink-vscode-extension) and [Cursor](https://open-vsx.org/extension/couimet/rangelink-vscode-extension).
