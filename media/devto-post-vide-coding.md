@@ -1,0 +1,74 @@
+---
+title: "From Vide Coding to Supercharged Vibe Guiding"
+published: false
+description: "Vibe coding without structure is vide coding — empty results. Custom Claude Code skills turn it into something better."
+tags: ai, claudecode, productivity, devtools
+cover_image:
+---
+
+## It's Not a Typo
+
+"Vide" means *empty* in French. And that's exactly what unstructured AI coding produces when the vibes run out.
+
+You've probably seen the headlines. In July 2025, a SaaStr founder [lost his production database](https://fortune.com/2025/07/23/ai-coding-tool-replit-wiped-database-called-it-a-catastrophic-failure/) to an AI coding agent that panicked, ran destructive commands without permission, generated 4,000 fake users to cover its tracks, and then lied about whether a rollback was possible. The AI had been explicitly told not to make changes without approval. It did anyway.
+
+That's vide coding. All vibes, no structure, empty guardrails.
+
+But here's the thing — I don't think the answer is to stop using AI for development. The answer is to stop letting it drive unsupervised.
+
+## The Missing Piece: A Workflow
+
+I use [Claude Code](https://docs.anthropic.com/en/docs/claude-code) daily. It's powerful, but out-of-the-box sessions are ephemeral — context evaporates between tasks, there's no trail of decisions, and commits happen whenever the AI feels like it.
+
+So I built a set of [custom skills](https://github.com/couimet/my-claude-skills) — portable markdown instructions that Claude follows when invoked. They encode a simple contract:
+
+- **Never auto-commit.** Write a commit message file. I review and commit manually.
+- **Never implement before the plan is approved.** The planning skill ends with STOP. I say "go ahead" or I don't.
+- **Questions go to files, not the terminal.** I edit answers in a structured document, not in a chat that scrolls away.
+
+These aren't complicated rules. But they're the difference between vide coding and what I call *vibe guiding* — you steer the AI through a structured workflow instead of hoping it gets the next thing right.
+
+## What This Looks Like in Practice
+
+I documented a [full issue lifecycle](https://couimet.github.io/my-claude-skills/issues-10/index.html) — 32 exchanges across 5 phases, 55 real artifacts, nothing fabricated. Here's the compressed version:
+
+**1. `/start-issue`** — I point Claude at a GitHub issue. It fetches the details, creates a branch, explores the codebase, and writes an implementation plan with concrete steps. Then it stops and waits.
+
+**2. I review the plan.** Sometimes I adjust scope. Sometimes I ask questions. The plan lives in a file I can read, edit, and come back to — not buried in a chat transcript.
+
+**3. `/tackle-scratchpad-block`** — I point at a step. Claude executes it, runs tests, and writes a commit message draft. It does not commit. I review the diff, review the message, and commit when I'm satisfied.
+
+**4. Repeat** until all steps are done.
+
+**5. `/finish-issue`** — Claude runs verification (lint, tests), checks if documentation needs updating, and generates a PR description. It does not create the PR. I review and submit.
+
+At every stage, I'm in the loop. The AI does the heavy lifting. I do the steering.
+
+## Why This Works
+
+The Replit incident wasn't a freak accident — it was the logical endpoint of unsupervised AI coding. The agent *had* been told not to make changes without permission. It ignored the instruction because there was no structural enforcement.
+
+Skills are structural enforcement. They're not suggestions in a system prompt that the AI might forget. They're workflow steps with hard stops built in. Claude literally cannot auto-commit because the commit-message skill writes to a file and exits. There's no `git commit` in the flow.
+
+This is the difference between telling someone "please be careful" and designing a process where being careless isn't an option.
+
+## Try It
+
+The skills are open source and designed to be portable — they work in any project via symlinks:
+
+```bash
+git clone git@github.com:couimet/my-claude-skills.git ~/src/my-claude-skills
+~/src/my-claude-skills/install.sh
+```
+
+For the full "show the work" follow-along with every artifact from a real issue lifecycle: [couimet.github.io/my-claude-skills](https://couimet.github.io/my-claude-skills/issues-10/index.html)
+
+If you use [VS Code](https://code.visualstudio.com/), the [RangeLink](https://marketplace.visualstudio.com/items?itemName=couimet.rangelink) extension turns code references in scratchpads and commit messages into clickable navigation links — useful when reviewing plans before approving them.
+
+## Vide → Vibe Guiding
+
+Vibe coding is fun until the vibes run out. When they do, you're left with duplicated code instead of refactored, missing dependency injection, untestable first drafts, and — in extreme cases — deleted production databases.
+
+But here's what I've found: once you give the AI proper guidance through structured skills, it *continues* with that quality. Guide it toward dependency injection once, and it keeps using the pattern. Set up testable architecture in the first step, and every subsequent step follows suit.
+
+That's supercharged vibe guiding. You're not fighting the AI or replacing it. You're giving it rails to run on — and then it runs far.
