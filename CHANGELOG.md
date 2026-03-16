@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.15.1
+
+### Changed
+
+- Deduplicated the ephemeral path rule ("never reference `.claude-work/` paths in output") into `/file-placement` foundation skill — removed duplicate definitions from `/commit-msg`, `/finish-issue`, and `/tackle-scratchpad-block` ([issues/85](https://github.com/couimet/my-claude-skills/issues/85))
+
 ## 2026.03.15
 
 ### Changed
