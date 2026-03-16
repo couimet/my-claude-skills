@@ -16,13 +16,13 @@ The answer isn't less AI. It's more guidance.
 
 ## The Missing Piece: A Workflow
 
-I use [Claude Code](https://docs.anthropic.com/en/docs/claude-code) daily. It's powerful, but out-of-the-box sessions are ephemeral — context evaporates between tasks, there's no trail of decisions, and commits happen whenever the AI feels like it.
+I use [Claude Code](https://code.claude.com/docs) daily. It's powerful, but out-of-the-box sessions are ephemeral — context evaporates between tasks, there's no trail of decisions, and commits happen whenever the AI feels like it.
 
-So I built a set of [custom skills](https://github.com/couimet/my-claude-skills) — portable markdown instructions that Claude follows when invoked. They encode a simple contract:
+So I built a set of [custom skills](https://github.com/couimet/my-claude-skills) — portable markdown instructions that Claude follows when invoked ([skills are a standard Claude Code extension mechanism](https://code.claude.com/docs/en/skills)). They live in `~/.claude/skills/` — install once, use everywhere. They encode a simple contract:
 
-- **Never auto-commit.** Write a commit message file. I review and commit manually.
-- **Never implement before the plan is approved.** The planning skill ends with STOP. I say "go ahead" or I don't.
-- **Questions go to files, not the terminal.** I edit answers in a structured document, not in a chat that scrolls away.
+- **Questions go to files, not the terminal.** `/question` creates a structured document I edit directly — not a chat that scrolls away.
+- **Never implement before the plan is approved.** `/scratchpad` saves plans to files I control. I iterate until I'm satisfied, and every block the AI tackles comes from a plan I've reviewed. The skills work on their own, but I complement them with [RangeLink](https://github.com/couimet/rangeLink#rangelink) (full disclosure: I built it) for precise line-level navigation into scratchpads and commit messages.
+- **Never auto-commit.** `/commit-msg` writes a draft file. I review and commit manually.
 
 These aren't complicated rules. But they're the difference between vide coding and what I call *vibe guiding* — you steer the AI through a structured workflow instead of hoping it gets the next thing right.
 
