@@ -28,6 +28,8 @@ These aren't complicated rules. But they're the difference between vide coding a
 
 ## What This Looks Like in Practice
 
+<!-- TODO S002: replace with ![Workflow diagram](https://raw.githubusercontent.com/couimet/my-claude-skills/main/media/workflow-diagram.svg) -->
+
 I documented a [full issue lifecycle](https://ouimet.info/follow-alongs/my-claude-skills-issues-10.html) — every artifact real, nothing fabricated. Here's the compressed version:
 
 **1. `/start-issue`** — I point Claude at a GitHub issue. It fetches the details, creates a branch, explores the codebase, and writes an implementation plan with concrete steps. Then it stops and waits.
