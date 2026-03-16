@@ -28,7 +28,7 @@ These aren't complicated rules. But they're the difference between vide coding a
 
 ## What This Looks Like in Practice
 
-I documented a [full issue lifecycle](https://couimet.github.io/my-claude-skills/issues-10/index.html) — 32 exchanges across 5 phases, 55 real artifacts, nothing fabricated. Here's the compressed version:
+I documented a [full issue lifecycle](https://ouimet.info/follow-alongs/my-claude-skills-issues-10.html) — every artifact real, nothing fabricated. Here's the compressed version:
 
 **1. `/start-issue`** — I point Claude at a GitHub issue. It fetches the details, creates a branch, explores the codebase, and writes an implementation plan with concrete steps. Then it stops and waits.
 
@@ -36,7 +36,7 @@ I documented a [full issue lifecycle](https://couimet.github.io/my-claude-skills
 
 **3. `/tackle-scratchpad-block`** — I point at a step. Claude executes it, runs tests, and writes a commit message draft. It does not commit. I review the diff, review the message, and commit when I'm satisfied.
 
-**4. Repeat** until all steps are done.
+**4. Repeat** until all steps are done. The scratchpad is a living document — I might spin off a `/scratchpad` with pros and cons to evaluate an approach, then integrate the decision back into the main plan. The thought process evolves in files, not in my head.
 
 **5. `/finish-issue`** — Claude runs verification (lint, tests), checks if documentation needs updating, and generates a PR description. It does not create the PR. I review and submit.
 
