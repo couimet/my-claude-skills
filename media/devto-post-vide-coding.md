@@ -10,7 +10,7 @@ cover_image:
 
 "Vide" means *empty* in French. And that's exactly what unstructured AI coding produces when the vibes run out.
 
-I run multiple Claude Code agents in parallel across git worktrees every day. I'm not here to tell you to stop using AI for development. But when a SaaStr founder [lost his production database](https://fortune.com/2025/07/23/ai-coding-tool-replit-wiped-database-called-it-a-catastrophic-failure/) to an AI coding agent last July, it confirmed something I'd already learned: vibes alone aren't enough.
+I run multiple Claude Code agents in parallel across git worktrees every day. I'm not here to tell you to stop using AI for development. But when a SaaStr founder [lost his production database](https://fortune.com/2025/07/23/ai-coding-tool-replit-wiped-database-called-it-a-catastrophic-failure/) to an AI coding agent in July 2025, it confirmed something I'd already learned: vibes alone aren't enough.
 
 The answer isn't less AI. It's more guidance.
 
