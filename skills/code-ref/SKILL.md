@@ -1,6 +1,6 @@
 ---
 name: code-ref
-version: 2026.03.15@abb40a1
+version: 2026.03.15.1@762a020
 user-invocable: false
 description: Defines the format for code references in working documents (scratchpads, plans, questions, commit messages). Auto-consulted when generating file/line references. Uses GitHub-style permalink syntax that becomes clickable navigation when RangeLink or similar tools are installed.
 ---
