@@ -186,12 +186,6 @@ Never hard-wrap prose output — each paragraph is one continuous line; line bre
 
 GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
 
-### PR Description Rules
-
-- **NEVER** reference `.claude-work/` files (scratchpads, questions, commit-msgs, breadcrumbs)
-- These are local/ephemeral and inaccessible from GitHub
-- Capture all relevant information directly in the PR body
-
 ## Step 6: Handle Ambiguity
 
 If unclear whether documentation is needed or other decisions arise:

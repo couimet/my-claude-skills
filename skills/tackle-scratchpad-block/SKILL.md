@@ -123,8 +123,6 @@ Include context from:
 - The scratchpad's goal/issue number
 - What was implemented in this block
 
-**Do NOT reference the scratchpad file path** in the commit message — it's an ephemeral local file that doesn't exist on GitHub.
-
 ## Step 6: Report Status and STOP
 
 Print:

@@ -25,6 +25,10 @@ Evaluate from top to bottom. The first matching row determines the destination.
 
 Each skill owns its own file format, naming conventions, and auto-numbering. Consult the referenced skill for specifics. Directory organization (flat vs issue-scoped subdirectories) is determined by the `/issue-context` skill. All ephemeral working files live under `.claude-work/`.
 
+## Ephemeral Path Rule
+
+`.claude-work/` paths must never appear in commits, PRs, GitHub issues, or any output visible on GitHub. These files are local-only working documents that don't exist in the repository — referencing them creates broken, meaningless links.
+
 ## What Does NOT Go in These Directories
 
 - Source code → appropriate `src/` directory

@@ -52,7 +52,6 @@ Benefits:
 3. **Benefits**: Bulleted list of key outcomes
 4. **Length**: Keep under 15 lines total
 5. **No file lists**: Redundant with the diff
-6. **No ephemeral file paths**: Never reference `.claude-work/` paths — these are local working files that don't exist on GitHub
 
 Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
 
