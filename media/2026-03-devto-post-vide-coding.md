@@ -30,7 +30,7 @@ These aren't complicated rules. But they're the difference between vide coding a
 
 ## What This Looks Like in Practice
 
-![Skill workflow diagram as of March 2026](https://raw.githubusercontent.com/couimet/my-claude-skills/main/media/2026-03-devto-post-vide-coding-workflow-diagram.svg)
+![Skill workflow diagram as of March 2026](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/j9teygum186385s2l6ye.png)
 
 *Skills keep evolving — see the [latest workflow](https://github.com/couimet/my-claude-skills#see-it-in-action) on GitHub.*
 
