@@ -1,6 +1,6 @@
 ---
 name: github-ref
-version: 2026.03.16@4ee0a14
+version: 2026.03.16.1@4c23535
 user-invocable: false
 description: Defines the rule for GitHub references in working documents. Auto-consulted when any skill produces text containing issue or PR references.
 ---

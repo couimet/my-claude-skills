@@ -1,6 +1,6 @@
 ---
 name: finish-issue
-version: 2026.03.16@4ee0a14
+version: 2026.03.16.1@4c23535
 description: Wrap up issue or side-quest work - run verification, check documentation needs, generate PR description
 argument-hint: [optional: issue-number-or-url]
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git status), Bash(git log *), Bash(git diff *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
