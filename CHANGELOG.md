@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.16
+
+### Changed
+
+- Added `--mkdir` flag to `auto-number.sh` so foundation skills no longer need a separate `mkdir -p` Bash call to create `.claude-work/` subdirectories — eliminates the annoying permission prompt on first use ([issues/103](https://github.com/couimet/my-claude-skills/issues/103))
+
 ## 2026.03.15.1
 
 ### Changed
