@@ -56,50 +56,11 @@ If no ephemeral references were found, print:
 No ephemeral references found — body is clean.
 ```
 
-## Step 4: Discover Repo Labels
+## Step 4: Discover Labels and Prompt for Selection
 
-Fetch all labels from the target repository (pass `--repo owner/repo` when a target repo override was extracted in Step 2; omit it to use the current git remote):
+Follow `/label-discovery` to fetch labels, classify them, and prompt the user. Pass `--repo owner/repo` when a target repo override was extracted in Step 2.
 
-```bash
-gh label list --json name,description --limit 200
-gh label list --repo owner/repo --json name,description --limit 200
-```
-
-Classify labels into two groups:
-
-**GitHub defaults** — these ship with every new repo and don't indicate structured label usage:
-
-- bug, documentation, duplicate, enhancement, good first issue, help wanted, invalid, question, wontfix
-
-**Structured labels** — anything beyond the defaults. Their presence indicates the repo uses intentional label conventions (e.g., `type:bug`, `priority:high`, `area:checkout`).
-
-## Step 5: Prompt for Labels
-
-### If only default labels exist
-
-Ask the user which labels to apply (simple multi-select from the defaults). The user can also choose "none".
-
-### If structured labels are detected
-
-Tell the user the repo uses structured labels and present them grouped by prefix (e.g., all `type:*` together, all `priority:*` together). Ask the user to select appropriate labels.
-
-Example prompt:
-
-```text
-This repo uses structured labels beyond GitHub defaults:
-
-  type: bug, enhancement, feature, refactor
-  priority: high, medium, low
-  area: checkout, admin, api
-
-  Other: good first issue, help wanted
-
-Which labels should this issue have?
-```
-
-Use `/question` if the label choice requires extended discussion. Otherwise, use inline prompting.
-
-## Step 6: Create the Issue
+## Step 5: Create the Issue
 
 Use the Write tool to save the sanitized body to an auto-numbered file in the issue's scratchpads folder via `/scratchpad` (e.g., `.claude-work/issues/<ID>/scratchpads/NNNN-issue-body.txt`). This keeps the body traceable alongside other working files and avoids heredoc compound commands that don't match `allowed-tools` globs.
 
@@ -112,11 +73,11 @@ gh issue create --repo owner/repo --title "<TITLE>" --label "<LABEL1>,<LABEL2>" 
 
 Omit the `--label` flag entirely when no labels are selected. Capture the returned issue URL.
 
-## Step 7: Link as Sub-Issue (If Parent Specified)
+## Step 6: Link as Sub-Issue (If Parent Specified)
 
 If a parent issue number was extracted in Step 2, link the new issue as a sub-issue using the `link-sub-issue.sh` script.
 
-Parse `OWNER`, `REPO`, and `CHILD_NUMBER` from the issue URL returned in Step 6 (`https://github.com/{OWNER}/{REPO}/issues/{CHILD_NUMBER}`). If a target repo override was extracted in Step 2, use that owner/repo instead.
+Parse `OWNER`, `REPO`, and `CHILD_NUMBER` from the issue URL returned in Step 5 (`https://github.com/{OWNER}/{REPO}/issues/{CHILD_NUMBER}`). If a target repo override was extracted in Step 2, use that owner/repo instead.
 
 Run the script once per child issue to link:
 
@@ -126,7 +87,7 @@ skills/create-github-issue/link-sub-issue.sh --owner "$OWNER" --repo "$REPO" --p
 
 The script handles all GraphQL calls internally, using `jq -n` to build payloads via temp files to avoid zsh history expansion stripping `!` from GraphQL type annotations (`String!`, `Int!`, `ID!`). It prints `linked #<child> → #<parent>` on success or an error message on failure (exit 1).
 
-If the script fails, note it in the Step 8 report as:
+If the script fails, note it in the Step 7 report as:
 
 ```text
 Sub-issue linking: failed (<error summary>) — link manually if needed.
@@ -134,7 +95,7 @@ Sub-issue linking: failed (<error summary>) — link manually if needed.
 
 If no parent was specified, skip this step.
 
-## Step 8: Report
+## Step 7: Report
 
 Print a summary:
 
