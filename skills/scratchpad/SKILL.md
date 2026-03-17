@@ -1,6 +1,6 @@
 ---
 name: scratchpad
-version: 2026.03.16.2@5c1ef72
+version: 2026.03.16.3@fecab09
 description: Create a working document in .claude-work/scratchpads/ with auto-numbered filenames. Use for implementation plans, PR descriptions, analysis notes, architecture decisions, GitHub issue drafts, or any temporary working document. Not for questions (use /question), commit messages (use /commit-msg), or permanent docs.
 argument-hint: <description>
 allowed-tools: Read, Write, Glob, Bash(git branch --show-current), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
