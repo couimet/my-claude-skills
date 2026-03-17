@@ -73,6 +73,8 @@ Run the project's test suite after making changes.
 
 **Exception**: Skip tests only if the scratchpad block explicitly says not to run them for this step.
 
+**If tests fail:** leave the step as `"in_progress"`, do NOT create a commit message. Fix the failing code or tests, then re-invoke with the same step reference. The `"in_progress"` status check in Step 1 will prompt for confirmation to continue.
+
 ## Step 5: Mark Done and Wrap Up
 
 After successful execution and passing tests, update the step's status in the scratchpad's JSON block:

@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.16.3
+
+### Changed
+
+- Added test-failure recovery guidance to `/tackle-scratchpad-block` — clarifies that on failure the step stays `in_progress`, no commit message is created, and the user should fix and re-invoke ([issues/88](https://github.com/couimet/my-claude-skills/issues/88))
+
 ## 2026.03.16.2
 
 ### Changed
