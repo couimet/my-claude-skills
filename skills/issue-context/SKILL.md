@@ -55,7 +55,6 @@ Files go in a type subdirectory within the issue directory:
 
 Where `<type>` is the skill's type subdirectory (`scratchpads/`, `questions/`, `commit-msgs/`).
 
-- Create the `.claude-work/issues/<ID>/<type>/` path if it doesn't exist
 - The `NNNN` file sequence number is scoped to the type subdirectory (each issue + type combination starts fresh at `0001`)
 
 Examples:
@@ -87,7 +86,7 @@ The `NNNN` file sequence number is always scoped to the target directory. Use `/
 2. Run `/auto-number` against that directory:
 
    ```bash
-   skills/auto-number/auto-number.sh <target-directory> --glob "*.txt" --width 4
+   skills/auto-number/auto-number.sh <target-directory> --glob "*.txt" --width 4 --mkdir
    ```
 
 3. Use the script's stdout as the `NNNN` value

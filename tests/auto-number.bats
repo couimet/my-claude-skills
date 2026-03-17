@@ -194,6 +194,29 @@ SCRIPT="$PROJECT_ROOT/skills/auto-number/auto-number.sh"
   [[ "$output" == "auto-number E102 error: "* ]]
 }
 
+# --- --mkdir flag ---
+
+@test "--mkdir: creates nonexistent directory and returns 0001" {
+  run "$SCRIPT" "$TEST_TEMP_DIR/newdir" --mkdir
+  [ "$status" -eq 0 ]
+  [ "$output" = "0001" ]
+  [ -d "$TEST_TEMP_DIR/newdir" ]
+}
+
+@test "--mkdir: creates nested nonexistent path and returns 0001" {
+  run "$SCRIPT" "$TEST_TEMP_DIR/a/b/c" --mkdir
+  [ "$status" -eq 0 ]
+  [ "$output" = "0001" ]
+  [ -d "$TEST_TEMP_DIR/a/b/c" ]
+}
+
+@test "--mkdir: works normally with existing populated directory" {
+  touch "$TEST_TEMP_DIR/0003-foo.txt"
+  run "$SCRIPT" "$TEST_TEMP_DIR" --mkdir
+  [ "$status" -eq 0 ]
+  [ "$output" = "0004" ]
+}
+
 @test "path is not a directory exits with E103" {
   touch "$TEST_TEMP_DIR/a-file.txt"
   run "$SCRIPT" "$TEST_TEMP_DIR/a-file.txt"
