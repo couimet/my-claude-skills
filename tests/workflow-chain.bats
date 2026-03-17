@@ -79,8 +79,6 @@ extract_json() {
 # --- Status transition validation ---
 
 @test "scratchpad: pending → in_progress is a legal transition" {
-  [[ "pending" =~ ^(pending)$ ]] && [[ "in_progress" =~ ^(in_progress)$ ]]
-  # Transition map: pending can go to in_progress
   from="pending"; to="in_progress"
   case "${from}->${to}" in
     "pending->in_progress"|"pending->blocked"|"in_progress->done"|"in_progress->pending"|"blocked->pending") true ;;
