@@ -77,7 +77,7 @@ Numbered steps that are:
 - **Commit-sized** — each step could be a single commit or small PR
 - **Specific** — reference exact files, functions, types by name
 - **Ordered** — dependencies between steps are clear
-- **Testable** — each step should mention what tests to add/update
+- **Testable** — each step should mention what tests to add/update. If a step defers testing to a later step, include a task entry: "Do not run tests — deferred to S00N"
 
 Steps are embedded as a fenced JSON block (see `/scratchpad` Step Tracking section for full schema):
 
