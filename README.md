@@ -316,6 +316,7 @@ These skills aren't invoked directly — Claude consults them when the context m
 | `ensure-gitignore` | When a foundation skill is about to create a working file — checks/appends the `.claude-work/` sentinel to `.gitignore` in one Bash call |
 | `file-placement` | When deciding where to put a new file — routes to the right directory |
 | `github-ref` | When skill-generated text contains issue or PR references — requires full GitHub URLs, never short-form `#NNN` or `PR #NNN` |
+| `label-discovery` | When `/create-github-issue` needs labels — fetches repo labels, classifies as defaults vs structured, and prompts the user |
 | `issue-context` | When on an `issues/<N>` branch — scopes working files to issue subdirectories |
 | `scratchpad-ref-format` | When `/tackle-scratchpad-block` parses its argument — defines the 4 invocation forms (`#S`, `#L`, space-separated, bare-path auto-select) |
 
