@@ -2,12 +2,13 @@
 #
 # auto-number.sh — Returns the next available zero-padded sequence number.
 #
-# Usage: auto-number.sh <directory> [--mode prefix|suffix] [--glob PATTERN] [--width N]
+# Usage: auto-number.sh <directory> [--mode prefix|suffix] [--glob PATTERN] [--width N] [--mkdir]
 #
 #   directory  — Path to scan for existing numbered files (required, positional)
 #   --mode     — "prefix" (NNNN-name.ext) or "suffix" (name-NNNN.ext). Default: prefix
 #   --glob     — File filter pattern (e.g., "*.txt"). Default: all files
 #   --width    — Output width, 1-10. Default: 4. Safety: never truncates if next value needs more digits.
+#   --mkdir    — Create the directory (and parents) if it doesn't exist.
 #
 # Output: A single line containing the next number, zero-padded to width (e.g., "0001" at default width)
 
@@ -15,12 +16,13 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: auto-number.sh <directory> [--mode prefix|suffix] [--glob PATTERN] [--width N]
+Usage: auto-number.sh <directory> [--mode prefix|suffix] [--glob PATTERN] [--width N] [--mkdir]
 
   directory  Path to scan for existing numbered files (required)
   --mode     "prefix" (NNNN-name.ext) or "suffix" (name-NNNN.ext). Default: prefix
   --glob     File filter pattern (e.g., "*.txt"). Default: all files
   --width    Output width, 1-10. Default: 4. Never truncates if next value needs more digits.
+  --mkdir    Create the directory (and parents) if it doesn't exist.
   --help     Show this help message
 EOF
 }
@@ -42,6 +44,7 @@ mode="prefix"
 glob_pattern=""
 width=4
 mode_set=false
+create_dir=false
 
 # --- Parse arguments ---
 # First non-flag argument is the directory
@@ -64,6 +67,10 @@ while [ $# -gt 0 ]; do
       [ $# -ge 2 ] || { echo "auto-number $ERR_INVALID_WIDTH error: --width requires a value" >&2; exit 1; }
       width="$2"
       shift 2
+      ;;
+    --mkdir)
+      create_dir=true
+      shift
       ;;
     --help)
       usage
@@ -105,8 +112,12 @@ if [ -z "$directory" ]; then
 fi
 
 if [ ! -e "$directory" ]; then
-  echo "auto-number $ERR_DIR_NOT_FOUND error: directory does not exist: '$directory'" >&2
-  exit 1
+  if [ "$create_dir" = true ]; then
+    mkdir -p "$directory"
+  else
+    echo "auto-number $ERR_DIR_NOT_FOUND error: directory does not exist: '$directory'" >&2
+    exit 1
+  fi
 fi
 
 if [ ! -d "$directory" ]; then
