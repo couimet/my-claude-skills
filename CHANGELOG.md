@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.16.1
+
+### Changed
+
+- Added multi-candidate step selection note to `/start-issue` output — users now see how to specify a step ID (`#S002`) when multiple steps have no dependencies ([issues/86](https://github.com/couimet/my-claude-skills/issues/86))
+
 ## 2026.03.16
 
 ### Changed

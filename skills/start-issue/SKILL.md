@@ -178,6 +178,8 @@ Print the branch name and paths of any created scratchpad/questions files, follo
 Next: use `/tackle-scratchpad-block` to execute steps one at a time.
 Example: /tackle-scratchpad-block <path-to-scratchpad>
 (auto-selects first pending, unblocked step)
+If multiple pending, unblocked steps exist, specify which one:
+  /tackle-scratchpad-block <path-to-scratchpad>#S002
 ```
 
 Replace `<path-to-scratchpad>` with the actual path of the scratchpad file created in Step 4.
