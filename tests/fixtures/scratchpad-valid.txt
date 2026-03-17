@@ -1,0 +1,51 @@
+# Issue #999: Test fixture
+
+## Context
+
+This is a test fixture for workflow-chain.bats.
+
+## Implementation Plan
+
+```json
+{
+  "finish_issue_on_complete": true,
+  "steps": [
+    {
+      "id": "S001",
+      "title": "Add parser module",
+      "status": "done",
+      "done_when": "Parser exported and passing unit tests",
+      "depends_on": [],
+      "files": ["src/parser.ts", "src/index.ts"],
+      "tasks": [
+        "Create parseInput() function in src/parser.ts",
+        "Export from src/index.ts barrel file"
+      ]
+    },
+    {
+      "id": "S002",
+      "title": "Wire parser into handler",
+      "status": "in_progress",
+      "done_when": "Handler calls parseInput()",
+      "depends_on": ["S001"],
+      "files": ["src/server.ts"],
+      "tasks": [
+        "Import parseInput from src/parser.ts",
+        "Call parseInput() in handleRequest()"
+      ]
+    },
+    {
+      "id": "S003",
+      "title": "Add integration tests",
+      "status": "pending",
+      "done_when": "All new functions have test coverage",
+      "depends_on": ["S002"],
+      "files": ["src/__tests__/parser.test.ts"],
+      "tasks": [
+        "Add tests for parseInput()",
+        "Cover happy path and edge cases"
+      ]
+    }
+  ]
+}
+```

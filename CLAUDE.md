@@ -104,7 +104,7 @@ This project uses [Calendar Versioning](https://calver.org/): `YYYY.MM.DD`. When
 - `### Fixed` — bug fixes
 - `### Removed` — deleted skills or removed features
 
-**When to add an entry:** User-facing changes (new skill, changed behavior, bug fix, removed skill) always get entries. Pure internal refactors with no observable effect may be skipped, but when in doubt, add an entry.
+**When to add an entry:** User-facing changes (new skill, changed behavior, bug fix, removed skill) always get entries. Pure internal changes (new tests, refactors, CI updates) with no user-facing effect do NOT get entries.
 
 **Link to the issue:** End each entry with `([issues/NN](https://github.com/couimet/my-claude-skills/issues/NN))`.
 

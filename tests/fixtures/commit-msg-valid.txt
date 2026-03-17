@@ -1,0 +1,7 @@
+[feat] Add parser module for input validation
+
+Input validation was scattered across three handlers with inconsistent error messages. Centralizing it in a parser module ensures consistent behavior and makes it testable in isolation.
+
+Benefits:
+- Single source of truth for input validation rules
+- Testable in isolation without spinning up the full server
