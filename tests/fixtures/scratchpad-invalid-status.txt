@@ -1,0 +1,18 @@
+# Issue #999: Test fixture with invalid status
+
+## Implementation Plan
+
+```json
+{
+  "steps": [
+    {
+      "id": "S001",
+      "title": "Bad step",
+      "status": "running",
+      "depends_on": [],
+      "files": ["src/foo.ts"],
+      "tasks": ["Do something"]
+    }
+  ]
+}
+```

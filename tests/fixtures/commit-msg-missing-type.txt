@@ -1,0 +1,6 @@
+Add parser module for input validation
+
+Input validation was scattered across three handlers with inconsistent error messages.
+
+Benefits:
+- Single source of truth for input validation rules
