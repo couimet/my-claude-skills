@@ -28,7 +28,7 @@ Read the file and extract:
 - **Title** — the first `#`-level heading (strip the `#` prefix)
 - **Body** — everything after the title heading
 
-If the file contains a `## Parent` or `Parent: #NN` line, extract the parent issue number for sub-issue linking in Step 7.
+If the file contains a `## Parent` or `Parent: #NN` line, extract the parent issue number for sub-issue linking in Step 6.
 
 If the file contains a `**Target repo:** owner/repo` line (e.g., `**Target repo:** couimet/my-claude-skills`), extract it as the target repository override. When no target repo line is present, infer owner/repo from the current git remote (`gh repo view --json owner,name`).
 
