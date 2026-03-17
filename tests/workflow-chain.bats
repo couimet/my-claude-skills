@@ -78,45 +78,36 @@ extract_json() {
 
 # --- Status transition validation ---
 
-@test "scratchpad: pending → in_progress is a legal transition" {
-  from="pending"; to="in_progress"
-  case "${from}->${to}" in
-    "pending->in_progress"|"pending->blocked"|"in_progress->done"|"in_progress->pending"|"blocked->pending") true ;;
-    *) false ;;
+is_legal_transition() {
+  case "$1->$2" in
+    "pending->in_progress"|"pending->blocked"|"in_progress->done"|"in_progress->pending"|"blocked->pending") return 0 ;;
+    *) return 1 ;;
   esac
+}
+
+@test "scratchpad: pending → in_progress is a legal transition" {
+  is_legal_transition "pending" "in_progress"
 }
 
 @test "scratchpad: in_progress → done is a legal transition" {
-  from="in_progress"; to="done"
-  case "${from}->${to}" in
-    "pending->in_progress"|"pending->blocked"|"in_progress->done"|"in_progress->pending"|"blocked->pending") true ;;
-    *) false ;;
-  esac
+  is_legal_transition "in_progress" "done"
 }
 
 @test "scratchpad: pending → done is NOT a legal transition" {
-  from="pending"; to="done"
-  case "${from}->${to}" in
-    "pending->in_progress"|"pending->blocked"|"in_progress->done"|"in_progress->pending"|"blocked->pending") result=legal ;;
-    *) result=illegal ;;
-  esac
-  [ "$result" = "illegal" ]
+  ! is_legal_transition "pending" "done"
 }
 
 @test "scratchpad: done → pending is NOT a legal transition" {
-  from="done"; to="pending"
-  case "${from}->${to}" in
-    "pending->in_progress"|"pending->blocked"|"in_progress->done"|"in_progress->pending"|"blocked->pending") result=legal ;;
-    *) result=illegal ;;
-  esac
-  [ "$result" = "illegal" ]
+  ! is_legal_transition "done" "pending"
 }
 
 # --- Commit message format ---
 
+COMMIT_SUBJECT_RE='^\[[a-z][a-z0-9 _-]*\] .+'
+
 @test "commit-msg: first line matches [type] pattern" {
   first_line="$(head -1 "$FIXTURES/commit-msg-valid.txt")"
-  [[ "$first_line" =~ ^\[.+\]\ .+ ]]
+  [[ "$first_line" =~ $COMMIT_SUBJECT_RE ]]
 }
 
 @test "commit-msg: has Benefits section" {
@@ -125,5 +116,5 @@ extract_json() {
 
 @test "commit-msg: missing [type] prefix is detected" {
   first_line="$(head -1 "$FIXTURES/commit-msg-missing-type.txt")"
-  ! [[ "$first_line" =~ ^\[.+\]\ .+ ]]
+  ! [[ "$first_line" =~ $COMMIT_SUBJECT_RE ]]
 }
