@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.16.2
+
+### Changed
+
+- Extracted label discovery strategy from `/create-github-issue` into a new `/label-discovery` foundation skill — saves ~200 tokens per issue creation and enables reuse ([issues/87](https://github.com/couimet/my-claude-skills/issues/87))
+
 ## 2026.03.16.1
 
 ### Changed
