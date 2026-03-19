@@ -277,6 +277,12 @@ Scratchpad drafted during implementation → real GitHub issue, labels applied, 
 
 The [`demo/real-life/issues-10/`](demo/real-life/issues-10/) folder contains every artifact from this issue's lifecycle — scratchpads, questions, commit messages, and README snapshots — numbered chronologically. [`TIMELINE.md`](demo/real-life/issues-10/TIMELINE.md) provides the narrative context for each one.
 
+## Featured In
+
+The most recent posts are at the top.
+
+- [Claude skills: issues-10](https://ouimet.info/follow-alongs/my-claude-skills-issues-10.html) — a full follow-along showing how these skills turned a blank issue into a shipped PR, with every artifact visible
+
 ## Why I Built These
 
 I've used Claude Code on dozens of real issues and kept running into the same friction points. These skills encode the patterns that worked:
