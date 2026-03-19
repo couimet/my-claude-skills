@@ -10,6 +10,13 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.18.1
+
+### Changed
+
+- `/commit-msg` now scales verbosity to change complexity — trivial commits (docs, version bumps) produce a subject line only, moderate commits get a short body, substantial commits get the full template with Benefits ([issues/110](https://github.com/couimet/my-claude-skills/issues/110))
+- Commit messages no longer include the current working issue link — `/finish-issue` owns issue linkage in the PR description ([issues/110](https://github.com/couimet/my-claude-skills/issues/110))
+
 ## 2026.03.18
 
 ### Changed
