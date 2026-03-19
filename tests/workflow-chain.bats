@@ -132,6 +132,15 @@ COMMIT_SUBJECT_RE='^\[[a-z][a-z0-9 _-]*\] .+'
   ! grep -q "^Benefits:" "$FIXTURES/commit-msg-moderate.txt"
 }
 
+@test "commit-msg: fixtures do not contain issue-closing links" {
+  for fixture in \
+    "$FIXTURES/commit-msg-valid.txt" \
+    "$FIXTURES/commit-msg-trivial.txt" \
+    "$FIXTURES/commit-msg-moderate.txt"; do
+    ! grep -Eq '^(Closes |Fixes |Resolves )?https://github\.com/[^/]+/[^/]+/issues/[0-9]+$' "$fixture"
+  done
+}
+
 @test "commit-msg: missing [type] prefix is detected" {
   first_line="$(head -1 "$FIXTURES/commit-msg-missing-type.txt")"
   ! [[ "$first_line" =~ $COMMIT_SUBJECT_RE ]]
