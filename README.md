@@ -304,6 +304,7 @@ I've used Claude Code on dozens of real issues and kept running into the same fr
 | --- | --- |
 | `/audit-efficiency [skills-dir]` | Scan a skills directory for token-consumption inefficiencies — shell-script candidates, parallelizable steps, cross-reference overhead — and output a structured HIGH/MEDIUM/LOW report |
 | `/breadcrumb <note>` | Drop a timestamped note collected by `/finish-issue` for the PR description |
+| `/changelog <desc>` | Create or update a CHANGELOG entry with tone guardrails, thematic grouping, and detail-leak detection — adapts to SemVer, CalVer, and mono-repo layouts |
 | `/cleanup-issue [number]` | Delete an issue's working directory (`.claude-work/issues/<ID>/`) after confirming with the user |
 | `/commit-msg <desc>` | Draft a commit message focused on WHY, not WHAT |
 | `/create-github-issue <title-or-path>` | Create a GitHub issue from a scratchpad draft or inline description |
