@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.18
+
+### Changed
+
+- `/start-issue` now automatically assigns the issue to the current user via `gh issue edit --add-assignee @me` — additive (preserves existing assignees) and idempotent ([issues/96](https://github.com/couimet/my-claude-skills/issues/96))
+
 ## 2026.03.16.3
 
 ### Changed
