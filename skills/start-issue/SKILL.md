@@ -3,7 +3,7 @@ name: start-issue
 version: 2026.03.16.3@ee08ec6
 description: Start working on a GitHub issue - analyze, explore codebase, and create detailed implementation plan
 argument-hint: <github-issue-url>
-allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
+allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
 # Start Issue
@@ -21,8 +21,18 @@ Before starting new work, use `/issue-context` to detect whether the current bra
 ## Step 1: Fetch Issue Details
 
 ```bash
-gh issue view $ARGUMENTS --json title,body,number,state,labels
+gh issue view $ARGUMENTS --json title,body,number,state,labels,assignees
 ```
+
+## Step 1b: Assign Issue
+
+Assign yourself to the issue so others can see it's being worked on:
+
+```bash
+gh issue edit $ARGUMENTS --add-assignee @me
+```
+
+This is additive — existing assignees are preserved, not replaced. The command is idempotent (silently succeeds if you are already assigned).
 
 ## Step 2: Create Feature Branch
 
