@@ -1,0 +1,3 @@
+[fix] Prevent duplicate webhook delivery on retry
+
+The retry logic was not checking idempotency keys, causing downstream services to process the same event twice when the initial response timed out.
