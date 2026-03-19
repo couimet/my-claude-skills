@@ -110,8 +110,35 @@ COMMIT_SUBJECT_RE='^\[[a-z][a-z0-9 _-]*\] .+'
   [[ "$first_line" =~ $COMMIT_SUBJECT_RE ]]
 }
 
-@test "commit-msg: has Benefits section" {
+@test "commit-msg: substantial fixture has Benefits section" {
   grep -q "^Benefits:" "$FIXTURES/commit-msg-valid.txt"
+}
+
+@test "commit-msg: trivial fixture has [type] prefix" {
+  first_line="$(head -1 "$FIXTURES/commit-msg-trivial.txt")"
+  [[ "$first_line" =~ $COMMIT_SUBJECT_RE ]]
+}
+
+@test "commit-msg: trivial fixture has no Benefits section" {
+  ! grep -q "^Benefits:" "$FIXTURES/commit-msg-trivial.txt"
+}
+
+@test "commit-msg: moderate fixture has [type] prefix" {
+  first_line="$(head -1 "$FIXTURES/commit-msg-moderate.txt")"
+  [[ "$first_line" =~ $COMMIT_SUBJECT_RE ]]
+}
+
+@test "commit-msg: moderate fixture has no Benefits section" {
+  ! grep -q "^Benefits:" "$FIXTURES/commit-msg-moderate.txt"
+}
+
+@test "commit-msg: fixtures do not contain issue-closing links" {
+  for fixture in \
+    "$FIXTURES/commit-msg-valid.txt" \
+    "$FIXTURES/commit-msg-trivial.txt" \
+    "$FIXTURES/commit-msg-moderate.txt"; do
+    ! grep -Eq '^(Closes |Fixes |Resolves )?https://github\.com/[^/]+/[^/]+/issues/[0-9]+$' "$fixture"
+  done
 }
 
 @test "commit-msg: missing [type] prefix is detected" {
