@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.19
+
+### Added
+
+- New `/changelog` skill — creates CHANGELOG entries with user-facing tone guardrails, thematic grouping (places entries near related content instead of appending), and a soft-warning blocklist for implementation-detail leaks; adapts to SemVer, CalVer, and mono-repo layouts ([issues/112](https://github.com/couimet/my-claude-skills/issues/112))
+
 ## 2026.03.18.1
 
 ### Changed
