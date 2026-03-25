@@ -10,6 +10,13 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.03.25
+
+### Changed
+
+- `/tackle-scratchpad-block` and `/finish-issue` descriptions refined for better trigger precision — Claude now has clearer context about when to invoke each skill ([issues/115](https://github.com/couimet/my-claude-skills/issues/115))
+- `/start-issue` now runs issue fetch and self-assign as parallel tool calls, saving a round-trip on every invocation ([issues/115](https://github.com/couimet/my-claude-skills/issues/115))
+
 ## 2026.03.19
 
 ### Added

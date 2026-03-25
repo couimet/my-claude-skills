@@ -1,0 +1,80 @@
+# Issue #42: Add user authentication
+
+Parent: https://github.com/acme/app/issues/10
+Type/Priority/Scope: enhancement, priority:high
+Base branch: origin/main
+
+## Context
+
+The app currently has no authentication. Users can access all routes without logging in. This issue adds session-based auth with login/logout endpoints.
+
+## Assumptions Made
+
+- Assuming bcrypt for password hashing because the project already has it as a dependency
+- Assuming cookie-based sessions rather than JWT because the app is server-rendered
+
+## Implementation Plan
+
+```json
+{
+  "finish_issue_on_complete": true,
+  "steps": [
+    {
+      "id": "S001",
+      "title": "Add user model and migration",
+      "status": "pending",
+      "done_when": "User table exists with email, password_hash columns; model exported",
+      "depends_on": [],
+      "files": ["src/models/user.ts", "src/migrations/001-create-users.sql"],
+      "tasks": [
+        "Create User model in src/models/user.ts with email and password_hash fields",
+        "Add migration file for users table",
+        "Export from src/models/index.ts"
+      ]
+    },
+    {
+      "id": "S002",
+      "title": "Add auth middleware",
+      "status": "pending",
+      "done_when": "Protected routes return 401 without valid session",
+      "depends_on": ["S001"],
+      "files": ["src/middleware/auth.ts", "src/middleware/index.ts"],
+      "tasks": [
+        "Create requireAuth middleware in src/middleware/auth.ts",
+        "Wire into route definitions"
+      ]
+    },
+    {
+      "id": "S003",
+      "title": "Add login and logout endpoints",
+      "status": "pending",
+      "done_when": "POST /login returns session cookie; POST /logout clears it; tests pass",
+      "depends_on": ["S001", "S002"],
+      "files": ["src/routes/auth.ts", "src/__tests__/auth.test.ts"],
+      "tasks": [
+        "Add POST /login endpoint with credential validation",
+        "Add POST /logout endpoint to destroy session",
+        "Add tests covering happy path, bad credentials, and logout"
+      ]
+    }
+  ]
+}
+```
+
+## Files to Modify
+
+**S001:** src/models/user.ts, src/migrations/001-create-users.sql, src/models/index.ts
+**S002:** src/middleware/auth.ts, src/middleware/index.ts
+**S003:** src/routes/auth.ts, src/__tests__/auth.test.ts
+
+## Documentation & Discoverability
+
+- [ ] CHANGELOG entry (under appropriate version section)
+- [ ] README update (if new command, setting, or feature)
+- [ ] Any project-specific integration points (entry points, config, menus, keybindings)
+
+## Acceptance Criteria
+
+- [ ] Users can log in with email/password
+- [ ] Protected routes require authentication
+- [ ] Logout destroys the session
