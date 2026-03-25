@@ -18,21 +18,19 @@ Before starting new work, use `/issue-context` to detect whether the current bra
 
 **If no issue context on the current branch, or the directory doesn't exist or is empty:** proceed directly to Step 1.
 
-## Step 1: Fetch Issue Details
+## Step 1: Fetch Issue Details and Assign
+
+Run both commands as parallel tool calls in the same response — they are independent (one reads, one writes) and both use the input URL directly:
 
 ```bash
 gh issue view $ARGUMENTS --json title,body,number,state,labels,assignees
 ```
 
-## Step 1b: Assign Issue
-
-Assign yourself to the issue so others can see it's being worked on:
-
 ```bash
 gh issue edit $ARGUMENTS --add-assignee @me
 ```
 
-This is additive — existing assignees are preserved, not replaced. The command is idempotent (silently succeeds if you are already assigned).
+The assign is additive — existing assignees are preserved, not replaced. The command is idempotent (silently succeeds if you are already assigned).
 
 ## Step 2: Create Feature Branch
 
