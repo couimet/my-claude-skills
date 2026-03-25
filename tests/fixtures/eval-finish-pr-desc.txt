@@ -1,0 +1,26 @@
+[issues/42] Add user authentication
+
+## Summary
+
+Adds session-based authentication with login/logout endpoints and a requireAuth middleware for protected routes. Users authenticate via email/password and receive a session cookie.
+
+## Changes
+
+- Added User model with email and password_hash fields
+- Created requireAuth middleware that returns 401 for unauthenticated requests
+- Added POST /login and POST /logout endpoints
+
+## Test Plan
+
+- [ ] All existing tests pass
+- [ ] New tests added for: login happy path, bad credentials, logout, middleware rejection
+- [ ] Manual testing: verified login flow in browser with session cookie persistence
+
+## Documentation
+
+- [ ] CHANGELOG: entry added under ### Added
+- [ ] README: not needed — no new CLI commands or settings
+
+## Related
+
+- Closes https://github.com/acme/app/issues/42

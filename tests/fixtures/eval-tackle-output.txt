@@ -1,0 +1,50 @@
+# Issue #42: Add user authentication
+
+## Context
+
+This is a test fixture representing a scratchpad after /tackle-scratchpad-block has executed S001 and is partway through the plan.
+
+## Implementation Plan
+
+```json
+{
+  "finish_issue_on_complete": true,
+  "steps": [
+    {
+      "id": "S001",
+      "title": "Add user model and migration",
+      "status": "done",
+      "done_when": "User table exists with email, password_hash columns; model exported",
+      "depends_on": [],
+      "files": ["src/models/user.ts", "src/migrations/001-create-users.sql"],
+      "tasks": [
+        "Create User model in src/models/user.ts",
+        "Add migration file for users table"
+      ]
+    },
+    {
+      "id": "S002",
+      "title": "Add auth middleware",
+      "status": "in_progress",
+      "done_when": "Protected routes return 401 without valid session",
+      "depends_on": ["S001"],
+      "files": ["src/middleware/auth.ts"],
+      "tasks": [
+        "Create requireAuth middleware"
+      ]
+    },
+    {
+      "id": "S003",
+      "title": "Add login and logout endpoints",
+      "status": "pending",
+      "done_when": "POST /login returns session cookie; POST /logout clears it; tests pass",
+      "depends_on": ["S001", "S002"],
+      "files": ["src/routes/auth.ts", "src/__tests__/auth.test.ts"],
+      "tasks": [
+        "Add POST /login and POST /logout endpoints",
+        "Add tests covering happy path and edge cases"
+      ]
+    }
+  ]
+}
+```
