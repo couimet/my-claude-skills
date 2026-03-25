@@ -49,6 +49,8 @@ extract_json() {
 
 @test "start-issue plan: all steps have status pending" {
   json="$(extract_json "$FIXTURES/eval-start-issue-plan.txt")"
+  count="$(echo "$json" | jq '.steps | length')"
+  [ "$count" -gt 0 ]
   non_pending="$(echo "$json" | jq '[.steps[] | select(.status != "pending")] | length')"
   [ "$non_pending" -eq 0 ]
 }
@@ -56,6 +58,7 @@ extract_json() {
 @test "start-issue plan: each step has done_when field" {
   json="$(extract_json "$FIXTURES/eval-start-issue-plan.txt")"
   count="$(echo "$json" | jq '.steps | length')"
+  [ "$count" -gt 0 ]
   for ((i=0; i<count; i++)); do
     echo "$json" | jq -e ".steps[$i].done_when" >/dev/null
   done
