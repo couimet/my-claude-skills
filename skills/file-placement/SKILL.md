@@ -16,6 +16,7 @@ When creating a new file, use this decision tree to determine the correct locati
 | Is it a question needing user input? | `.claude-work/questions/` | `/question` |
 | Is it a commit message draft? | `.claude-work/commit-msgs/` | `/commit-msg` |
 | Is it a temporary working document? | `.claude-work/scratchpads/` | `/scratchpad` |
+| Is it a quick note, finding, or result? | `.claude-work/notes/` | `/note` |
 | Is it a note during issue work? | `.claude-work/issues/<ID>/breadcrumb.md` | `/breadcrumb` |
 | Is it permanent documentation? | `docs/` or package README | N/A |
 
