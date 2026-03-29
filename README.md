@@ -140,6 +140,7 @@ graph LR
     B -.-> F["/start-side-quest"]
     B -.-> G["/question"]
     B -.-> I["/create-github-issue"]
+    B -.-> J["/note"]
     F --> B
     D -.-> H["/cleanup-issue"]
 ```
@@ -309,6 +310,7 @@ I've used Claude Code on dozens of real issues and kept running into the same fr
 | `/commit-msg <desc>` | Draft a commit message focused on WHY, not WHAT |
 | `/create-github-issue <title-or-path>` | Create a GitHub issue from a scratchpad draft or inline description |
 | `/finish-issue` | Verify work, collect breadcrumbs, check docs, and generate a PR description |
+| `/note <desc>` | Capture a quick note, finding, or result — lightweight `/scratchpad` alternative with no foundation skill dependencies |
 | `/question <topic>` | Surface design decisions as a structured Q&A file you edit in-place |
 | `/scratchpad <desc>` | Create a working document — plans, analysis, PR drafts, anything temporary |
 | `/start-issue <url>` | Analyze a GitHub issue, create a branch, and produce an implementation plan |
