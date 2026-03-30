@@ -61,7 +61,7 @@ SKILL="$PROJECT_ROOT/skills/file-placement/SKILL.md"
 }
 
 @test "file-placement skill: notes reference /note skill" {
-  grep '\.claude-work/notes/' "$SKILL" | grep -q '/note'
+  grep '\.claude-work/notes/' "$SKILL" | grep -q '`/note`'
 }
 
 @test "file-placement skill: issue breadcrumbs route to .claude-work/issues/<ID>/breadcrumb.md" {
