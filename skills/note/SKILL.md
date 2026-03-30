@@ -11,12 +11,16 @@ Capture a note, finding, or result in a lightweight timestamped file. Use this i
 
 **Input:** $ARGUMENTS (a short description for the filename)
 
-## Step 1: Determine Target Directory
+## Step 1: Determine Target Directory and Timestamp
 
-Read the current branch:
+Run both commands as parallel tool calls — they are independent:
 
 ```bash
 git branch --show-current
+```
+
+```bash
+date +%Y%m%d-%H%M%S
 ```
 
 If the branch starts with `issues/`, extract the issue number (characters after `issues/` up to the first `-` or `_`, only if those characters are purely numeric; otherwise use the full string after `issues/`):
@@ -32,11 +36,7 @@ mkdir -p <target-directory>
 
 ## Step 2: Generate Filename
 
-Build the filename using a timestamp and a slug derived from $ARGUMENTS:
-
-```bash
-date +%Y%m%d-%H%M%S
-```
+Build the filename using the timestamp from Step 1 and a slug derived from $ARGUMENTS:
 
 Slug rules: lowercase $ARGUMENTS, replace spaces and special characters with hyphens, collapse consecutive hyphens, trim leading/trailing hyphens. Keep it under 50 characters.
 
