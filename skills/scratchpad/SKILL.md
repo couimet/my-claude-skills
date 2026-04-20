@@ -12,18 +12,43 @@ Create or update a working document in `.claude-work/`.
 
 **Input:** $ARGUMENTS (a short description for the filename)
 
-## Directory and Numbering
+## Step 1: Determine Target Directory and Filename
 
-Follow the `/issue-context` skill to determine the target directory and `NNNN` file sequence number. The type subdirectory is `scratchpads/`.
+Run both commands as parallel tool calls — they are independent:
 
-- Issue-scoped: `.claude-work/issues/<ID>/scratchpads/NNNN-description.txt`
-- Flat (no issue context): `.claude-work/scratchpads/NNNN-description.txt`
+```bash
+git branch --show-current
+```
 
-## Naming Pattern
+```bash
+skills/ensure-gitignore/ensure-gitignore.sh
+```
 
-The filename is `NNNN-description.txt` where `NNNN` comes from `/issue-context` auto-numbering.
+### Target directory
 
-Derive the description slug from $ARGUMENTS (lowercase, hyphens, no special chars).
+If the branch starts with `issues/`, extract the issue ID (characters after `issues/` up to the first `-` or `_`, only if those characters are purely numeric; otherwise use the full string after `issues/`):
+
+- **On an issue branch:** `.claude-work/issues/<ID>/scratchpads/`
+- **Otherwise:** `.claude-work/scratchpads/`
+
+### Sequence number
+
+Run:
+
+```bash
+skills/auto-number/auto-number.sh <target-directory> --glob "*.txt" --width 4 --mkdir
+```
+
+Use the stdout (e.g., `0001`) as the `NNNN` value. The `--mkdir` flag creates the directory if it does not exist, so the script works on a fresh checkout.
+
+### Filename
+
+`<target-directory>/NNNN-<slug>.txt` where `<slug>` is derived from $ARGUMENTS (lowercase, replace spaces and special characters with hyphens, collapse consecutive hyphens, trim leading/trailing hyphens).
+
+Examples:
+
+- `.claude-work/issues/332/scratchpads/0001-implementation-plan.txt`
+- `.claude-work/scratchpads/0042-refactoring-analysis.txt`
 
 ## File Format
 

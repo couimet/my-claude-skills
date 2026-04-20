@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.04.20
+
+### Fixed
+
+- `/question`, `/scratchpad`, and `/commit-msg` now reliably produce unique `NNNN-` prefixes when used outside an `issues/*` branch; the skills inline branch detection and the `auto-number.sh` call instead of delegating to `/issue-context`, closing a gap where the delegation chain was sometimes shortcut and every flat-root file ended up with the same `0001-` prefix ([issues/119](https://github.com/couimet/my-claude-skills/issues/119))
+
 ## 2026.03.29
 
 ### Added
