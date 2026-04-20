@@ -4,6 +4,14 @@ load test_helper
 
 SKILL="$PROJECT_ROOT/skills/question/SKILL.md"
 
+setup() {
+  TEST_TEMP_DIR="$(mktemp -d)"
+  [ -f "$SKILL" ] || {
+    echo "SKILL file not found: $SKILL" >&2
+    return 1
+  }
+}
+
 # =============================================================
 # Self-contained: no foundation skill cross-references
 # =============================================================

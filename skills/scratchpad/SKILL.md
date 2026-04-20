@@ -14,7 +14,7 @@ Create or update a working document in `.claude-work/`.
 
 ## Step 1: Determine Target Directory and Filename
 
-Run both commands as parallel tool calls — they are independent:
+Run these two commands as parallel tool calls — they are independent. The `auto-number.sh` invocation in the "Sequence number" section below is NOT parallel with these; it must run afterward because it takes the branch-derived target directory as input.
 
 ```bash
 git branch --show-current
@@ -26,7 +26,16 @@ skills/ensure-gitignore/ensure-gitignore.sh
 
 ### Target directory
 
-If the branch starts with `issues/`, extract the issue ID (characters after `issues/` up to the first `-` or `_`, only if those characters are purely numeric; otherwise use the full string after `issues/`):
+If the branch starts with `issues/`, extract the issue ID: take the characters after `issues/` up to the first `-` or `_`, but only if those characters are purely numeric. Otherwise the ID is the full string after `issues/`.
+
+Examples:
+
+- `issues/332` → ID is `332`
+- `issues/332-add-parser` → ID is `332`
+- `issues/rfc-auth` → ID is `rfc-auth` (not purely numeric before `-`)
+- `main`, `side-quest/foo`, `feature/bar` → no issue context
+
+Target directory:
 
 - **On an issue branch:** `.claude-work/issues/<ID>/scratchpads/`
 - **Otherwise:** `.claude-work/scratchpads/`
