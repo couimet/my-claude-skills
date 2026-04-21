@@ -8,9 +8,9 @@ cover_image:
 
 ## Something was off
 
-A few weeks after shipping [From Vide Coding to Supercharged Vibe Guiding](https://dev.to/couimet/from-vide-coding-to-supercharged-vibe-guiding-6nm), I noticed my Claude Code sessions were burning context faster than before. Every plan still got reviewed, every commit still got drafted before firing. The guardrails were intact. But conversations that should have been cheap felt expensive.
+A few weeks after shipping [From Vide Coding to Supercharged Vibe Guiding](https://dev.to/couimet/from-vide-coding-to-supercharged-vibe-guiding-6nm), I landed [pull/121](https://github.com/couimet/my-claude-skills/pull/121) — a follow-up refactor that made `/scratchpad`, `/question`, and `/commit-msg` "self-contained" by inlining a foundation skill's logic into each of them. I was expecting lighter sessions afterwards. I couldn't tell if I got them. The next refactor on my list was "inline more of these foundations," and I realized I was about to ship it on the same instinct.
 
-I had a theory. Too much DRY. I'd spent weeks extracting shared rules into "foundation" skills: `/code-ref` for code-link format, `/github-ref` for issue-URL format, `/issue-context` for figuring out which directory a scratchpad should go in. Those foundations got auto-consulted by Claude constantly. My working assumption was that the cross-references themselves were the cost. Inline the rules, kill the foundations, buy the tokens back.
+My theory at that point, the one driving both refactors, was that the foundation skills were what cost too much. `/code-ref` for code-link format, `/github-ref` for issue-URL format, `/issue-context` for figuring out which directory a scratchpad should go in — all auto-consulted by Claude constantly. The working assumption was that the cross-references themselves were the tax. Inline the rules, kill the foundations, buy the tokens back.
 
 I was wrong. Not about there being a cost. About which cost.
 
@@ -86,7 +86,7 @@ Claude dropped a timestamped report in `/tmp/`. I read it cold. The executive su
 
 > The largest recurring cost in this collection is a self-inflicted duplication of branch-parsing + filename logic inlined into `scratchpad`, `question`, and `commit-msg`.
 
-Translation: my previous refactor, the one I'd done a month earlier to make those three skills "self-contained," had taken about 35 lines of branch-parsing Markdown out of a shared foundation and pasted it into each caller. The goal was to stop paying for the foundation's auto-consultation. The outcome? The foundation was still auto-consulted (its description line advertised itself for exactly that workflow) and the same logic was now inlined in three places. Worst of both worlds. The drift had already started too. The foundation's examples list no longer matched the inlined copies.
+A month earlier I'd refactored those three skills to make them "self-contained" — taken about 35 lines of branch-parsing Markdown out of a shared foundation and pasted the same block into each caller. The idea was to stop paying for the foundation's auto-consultation. What actually happened: the foundation kept auto-consulting anyway (its description line advertised itself for exactly that workflow), the same logic was now sitting in three places, and the copies had already started drifting. The foundation's examples list didn't match the inlined copies and I hadn't noticed. So I was paying twice and getting worse documentation out of it.
 
 ## My hypothesis was backwards
 
@@ -94,29 +94,27 @@ I had assumed DRY-via-cross-references costs tokens. The data said something sha
 
 The audit pointed at two skills I'd actually built correctly and never thought about again: `/auto-number` and `/ensure-gitignore`. Both are foundation skills whose SKILL.md just documents a shell-script contract. The script does the work. Claude calls it and reads one line of stdout. Zero reasoning burned per invocation.
 
-That was the pattern I should have been extending. Not inlining the Markdown further. Replacing the Markdown entirely with a script.
+That was the pattern I should have been extending. The last refactor went the wrong direction — it added more Markdown where it should have replaced Markdown with a script.
 
 ## What the audit found
 
 Findings in my paraphrase, ranked by how often the cost is paid:
 
-F1, per-invocation bleed. The branch-parsing + filename block inlined into `/scratchpad`, `/question`, and `/commit-msg`. Paid every time any of them fires, plus transitively when `/start-issue`, `/tackle-scratchpad-block`, `/finish-issue`, and `/tackle-pr-comment` invoke them.
+**F1, per-invocation bleed.** The branch-parsing + filename block inlined into `/scratchpad`, `/question`, and `/commit-msg`. Paid every time any of them fires, plus transitively when `/start-issue`, `/tackle-scratchpad-block`, `/finish-issue`, and `/tackle-pr-comment` invoke them.
 
-F2, per-session surtax. A three-line "Output Format" epilogue (hard-wrap rule, code-reference rule, GitHub-URL rule) copy-pasted into 11 skills. Two existing foundations (`/code-ref`, `/github-ref`) already covered the same rules.
+**F2, per-session surtax.** A three-line "Output Format" epilogue (hard-wrap rule, code-reference rule, GitHub-URL rule) copy-pasted into 11 skills. Two existing foundations (`/code-ref`, `/github-ref`) already covered the same rules.
 
-F3, structural debt. `/issue-context` was in a halfway state. Its content had drifted from the inlined copies. A direction had to be picked and finished.
+**F3, structural debt.** `/issue-context` was in a halfway state. Its content had drifted from the inlined copies. A direction had to be picked and finished.
 
-F4, per-session surtax. The two longest skill descriptions (`/scratchpad` at 316 chars, `/tackle-scratchpad-block` at 275) loaded into the catalog on every session, even when neither was invoked.
+**F4, per-session surtax.** The two longest skill descriptions (`/scratchpad` at 316 chars, `/tackle-scratchpad-block` at 275) loaded into the catalog on every session, even when neither was invoked.
 
-F5, structural debt verging on bleed. The step-JSON schema redrawn in five places instead of once.
-
-The audit also flagged a few things that weren't about token cost but were worth knowing. `/tackle-scratchpad-block` runs with a broad `Bash(*)` permission (acknowledged but still broad). Status-transition edits rely on step titles being unique. And `MEMORY.md` referenced a `/prose-style` skill that didn't actually exist. The symlink in `~/.claude/skills/prose-style` had been pointing at a non-existent directory for months. I had no idea.
+**F5, structural debt verging on bleed.** The step-JSON schema redrawn in five places instead of once.
 
 ## The pivot
 
-Before touching any skill, I answered six scoping questions in a `/question` file and the Claude session I was working with read them back before making any edits. One question mattered more than the others. Q002 asked whether to pick *delete-and-script*, *delete-and-inline-more*, *restore-the-foundation*, or *status quo* for `/issue-context`.
+Before any edits, I worked through six scoping questions in a `/question` file and had the Claude session read them back. One question carried most of the weight: pick *delete-and-script*, *delete-and-inline-more*, *restore-the-foundation*, or *status quo* for `/issue-context`.
 
-I picked the script route. The audit's template was sitting right there. If `/auto-number` can collapse "scan this directory, find the highest number, add one, zero-pad it" into one Bash call, then "read the branch, extract the issue ID, decide where the file goes, slugify the description, and auto-number it" can collapse the same way.
+I picked the script route. I'd already done it twice. `/auto-number` collapses "scan this directory, find the highest number, add one, zero-pad it" into one Bash call. `/ensure-gitignore` collapses "read the file, check for the sentinel, append if missing" the same way. "Read the branch, extract the issue ID, decide where the file goes, slugify the description, and auto-number it" is the same shape of problem.
 
 I called it `target-path.sh`. One call, one line of stdout:
 
@@ -138,13 +136,13 @@ Use the stdout of the first command as the full file path.
 
 The `/issue-context` foundation went from 118 lines of branch-parsing prose to 30 lines that just document the script's contract.
 
-For F2, I folded the hard-wrap rule plus the two reference-format rules into a single new `/prose-style` foundation. Then I deleted the epilogues from all 11 callers and replaced each with a one-line pointer: `Formatting: see /prose-style`. The standalone `/code-ref` and `/github-ref` foundations got folded into `/prose-style` too, then deleted. Side effect: that dangling symlink at `~/.claude/skills/prose-style` finally had something to point at.
+For F2, I folded the hard-wrap rule plus the two reference-format rules into a single new `/prose-style` foundation. Then I deleted the epilogues from all 11 callers and replaced each with a one-line pointer: `Formatting: see /prose-style`. The standalone `/code-ref` and `/github-ref` foundations got folded into `/prose-style` too, then deleted. Side effect: a dangling symlink at `~/.claude/skills/prose-style` that had been pointing at a non-existent directory for months finally had something to point at. I hadn't noticed it was broken.
 
 F4 (descriptions) and F5 (JSON schema redrawn) were one-shot edits. Shrink two descriptions. Replace three inline JSON blocks with references to the authoritative schema in `/scratchpad`.
 
 ## What this saves in tokens
 
-Counting SKILL.md content only, the before state was roughly 25,600 tokens and the after state is roughly 23,100. About 2,500 tokens lighter, call it 10%. (Treat every token count here as a ~4-chars-per-token ballpark, not a microbenchmark.)
+Counting SKILL.md content only, the before state was roughly 25,600 tokens and the after state is roughly 21,500. About 4,100 tokens lighter, call it 16%. (Treat every token count here as a ~4-chars-per-token ballpark, not a microbenchmark.)
 
 That number doesn't really land until you multiply it by a day.
 
@@ -152,17 +150,17 @@ On a typical full-time coding day I run this loop 25+ times: plan via `/scratchp
 
 Before the refactor, every one of those cycles paid the audit's bill. Roughly 140 tokens of branch-parsing Markdown re-reasoned per `/scratchpad` call, the same pattern on `/question` and `/commit-msg`, and the `/issue-context` foundation body pulled in by description match whenever any of them fired. Call it 500 to 1,000 tokens per cycle in duplicated logic, conservatively.
 
-Multiply by 25 cycles and the refactor buys back somewhere in the tens of thousands of tokens a day. Double that on a heavy iteration day. The 2,500 tokens I shaved off the static diff is the boring headline; the number that actually changes my workday is closer to 25,000 to 50,000 tokens of context I'm not burning on the same deterministic logic over and over. Sessions stay in their 5-minute prompt cache longer. Fewer cycles tip me into a cold read that eats a few hundred milliseconds of wall time. That's the cost I was actually feeling.
+Multiply by 25 cycles and the refactor buys back somewhere in the tens of thousands of tokens a day. Double that on a heavy iteration day. The 4,100 tokens I shaved off the static diff is the boring headline; the number that actually changes my workday is closer to 25,000 to 50,000 tokens of context I'm not burning on the same deterministic logic over and over. Whether I'd actually feel that in practice, I can't honestly say — token consumption is hard to predict when you're not deep in the guts of how these systems load context. The real move, the one I should have started with, is to measure often and keep optimizing for whatever actually shows up in the measurements.
 
 ## What I'd tell past-me
 
-"DRY is good" and "DRY costs tokens" are both wrong. The question is whether the logic you're deduplicating is deterministic. If it is, Markdown is the wrong container. A shell script is the right one. The three scripts that now carry the load in this collection (`auto-number.sh`, `ensure-gitignore.sh`, and now `target-path.sh`) each return one line of stdout and let Claude spend its reasoning on the parts that actually need reasoning.
+"DRY is good" and "DRY costs tokens" are both slogans, and both miss the point. What matters is whether the logic you're trying to deduplicate is deterministic. When it is, Markdown's the wrong container — you want a script that returns one line of stdout, so Claude can spend its reasoning on the part that actually needs it. The three scripts carrying the load here (`auto-number.sh`, `ensure-gitignore.sh`, and now `target-path.sh`) all fit that shape.
 
-The halfway migration is the one that really bit me. My previous refactor inlined three skills but left the foundation in place. For a month I'd been paying both bills. If I'd either finished the inlining or fully reverted, the cost would have been lower than what I actually had.
+The halfway migration is what really bit me. My previous refactor inlined three skills and left the foundation in place, and for a month I was paying both bills without realizing it. Committing to either direction would have been cheaper than the in-between state I actually shipped.
 
-And a note about running the audit itself. If I'd done it myself I'd have confirmed my hypothesis and doubled down on inlining — the same mistake that caused the cost in the first place. Telling a fresh Claude session explicitly what *not* to look at was the cheapest way to get out of my own framing. Feels obvious in hindsight. Wasn't obvious at the time.
+One more thing about the audit itself. If I'd run it myself I'd have confirmed my hypothesis and doubled down on inlining — the same move that caused the problem in the first place. Pointing a fresh Claude session explicitly at what *not* to look at was the cheapest way I had to step outside my own framing. Obvious in hindsight. Wasn't at the time.
 
-Which leads to the last decision in this refactor: I deleted my own `/audit-efficiency` skill too. Keeping it made no sense once the audit was done — its HIGH/MEDIUM/LOW framing and pre-picked category list had been part of the bias the cold audit sidestepped. Leaving it in the repo meant the next time I ran an audit I'd reach for the version I'd already proven was worse. The prompt from this post now lives at [docs/run-an-audit.md](https://github.com/couimet/my-claude-skills/blob/main/docs/run-an-audit.md) instead — not a skill, just a prompt to paste into a fresh session. That's the whole "operational artifact" now.
+Which leads to the last decision in this refactor: I deleted my own `/audit-efficiency` skill. Once the cold audit proved the in-repo one produced a worse report, keeping the biased version around guaranteed I'd reach for it next time. The prompt from this post replaces it at [docs/run-an-audit.md](https://github.com/couimet/my-claude-skills/blob/main/docs/run-an-audit.md) — a file you paste from, not a skill you invoke. That's the whole operational artifact now.
 
 ## If you want to try this
 
