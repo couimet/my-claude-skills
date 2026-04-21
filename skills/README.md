@@ -11,17 +11,26 @@
 | `commit-msg` | `/commit-msg <desc>` | Creates `.claude-work/commit-msgs/NNNN-description.txt` |
 | `breadcrumb` | `/breadcrumb <note>` | Appends timestamped note to `.claude-work/issues/<ID>/breadcrumb.md` |
 
-## Non-Invocable Skills (auto-consulted by Claude)
+## Non-Invocable Skills
+
+Non-invocable skills (`user-invocable: false`) don't appear in the `/` menu. They load into Claude's context two different ways, so the table below splits them by mechanism.
+
+### Auto-consulted skills (description matches task → body loads as context)
 
 | Skill | Purpose |
 | --- | --- |
-| `auto-number` | Reusable file sequence numbering with prefix (`NNNN-name`) and suffix (`name-NNNN`) modes. Called by `target-path.sh` and directly by skills that need the next number in a directory. |
-| `ensure-gitignore` | Checks that `.gitignore` contains the Claude working directory sentinel and appends it if missing. One Bash call — no file contents loaded into context. Called directly by `/question`, `/scratchpad`, `/commit-msg`. |
-| `file-placement` | Decision tree for where to put different file types. Claude auto-consults when deciding output locations. |
-| `issue-context` | Thin pointer skill for `target-path.sh` — the shell script that resolves `.claude-work/` file paths from the current git branch. Not auto-consulted; referenced by contract. |
-| `label-discovery` | Fetches GitHub labels, classifies them as defaults vs structured, and prompts the user for selection. Auto-consulted by `/create-github-issue`. |
-| `prose-style` | Canonical prose and reference formatting rules — hard-wrap rule, code-reference syntax, GitHub-reference syntax. Auto-consulted whenever a skill produces file content. |
-| `scratchpad-ref-format` | Defines the 4 invocation forms for referencing scratchpad steps (`#S`, `#L`, space-separated, bare-path auto-select). Auto-consulted by `/tackle-scratchpad-block` when parsing its argument. |
+| `/file-placement` | Decision tree for where to put different file types. Claude auto-consults when deciding output locations. |
+| `/label-discovery` | Fetches GitHub labels, classifies them as defaults vs structured, and prompts the user for selection. Auto-consulted by `/create-github-issue`. |
+| `/prose-style` | Canonical prose and reference formatting rules — hard-wrap rule, code-reference syntax, GitHub-reference syntax. Auto-consulted whenever a skill produces file content. |
+| `/scratchpad-ref-format` | Defines the 4 invocation forms for referencing scratchpad steps (`#S`, `#L`, space-separated, bare-path auto-select). Auto-consulted by `/tackle-scratchpad-block` when parsing its argument. |
+
+### Script-backed / reference-only skills (invoked via Bash or referenced by explicit contract)
+
+| Skill | Purpose |
+| --- | --- |
+| `/auto-number` | Reusable file sequence numbering with prefix (`NNNN-name`) and suffix (`name-NNNN`) modes. Called by `target-path.sh` and directly by skills that need the next number in a directory. |
+| `/ensure-gitignore` | Checks that `.gitignore` contains the Claude working directory sentinel and appends it if missing. One Bash call — no file contents loaded into context. Called directly by `/question`, `/scratchpad`, `/commit-msg`. |
+| `/issue-context` | Thin pointer skill for `target-path.sh` — the shell script that resolves `.claude-work/` file paths from the current git branch. Not auto-consulted; referenced by contract. |
 
 ## Composite Skills (higher-level workflows)
 
@@ -37,7 +46,7 @@
 
 ## Architecture
 
-**Two-tier design:** Foundation skills define standalone conventions (file formats, numbering, placement rules). Composite skills orchestrate workflows by referencing foundations by name — they never inline foundation definitions.
+**Two-tier design:** Foundation skills define standalone conventions (file formats, numbering, placement rules). Composite skills orchestrate workflows by referencing foundations by name. In rare cases where a composite needs only a two-line foundation detail, it may deliberately inline that rule rather than cross-reference — the current example is `/cleanup-issue`, which inlines the branch-parsing rule instead of pulling in a foundation for it.
 
 **Non-invocable skills** (`user-invocable: false`) don't appear in the `/` menu but their descriptions load into Claude's context. Claude auto-consults them when the context matches (e.g., generating code references, deciding where to put files).
 

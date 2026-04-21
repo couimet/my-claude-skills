@@ -26,6 +26,14 @@ Extract the issue ID from the `issues/<ID>` pattern (numeric prefix before the f
 
 - Print: "No issue context found. Provide an issue number: `/cleanup-issue 42`"
 
+### Validate the ID
+
+Before proceeding, the extracted ID MUST match `^[A-Za-z0-9._-]+$`. If it contains slashes, whitespace, shell metacharacters, or path-traversal sequences (`..`, `/`, spaces, `*`, `$`, backticks, etc.), STOP immediately:
+
+- Print: "Refusing to proceed: extracted issue ID `<ID>` contains unsafe characters. Expected `[A-Za-z0-9._-]+`."
+
+This is a hard guard: the ID is interpolated into `rm -rf .claude-work/issues/<ID>` in Step 4, and an unsanitized value (e.g. `..` or one with embedded path separators) could delete the wrong directory. Fail closed on any surprise.
+
 ## Step 2: Check for Issue Directory
 
 Check if the issue directory exists:
@@ -65,6 +73,8 @@ AskUserQuestion(
 - **Keep** → print "Keeping `.claude-work/issues/<ID>/` untouched." and STOP
 
 ### Delete
+
+Only reached if the ID passed the whitelist check in Step 1. Do not run this step otherwise.
 
 ```bash
 rm -rf .claude-work/issues/<ID>

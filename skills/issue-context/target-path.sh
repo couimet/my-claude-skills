@@ -9,7 +9,8 @@
 #   --type         "scratchpads", "questions", or "commit-msgs" (required)
 #   --description  Free-form text for the slug (required; will be lowercased +
 #                  hyphenated)
-#   --ext          File extension without the dot. Default: txt
+#   --ext          File extension without the dot. Alphanumeric only (e.g.
+#                  txt, md, json). Default: txt
 #
 # Output (single line on stdout):
 #   The full path of the next numbered file for the current branch context,
@@ -42,6 +43,7 @@ readonly ERR_MISSING_ARG="T001"
 readonly ERR_UNKNOWN_FLAG="T002"
 readonly ERR_INVALID_TYPE="T100"
 readonly ERR_BRANCH_DETECT="T101"
+readonly ERR_INVALID_EXT="T102"
 
 # --- Defaults ---
 type_arg=""
@@ -93,6 +95,16 @@ esac
 # --- Validate description ---
 if [ -z "$description" ]; then
   echo "target-path $ERR_MISSING_ARG error: --description is required" >&2
+  exit 1
+fi
+
+# --- Validate ext ---
+# Whitelist only bare alphanumeric extensions (txt, md, json, yaml, etc.).
+# Reject dots, slashes, whitespace, glob characters, and shell metacharacters
+# so the value can't be used to escape the target directory or inject via the
+# glob pattern we pass to auto-number.sh.
+if ! [[ "$ext" =~ ^[A-Za-z0-9]+$ ]]; then
+  echo "target-path $ERR_INVALID_EXT error: invalid --ext '$ext' (expected alphanumeric characters only)" >&2
   exit 1
 fi
 

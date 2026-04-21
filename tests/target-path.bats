@@ -59,6 +59,9 @@ teardown() {
 # ============================================================================
 
 @test "main branch → flat-root placement" {
+  # Force the branch name so the test is deterministic regardless of the host's
+  # init.defaultBranch setting (which may be master, main, trunk, etc.).
+  git checkout -q -B main
   run "$SCRIPT" --type scratchpads --description "Hello world"
   [ "$status" -eq 0 ]
   [ "$output" = ".claude-work/scratchpads/0001-hello-world.txt" ]
@@ -108,9 +111,57 @@ teardown() {
 # ============================================================================
 
 @test "--ext overrides default txt extension" {
+  git checkout -q -B main
   run "$SCRIPT" --type scratchpads --description "Config" --ext json
   [ "$status" -eq 0 ]
   [ "$output" = ".claude-work/scratchpads/0001-config.json" ]
+}
+
+@test "--ext md still works alongside json" {
+  git checkout -q -B main
+  run "$SCRIPT" --type scratchpads --description "Doc" --ext md
+  [ "$status" -eq 0 ]
+  [ "$output" = ".claude-work/scratchpads/0001-doc.md" ]
+}
+
+# ============================================================================
+# --ext validation: reject anything that isn't pure alphanumeric
+# ============================================================================
+
+@test "--ext with dots (..) errors with T102" {
+  run "$SCRIPT" --type scratchpads --description "x" --ext ".."
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"T102"* ]]
+}
+
+@test "--ext with path separator errors with T102" {
+  run "$SCRIPT" --type scratchpads --description "x" --ext "foo/bar"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"T102"* ]]
+}
+
+@test "--ext with whitespace errors with T102" {
+  run "$SCRIPT" --type scratchpads --description "x" --ext "foo bar"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"T102"* ]]
+}
+
+@test "--ext with glob character errors with T102" {
+  run "$SCRIPT" --type scratchpads --description "x" --ext "*"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"T102"* ]]
+}
+
+@test "--ext with shell metacharacter errors with T102" {
+  run "$SCRIPT" --type scratchpads --description "x" --ext '$(whoami)'
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"T102"* ]]
+}
+
+@test "--ext with hyphen (not alphanumeric) errors with T102" {
+  run "$SCRIPT" --type scratchpads --description "x" --ext "tar-gz"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"T102"* ]]
 }
 
 # ============================================================================
