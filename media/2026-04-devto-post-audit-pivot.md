@@ -8,7 +8,7 @@ cover_image:
 
 ## Something was off
 
-A few weeks after shipping [From Vide Coding to Supercharged Vibe Guiding](./2026-03-devto-post-vide-coding.md), I noticed my Claude Code sessions were burning context faster than before. Every plan still got reviewed, every commit still got drafted before firing. The guardrails were intact. But conversations that should have been cheap felt expensive.
+A few weeks after shipping [From Vide Coding to Supercharged Vibe Guiding](https://dev.to/couimet/from-vide-coding-to-supercharged-vibe-guiding-6nm), I noticed my Claude Code sessions were burning context faster than before. Every plan still got reviewed, every commit still got drafted before firing. The guardrails were intact. But conversations that should have been cheap felt expensive.
 
 I had a theory. Too much DRY. I'd spent weeks extracting shared rules into "foundation" skills: `/code-ref` for code-link format, `/github-ref` for issue-URL format, `/issue-context` for figuring out which directory a scratchpad should go in. Those foundations got auto-consulted by Claude constantly. My working assumption was that the cross-references themselves were the cost. Inline the rules, kill the foundations, buy the tokens back.
 
