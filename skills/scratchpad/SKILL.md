@@ -12,6 +12,10 @@ Create or update a working document in `.claude-work/`.
 
 **Input:** $ARGUMENTS (a short description for the filename)
 
+## Output format rule (read before writing anything)
+
+**Every paragraph in the scratchpad is ONE continuous line.** No line breaks at 72, 80, or any fixed column. Use line breaks only for structural separation: between paragraphs, before/after lists, around code blocks, between sections. This overrides your default instinct to wrap long prose. See `/prose-style` for the full rationale.
+
 ## Step 1: Resolve the Target Path
 
 Run these two commands as parallel tool calls — they are independent.
@@ -87,9 +91,13 @@ Step-level fields (inside each `steps` entry):
 - **`tasks`** — Array of concrete action items within the step.
 - **`addresses`** — (tackle-pr-comment only) Array of feedback item letters, e.g. `["A", "C"]`.
 
+## After writing: self-check for hard-wrapping
+
+Before reporting the filepath back to the user, re-read the scratchpad you just wrote. For each paragraph in the body (text between blank lines, outside code blocks, tables, and lists), verify it is a single continuous line. If you find a mid-sentence line break, rewrite that paragraph as one line. Do not skip this check — wrapped prose is the most common failure mode for skill-generated files.
+
 ## Formatting
 
-See `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
+See `/prose-style` for code-reference and GitHub-reference rules. The hard-wrap rule is covered above.
 
 ## Questions Trigger
 

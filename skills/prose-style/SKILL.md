@@ -10,11 +10,15 @@ allowed-tools: Bash(gh repo view *)
 
 Single source of truth for how skill-generated text is written. Three rules, all of which previously lived as three-line epilogues copied into every user-invocable skill.
 
-## Rule 1: No hard wrapping
+## Rule 1: Each paragraph is one continuous line
 
-Never break prose at 72, 80, or any fixed column. Each paragraph or logical block is one continuous line. Use line breaks for *structure* only — between paragraphs, before/after lists, between sections, around code blocks.
+**Write each paragraph as ONE continuous line, no matter how long.** Use line breaks for *structure* only — between paragraphs, before/after lists, between sections, around code blocks. Do NOT insert line breaks at 72, 80, or any fixed column to make the text "look nicer." Your default instinct will be to wrap; override it.
 
 This applies to every file a skill produces: scratchpads, questions, commit messages, PR descriptions, notes, breadcrumbs, CHANGELOG entries, article drafts.
+
+### Self-check before you finish
+
+Before reporting a file path back to the user, re-read the file you just wrote. For each paragraph (text between blank lines, not inside a code block or table), verify it is a single continuous line. If you find any mid-sentence line break, rewrite that paragraph as one line. This check is cheap and catches the most common failure mode.
 
 ## Rule 2: Code references
 

@@ -12,6 +12,10 @@ Create a commit message file in `.claude-work/`. The user reviews and runs `git 
 
 **Input:** $ARGUMENTS (a short description for the filename)
 
+## Output format rule (read before writing anything)
+
+**Every paragraph in the body is ONE continuous line.** No line breaks at 72, 80, or any fixed column. Use line breaks only for structural separation: between paragraphs, before/after the Benefits list, around code blocks. This overrides your default instinct to wrap long prose. See `/prose-style` for the full rationale.
+
 ## Core Principle
 
 Focus on **WHY**, not **WHAT**. The git diff already shows what changed — the commit message explains the motivation, the problem being solved, and the benefits. Message depth should scale with the cognitive load of the change — not every commit needs a body or Benefits section.
@@ -90,5 +94,6 @@ Formatting: see `/prose-style` for hard-wrap and GitHub-reference rules.
 
 1. Assess the change complexity (trivial, moderate, or substantial)
 2. Create the file using the matching tier format
-3. Print the filepath in terminal
-4. Do NOT run `git commit` — the user reviews and commits manually
+3. **Self-check for hard-wrapping.** Re-read the file you just wrote. For each paragraph in the body (text between blank lines, outside code blocks and the Benefits bullet list), verify it is a single continuous line. If you find a mid-sentence line break, rewrite that paragraph as one line. This check catches the most common failure — do not skip it.
+4. Print the filepath in terminal
+5. Do NOT run `git commit` — the user reviews and commits manually

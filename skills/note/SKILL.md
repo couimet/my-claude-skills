@@ -49,7 +49,9 @@ Example: `20260329-143022-api-audit-findings.txt`
 
 Write the note content to the file. The format is freeform — structure it however best fits the content being captured. There are no required sections or templates.
 
-The only rule: never hard-wrap prose. Each paragraph is one continuous line; use line breaks for structure only (between paragraphs, before/after lists, around code blocks).
+**The one rule: each paragraph is ONE continuous line.** No line breaks at 72, 80, or any fixed column. Use line breaks only for structural separation (between paragraphs, around lists, around code blocks). Override your default instinct to wrap.
+
+Before printing the path in Step 4, re-read the file and verify no paragraph contains a mid-sentence line break. Rewrite any that do.
 
 ## Step 4: Confirm
 

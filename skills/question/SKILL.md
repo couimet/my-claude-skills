@@ -12,6 +12,10 @@ Create a questions file in `.claude-work/` for gathering user input.
 
 **Input:** $ARGUMENTS (a short topic description for the filename)
 
+## Output format rule (read before writing anything)
+
+**Every paragraph in the questions file — Context, Options text, Recommendation reasoning, etc. — is ONE continuous line.** No line breaks at 72, 80, or any fixed column. Use line breaks only for structural separation: between questions, around the Options block, between fields. This overrides your default instinct to wrap long prose. See `/prose-style` for the full rationale.
+
 ## Core Principle
 
 Questions are NEVER printed in terminal output. They go to a file that the user edits directly. The file is the single source of truth for both questions and answers.
@@ -100,9 +104,10 @@ See `/prose-style` for hard-wrap and GitHub-reference rules.
 ## Process
 
 1. Create the file with questions formatted as above
-2. Print ONLY the filepath in terminal — nothing else
-3. Wait for the user to edit answers in the file
-4. The file is the single source of truth — read it back to get answers
+2. **Self-check for hard-wrapping.** Re-read the file. For each Context, Recommendation, and option description, verify the text is a single continuous line. If you find a mid-sentence line break in any of those fields, rewrite as one line. Do not skip this check.
+3. Print ONLY the filepath in terminal — nothing else
+4. Wait for the user to edit answers in the file
+5. The file is the single source of truth — read it back to get answers
 
 ## When to Use
 
