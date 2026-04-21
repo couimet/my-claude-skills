@@ -8,7 +8,7 @@ cover_image:
 
 ## Something was off
 
-A few weeks after shipping [From Vide Coding to Supercharged Vibe Guiding](https://dev.to/couimet/from-vide-coding-to-supercharged-vibe-guiding-6nm), I landed [pull/121](https://github.com/couimet/my-claude-skills/pull/121) — a follow-up refactor that made `/scratchpad`, `/question`, and `/commit-msg` "self-contained" by inlining a foundation skill's logic into each of them. I was expecting lighter sessions afterwards. I couldn't tell if I got them. The next refactor on my list was "inline more of these foundations," and I realized I was about to ship it on the same instinct.
+A few weeks after publishing [From Vide Coding to Supercharged Vibe Guiding](https://dev.to/couimet/from-vide-coding-to-supercharged-vibe-guiding-6nm), I landed [pull/121](https://github.com/couimet/my-claude-skills/pull/121) — a follow-up refactor that made `/scratchpad`, `/question`, and `/commit-msg` "self-contained" by inlining a foundation skill's logic into each of them. I was expecting lighter sessions afterwards. I couldn't tell if I got them. The next refactor on my list was "inline more of these foundations," and I caught myself about to make the same bet twice — without ever having checked whether the first one paid off.
 
 My theory at that point, the one driving both refactors, was that the foundation skills were what cost too much. `/code-ref` for code-link format, `/github-ref` for issue-URL format, `/issue-context` for figuring out which directory a scratchpad should go in — all auto-consulted by Claude constantly. The working assumption was that the cross-references themselves were the tax. Inline the rules, kill the foundations, buy the tokens back.
 
