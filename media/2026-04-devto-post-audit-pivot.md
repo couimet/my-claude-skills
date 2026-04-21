@@ -170,4 +170,4 @@ The prompt is in the [repo](https://github.com/couimet/my-claude-skills/blob/mai
 
 If you've built your own Claude Code skills and your sessions feel slow, the thing I'd try first is running that audit against them in a fresh session. Tell Claude not to use your own audit skill if you have one — or delete yours too. Read the report cold before you react. The fix might not be more DRY. It might be finishing the move from prose to script.
 
-*Written alongside [the refactor PR itself](https://github.com/couimet/my-claude-skills/pull/) using the same skills it describes.*
+*Written alongside [the refactor PR itself](https://github.com/couimet/my-claude-skills/pull/122) using the same skills it describes.*
