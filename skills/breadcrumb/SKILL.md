@@ -24,7 +24,7 @@ Extract the breadcrumb identifier based on branch pattern:
 
 | Branch pattern | Identifier | Example |
 | --- | --- | --- |
-| `issues/*` | Issue ID per `/issue-context` rules | `issues/332` → `332` |
+| `issues/*` | Issue ID (numeric prefix before `-`/`_`, or full segment after `issues/`) | `issues/332` → `332` |
 | `side-quest/*` | Full slug after `side-quest/` | `side-quest/cleanup-test-mocks` → `cleanup-test-mocks` |
 
 **If branch matches neither pattern:**
@@ -76,8 +76,6 @@ Print a brief confirmation with the file path:
 
 Do NOT print the full file contents — keep it minimal.
 
-## Output Format
+## Formatting
 
-Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
-
-GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
+See `/prose-style` for hard-wrap and GitHub-reference rules.

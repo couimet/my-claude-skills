@@ -24,7 +24,7 @@ When creating a new file, use this decision tree to determine the correct locati
 
 Evaluate from top to bottom. The first matching row determines the destination.
 
-Each skill owns its own file format, naming conventions, and auto-numbering. Consult the referenced skill for specifics. Directory organization (flat vs issue-scoped subdirectories) is determined by the `/issue-context` skill. All ephemeral working files live under `.claude-work/`.
+Each skill owns its own file format, naming conventions, and auto-numbering. Consult the referenced skill for specifics. Directory organization (flat vs issue-scoped subdirectories) is handled by `skills/issue-context/target-path.sh`, which the invocable skills call internally. All ephemeral working files live under `.claude-work/`.
 
 ## Ephemeral Path Rule
 

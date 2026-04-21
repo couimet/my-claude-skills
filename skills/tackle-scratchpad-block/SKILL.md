@@ -1,7 +1,7 @@
 ---
 name: tackle-scratchpad-block
 version: 2026.04.20@5c8d9e9
-description: Execute a single implementation step from a scratchpad plan — transitions step status (pending→in_progress→done), runs tests, and creates a commit message file. The core execution engine of the /start-issue → /tackle-scratchpad-block → /finish-issue workflow chain.
+description: Execute a single step from a scratchpad plan — transitions status, runs tests, creates a commit message. Main execution engine for /start-issue → /finish-issue.
 argument-hint: <path/to/scratchpad.txt [#S00N | S00N | #L10-L20]>
 allowed-tools: Read, Write, Edit, Bash(*), Glob, Grep
 ---

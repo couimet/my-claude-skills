@@ -130,7 +130,7 @@ Note whether a template was found and its path — this is used in Step 5. If no
 
 ## Step 5: Generate PR Description Scratchpad
 
-Use `/scratchpad` to create a working document. The `/issue-context` skill will handle directory placement based on the branch.
+Use `/scratchpad` to create a working document. Directory placement follows the branch automatically.
 
 **Issue mode** — use description: `finish-issue-<ID>`
 
@@ -180,11 +180,7 @@ If side-quest mode:
 - Base branch: <branch this was cut from>
 ```
 
-Code refs: path/to/file.ts#L10-L20 (workspace-relative, no backticks wrapping the ref).
-
-Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
-
-GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
+Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
 
 ## Step 6: Handle Ambiguity
 

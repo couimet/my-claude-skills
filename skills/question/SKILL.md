@@ -3,7 +3,7 @@ name: question
 version: 2026.04.20@5c8d9e9
 description: Create a questions file in .claude-work/questions/ for gathering user input on design decisions. Questions go to file (never terminal) — user edits answers in-file as the single source of truth.
 argument-hint: <topic>
-allowed-tools: Read, Write, Bash(git branch --show-current), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
+allowed-tools: Read, Write, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
 # Question
@@ -16,52 +16,19 @@ Create a questions file in `.claude-work/` for gathering user input.
 
 Questions are NEVER printed in terminal output. They go to a file that the user edits directly. The file is the single source of truth for both questions and answers.
 
-## Step 1: Determine Target Directory and Filename
+## Step 1: Resolve the Target Path
 
-Run these two commands as parallel tool calls — they are independent. The `auto-number.sh` invocation in the "Sequence number" section below is NOT parallel with these; it must run afterward because it takes the branch-derived target directory as input.
+Run these two commands as parallel tool calls — they are independent.
 
 ```bash
-git branch --show-current
+skills/issue-context/target-path.sh --type questions --description "$ARGUMENTS"
 ```
 
 ```bash
 skills/ensure-gitignore/ensure-gitignore.sh
 ```
 
-### Target directory
-
-If the branch starts with `issues/`, extract the issue ID: take the characters after `issues/` up to the first `-` or `_`, but only if those characters are purely numeric. Otherwise the ID is the full string after `issues/`.
-
-Examples:
-
-- `issues/332` → ID is `332`
-- `issues/332-add-parser` → ID is `332`
-- `issues/rfc-auth` → ID is `rfc-auth` (not purely numeric before `-`)
-- `main`, `side-quest/foo`, `feature/bar` → no issue context
-
-Target directory:
-
-- **On an issue branch:** `.claude-work/issues/<ID>/questions/`
-- **Otherwise:** `.claude-work/questions/`
-
-### Sequence number
-
-Run:
-
-```bash
-skills/auto-number/auto-number.sh <target-directory> --glob "*.txt" --width 4 --mkdir
-```
-
-Use the stdout (e.g., `0001`) as the `NNNN` value. The `--mkdir` flag creates the directory if it does not exist, so the script works on a fresh checkout.
-
-### Filename
-
-`<target-directory>/NNNN-<slug>.txt` where `<slug>` is derived from $ARGUMENTS (lowercase, replace spaces and special characters with hyphens, collapse consecutive hyphens, trim leading/trailing hyphens).
-
-Examples:
-
-- `.claude-work/issues/332/questions/0001-api-design.txt`
-- `.claude-work/questions/0003-architecture-options.txt`
+Use the stdout of the first command as the full file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is `.claude-work/issues/<ID>/questions/NNNN-<slug>.txt`; otherwise `.claude-work/questions/NNNN-<slug>.txt`.
 
 ## File Format
 
@@ -126,11 +93,9 @@ When reading answers back, treat any answer still containing `[RECOMMENDED]` as 
 
 Use `Q001`, `Q002` etc. to reference questions and `A001`, `A002` to reference answers — both within the questions file and from other documents (scratchpads, commit messages, etc.).
 
-## Output Format
+## Formatting
 
-Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
-
-GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
+See `/prose-style` for hard-wrap and GitHub-reference rules.
 
 ## Process
 

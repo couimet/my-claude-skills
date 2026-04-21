@@ -1,9 +1,9 @@
 ---
 name: scratchpad
 version: 2026.04.20@5c8d9e9
-description: Create a working document in .claude-work/scratchpads/ with auto-numbered filenames. Use for implementation plans, PR descriptions, analysis notes, architecture decisions, GitHub issue drafts, or any temporary working document. Not for questions (use /question), commit messages (use /commit-msg), or permanent docs.
+description: Create an auto-numbered working document in .claude-work/scratchpads/ — implementation plans, PR descriptions, analysis notes, architecture decisions, issue drafts.
 argument-hint: <description>
-allowed-tools: Read, Write, Glob, Bash(git branch --show-current), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
+allowed-tools: Read, Write, Glob, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
 # Scratchpad
@@ -12,52 +12,19 @@ Create or update a working document in `.claude-work/`.
 
 **Input:** $ARGUMENTS (a short description for the filename)
 
-## Step 1: Determine Target Directory and Filename
+## Step 1: Resolve the Target Path
 
-Run these two commands as parallel tool calls — they are independent. The `auto-number.sh` invocation in the "Sequence number" section below is NOT parallel with these; it must run afterward because it takes the branch-derived target directory as input.
+Run these two commands as parallel tool calls — they are independent.
 
 ```bash
-git branch --show-current
+skills/issue-context/target-path.sh --type scratchpads --description "$ARGUMENTS"
 ```
 
 ```bash
 skills/ensure-gitignore/ensure-gitignore.sh
 ```
 
-### Target directory
-
-If the branch starts with `issues/`, extract the issue ID: take the characters after `issues/` up to the first `-` or `_`, but only if those characters are purely numeric. Otherwise the ID is the full string after `issues/`.
-
-Examples:
-
-- `issues/332` → ID is `332`
-- `issues/332-add-parser` → ID is `332`
-- `issues/rfc-auth` → ID is `rfc-auth` (not purely numeric before `-`)
-- `main`, `side-quest/foo`, `feature/bar` → no issue context
-
-Target directory:
-
-- **On an issue branch:** `.claude-work/issues/<ID>/scratchpads/`
-- **Otherwise:** `.claude-work/scratchpads/`
-
-### Sequence number
-
-Run:
-
-```bash
-skills/auto-number/auto-number.sh <target-directory> --glob "*.txt" --width 4 --mkdir
-```
-
-Use the stdout (e.g., `0001`) as the `NNNN` value. The `--mkdir` flag creates the directory if it does not exist, so the script works on a fresh checkout.
-
-### Filename
-
-`<target-directory>/NNNN-<slug>.txt` where `<slug>` is derived from $ARGUMENTS (lowercase, replace spaces and special characters with hyphens, collapse consecutive hyphens, trim leading/trailing hyphens).
-
-Examples:
-
-- `.claude-work/issues/332/scratchpads/0001-implementation-plan.txt`
-- `.claude-work/scratchpads/0042-refactoring-analysis.txt`
+Use the stdout of the first command as the full file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is `.claude-work/issues/<ID>/scratchpads/NNNN-<slug>.txt`; otherwise `.claude-work/scratchpads/NNNN-<slug>.txt`.
 
 ## File Format
 
@@ -120,15 +87,9 @@ Step-level fields (inside each `steps` entry):
 - **`tasks`** — Array of concrete action items within the step.
 - **`addresses`** — (tackle-pr-comment only) Array of feedback item letters, e.g. `["A", "C"]`.
 
-## Code References
+## Formatting
 
-Code refs: path/to/file.ts#L10-L20 (workspace-relative, no backticks wrapping the ref).
-
-## Output Format
-
-Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
-
-GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
+See `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
 
 ## Questions Trigger
 

@@ -14,7 +14,7 @@ Analyze a GitHub issue, explore the codebase, and create a detailed implementati
 
 ## Step 0: Clean Up Current Issue Artifacts
 
-Before starting new work, use `/issue-context` to detect whether the current branch is `issues/<ID>`. If so, use `Glob(pattern="*", path=".claude-work/issues/<ID>")` to check whether the issue's working directory has contents. If the directory exists and has files, invoke `/cleanup-issue` to offer cleanup of that specific directory. Other issue directories are left untouched -- the user may return to them later.
+Before starting new work, run `git branch --show-current` to detect whether the current branch is `issues/<ID>`. If so, extract the ID (numeric prefix before the first `-`/`_`, or the full segment after `issues/`) and use `Glob(pattern="*", path=".claude-work/issues/<ID>")` to check whether the issue's working directory has contents. If the directory exists and has files, invoke `/cleanup-issue` to offer cleanup of that specific directory. Other issue directories are left untouched — the user may return to them later.
 
 **If no issue context on the current branch, or the directory doesn't exist or is empty:** proceed directly to Step 1.
 
@@ -55,7 +55,7 @@ Where `<NUMBER>` is the GitHub issue number (e.g., `issues/223`) and `<BASE_BRAN
 
 ## Step 4: Create Implementation Plan Scratchpad
 
-Use `/scratchpad` to create a working document. The `/issue-context` skill will handle directory placement based on the branch.
+Use `/scratchpad` to create a working document. Directory placement follows the branch automatically.
 
 The scratchpad for issues MUST contain these sections:
 
@@ -87,53 +87,7 @@ Numbered steps that are:
 - **Ordered** — dependencies between steps are clear
 - **Testable** — each step should mention what tests to add/update. If a step defers testing to a later step, include a task entry: "Do not run tests — deferred to S00N"
 
-Steps are embedded as a fenced JSON block (see `/scratchpad` Step Tracking section for full schema):
-
-```json
-{
-  "finish_issue_on_complete": true,
-  "steps": [
-    {
-      "id": "S001",
-      "title": "<brief description>",
-      "status": "pending",
-      "done_when": "<concrete criteria for this step>",
-      "depends_on": [],
-      "files": ["src/types/<filename>.ts", "src/types/index.ts"],
-      "tasks": [
-        "Add <TypeName> interface to src/types/<filename>.ts",
-        "Export from src/types/index.ts"
-      ]
-    },
-    {
-      "id": "S002",
-      "title": "<brief description>",
-      "status": "pending",
-      "done_when": "<concrete criteria for this step>",
-      "depends_on": ["S001"],
-      "files": ["src/<path>/<filename>.ts"],
-      "tasks": [
-        "Modify <functionName>() in src/<path>/<filename>.ts",
-        "Update return type, add new parameters"
-      ]
-    },
-    {
-      "id": "S003",
-      "title": "<brief description>",
-      "status": "pending",
-      "done_when": "All new functions have test coverage, tests pass",
-      "depends_on": ["S002"],
-      "files": ["src/<path>/__tests__/<filename>.test.ts"],
-      "tasks": [
-        "Add tests in src/<path>/__tests__/<filename>.test.ts",
-        "Cover happy path, edge cases, error conditions"
-      ]
-    }
-  ]
-}
-```
-
-Note: Always set `"status": "pending"` when planning — `/tackle-scratchpad-block` manages status transitions during execution.
+Steps are embedded as a fenced JSON block. See the `/scratchpad` Step Tracking section for the full schema and field reference. For `/start-issue` specifically: set `finish_issue_on_complete: true` at the top level, and always set each step's `status: "pending"` when planning — `/tackle-scratchpad-block` manages status transitions during execution.
 
 ## Files to Modify
 
@@ -154,11 +108,7 @@ Checklist from the issue (copy verbatim if provided).
 
 ````
 
-Code refs: path/to/file.ts#L10-L20 (workspace-relative, no backticks wrapping the ref).
-
-Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
-
-GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
+Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
 
 ## Step 5: Create Questions File (Only If Necessary)
 

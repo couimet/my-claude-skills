@@ -107,8 +107,4 @@ Parent: https://github.com/{OWNER}/{REPO}/issues/{PARENT_NUMBER} (linked as sub-
 Sub-issue linking: failed (<error summary>) — link manually if needed.  ← only if parent specified AND linking failed
 ```
 
-Code refs: path/to/file.ts#L10-L20 (workspace-relative, no backticks wrapping the ref).
-
-Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
-
-GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
+Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.

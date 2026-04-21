@@ -10,6 +10,24 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.04.20.1
+
+### Added
+
+- New `/prose-style` foundation skill consolidating the hard-wrap rule, code-reference format, and GitHub-reference format — previously repeated as three-line epilogues in ~11 skills and split across separate `/code-ref` and `/github-ref` foundations ([issues/120](https://github.com/couimet/my-claude-skills/issues/120))
+- New `skills/issue-context/target-path.sh` shell script — resolves the full `.claude-work/` file path from the current branch in one call, combining branch detection, issue-ID extraction, slug normalization, and auto-numbering ([issues/120](https://github.com/couimet/my-claude-skills/issues/120))
+
+### Changed
+
+- `/scratchpad`, `/question`, and `/commit-msg` now call `target-path.sh` instead of inlining ~35 lines of branch-parsing and auto-numbering Markdown per skill; the deterministic logic moves to a shell script that returns one line of stdout and burns zero reasoning tokens ([issues/120](https://github.com/couimet/my-claude-skills/issues/120))
+- Skill descriptions for `/scratchpad` and `/tackle-scratchpad-block` compressed; step-JSON schema examples stripped from `/start-issue`, `/start-side-quest`, and `/tackle-pr-comment` in favor of a single reference to `/scratchpad`'s Step Tracking section ([issues/120](https://github.com/couimet/my-claude-skills/issues/120))
+
+### Removed
+
+- `/code-ref` and `/github-ref` skills — their content lives in `/prose-style` ([issues/120](https://github.com/couimet/my-claude-skills/issues/120))
+- `/issue-context` Markdown body reduced to a thin script contract — the 118-line foundation no longer auto-consults on every file-creation task ([issues/120](https://github.com/couimet/my-claude-skills/issues/120))
+- `/audit-efficiency` skill — the independent audit that motivated this refactor showed the in-repo skill's HIGH/MEDIUM/LOW framing was itself a source of bias; the replacement is [docs/run-an-audit.md](https://github.com/couimet/my-claude-skills/blob/main/docs/run-an-audit.md), a prompt to paste into a fresh Claude Code session ([issues/120](https://github.com/couimet/my-claude-skills/issues/120))
+
 ## 2026.04.20
 
 ### Fixed

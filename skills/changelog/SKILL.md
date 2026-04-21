@@ -198,8 +198,6 @@ Before placing an entry, scan the target subsection for thematic proximity:
 
 Place the new entry after the last thematic match in the subsection. If no match exists, append at the end.
 
-## Output Format
+## Formatting
 
-Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
-
-GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
+See `/prose-style` for hard-wrap and GitHub-reference rules.

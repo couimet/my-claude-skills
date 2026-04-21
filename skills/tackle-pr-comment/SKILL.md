@@ -80,7 +80,7 @@ Before creating the scratchpad, assess if the feedback is clear enough to act on
 
 ## Step 5: Create Implementation Scratchpad
 
-Use `/scratchpad` to create a working document. The `/issue-context` skill will handle directory placement based on the branch.
+Use `/scratchpad` to create a working document. Directory placement follows the branch automatically.
 
 Use description: `pr-{PR_NUMBER}-{COMMENT_TYPE}-{COMMENT_ID}`
 
@@ -127,40 +127,11 @@ Note: ACCEPT items flow to Implementation Plan steps. IGNORE items flow to the c
 
 ## Implementation Plan
 
-```json
-{
-  "steps": [
-    {
-      "id": "S001",
-      "title": "{description}",
-      "status": "pending",
-      "done_when": "{concrete criteria}",
-      "depends_on": [],
-      "files": ["path/to/file.ts"],
-      "tasks": [
-        "What to change: {details}"
-      ],
-      "addresses": ["A", "C"]
-    },
-    {
-      "id": "S002",
-      "title": "{description}",
-      "status": "pending",
-      "done_when": "{concrete criteria}",
-      "depends_on": ["S001"],
-      "files": ["path/to/file.ts"],
-      "tasks": [
-        "What to change: {details}"
-      ],
-      "addresses": ["B"]
-    }
-  ]
-}
-```
+Embed steps as a fenced JSON block per the `/scratchpad` Step Tracking schema. For PR-comment work:
 
-Note: A single step can address multiple feedback items (as shown in S001 above).
-Feedback items marked IGNORE in the Analysis section should not appear in any step.
-Always set `"status": "pending"` — `/tackle-scratchpad-block` manages status transitions during execution.
+- Omit `finish_issue_on_complete` (it is `false` by default for ad-hoc scratchpads).
+- Add an `addresses` field to each step listing the feedback item letters it resolves (e.g. `"addresses": ["A", "C"]`). A single step may address multiple feedback items.
+- Feedback items marked IGNORE in the Analysis section do not appear in any step.
 
 ## Files to Modify
 
@@ -169,11 +140,7 @@ Always set `"status": "pending"` — `/tackle-scratchpad-block` manages status t
 
 ````
 
-Code refs: path/to/file.ts#L10-L20 (workspace-relative, no backticks wrapping the ref).
-
-Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
-
-GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
+Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
 
 **STOP HERE** - The scratchpad template ends above. Do NOT add commit message sections to scratchpads. Commit messages are created separately in Step 8 (after user approval) using `/commit-msg`.
 

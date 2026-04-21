@@ -57,7 +57,7 @@ Examples:
 
 ## Step 3: Create Implementation Scratchpad
 
-Use `/scratchpad` to create a working document. Since side-quest branches don't match `issues/*`, the scratchpad will be placed in the flat `.claude-work/scratchpads/` directory per `/issue-context` rules.
+Use `/scratchpad` to create a working document. Side-quest branches don't match `issues/*`, so the scratchpad lands in the flat `.claude-work/scratchpads/` directory.
 
 Use description: `side-quest-<slug>`
 
@@ -75,24 +75,7 @@ Origin: <what triggered this - code review, refactoring discovery, etc.>
 
 ## Implementation Plan
 
-```json
-{
-  "finish_issue_on_complete": true,
-  "steps": [
-    {
-      "id": "S001",
-      "title": "<brief description>",
-      "status": "pending",
-      "done_when": "<concrete criteria>",
-      "depends_on": [],
-      "files": ["<file>"],
-      "tasks": [
-        "<action>"
-      ]
-    }
-  ]
-}
-```
+Embed steps as a fenced JSON block per the `/scratchpad` Step Tracking schema. For side-quests: set `finish_issue_on_complete: true` at the top level.
 
 ## Why Split This Out
 
@@ -109,11 +92,7 @@ Brief explanation of why this is orthogonal to the parent work:
 - [ ] Ready for independent PR
 ````
 
-Code refs: path/to/file.ts#L10-L20 (workspace-relative, no backticks wrapping the ref).
-
-Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
-
-GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
+Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
 
 ## Step 4: Create Questions File (Only If Necessary)
 

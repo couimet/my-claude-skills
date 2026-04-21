@@ -1,118 +1,30 @@
 ---
 name: issue-context
-version: 2026.04.20@5c8d9e9
+version: 2026.04.20@f632eaa
 user-invocable: false
-description: Detects issue context from git branch name and determines subdirectory organization for working files. Auto-consulted by foundation skills (/scratchpad, /question, /commit-msg, /breadcrumb) when deciding where to place files.
-allowed-tools: Read, Write, Bash(git branch --show-current), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Glob
+description: Contract for target-path.sh — the shell script that resolves .claude-work/ file paths from the current git branch. Referenced by name from /scratchpad, /question, /commit-msg; not auto-consulted.
+allowed-tools: Bash(*/skills/issue-context/target-path.sh *)
 ---
 
 # Issue Context
 
-Determines file placement based on the current git branch. Foundation skills consult this to organize working files into issue-scoped subdirectories under a single `.claude-work/` directory.
+All deterministic logic for "where should this file go?" lives in `target-path.sh`. Skills that write numbered working files call the script; nothing reasons about branch names in Markdown.
 
-## Branch Detection
-
-Read the current branch:
+## Script contract
 
 ```bash
-git branch --show-current
+skills/issue-context/target-path.sh --type <scratchpads|questions|commit-msgs> --description "<text>" [--ext txt]
 ```
 
-### Extracting the Issue ID
+The script reads the current branch, extracts the issue ID (numeric prefix of the segment after `issues/` when applicable, full segment otherwise, empty on non-issue branches), slugifies the description, runs `auto-number.sh` internally, creates the target directory, and prints the full file path on stdout.
 
-The branch must start with `issues/`. The segment after `issues/` is parsed to extract the ID.
-
-**Rule**: Split on the first `-` or `_` only if the characters before it are purely numeric. Otherwise, the full segment is the ID.
-
-Examples:
-
-- `issues/332` → `332`
-- `issues/332-convert-commands` → `332`
-- `issues/332_convert_commands` → `332`
-- `issues/rangelink-332` → `rangelink-332` (not purely numeric before `-`)
-- `issues/v2-hotfix` → `v2-hotfix` (not purely numeric before `-`)
-
-### No Issue Context
-
-These branch patterns produce no issue context — files use flat root placement:
-
-- `main`, `master`
-- `side-quest/*`
-- `feature/*`, `fix/*`
-- Any branch not starting with `issues/`
-
-## File Placement
-
-Foundation skills (scratchpad, question, commit-msg) use this to determine the target directory. All working files live under `.claude-work/`, organized by type subdirectory.
-
-### When issue context is detected
-
-Files go in a type subdirectory within the issue directory:
-
-```text
-.claude-work/issues/<ID>/<type>/NNNN-description.txt
-```
-
-Where `<type>` is the skill's type subdirectory (`scratchpads/`, `questions/`, `commit-msgs/`).
-
-- The `NNNN` file sequence number is scoped to the type subdirectory (each issue + type combination starts fresh at `0001`)
-
-Examples:
-
-- `.claude-work/issues/332/scratchpads/0001-implementation-plan.txt`
-- `.claude-work/issues/332/questions/0001-api-design.txt`
-- `.claude-work/issues/332/commit-msgs/0001-add-parser.txt`
-
-### When no issue context
-
-Files go in a type subdirectory at the `.claude-work/` root with global numbering:
-
-```text
-.claude-work/<type>/NNNN-description.txt
-```
-
-- The `NNNN` file sequence number is global across all files in the type subdirectory
-
-Examples:
-
-- `.claude-work/scratchpads/0042-refactoring-analysis.txt`
-- `.claude-work/questions/0003-architecture-options.txt`
-
-## Auto-Numbering (`NNNN`)
-
-The `NNNN` file sequence number is always scoped to the target directory. Use `/auto-number` to get the next number -- do not reimplement the algorithm.
-
-1. Determine the target directory using the File Placement rules above
-2. Run `/auto-number` against that directory:
-
-   ```bash
-   skills/auto-number/auto-number.sh <target-directory> --glob "*.txt" --width 4 --mkdir
-   ```
-
-3. Use the script's stdout as the `NNNN` value
+- On `issues/<ID>` branches: `.claude-work/issues/<ID>/<type>/NNNN-<slug>.<ext>`
+- Everywhere else: `.claude-work/<type>/NNNN-<slug>.<ext>`
 
 ## Breadcrumbs
 
-Breadcrumbs use a different pattern — a single file per issue rather than numbered files:
+`/breadcrumb` writes to a single file per issue (not a numbered sequence), so it does not use `target-path.sh`. It detects the branch directly and writes to `.claude-work/issues/<ID>/breadcrumb.md` or `.claude-work/breadcrumb-<slug>.md`.
 
-```text
-.claude-work/issues/<ID>/breadcrumb.md
-```
+## History
 
-When no issue context (side-quests, flat root):
-
-```text
-.claude-work/breadcrumb-<slug>.md
-```
-
-The `/breadcrumb` skill handles this directly, but still uses issue-context for branch detection and ID extraction.
-
-## Ensure `.gitignore`
-
-Foundation skills already consult issue-context for directory placement — this check runs as part of that same consultation. Before creating any ephemeral file, use `/ensure-gitignore` to add the working directory sentinel if missing:
-
-```bash
-skills/ensure-gitignore/ensure-gitignore.sh
-```
-
-The script handles check-and-append atomically in one Bash call. It prints `present` (no change) or `added` (block appended). No file contents are loaded into context.
+Before the refactor in [issues/120](https://github.com/couimet/my-claude-skills/issues/120), this file contained ~118 lines of Markdown that restated the branch-parsing rules in prose — and those same rules were also inlined into `/scratchpad`, `/question`, and `/commit-msg`. The audit concluded that deterministic logic belongs in a shell script (the pattern set by `/auto-number` and `/ensure-gitignore`), not in Markdown auto-consulted for every file-creation task. This file is now a pointer to the script.

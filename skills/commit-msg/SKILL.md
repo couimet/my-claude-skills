@@ -3,7 +3,7 @@ name: commit-msg
 version: 2026.04.20@5c8d9e9
 description: Create a commit message file in .claude-work/commit-msgs/ with auto-numbered filenames. Focuses on WHY not WHAT — the diff already shows what changed. User reviews and commits manually.
 argument-hint: <description>
-allowed-tools: Read, Write, Bash(git branch --show-current), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
+allowed-tools: Read, Write, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
 # Commit Message
@@ -16,52 +16,19 @@ Create a commit message file in `.claude-work/`. The user reviews and runs `git 
 
 Focus on **WHY**, not **WHAT**. The git diff already shows what changed — the commit message explains the motivation, the problem being solved, and the benefits. Message depth should scale with the cognitive load of the change — not every commit needs a body or Benefits section.
 
-## Step 1: Determine Target Directory and Filename
+## Step 1: Resolve the Target Path
 
-Run these two commands as parallel tool calls — they are independent. The `auto-number.sh` invocation in the "Sequence number" section below is NOT parallel with these; it must run afterward because it takes the branch-derived target directory as input.
+Run these two commands as parallel tool calls — they are independent.
 
 ```bash
-git branch --show-current
+skills/issue-context/target-path.sh --type commit-msgs --description "$ARGUMENTS"
 ```
 
 ```bash
 skills/ensure-gitignore/ensure-gitignore.sh
 ```
 
-### Target directory
-
-If the branch starts with `issues/`, extract the issue ID: take the characters after `issues/` up to the first `-` or `_`, but only if those characters are purely numeric. Otherwise the ID is the full string after `issues/`.
-
-Examples:
-
-- `issues/332` → ID is `332`
-- `issues/332-add-parser` → ID is `332`
-- `issues/rfc-auth` → ID is `rfc-auth` (not purely numeric before `-`)
-- `main`, `side-quest/foo`, `feature/bar` → no issue context
-
-Target directory:
-
-- **On an issue branch:** `.claude-work/issues/<ID>/commit-msgs/`
-- **Otherwise:** `.claude-work/commit-msgs/`
-
-### Sequence number
-
-Run:
-
-```bash
-skills/auto-number/auto-number.sh <target-directory> --glob "*.txt" --width 4 --mkdir
-```
-
-Use the stdout (e.g., `0001`) as the `NNNN` value. The `--mkdir` flag creates the directory if it does not exist, so the script works on a fresh checkout.
-
-### Filename
-
-`<target-directory>/NNNN-<slug>.txt` where `<slug>` is derived from $ARGUMENTS (lowercase, replace spaces and special characters with hyphens, collapse consecutive hyphens, trim leading/trailing hyphens).
-
-Examples:
-
-- `.claude-work/issues/332/commit-msgs/0001-add-parser.txt`
-- `.claude-work/commit-msgs/0012-refactor-api.txt`
+Use the stdout of the first command as the full file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is `.claude-work/issues/<ID>/commit-msgs/NNNN-<slug>.txt`; otherwise `.claude-work/commit-msgs/NNNN-<slug>.txt`.
 
 ## Complexity Assessment
 
@@ -117,9 +84,7 @@ Benefits:
 3. **Never include the current working issue link** — `/finish-issue` adds the `Closes` link to the PR description. That's the single source of truth for issue linkage. Repeating it in commit messages is redundant noise.
 4. **Other issue/PR references are fine** — when they add context (e.g., "fixes regression from `https://github.com/.../pull/42`"), include them.
 
-Never hard-wrap prose output — each paragraph is one continuous line; line breaks for structure only.
-
-GitHub refs: full URLs only — `https://github.com/{owner}/{repo}/issues/{N}` or `https://github.com/{owner}/{repo}/pull/{N}`, never `#NNN`.
+Formatting: see `/prose-style` for hard-wrap and GitHub-reference rules.
 
 ## Process
 
