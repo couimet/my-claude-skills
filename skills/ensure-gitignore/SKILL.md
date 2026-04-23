@@ -13,7 +13,7 @@ Checks that `.gitignore` contains the sentinel that excludes Claude's ephemeral 
 ## Usage
 
 ```bash
-skills/ensure-gitignore/ensure-gitignore.sh [GITIGNORE_PATH]
+~/.claude/skills/ensure-gitignore/ensure-gitignore.sh [GITIGNORE_PATH]
 ```
 
 **Arguments:**

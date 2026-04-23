@@ -82,7 +82,7 @@ Parse `OWNER`, `REPO`, and `CHILD_NUMBER` from the issue URL returned in Step 5 
 Run the script once per child issue to link:
 
 ```bash
-skills/create-github-issue/link-sub-issue.sh --owner "$OWNER" --repo "$REPO" --parent "$PARENT_NUMBER" --child "$CHILD_NUMBER"
+~/.claude/skills/create-github-issue/link-sub-issue.sh --owner "$OWNER" --repo "$REPO" --parent "$PARENT_NUMBER" --child "$CHILD_NUMBER"
 ```
 
 The script handles all GraphQL calls internally, using `jq -n` to build payloads via temp files to avoid zsh history expansion stripping `!` from GraphQL type annotations (`String!`, `Int!`, `ID!`). It prints `linked #<child> → #<parent>` on success or an error message on failure (exit 1).

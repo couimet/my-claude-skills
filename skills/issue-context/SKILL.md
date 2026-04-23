@@ -13,7 +13,7 @@ All deterministic logic for "where should this file go?" lives in `target-path.s
 ## Script contract
 
 ```bash
-skills/issue-context/target-path.sh --type <scratchpads|questions|commit-msgs> --description "<text>" [--ext txt]
+~/.claude/skills/issue-context/target-path.sh --type <scratchpads|questions|commit-msgs> --description "<text>" [--ext txt]
 ```
 
 The script reads the current branch, extracts the issue ID (numeric prefix of the segment after `issues/` when applicable, full segment otherwise, empty on non-issue branches), slugifies the description, runs `auto-number.sh` internally, creates the target directory, and prints the full file path on stdout.

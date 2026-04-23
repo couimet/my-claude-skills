@@ -21,11 +21,11 @@ Create or update a working document in `.claude-work/`.
 Run these two commands as parallel tool calls — they are independent.
 
 ```bash
-skills/issue-context/target-path.sh --type scratchpads --description "$ARGUMENTS"
+~/.claude/skills/issue-context/target-path.sh --type scratchpads --description "$ARGUMENTS"
 ```
 
 ```bash
-skills/ensure-gitignore/ensure-gitignore.sh
+~/.claude/skills/ensure-gitignore/ensure-gitignore.sh
 ```
 
 Use the stdout of the first command as the full file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is `.claude-work/issues/<ID>/scratchpads/NNNN-<slug>.txt`; otherwise `.claude-work/scratchpads/NNNN-<slug>.txt`.

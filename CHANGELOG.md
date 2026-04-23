@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.04.22
+
+### Fixed
+
+- `/scratchpad`, `/question`, `/commit-msg`, and `/create-github-issue` now invoke their foundation scripts via absolute `~/.claude/skills/...` paths instead of relative `skills/...` paths — the relative form only resolved when Claude was running from inside the `my-claude-skills` repo, so these skills broke with `Exit 127: no such file or directory` in every other project. Contract docs (`/issue-context`, `/ensure-gitignore`, `/auto-number`, `/file-placement`) updated to the same pattern for consistency
+
 ## 2026.04.20.1
 
 ### Added

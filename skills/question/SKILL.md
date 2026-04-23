@@ -25,11 +25,11 @@ Questions are NEVER printed in terminal output. They go to a file that the user 
 Run these two commands as parallel tool calls — they are independent.
 
 ```bash
-skills/issue-context/target-path.sh --type questions --description "$ARGUMENTS"
+~/.claude/skills/issue-context/target-path.sh --type questions --description "$ARGUMENTS"
 ```
 
 ```bash
-skills/ensure-gitignore/ensure-gitignore.sh
+~/.claude/skills/ensure-gitignore/ensure-gitignore.sh
 ```
 
 Use the stdout of the first command as the full file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is `.claude-work/issues/<ID>/questions/NNNN-<slug>.txt`; otherwise `.claude-work/questions/NNNN-<slug>.txt`.
