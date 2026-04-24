@@ -1,6 +1,6 @@
 ---
 name: tackle-pr-comment
-version: 2026.04.22@28de7f8
+version: 2026.04.22@0161f71
 description: Tackle a PR comment - analyze feedback, explore code, and create implementation scratchpad
 argument-hint: <pr-comment-url>
 allowed-tools: Read, Glob, Grep, Write, Bash(gh api repos/*/*/pulls/*/reviews/*), Bash(gh api repos/*/*/pulls/comments/*), Bash(gh api repos/*/*/issues/comments/*), Bash(gh api repos/*/*/pulls/*/comments*), Bash(gh api repos/*/*/issues/*/comments*), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
