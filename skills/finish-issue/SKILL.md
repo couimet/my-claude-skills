@@ -2,7 +2,7 @@
 name: finish-issue
 version: 2026.04.22@0161f71
 description: Wrap up issue or side-quest work on the current issues/* or side-quest/* branch — run verification, check documentation needs, and generate PR description
-argument-hint: [optional: issue-number-or-url]
+argument-hint: [optional: issue-number-or-url] [--scratchpad]
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git status), Bash(git log *), Bash(git diff *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
@@ -36,6 +36,17 @@ Not on a work branch. `/finish-issue` requires an `issues/*` or `side-quest/*` b
 Current branch: <branch>
 ```
 
+## Step 1b: Resolve Active Plan
+
+Read the active-plan pointer written by `/start-issue` or `/start-side-quest` to locate the primary working document:
+
+- **Issue mode:** read `.claude-work/issues/<ID>/active-plan`
+- **Side-quest mode:** read `.claude-work/active-plan-<slug>`
+
+The pointer contents is a single project-root-relative path. Record it as the **resolved plan path** — this is the single source of truth for the primary plan.
+
+**If the pointer is missing:** proceed without a resolved plan — Step 4 context gathering falls back to git log and breadcrumbs only.
+
 ## Step 2: Pre-PR Verification
 
 Run the project's standard verification commands from the project root:
@@ -45,17 +56,12 @@ Run the project's standard verification commands from the project root:
 3. **Tests** — run the full test suite; all must pass
 4. **Check status** — `git status` for uncommitted changes
 
-**Check 1 — Scratchpad step check:** Locate scratchpad files for the current work:
-
-- Issue mode: `Glob(pattern="*.txt", path=".claude-work/issues/<ID>/scratchpads")`
-- Side-quest mode: `Glob(pattern="*side-quest-<slug>*.txt", path=".claude-work/scratchpads")`
-
-For each file found, look for a fenced JSON step block. If one is present, collect all steps where `"status"` is `"pending"` or `"in_progress"`. If no scratchpad files exist, or none contain a JSON step block, proceed silently.
+**Check 1 — Working document step check:** Read the resolved plan path (from Step 1b). If it points to a file containing a fenced JSON step block, collect all steps where `"status"` is `"pending"` or `"in_progress"`. If the resolved plan is a note (no JSON step block) or no plan was resolved, proceed silently — there's nothing structured to check.
 
 If any unfinished steps are found, print a warning:
 
 ```text
-Warning: unfinished steps found in scratchpad:
+Warning: unfinished steps found in working document:
   - S003 "Add integration tests" (pending)
   - S004 "Update CHANGELOG" (in_progress)
 ```
@@ -106,9 +112,10 @@ Check if documentation updates are needed. Common touchpoints:
 
 Collect information from:
 
-- Commit history: read `Base branch:` from the scratchpad (recorded by `/start-issue` or `/start-side-quest`); fall back to `origin/main` if absent. Run: `git log --oneline <base-branch>..HEAD`
-- Scratchpads — read to extract the goal and rationale; use the paths below based on mode
+- Commit history: read `Base branch:` from the resolved plan (recorded by `/start-issue` or `/start-side-quest`); fall back to `origin/main` if absent. Run: `git log --oneline <base-branch>..HEAD`
+- **Resolved plan** (from Step 1b) — read to extract the goal and rationale. This is the primary reference
 - Breadcrumbs (if exists) — incorporate highlights into the PR description; use the paths below based on mode
+- Auxiliary working documents — PR-comment responses, interim analysis notes. Globbed separately so multi-round PR feedback isn't lost. Use the paths below based on mode
 
 **PR template detection:** Check the following locations in order and read the first file found:
 
@@ -121,16 +128,21 @@ Note whether a template was found and its path — this is used in Step 5. If no
 **Issue mode (path differences):**
 
 - Breadcrumbs: `.claude-work/issues/<ID>/breadcrumb.md`
-- Scratchpads: `Glob(pattern="**/*", path=".claude-work/issues/<ID>/scratchpads")`
+- Auxiliary notes: `Glob(pattern="**/*", path=".claude-work/issues/<ID>/notes")` (excluding the resolved plan if it's a note)
+- Auxiliary scratchpads: `Glob(pattern="**/*", path=".claude-work/issues/<ID>/scratchpads")` (excluding the resolved plan if it's a scratchpad)
 
 **Side-quest mode (path differences):**
 
 - Breadcrumbs: `.claude-work/breadcrumb-<slug>.md`
-- Scratchpads: `Glob(pattern="*side-quest-<slug>*", path=".claude-work/scratchpads")`
+- Auxiliary notes: `Glob(pattern="*side-quest-<slug>*", path=".claude-work/notes")` (excluding the resolved plan)
+- Auxiliary scratchpads: `Glob(pattern="*side-quest-<slug>*", path=".claude-work/scratchpads")` (excluding the resolved plan)
 
-## Step 5: Generate PR Description Scratchpad
+## Step 5: Generate PR Description Working Document
 
-Use `/scratchpad` to create a working document. Directory placement follows the branch automatically.
+Choose the working-document type:
+
+- **Default (`/note`):** PR descriptions are pure prose — a note is the right fit
+- **Opt-in (`/scratchpad`):** triggered when `$ARGUMENTS` contains `--scratchpad` or when the user's invoking message contains a natural-language opt-in phrase
 
 **Issue mode** — use description: `finish-issue-<ID>`
 
@@ -206,13 +218,14 @@ Documentation:
 - README: [updated / not needed - reason]
 
 Files created:
-- .claude-work/issues/NUMBER/scratchpads/NNNN-finish-issue-NUMBER.txt (PR description)
+- <actual-path-to-pr-description> (PR description — note by default, scratchpad if --scratchpad)
 
 ---
 
-Ready for PR. Review the scratchpad and:
-1. Create PR: gh pr create --title "..." --body-file .claude-work/issues/NUMBER/scratchpads/NNNN-finish-issue-NUMBER.txt
-2. Or ask Claude to create the PR
+Ready for PR. Review the file and:
+1. Commit: git add -p && git commit -F <actual-path-to-pr-description>
+2. Push and create PR: gh pr create --title "..." --body-file <actual-path-to-pr-description>
+3. Or ask Claude to create the PR
 ```
 
 **Side-quest mode:**
@@ -230,13 +243,14 @@ Documentation:
 - README: [updated / not needed - reason]
 
 Files created:
-- .claude-work/scratchpads/NNNN-finish-<slug>.txt (PR description)
+- <actual-path-to-pr-description> (PR description — note by default, scratchpad if --scratchpad)
 
 ---
 
-Ready for PR. Review the scratchpad and:
-1. Create PR: gh pr create --title "..." --body-file .claude-work/scratchpads/NNNN-finish-<slug>.txt
-2. Or ask Claude to create the PR
+Ready for PR. Review the file and:
+1. Commit: git add -p && git commit -F <actual-path-to-pr-description>
+2. Push and create PR: gh pr create --title "..." --body-file <actual-path-to-pr-description>
+3. Or ask Claude to create the PR
 ```
 
 **IMPORTANT: Do NOT create the PR automatically.**
@@ -253,7 +267,8 @@ Before finishing, verify:
 - [ ] Project's formatter ran successfully
 - [ ] Project's test suite passes
 - [ ] No uncommitted changes (or user has been notified)
-- [ ] No pending/in-progress steps in scratchpad (or user confirmed to proceed)
+- [ ] Active-plan pointer resolved (or missing — Step 4 degrades to git log + breadcrumbs)
+- [ ] No pending/in-progress steps in the resolved plan (or user confirmed to proceed) — check skipped silently if the resolved plan is a note
 - [ ] PR description doesn't reference ephemeral files
 - [ ] Documentation needs have been assessed
-- [ ] Scratchpad created with PR description
+- [ ] Working document created with PR description (note by default, scratchpad if opted in)

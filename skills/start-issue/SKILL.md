@@ -2,7 +2,7 @@
 name: start-issue
 version: 2026.04.22@0161f71
 description: Start working on a GitHub issue - analyze, explore codebase, and create detailed implementation plan
-argument-hint: <github-issue-url>
+argument-hint: <github-issue-url> [--scratchpad]
 allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
@@ -53,11 +53,16 @@ Where `<NUMBER>` is the GitHub issue number (e.g., `issues/223`) and `<BASE_BRAN
   - Test files that will need updates
 - **Check integration points** — review the project's entry points, configuration, documentation, and discoverability conventions for anything the change might affect
 
-## Step 4: Create Implementation Plan Scratchpad
+## Step 4: Create Implementation Plan Working Document
 
-Use `/scratchpad` to create a working document. Directory placement follows the branch automatically.
+Choose the working-document type based on whether formal step tracking is requested:
 
-The scratchpad for issues MUST contain these sections:
+- **Default (`/note`):** use this unless the user explicitly opted in. Produces a lightweight, freeform plan. Relies on you (the LLM) to self-organize execution in-session via TaskCreate/TaskUpdate.
+- **Opt-in (`/scratchpad`):** triggered when `$ARGUMENTS` contains `--scratchpad`, or when the user's invoking message contains a natural-language opt-in phrase ("use a scratchpad", "with step tracking", "formal plan", "track steps"). Produces a scratchpad with a JSON step block so `/tackle-scratchpad-block` can drive execution.
+
+### 4a. Default path — `/note`
+
+Use `/note` with description `start-issue-plan`. The note MUST contain these sections (all prose — no JSON step block):
 
 ````markdown
 # Issue #NUMBER: Title
@@ -74,39 +79,44 @@ Base branch: <branch this was cut from — origin/main, or another branch if ins
 
 ## Assumptions Made
 
-List any reasonable defaults assumed to avoid blocking on minor decisions:
-
 - "Assuming X because Y" — document reasoning
 
-## Implementation Plan
+## Plan
 
-Numbered steps that are:
-
-- **Commit-sized** — each step could be a single commit or small PR
-- **Specific** — reference exact files, functions, types by name
-- **Ordered** — dependencies between steps are clear
-- **Testable** — each step should mention what tests to add/update. If a step defers testing to a later step, include a task entry: "Do not run tests — deferred to S00N"
-
-Steps are embedded as a fenced JSON block. See the `/scratchpad` Step Tracking section for the full schema and field reference. For `/start-issue` specifically: set `finish_issue_on_complete: true` at the top level, and always set each step's `status: "pending"` when planning — `/tackle-scratchpad-block` manages status transitions during execution.
+Numbered prose steps (no fenced JSON). Each step should be commit-sized, specific (name files/functions), ordered (dependencies clear), and mention test updates where relevant.
 
 ## Files to Modify
 
-Bulleted list of all files that will be touched, grouped by step.
+Bulleted list grouped by step.
 
 ## Documentation & Discoverability
 
-Check the project's documentation and discoverability conventions. Common touchpoints:
-
-- [ ] CHANGELOG entry (under appropriate version section)
-- [ ] README update (if new command, setting, or feature)
-- [ ] Any project-specific integration points (entry points, config, menus, keybindings)
-- [ ] Unreleased markers on new README content (if project uses trunk-based documentation)
+- CHANGELOG entry (under appropriate version section)
+- README update (if new command, setting, or feature)
+- Any project-specific integration points (entry points, config, menus, keybindings)
 
 ## Acceptance Criteria
 
 Checklist from the issue (copy verbatim if provided).
-
 ````
+
+### 4b. Opt-in path — `/scratchpad`
+
+Use `/scratchpad` with description `start-issue-plan`. The scratchpad uses the same prose sections as 4a, except the `## Plan` section is replaced with `## Implementation Plan` containing a fenced JSON step block. See the `/scratchpad` Step Tracking section for the full schema. For `/start-issue` specifically: set `finish_issue_on_complete: true` at the top level, and always set each step's `status: "pending"` when planning — `/tackle-scratchpad-block` manages status transitions during execution.
+
+### 4c. Write the active-plan pointer
+
+After the working document is created (via either path), write the pointer file so `/finish-issue` and `/tackle-scratchpad-block` can resolve the primary plan without guessing:
+
+**Path:** `.claude-work/issues/<NUMBER>/active-plan`
+
+**Contents:** the project-root-relative path to the working document (a single line, no trailing newline required), for example:
+
+```text
+.claude-work/issues/126/notes/20260424-143022-start-issue-plan.txt
+```
+
+Overwrite any existing pointer — only the most recent working document is "active".
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
 
@@ -130,7 +140,18 @@ If questions are needed, use `/question` to create a questions file. Add a `**Pl
 
 ## Step 6: Report Status and STOP
 
-Print the branch name and paths of any created scratchpad/questions files, followed by a "Next" line:
+Print the branch name, the working-document path, the active-plan pointer path, and any questions file path. Then print a "Next" line that matches the path taken in Step 4:
+
+**Default path (note):**
+
+```text
+Next: review the plan, then ask me to proceed with the first step (e.g. "start S1" or just "go ahead").
+I will self-organize execution using the note as reference.
+Commit model: one commit at the end covering all changes. Run /finish-issue when done —
+its PR description file doubles as the commit message body.
+```
+
+**Opt-in path (scratchpad):**
 
 ```text
 Next: use `/tackle-scratchpad-block` to execute steps one at a time.
@@ -139,8 +160,6 @@ Example: /tackle-scratchpad-block <path-to-scratchpad>
 If multiple pending, unblocked steps exist, specify which one:
   /tackle-scratchpad-block <path-to-scratchpad>#S002
 ```
-
-Replace `<path-to-scratchpad>` with the actual path of the scratchpad file created in Step 4.
 
 **IMPORTANT: Do NOT proceed with implementation.**
 
@@ -154,7 +173,9 @@ This skill is for planning only. After reporting status:
 Before finishing, verify:
 
 - [ ] Feature branch `issues/<NUMBER>` was created
-- [ ] Implementation plan has specific file/function names (not "update the code")
+- [ ] Working document created via `/note` (default) or `/scratchpad` (opt-in) — not both
+- [ ] `.claude-work/issues/<NUMBER>/active-plan` pointer written with the project-root-relative path to the working document
+- [ ] Plan has specific file/function names (not "update the code")
 - [ ] Each step is small enough to be one commit
 - [ ] Test updates are mentioned for each step that changes behavior
 - [ ] Assumptions are documented with reasoning

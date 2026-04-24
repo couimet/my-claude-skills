@@ -15,12 +15,14 @@ When creating a new file, use this decision tree to determine the correct locati
 | --- | --- | --- |
 | Is it a question needing user input? | `.claude-work/questions/` | `/question` |
 | Is it a commit message draft? | `.claude-work/commit-msgs/` | `/commit-msg` |
-| Is it a temporary working document? | `.claude-work/scratchpads/` | `/scratchpad` |
 | Is it a quick note, finding, or result? | `.claude-work/notes/` | `/note` |
+| Is it a temporary working document with formal step tracking? | `.claude-work/scratchpads/` | `/scratchpad` |
 | Is it a note during issue work? | `.claude-work/issues/<ID>/breadcrumb.md` | `/breadcrumb` |
 | Is it permanent documentation? | `docs/` or package README | N/A |
 
 ## How to Use
+
+**Composite skills default to `/note`.** `/start-issue`, `/start-side-quest`, `/tackle-pr-comment`, and `/finish-issue` all create a `/note` by default and only fall back to `/scratchpad` when the user explicitly opts in (`--scratchpad` flag or equivalent natural-language trigger). The opt-in path is reserved for workflows that want `/tackle-scratchpad-block` to drive execution against a JSON step block; otherwise, the LLM self-organizes in-session.
 
 Evaluate from top to bottom. The first matching row determines the destination.
 

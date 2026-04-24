@@ -4,8 +4,8 @@
 
 | Skill | Invocation | What It Does |
 | --- | --- | --- |
-| `scratchpad` | `/scratchpad <desc>` | Creates `.claude-work/scratchpads/NNNN-description.txt` with auto-numbering |
-| `note` | `/note <desc>` | Creates `.claude-work/notes/YYYYMMDD-HHMMSS-slug.txt` — lightweight capture with no foundation skill dependencies |
+| `note` | `/note <desc>` | Creates `.claude-work/notes/YYYYMMDD-HHMMSS-slug.txt` — lightweight capture; default working-document type for composite skills |
+| `scratchpad` | `/scratchpad <desc>` | Creates `.claude-work/scratchpads/NNNN-description.txt` with auto-numbering and a JSON step block; opt-in when composite skills need formal step tracking via `/tackle-scratchpad-block` |
 | `question` | `/question <topic>` | Creates `.claude-work/questions/NNNN-topic.txt` for user Q&A |
 | `changelog` | `/changelog <desc>` | Creates or updates a CHANGELOG entry with tone guardrails, thematic grouping, and detail-leak detection |
 | `commit-msg` | `/commit-msg <desc>` | Creates `.claude-work/commit-msgs/NNNN-description.txt` |
@@ -38,13 +38,15 @@ Non-invocable skills (`user-invocable: false`) don't appear in the `/` menu. The
 | --- | --- | --- |
 | `cleanup-issue` | `/cleanup-issue [number]` | (inline branch parsing) |
 | `create-github-issue` | `/create-github-issue <title-or-path>` | `/scratchpad` (reads), `/question`, `/label-discovery` |
-| `finish-issue` | `/finish-issue` | `/scratchpad` (reads), `/question`, breadcrumbs (reads); handles both `issues/*` and `side-quest/*` branches |
-| `start-issue` | `/start-issue <url>` | `/scratchpad`, `/question`, `/cleanup-issue` |
-| `start-side-quest` | `/start-side-quest <desc>` | `/scratchpad`, `/question`, `/commit-msg` (ref) |
-| `tackle-pr-comment` | `/tackle-pr-comment <url>` | `/scratchpad`, `/question`, `/commit-msg` |
+| `finish-issue` | `/finish-issue` | `/note` (default), `/scratchpad` (opt-in, reads), `/question`, breadcrumbs (reads); handles both `issues/*` and `side-quest/*` branches |
+| `start-issue` | `/start-issue <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/cleanup-issue` |
+| `start-side-quest` | `/start-side-quest <desc> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/commit-msg` (ref) |
+| `tackle-pr-comment` | `/tackle-pr-comment <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/commit-msg` |
 | `tackle-scratchpad-block` | `/tackle-scratchpad-block <path#lines>` | `/scratchpad-ref-format`, `/question`, `/commit-msg`, `/scratchpad` (reads) |
 
 ## Architecture
+
+**Default working document: `/note`, with `/scratchpad` as an explicit opt-in.** Composite skills (`/start-issue`, `/start-side-quest`, `/tackle-pr-comment`, `/finish-issue`) default to creating a `/note` for their working document. The premise is that LLMs are strong enough at self-organizing tasks in-session (via TaskCreate/TaskUpdate) that the structured scratchpad + `/tackle-scratchpad-block` chain is best reserved for cases where the user explicitly wants formal step tracking. Users opt in via `--scratchpad` on the skill invocation or equivalent natural-language triggers ("use a scratchpad", "with step tracking", "formal plan"). Whichever type is produced, `/start-issue` and `/start-side-quest` also write an active-plan pointer (`.claude-work/issues/<ID>/active-plan` or `.claude-work/active-plan-<slug>`) so `/finish-issue` and `/tackle-scratchpad-block` can resolve the primary plan unambiguously without globbing.
 
 **Two-tier design:** Foundation skills define standalone conventions (file formats, numbering, placement rules). Composite skills orchestrate workflows by referencing foundations by name. In rare cases where a composite needs only a two-line foundation detail, it may deliberately inline that rule rather than cross-reference — the current example is `/cleanup-issue`, which inlines the branch-parsing rule instead of pulling in a foundation for it.
 
@@ -56,7 +58,7 @@ Three scripts follow this pattern. `auto-number` handles "scan directory, find m
 
 ## Step Tracking
 
-Implementation plan steps are embedded as a fenced JSON block inside the scratchpad's `## Implementation Plan` section. Each step has:
+Step tracking applies only to the `/scratchpad` opt-in path. When a scratchpad contains an implementation plan, its steps are embedded as a fenced JSON block inside the `## Implementation Plan` section. Each step has:
 
 - **`id`** — `S001`, `S002`, etc. (zero-padded 3-digit, mirrors Q001/A001)
 - **`status`** — `pending` | `in_progress` | `done` | `blocked`
@@ -64,4 +66,4 @@ Implementation plan steps are embedded as a fenced JSON block inside the scratch
 - **`depends_on`** — array of step IDs that must be done first
 - **`files`** / **`tasks`** — what to touch and what to do
 
-Planning skills (`/start-issue`, `/tackle-pr-comment`) always write `"status": "pending"`. The `/tackle-scratchpad-block` skill manages status transitions during execution. See the `/scratchpad` skill for the full JSON schema.
+When the opt-in scratchpad path is taken, planning skills (`/start-issue`, `/start-side-quest`, `/tackle-pr-comment`) always write `"status": "pending"`. The `/tackle-scratchpad-block` skill manages status transitions during execution. See the `/scratchpad` skill for the full JSON schema. On the default note path, there is no JSON block; the LLM self-organizes using its in-session task tracking.

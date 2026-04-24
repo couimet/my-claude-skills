@@ -14,6 +14,34 @@ Execute a specific block of implementation steps from a scratchpad file, then cr
 
 **Input:** $ARGUMENTS (a code reference to scratchpad lines, e.g. `.claude-work/issues/70/scratchpads/0001-plan.txt#L25-L67` or `path/to/plan.txt#S003`)
 
+## Step 0: Resolve Active Plan and Sanity-Check
+
+Before parsing the argument, check whether the current branch has an active-plan pointer and whether the resolved plan is compatible with this skill:
+
+1. Read the pointer (issue mode: `.claude-work/issues/<ID>/active-plan`; side-quest mode: `.claude-work/active-plan-<slug>`). If it exists, read the file at the pointed path and check whether it contains a fenced JSON step block (look for ` ```json ` with a `"steps"` array).
+2. Determine the file the user's argument points at (the path portion before `#S00N` or `#L10-L20`). Check whether *that* file contains a JSON step block.
+
+**If the pointer resolves to a note OR the argument points at a file with no JSON step block** (both are the same symptom — user is in the note-based default workflow, which this skill doesn't drive), STOP and print this guidance message:
+
+```text
+This skill drives execution against a JSON step block, but the working document at
+<resolved-path> is a note (no step block found).
+
+You are in the default note-based workflow — the LLM self-organizes execution using
+in-session task tracking. To proceed, choose one of:
+
+  A. Re-run the start-phase skill with --scratchpad to produce a scratchpad instead:
+       /start-issue <url> --scratchpad
+       /start-side-quest <desc> --scratchpad
+
+  B. Pass an explicit scratchpad path if you have one:
+       /tackle-scratchpad-block path/to/plan.txt#S001
+
+  C. Proceed manually — ask Claude to implement the next step from the note directly.
+```
+
+**If the argument points at a file that contains a JSON step block**, proceed normally to Step 1 (the active-plan pointer check is informational only — the explicit argument takes precedence).
+
 ## Step 1: Read the Target Block
 
 Parse the argument using the rules defined in `/scratchpad-ref-format`, then locate the target step.
