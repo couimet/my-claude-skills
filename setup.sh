@@ -24,9 +24,15 @@ brew install markdownlint-cli2
 
 echo "✓ markdownlint-cli2 installed: $(markdownlint-cli2 --version)"
 
+# Install bats-core
+echo "📦 Installing bats-core..."
+brew install bats-core
+
+echo "✓ bats-core installed: $(bats --version)"
+
 echo ""
 echo "✅ Setup complete!"
 echo ""
 echo "Next steps:"
-echo "  Run make lint before pushing a PR"
+echo "  Run make lint && make test before pushing a PR"
 echo ""
