@@ -16,12 +16,11 @@ Execute a specific block of implementation steps from a scratchpad file, then cr
 
 ## Step 0: Resolve Active Plan and Sanity-Check
 
-Before parsing the argument, check whether the current branch has an active-plan pointer and whether the resolved plan is compatible with this skill:
+Determine the file the user's argument points at (the path portion before `#S00N` or `#L10-L20`) and check whether it contains a fenced JSON step block (look for ` ```json ` with a `"steps"` array).
 
-1. Read the pointer (issue mode: `.claude-work/issues/<ID>/active-plan`; side-quest mode: `.claude-work/active-plan-<slug>`). If it exists, read the file at the pointed path and check whether it contains a fenced JSON step block (look for ` ```json ` with a `"steps"` array).
-2. Determine the file the user's argument points at (the path portion before `#S00N` or `#L10-L20`). Check whether *that* file contains a JSON step block.
+**If the argument resolves to a file containing a JSON step block:** proceed normally to Step 1. The explicit argument always takes precedence — the active-plan pointer is not consulted.
 
-**If the pointer resolves to a note OR the argument points at a file with no JSON step block** (both are the same symptom — user is in the note-based default workflow, which this skill doesn't drive), STOP and print this guidance message:
+**If the argument does NOT resolve to a JSON step block** (file not found, or file exists but has no `"steps"` array): read the active-plan pointer (issue mode: `.claude-work/issues/<ID>/active-plan`; side-quest mode: `.claude-work/active-plan-<slug>`) to name the resolved path in the guidance message, then STOP:
 
 ```text
 This skill drives execution against a JSON step block, but the working document at
@@ -39,8 +38,6 @@ in-session task tracking. To proceed, choose one of:
 
   C. Proceed manually — ask Claude to implement the next step from the note directly.
 ```
-
-**If the argument points at a file that contains a JSON step block**, proceed normally to Step 1 (the active-plan pointer check is informational only — the explicit argument takes precedence).
 
 ## Step 1: Read the Target Block
 
