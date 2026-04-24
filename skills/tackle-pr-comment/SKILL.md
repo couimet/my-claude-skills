@@ -133,12 +133,7 @@ Note: ACCEPT items flow to the Action Plan. IGNORE items flow to the commit mess
 
 ## Action Plan
 
-Numbered prose steps (no fenced JSON). Each step names the feedback items it addresses (e.g. "Step 1 (addresses A, C): ..."). Feedback items marked IGNORE do not appear here.
-
-## Files to Modify
-
-- `path/to/file1.ts` - {what changes}
-- `path/to/file2.ts` - {what changes}
+Numbered prose steps (no fenced JSON). Each step names the feedback items it addresses (e.g. "Step 1 (addresses A, C): ...") and the specific files/functions to change. Feedback items marked IGNORE do not appear here.
 ````
 
 ### 5b. Opt-in path — `/scratchpad`
