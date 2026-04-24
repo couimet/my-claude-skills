@@ -20,7 +20,7 @@ Determine the file the user's argument points at (the path portion before `#S00N
 
 **If the argument resolves to a file containing a JSON step block:** proceed normally to Step 1. The explicit argument always takes precedence — the active-plan pointer is not consulted.
 
-**If the argument does NOT resolve to a JSON step block** (file not found, or file exists but has no `"steps"` array): read the active-plan pointer (issue mode: `.claude-work/issues/<ID>/active-plan`; side-quest mode: `.claude-work/active-plan-<slug>`) to name the resolved path in the guidance message, then STOP:
+**If the argument does NOT resolve to a JSON step block** (file not found, or file exists but has no `"steps"` array): read the active-plan pointer (issue mode: `.claude-work/issues/<ID>/active-plan`; side-quest mode: `.claude-work/active-plan-<slug>`) to name the resolved path in the guidance message; if the pointer file is missing or empty, use `(no active-plan pointer found)` as the resolved path. Then STOP:
 
 ```text
 This skill drives execution against a JSON step block, but the working document at

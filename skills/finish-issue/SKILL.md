@@ -51,7 +51,7 @@ The pointer contents is a single project-root-relative path. Record it as the **
 
 Run the project's standard verification commands from the project root:
 
-1. **Scratchpad step check** — scan any scratchpad associated with the current work for unfinished steps before running anything else
+1. **Working document step check** — scan the resolved plan (note or scratchpad) for unfinished steps before running anything else
 2. **Format** — run the project's formatter (fix mode)
 3. **Tests** — run the full test suite; all must pass
 4. **Check status** — `git status` for uncommitted changes

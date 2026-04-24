@@ -164,5 +164,5 @@ User: `/start-side-quest src/types/Result.ts#L45-L60`
 
 User: `/start-side-quest cleanup ExtensionResult usage in test mocks --scratchpad`
 
-- Creates `side-quest/cleanup-extensionresult-test-mocks`
+- Creates `side-quest/cleanup-extensionresult-usage-in-test-mocks`
 - Opt-in path: produces a `/scratchpad` with JSON step tracking so `/tackle-scratchpad-block` can drive execution
