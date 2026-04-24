@@ -1,6 +1,6 @@
 ---
 name: tackle-scratchpad-block
-version: 2026.04.22@0161f71
+version: 2026.04.24@2423d79
 description: Execute a single step from a scratchpad plan — transitions status, runs tests, creates a commit message. Main execution engine for /start-issue → /finish-issue.
 argument-hint: <path/to/scratchpad.txt [#S00N | S00N | #L10-L20]>
 allowed-tools: Read, Write, Edit, Bash(*), Glob, Grep
