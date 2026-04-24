@@ -72,7 +72,6 @@ Use `/note` with description `side-quest-<slug>`. The note MUST contain (all pro
 # Side-Quest: <Title>
 
 Base branch: <branch this was cut from — origin/main, issues/XXX, or another branch>
-Origin: <what triggered this - code review, refactoring discovery, etc.>
 
 ## Goal
 
@@ -81,18 +80,6 @@ Origin: <what triggered this - code review, refactoring discovery, etc.>
 ## Plan
 
 Numbered prose steps (no fenced JSON). Each step commit-sized and specific.
-
-## Why Split This Out
-
-- Doesn't block the parent issue
-- Can be reviewed/merged independently
-- Keeps parent PR focused
-
-## Acceptance Criteria
-
-- [ ] All tests pass
-- [ ] Changes are minimal and focused
-- [ ] Ready for independent PR
 ````
 
 ### 3b. Opt-in path — `/scratchpad`

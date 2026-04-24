@@ -67,37 +67,21 @@ Use `/note` with description `start-issue-plan`. The note MUST contain these sec
 ````markdown
 # Issue #NUMBER: Title
 
-Parent: https://github.com/{owner}/{repo}/issues/{XX} (if applicable)
-Type/Priority/Scope: from labels
 Base branch: <branch this was cut from — origin/main, or another branch if instructed>
+Parent: https://github.com/{owner}/{repo}/issues/{XX} (omit if no parent)
 
 ## Context
 
 - Brief issue summary (1-2 sentences)
-- Parent issue context: how this fits into broader plan (if applicable)
-- Key insight from codebase exploration that shapes the implementation
+- Parent issue context: how this fits into broader plan (omit if no parent)
 
-## Assumptions Made
+## Assumptions Made (omit section if none)
 
-- "Assuming X because Y" — document reasoning
+- "Assuming X because Y" — non-obvious reasoning only
 
 ## Plan
 
 Numbered prose steps (no fenced JSON). Each step should be commit-sized, specific (name files/functions), ordered (dependencies clear), and mention test updates where relevant.
-
-## Files to Modify
-
-Bulleted list grouped by step.
-
-## Documentation & Discoverability
-
-- CHANGELOG entry (under appropriate version section)
-- README update (if new command, setting, or feature)
-- Any project-specific integration points (entry points, config, menus, keybindings)
-
-## Acceptance Criteria
-
-Checklist from the issue (copy verbatim if provided).
 ````
 
 ### 4b. Opt-in path — `/scratchpad`

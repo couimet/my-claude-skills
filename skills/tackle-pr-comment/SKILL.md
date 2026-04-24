@@ -105,14 +105,6 @@ Use `/note` with the description above. The note contains (all prose — no JSON
 
 Source: {FULL_PR_COMMENT_URL}
 
-## Reviewer Feedback Summary
-
-{1-3 sentence summary of what the reviewer is asking for}
-
-## Recommendations
-
-{Your recommendations for the best approach, with reasoning}
-
 ## Analysis
 
 ### Feedback A: {short title}
@@ -120,16 +112,14 @@ Source: {FULL_PR_COMMENT_URL}
 {Analysis of first feedback item}
 
 Decision: ACCEPT | IGNORE
-Reason: {brief justification}
+Reason: {brief justification — omit if self-evident from the analysis above}
 
 ### Feedback B: {short title}
 
 {Analysis of second feedback item}
 
 Decision: ACCEPT | IGNORE
-Reason: {brief justification}
-
-Note: ACCEPT items flow to the Action Plan. IGNORE items flow to the commit message's "Ignored Feedback" section.
+Reason: {brief justification — omit if self-evident from the analysis above}
 
 ## Action Plan
 
@@ -212,7 +202,6 @@ Before finishing initial analysis (Step 7):
 - [ ] Active-plan pointer was NOT overwritten (PR-comment scratchpads are auxiliary)
 - [ ] Plan has specific file/function names
 - [ ] Each step is actionable and concrete
-- [ ] Recommendations explain the reasoning
 - [ ] User was informed if clarification from reviewer is needed
 
 After user approves (Step 8):

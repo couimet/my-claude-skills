@@ -164,6 +164,7 @@ Choose the working-document type:
 - Bulleted list of key changes
 - Omit file lists (PR shows modified files)
 - Group related changes
+- Documentation: CHANGELOG [added / not needed — reason]; README [updated / not needed — reason]
 
 ## Key Discoveries (if breadcrumbs exist)
 
@@ -174,13 +175,8 @@ Choose the working-document type:
 ## Test Plan
 
 - [ ] All existing tests pass
-- [ ] New tests added for: [list]
-- [ ] Manual testing: [describe if applicable]
-
-## Documentation
-
-- [ ] CHANGELOG: [entry added / not needed - reason]
-- [ ] README: [updated / not needed - reason]
+- [ ] New tests added for: [list] (omit if none)
+- [ ] Manual testing: [describe] (omit if not applicable)
 
 ## Related
 
