@@ -26,16 +26,16 @@ extract_json() {
   grep -q "^## Implementation Plan" "$FIXTURES/eval-start-issue-plan.txt"
 }
 
-@test "start-issue plan: has Files to Modify section" {
-  grep -q "^## Files to Modify" "$FIXTURES/eval-start-issue-plan.txt"
+@test "start-issue plan: no Files to Modify section (folded into Plan steps)" {
+  ! grep -q "^## Files to Modify" "$FIXTURES/eval-start-issue-plan.txt"
 }
 
-@test "start-issue plan: has Documentation & Discoverability section" {
-  grep -q "^## Documentation & Discoverability" "$FIXTURES/eval-start-issue-plan.txt"
+@test "start-issue plan: no Documentation & Discoverability section (finish-issue owns this)" {
+  ! grep -q "^## Documentation & Discoverability" "$FIXTURES/eval-start-issue-plan.txt"
 }
 
-@test "start-issue plan: has Acceptance Criteria section" {
-  grep -q "^## Acceptance Criteria" "$FIXTURES/eval-start-issue-plan.txt"
+@test "start-issue plan: no Acceptance Criteria section (Claude reads from live issue fetch)" {
+  ! grep -q "^## Acceptance Criteria" "$FIXTURES/eval-start-issue-plan.txt"
 }
 
 @test "start-issue plan: has Base branch field" {
@@ -128,8 +128,8 @@ extract_json() {
   grep -q "^## Test Plan" "$FIXTURES/eval-finish-pr-desc.txt"
 }
 
-@test "finish-issue PR desc: has Documentation section" {
-  grep -q "^## Documentation" "$FIXTURES/eval-finish-pr-desc.txt"
+@test "finish-issue PR desc: no standalone Documentation section (folded into Changes)" {
+  ! grep -q "^## Documentation" "$FIXTURES/eval-finish-pr-desc.txt"
 }
 
 @test "finish-issue PR desc: has Related section" {

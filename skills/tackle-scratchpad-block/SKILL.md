@@ -14,6 +14,31 @@ Execute a specific block of implementation steps from a scratchpad file, then cr
 
 **Input:** $ARGUMENTS (a code reference to scratchpad lines, e.g. `.claude-work/issues/70/scratchpads/0001-plan.txt#L25-L67` or `path/to/plan.txt#S003`)
 
+## Step 0: Resolve Active Plan and Sanity-Check
+
+Determine the file the user's argument points at (the path portion before `#S00N` or `#L10-L20`) and check whether it contains a fenced JSON step block (look for ` ```json ` with a `"steps"` array).
+
+**If the argument resolves to a file containing a JSON step block:** proceed normally to Step 1. The explicit argument always takes precedence — the active-plan pointer is not consulted.
+
+**If the argument does NOT resolve to a JSON step block** (file not found, or file exists but has no `"steps"` array): read the active-plan pointer (issue mode: `.claude-work/issues/<ID>/active-plan`; side-quest mode: `.claude-work/active-plan-<slug>`) to name the resolved path in the guidance message; if the pointer file is missing or empty, use `(no active-plan pointer found)` as the resolved path. Then STOP:
+
+```text
+This skill drives execution against a JSON step block, but the working document at
+<resolved-path> is a note (no step block found).
+
+You are in the default note-based workflow — the LLM self-organizes execution using
+in-session task tracking. To proceed, choose one of:
+
+  A. Re-run the start-phase skill with --scratchpad to produce a scratchpad instead:
+       /start-issue <url> --scratchpad
+       /start-side-quest <desc> --scratchpad
+
+  B. Pass an explicit scratchpad path if you have one:
+       /tackle-scratchpad-block path/to/plan.txt#S001
+
+  C. Proceed manually — ask Claude to implement the next step from the note directly.
+```
+
 ## Step 1: Read the Target Block
 
 Parse the argument using the rules defined in `/scratchpad-ref-format`, then locate the target step.

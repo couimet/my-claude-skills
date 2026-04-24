@@ -1,8 +1,7 @@
 # Issue #42: Add user authentication
 
-Parent: https://github.com/acme/app/issues/10
-Type/Priority/Scope: enhancement, priority:high
 Base branch: origin/main
+Parent: https://github.com/acme/app/issues/10
 
 ## Context
 
@@ -61,20 +60,3 @@ The app currently has no authentication. Users can access all routes without log
 }
 ```
 
-## Files to Modify
-
-**S001:** src/models/user.ts, src/migrations/001-create-users.sql, src/models/index.ts
-**S002:** src/middleware/auth.ts, src/middleware/index.ts
-**S003:** src/routes/auth.ts, src/__tests__/auth.test.ts
-
-## Documentation & Discoverability
-
-- [ ] CHANGELOG entry (under appropriate version section)
-- [ ] README update (if new command, setting, or feature)
-- [ ] Any project-specific integration points (entry points, config, menus, keybindings)
-
-## Acceptance Criteria
-
-- [ ] Users can log in with email/password
-- [ ] Protected routes require authentication
-- [ ] Logout destroys the session

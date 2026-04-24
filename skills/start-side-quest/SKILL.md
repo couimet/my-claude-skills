@@ -2,7 +2,7 @@
 name: start-side-quest
 version: 2026.04.22@0161f71
 description: Start a side-quest branch for orthogonal improvements discovered while working on an issue
-argument-hint: <description | path/to/file.ts#L10-L20>
+argument-hint: <description | path/to/file.ts#L10-L20> [--scratchpad]
 allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *), Bash(git branch --show-current), Bash(git status *), Bash(git stash *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
@@ -55,42 +55,50 @@ Examples:
 - `side-quest/fix-result-type-usage`
 - `side-quest/cleanup-test-mocks`
 
-## Step 3: Create Implementation Scratchpad
+## Step 3: Create Implementation Working Document
 
-Use `/scratchpad` to create a working document. Side-quest branches don't match `issues/*`, so the scratchpad lands in the flat `.claude-work/scratchpads/` directory.
+Choose the working-document type based on whether formal step tracking is requested:
 
-Use description: `side-quest-<slug>`
+- **Default (`/note`):** use this unless the user explicitly opted in. Produces a lightweight, freeform plan. Relies on you (the LLM) to self-organize execution in-session.
+- **Opt-in (`/scratchpad`):** triggered when `$ARGUMENTS` contains `--scratchpad`, or when the user's invoking message contains a natural-language opt-in phrase ("use a scratchpad", "with step tracking", "formal plan", "track steps"). Produces a scratchpad with a JSON step block so `/tackle-scratchpad-block` can drive execution.
 
-The scratchpad MUST contain:
+Side-quest branches don't match `issues/*`, so the working document lands in the flat `.claude-work/notes/` (default) or `.claude-work/scratchpads/` (opt-in) directory.
+
+### 3a. Default path — `/note`
+
+Use `/note` with description `side-quest-<slug>`. The note MUST contain (all prose — no JSON step block):
 
 ````markdown
 # Side-Quest: <Title>
 
 Base branch: <branch this was cut from — origin/main, issues/XXX, or another branch>
-Origin: <what triggered this - code review, refactoring discovery, etc.>
 
 ## Goal
 
 1-2 sentences explaining what improvement this side-quest delivers.
 
-## Implementation Plan
+## Plan
 
-Embed steps as a fenced JSON block per the `/scratchpad` Step Tracking schema. For side-quests: set `finish_issue_on_complete: true` at the top level.
-
-## Why Split This Out
-
-Brief explanation of why this is orthogonal to the parent work:
-
-- Doesn't block the parent issue
-- Can be reviewed/merged independently
-- Keeps parent PR focused
-
-## Acceptance Criteria
-
-- [ ] All tests pass
-- [ ] Changes are minimal and focused
-- [ ] Ready for independent PR
+Numbered prose steps (no fenced JSON). Each step commit-sized and specific.
 ````
+
+### 3b. Opt-in path — `/scratchpad`
+
+Use `/scratchpad` with description `side-quest-<slug>`. Same sections as 3a, except `## Plan` is replaced with `## Implementation Plan` containing a fenced JSON step block per the `/scratchpad` Step Tracking schema. Set `finish_issue_on_complete: true` at the top level.
+
+### 3c. Write the active-plan pointer
+
+After the working document is created (via either path), write the pointer file so `/finish-issue` and `/tackle-scratchpad-block` can resolve the primary plan:
+
+**Path:** `.claude-work/active-plan-<slug>`
+
+**Contents:** the project-root-relative path to the working document, for example:
+
+```text
+.claude-work/notes/20260424-143022-side-quest-cleanup-test-mocks.txt
+```
+
+Overwrite any existing pointer with the same slug.
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
 
@@ -111,7 +119,9 @@ Branch: side-quest/<slug>
 Parent: <original branch> (stashed if had changes)
 
 Files created:
-- .claude-work/scratchpads/<file>.txt (implementation plan)
+- .claude-work/notes/<file>.txt (implementation plan — default path)
+  OR .claude-work/scratchpads/<file>.txt (if --scratchpad)
+- .claude-work/active-plan-<slug> (pointer to the working document)
 - .claude-work/questions/<file>.txt (if questions needed)
 
 Stash: <stash message if applicable>
@@ -138,20 +148,21 @@ Before finishing, verify:
 
 - [ ] Current work stashed (if on a work branch with changes)
 - [ ] Side-quest branch created from `<base-branch>`
-- [ ] Scratchpad has specific file/change details
+- [ ] Working document created via `/note` (default) or `/scratchpad` (opt-in) — not both
+- [ ] `.claude-work/active-plan-<slug>` pointer written with the project-root-relative path to the working document
+- [ ] Plan has specific file/change details
 - [ ] Parent branch noted for easy return
 
 ## Example Invocations
 
-User: `/start-side-quest BookmarksStore.remove() should return deleted bookmark`
-
-- Creates `side-quest/bookmarksstore-remove-returns-bookmark`
+- Default path: produces a `/note`
 
 User: `/start-side-quest src/types/Result.ts#L45-L60`
 
 - Reads the linked code for context
 - Derives side-quest scope from what the code suggests
 
-User: `/start-side-quest cleanup ExtensionResult usage in test mocks`
+User: `/start-side-quest cleanup ExtensionResult usage in test mocks --scratchpad`
 
-- Creates `side-quest/cleanup-extensionresult-test-mocks`
+- Creates `side-quest/cleanup-extensionresult-usage-in-test-mocks`
+- Opt-in path: produces a `/scratchpad` with JSON step tracking so `/tackle-scratchpad-block` can drive execution

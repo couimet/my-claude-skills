@@ -1,16 +1,18 @@
 ---
 name: tackle-pr-comment
 version: 2026.04.22@0161f71
-description: Tackle a PR comment - analyze feedback, explore code, and create implementation scratchpad
-argument-hint: <pr-comment-url>
+description: Tackle a PR comment - analyze feedback, explore code, and create implementation working document
+argument-hint: <pr-comment-url> [--scratchpad]
 allowed-tools: Read, Glob, Grep, Write, Bash(gh api repos/*/*/pulls/*/reviews/*), Bash(gh api repos/*/*/pulls/comments/*), Bash(gh api repos/*/*/issues/comments/*), Bash(gh api repos/*/*/pulls/*/comments*), Bash(gh api repos/*/*/issues/*/comments*), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
 # Tackle PR Comment
 
-Analyze a PR comment, explore the referenced code, and create a detailed implementation scratchpad. This skill is for **analysis and planning only** — it does not implement changes until the user approves.
+Analyze a PR comment, explore the referenced code, and create a detailed implementation working document. This skill is for **analysis and planning only** — it does not implement changes until the user approves.
 
-**Input:** $ARGUMENTS (a PR comment URL)
+**Input:** $ARGUMENTS (a PR comment URL, optionally followed by `--scratchpad`)
+
+This skill produces an *auxiliary* working document — it does NOT overwrite the branch's active-plan pointer. `/finish-issue` will still treat the primary plan (from the original `/start-issue` or `/start-side-quest`) as the reference; this document is read as supplementary context.
 
 ## Step 1: Parse the URL and Fetch the Comment
 
@@ -78,9 +80,12 @@ Before creating the scratchpad, assess if the feedback is clear enough to act on
 
 **If clear**: Proceed to Step 5.
 
-## Step 5: Create Implementation Scratchpad
+## Step 5: Create Implementation Working Document
 
-Use `/scratchpad` to create a working document. Directory placement follows the branch automatically.
+Choose the working-document type based on whether formal step tracking is requested:
+
+- **Default (`/note`):** use this unless the user explicitly opted in. Produces a lightweight, freeform analysis + action plan.
+- **Opt-in (`/scratchpad`):** triggered when `$ARGUMENTS` contains `--scratchpad`, or when the user's invoking message contains a natural-language opt-in phrase ("use a scratchpad", "with step tracking", "formal plan", "track steps"). Produces a scratchpad with a JSON step block (including `addresses` fields) so `/tackle-scratchpad-block` can drive execution.
 
 Use description: `pr-{PR_NUMBER}-{COMMENT_TYPE}-{COMMENT_ID}`
 
@@ -89,60 +94,48 @@ Where:
 - `{COMMENT_TYPE}` is: `review`, `discussion`, or `issuecomment`
 - `{COMMENT_ID}` is the numeric ID from the URL (e.g., `3647271799`, `2680237139`, `987654`)
 
-### Scratchpad Format
+**Naming convention:** use letters (A, B, C) for feedback items in text headings. When the opt-in path applies, use `S001`, `S002` IDs for implementation steps in the JSON block. This avoids confusion when referencing "Feedback B" vs "S002".
 
-**Naming convention**: Use letters (A, B, C) for feedback items in text headings, and `S001`, `S002` IDs for implementation steps in the JSON block.
-This avoids confusion when referencing "Feedback B" vs "S002".
+### 5a. Default path — `/note`
+
+Use `/note` with the description above. The note contains (all prose — no JSON step block):
 
 ````markdown
 # PR https://github.com/{owner}/{repo}/pull/{PR_NUMBER} Comment Response
 
 Source: {FULL_PR_COMMENT_URL}
 
-## Reviewer Feedback Summary
-
-{1-3 sentence summary of what the reviewer is asking for}
-
-## Recommendations
-
-{Your recommendations for the best approach, with reasoning}
-
 ## Analysis
 
 ### Feedback A: {short title}
 
-{Analysis of first feedback item - what it asks for and your assessment}
+{Analysis of first feedback item}
 
 Decision: ACCEPT | IGNORE
-Reason: {brief justification}
+Reason: {brief justification — omit if self-evident from the analysis above}
 
 ### Feedback B: {short title}
 
 {Analysis of second feedback item}
 
 Decision: ACCEPT | IGNORE
-Reason: {brief justification}
+Reason: {brief justification — omit if self-evident from the analysis above}
 
-Note: ACCEPT items flow to Implementation Plan steps. IGNORE items flow to the commit message's "Ignored Feedback" section.
+## Action Plan
 
-## Implementation Plan
+Numbered prose steps (no fenced JSON). Each step names the feedback items it addresses (e.g. "Step 1 (addresses A, C): ...") and the specific files/functions to change. Feedback items marked IGNORE do not appear here.
+````
 
-Embed steps as a fenced JSON block per the `/scratchpad` Step Tracking schema. For PR-comment work:
+### 5b. Opt-in path — `/scratchpad`
+
+Use `/scratchpad` with the description above. Same sections as 5a, except `## Action Plan` is replaced with `## Implementation Plan` containing a fenced JSON step block per the `/scratchpad` Step Tracking schema. For PR-comment work:
 
 - Omit `finish_issue_on_complete` (it is `false` by default for ad-hoc scratchpads).
-- Add an `addresses` field to each step listing the feedback item letters it resolves (e.g. `"addresses": ["A", "C"]`). A single step may address multiple feedback items.
-- Feedback items marked IGNORE in the Analysis section do not appear in any step.
-
-## Files to Modify
-
-- `path/to/file1.ts` - {what changes}
-- `path/to/file2.ts` - {what changes}
-
-````
+- Add an `addresses` field to each step listing the feedback item letters it resolves (e.g. `"addresses": ["A", "C"]`).
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
 
-**STOP HERE** - The scratchpad template ends above. Do NOT add commit message sections to scratchpads. Commit messages are created separately in Step 8 (after user approval) using `/commit-msg`.
+**STOP HERE** - The template ends above. Do NOT add commit message sections to the working document. Commit messages are created separately in Step 8 (after user approval) using `/commit-msg`.
 
 ## Step 6: Questions (If Needed)
 
@@ -154,13 +147,13 @@ Only create a questions file for decisions that would fundamentally change the i
 
 Print:
 
-1. The scratchpad file path
+1. The working-document file path (labelled "note" or "scratchpad" to match which path was taken)
 2. The questions file path (if created)
 3. Brief summary of what you found
 
 **IMPORTANT: Do NOT start implementing changes.**
 
-Wait for the user to review the scratchpad and explicitly ask you to proceed with implementation.
+Wait for the user to review the working document and explicitly ask you to proceed with implementation.
 
 ## Step 8: Commit Message (After User Approves)
 
@@ -204,10 +197,11 @@ This allows the commit message to be drafted early (from the plan) rather than w
 Before finishing initial analysis (Step 7):
 
 - [ ] Comment was fetched successfully with full thread context (if applicable)
-- [ ] Scratchpad contains link to source PR comment
-- [ ] Implementation plan has specific file/function names
+- [ ] Working document (note or scratchpad) contains link to source PR comment
+- [ ] Working document created via `/note` (default) or `/scratchpad` (opt-in) — not both
+- [ ] Active-plan pointer was NOT overwritten (PR-comment scratchpads are auxiliary)
+- [ ] Plan has specific file/function names
 - [ ] Each step is actionable and concrete
-- [ ] Recommendations explain the reasoning
 - [ ] User was informed if clarification from reviewer is needed
 
 After user approves (Step 8):

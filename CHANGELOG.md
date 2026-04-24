@@ -10,6 +10,15 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.04.24
+
+### Changed
+
+- `/start-issue`, `/start-side-quest`, `/tackle-pr-comment`, and `/finish-issue` now default to creating a `/note` instead of a `/scratchpad` for their working documents; the premise is that LLMs are strong enough at self-organizing tasks in-session that the structured scratchpad + `/tackle-scratchpad-block` chain is best reserved for cases where the user wants formal step tracking. Users opt into the scratchpad path via `--scratchpad` on the skill invocation or equivalent natural-language triggers ("use a scratchpad", "with step tracking", "formal plan") ([issues/126](https://github.com/couimet/my-claude-skills/issues/126))
+- `/start-issue` and `/start-side-quest` now write an `active-plan` pointer (`.claude-work/issues/<ID>/active-plan` or `.claude-work/active-plan-<slug>`) naming the working document they created — `/finish-issue` reads the pointer to resolve the primary plan without globbing. `/tackle-scratchpad-block` also reads the pointer and prints a specific note-vs-scratchpad guidance message when invoked against a note ([issues/126](https://github.com/couimet/my-claude-skills/issues/126))
+- Removed redundant sections across multiple skills; the main objective is to decrease token consumption when generating content and when reading those files again.
+  Ex: `## Files to Modify` (already carried inline by Plan steps), `## Documentation & Discoverability` (`/finish-issue` owns this at wrap-up time), `## Acceptance Criteria` (Claude reads these from the live issue fetch), `## Reviewer Feedback Summary` and `## Recommendations` (both duplicated the per-item Analysis), `## Why Split This Out` and side-quest `## Acceptance Criteria` (invariant bullets with no per-quest signal), and the `## Documentation` PR description section (folded into `## Changes` as a trailing note). The `## Assumptions Made` section is now omit-if-none; `Reason:` lines in PR-comment analysis are omit-if-self-evident; `Type/Priority/Scope:` and `Origin:` metadata fields dropped as zero-signal noise ([issues/126](https://github.com/couimet/my-claude-skills/issues/126))
+
 ## 2026.04.22
 
 ### Fixed
