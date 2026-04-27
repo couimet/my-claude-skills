@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.04.27
+
+### Changed
+
+- `/start-issue` now explicitly instructs the LLM to call `/finish-issue` directly after note-based implementation — skipping `/commit-msg`, which is redundant when a single session covers all the work. `/tackle-scratchpad-block`'s note-flow STOP message gains the same "When done, call `/finish-issue` directly" reminder ([issues/132](https://github.com/couimet/my-claude-skills/issues/132))
+
 ## 2026.04.24
 
 ### Changed
