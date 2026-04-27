@@ -131,8 +131,8 @@ Print the branch name, the working-document path, the active-plan pointer path, 
 ```text
 Next: review the plan, then ask me to proceed with the first step (e.g. "start S1" or just "go ahead").
 I will self-organize execution using the note as reference.
-Commit model: one commit at the end covering all changes. Run /finish-issue when done —
-its PR description file doubles as the commit message body.
+Commit model: one commit at the end covering all changes. When done, call /finish-issue directly —
+do NOT call /commit-msg first. The PR description file doubles as the commit message body.
 ```
 
 **Opt-in path (scratchpad):**

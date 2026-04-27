@@ -37,6 +37,8 @@ in-session task tracking. To proceed, choose one of:
        /tackle-scratchpad-block path/to/plan.txt#S001
 
   C. Proceed manually — ask Claude to implement the next step from the note directly.
+
+When done with implementation, call /finish-issue directly — do NOT call /commit-msg first.
 ```
 
 ## Step 1: Read the Target Block
