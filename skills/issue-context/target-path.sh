@@ -6,7 +6,7 @@
 #
 # Usage: target-path.sh --type <type> --description <text> [--ext <ext>]
 #
-#   --type         "scratchpads", "questions", or "commit-msgs" (required)
+#   --type         "scratchpads", "questions", "commit-msgs", or "notes" (required)
 #   --description  Free-form text for the slug (required; will be lowercased +
 #                  hyphenated)
 #   --ext          File extension without the dot. Alphanumeric only (e.g.
