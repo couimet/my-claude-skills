@@ -29,7 +29,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: target-path.sh --type <scratchpads|questions|commit-msgs> --description <text> [--ext <ext>]
+Usage: target-path.sh --type <scratchpads|questions|commit-msgs|notes> --description <text> [--ext <ext>]
 
   --type         File category (required)
   --description  Free-form text for the slug (required)
@@ -81,13 +81,13 @@ done
 
 # --- Validate type ---
 case "$type_arg" in
-  scratchpads|questions|commit-msgs) ;;
+  scratchpads|questions|commit-msgs|notes) ;;
   "")
     echo "target-path $ERR_MISSING_ARG error: --type is required" >&2
     exit 1
     ;;
   *)
-    echo "target-path $ERR_INVALID_TYPE error: invalid --type '$type_arg' (expected scratchpads, questions, or commit-msgs)" >&2
+    echo "target-path $ERR_INVALID_TYPE error: invalid --type '$type_arg' (expected scratchpads, questions, commit-msgs, or notes)" >&2
     exit 1
     ;;
 esac
