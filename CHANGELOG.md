@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.05.01
+
+### Fixed
+
+- `target-path.sh` now accepts `notes` as a valid `--type` value, producing `.claude-work/issues/<ID>/notes/NNNN-<slug>.txt` on issue branches and `.claude-work/notes/NNNN-<slug>.txt` elsewhere. Previously, callers that passed `--type notes` received a `T100` error because `notes` was missing from the allowlist. The `/issue-context` SKILL.md contract signature is updated to match ([issues/134](https://github.com/couimet/my-claude-skills/issues/134))
+
 ## 2026.04.27
 
 ### Changed

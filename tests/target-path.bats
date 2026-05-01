@@ -192,6 +192,20 @@ teardown() {
   [[ "$output" == *"T001"* ]]
 }
 
+@test "notes type on issue branch → issue-scoped notes path" {
+  git checkout -q -b issues/42
+  run "$SCRIPT" --type notes --description "Plan the work"
+  [ "$status" -eq 0 ]
+  [ "$output" = ".claude-work/issues/42/notes/0001-plan-the-work.txt" ]
+}
+
+@test "notes type on main branch → flat-root notes path" {
+  git checkout -q -B main
+  run "$SCRIPT" --type notes --description "Quick finding"
+  [ "$status" -eq 0 ]
+  [ "$output" = ".claude-work/notes/0001-quick-finding.txt" ]
+}
+
 @test "invalid --type errors with T100" {
   run "$SCRIPT" --type bogus --description "test"
   [ "$status" -eq 1 ]
