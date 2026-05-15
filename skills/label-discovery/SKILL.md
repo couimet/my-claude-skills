@@ -23,11 +23,11 @@ gh label list --repo owner/repo --json name,description --limit 200
 
 Classify into two groups:
 
-**GitHub defaults** — ship with every new repo, don't indicate structured usage:
+**GitHub defaults**: ship with every new repo, don't indicate structured usage:
 
 - bug, documentation, duplicate, enhancement, good first issue, help wanted, invalid, question, wontfix
 
-**Structured labels** — anything beyond the defaults. Their presence indicates intentional label conventions (e.g., `type:bug`, `priority:high`, `area:checkout`).
+**Structured labels**: anything beyond the defaults. Their presence indicates intentional label conventions (e.g., `type:bug`, `priority:high`, `area:checkout`).
 
 ## Prompt for Selection
 

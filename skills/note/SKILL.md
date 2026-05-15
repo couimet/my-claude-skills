@@ -1,7 +1,7 @@
 ---
 name: note
 version: 2026.05.01@e2913b7
-description: Capture a quick note, finding, or result in a timestamped file under .claude-work/ — lightweight alternative to /scratchpad with no foundation skill dependencies
+description: Capture a quick note, finding, or result in a timestamped file under .claude-work/. Lightweight alternative to /scratchpad with no foundation skill dependencies
 argument-hint: <description>
 allowed-tools: Read, Write, Glob, Bash(git branch --show-current), Bash(mkdir -p *), Bash(date *)
 ---
@@ -14,7 +14,7 @@ Capture a note, finding, or result in a lightweight timestamped file. Use this i
 
 ## Step 1: Determine Target Directory and Timestamp
 
-Run both commands as parallel tool calls — they are independent:
+Run both commands as parallel tool calls. They are independent:
 
 ```bash
 git branch --show-current
@@ -47,11 +47,18 @@ Example: `20260329-143022-api-audit-findings.txt`
 
 ## Step 3: Write the File
 
-Write the note content to the file. The format is freeform — structure it however best fits the content being captured. There are no required sections or templates.
+Write the note content to the file. The format is freeform. Structure it however best fits the content being captured. There are no required sections or templates.
 
 **The one rule: each paragraph is ONE continuous line.** No line breaks at 72, 80, or any fixed column. Use line breaks only for structural separation (between paragraphs, around lists, around code blocks). Override your default instinct to wrap.
 
+### Output Anchors
+
+Format: freeform text.
+Length: unlimited.
+Perspective: whatever fits the content being captured.
+
 Before printing the path in Step 4, re-read the file and verify no paragraph contains a mid-sentence line break. Rewrite any that do.
+Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
 
 ## Step 4: Confirm
 

@@ -2,13 +2,13 @@
 name: ensure-gitignore
 version: 2026.05.01@e2913b7
 user-invocable: false
-description: Ensures .gitignore contains the Claude skill working directory sentinel. Shell script handles check-and-append in one Bash call — no file contents loaded into context.
+description: Ensures the project root .gitignore contains the Claude skill working directory sentinel. Shell script handles check-and-append in one Bash call. No file contents loaded into context.
 allowed-tools: Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
 # Ensure Gitignore
 
-Checks that `.gitignore` contains the sentinel that excludes Claude's ephemeral working directory. Appends the block if missing.
+Checks that the project root `.gitignore` contains the sentinel that excludes Claude's ephemeral working directory. Appends the block if missing. Always targets the git repository root — never creates or modifies `.gitignore` files in subdirectories.
 
 ## Usage
 
@@ -18,7 +18,7 @@ Checks that `.gitignore` contains the sentinel that excludes Claude's ephemeral 
 
 **Arguments:**
 
-- `GITIGNORE_PATH` (optional) — path to the `.gitignore` file. Default: `.gitignore` in the current working directory.
+- `GITIGNORE_PATH` (optional): path to the `.gitignore` file. Default: the git repository root's `.gitignore` (resolved via `git rev-parse --show-toplevel`). The script never creates or modifies `.gitignore` files in subdirectories.
 
 **Output:** A single line on stdout: `present` (sentinel already exists, no change) or `added` (block was appended).
 

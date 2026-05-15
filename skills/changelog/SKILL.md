@@ -8,7 +8,7 @@ allowed-tools: Read, Edit, Bash(git log *), Bash(git diff *), Bash(git branch --
 
 # Changelog
 
-Create a CHANGELOG entry with built-in guardrails for tone, placement, and detail-leak detection. Writes directly to CHANGELOG.md — the user reviews via `git diff` before committing.
+Create a CHANGELOG entry with built-in guardrails for tone, placement, and detail-leak detection. Writes directly to CHANGELOG.md. The user reviews via `git diff` before committing.
 
 **Input:** $ARGUMENTS (a short description of the change, e.g. "binding survives language-mode changes")
 
@@ -27,13 +27,13 @@ If no CHANGELOG.md exists anywhere, STOP: "No CHANGELOG.md found. Create one fir
 
 Read the target CHANGELOG.md and the project's CLAUDE.md (if it exists) to understand:
 
-- **Versioning scheme** — detect from the file's own header or preamble. Common patterns:
+- **Versioning scheme**: detect from the file's own header or preamble. Common patterns:
   - **SemVer:** headings like `## [1.2.3]` or `## [Unreleased]`, often with a preamble referencing [semver.org](https://semver.org) or [Keep a Changelog](https://keepachangelog.com)
   - **CalVer:** headings like `## 2026.03.19`, often with a preamble referencing [calver.org](https://calver.org)
   - **Other:** match whatever heading pattern the file uses
-- **Category subsections** — typically `### Added`, `### Changed`, `### Fixed`, `### Removed` (Keep a Changelog style). Some projects use different categories — match what exists.
-- **Entry format** — how entries are written, how issue links are formatted, what style the project uses.
-- **Existing entries** — scan the most recent section(s) to understand the project's voice and level of detail.
+- **Category subsections**: typically `### Added`, `### Changed`, `### Fixed`, `### Removed` (Keep a Changelog style). Some projects use different categories. Match what exists.
+- **Entry format**: how entries are written, how issue links are formatted, what style the project uses.
+- **Existing entries**: scan the most recent section(s) to understand the project's voice and level of detail.
 
 Also check the project's CLAUDE.md for any explicit CHANGELOG conventions (heading format, link style, category rules). CLAUDE.md overrides inferred conventions.
 
@@ -73,7 +73,7 @@ Determine where to place the entry based on the versioning scheme detected in St
 
 **SemVer projects (with `[Unreleased]` section):**
 
-- If an `## [Unreleased]` section exists, place the entry there — this is the standard SemVer workflow for in-progress changes.
+- If an `## [Unreleased]` section exists, place the entry there. This is the standard SemVer workflow for in-progress changes.
 - If no `[Unreleased]` section exists, create one above the most recent versioned heading.
 
 **CalVer projects (date-based headings):**
@@ -93,14 +93,16 @@ Write the entry following the tone rules (see Tone Rules section below). The ent
 2. Be one sentence for the change, optionally one for previous behavior
 3. End with an issue reference following the project's link format (read from existing entries to match the convention)
 
+Each bullet covers a single distinct change. When a PR or issue includes multiple unrelated changes, write separate bullets. Do not chain them together with periods or semicolons into a single entry. The "one sentence" rule is per change, not per category subsection.
+
 Before drafting, read 3-5 recent entries in the CHANGELOG to match the project's voice and formatting conventions.
 
 ## Step 6: Implementation-Detail Check
 
 Scan the draft entry against the blocklist patterns (see Implementation-Detail Blocklist section). For each match:
 
-- Print a warning: `Possible implementation detail: "<matched text>" — consider rephrasing in user-facing terms`
-- Do NOT block — the user may have a legitimate reason to include the detail
+- Print a warning: `Possible implementation detail: "<matched text>"` Consider rephrasing in user-facing terms
+- Do NOT block. The user may have a legitimate reason to include the detail
 
 If no matches, proceed silently.
 
@@ -112,7 +114,7 @@ Scan the entries in the target section's category subsection for thematic proxim
 2. If a match is found, place the new entry adjacent to the closest match (after it)
 3. If no match is found, append at the end of the subsection
 
-When creating a new version heading, placement is straightforward — the entry is the first in its subsection.
+When creating a new version heading, placement is straightforward. The entry is the first in its subsection.
 
 ## Step 8: Present and Write
 
@@ -137,7 +139,7 @@ These rules ensure entries describe what users experience, not how the code work
 
 - **Lead with what the user sees:** "Binding survives language-mode changes" not "Fixed onDidCloseTextDocument firing during language-mode switch"
 - **Describe the symptom, not the mechanism:** "no longer silently breaks" not "now checks isClosed flag before re-registering"
-- **One sentence for the change, optionally one for previous behavior** — no more
+- **One sentence for the change, optionally one for previous behavior**. No more
 - **Use the feature name as the subject** when the change is about a specific feature
 
 ### Don't
@@ -149,7 +151,7 @@ These rules ensure entries describe what users experience, not how the code work
 
 ### Examples
 
-**Good (SemVer project — a task management app):**
+**Good (SemVer project, a task management app):**
 
 ```text
 - Search results now highlight matched terms in the preview pane ([#42](https://github.com/acme/taskflow/issues/42))
@@ -161,7 +163,7 @@ These rules ensure entries describe what users experience, not how the code work
 - Added ElasticSearch highlight fragments to SearchResultDTO and mapped them through the PreviewRenderer pipeline with dangerouslySetInnerHTML for term emphasis ([#42](https://github.com/acme/taskflow/issues/42))
 ```
 
-**Good (CalVer project — a CLI tool):**
+**Good (CalVer project, a CLI tool):**
 
 ```text
 - `deploy` command now retries on transient network errors instead of failing immediately ([issues/87](https://github.com/acme/shipit/issues/87))
@@ -175,7 +177,7 @@ These rules ensure entries describe what users experience, not how the code work
 
 ## Implementation-Detail Blocklist
 
-Flag entries containing these patterns. Warn but do not block — rare edge cases may legitimately include a technical name.
+Flag entries containing these patterns. Warn but do not block. Rare edge cases may legitimately include a technical name.
 
 | Pattern | Why it's flagged |
 | --- | --- |
@@ -192,12 +194,14 @@ Flag entries containing these patterns. Warn but do not block — rare edge case
 
 Before placing an entry, scan the target subsection for thematic proximity:
 
-1. **Same feature or command name** — entries mentioning the same feature, command, or module name are the strongest match
-2. **Same user workflow** — entries about the same user-facing workflow (e.g., "search", "deploy", "authentication")
-3. **Same component area** — entries about the same part of the system (e.g., "CI", "build", "tests", "config")
+1. **Same feature or command name**: entries mentioning the same feature, command, or module name are the strongest match
+2. **Same user workflow**: entries about the same user-facing workflow (e.g., "search", "deploy", "authentication")
+3. **Same component area**: entries about the same part of the system (e.g., "CI", "build", "tests", "config")
 
 Place the new entry after the last thematic match in the subsection. If no match exists, append at the end.
 
 ## Formatting
 
 See `/prose-style` for hard-wrap and GitHub-reference rules.
+
+Before writing the entry, skim the text for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.

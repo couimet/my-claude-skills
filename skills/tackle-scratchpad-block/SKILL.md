@@ -1,7 +1,7 @@
 ---
 name: tackle-scratchpad-block
 version: 2026.05.01@e2913b7
-description: Execute a single step from a scratchpad plan — transitions status, runs tests, creates a commit message. Main execution engine for /start-issue → /finish-issue.
+description: Execute a single step from a scratchpad plan. Transitions status, runs tests, creates a commit message. Main execution engine for /start-issue → /finish-issue.
 argument-hint: <path/to/scratchpad.txt [#S00N | S00N | #L10-L20]>
 allowed-tools: Read, Write, Edit, Bash(*), Glob, Grep
 ---
@@ -18,7 +18,7 @@ Execute a specific block of implementation steps from a scratchpad file, then cr
 
 Determine the file the user's argument points at (the path portion before `#S00N` or `#L10-L20`) and check whether it contains a fenced JSON step block (look for ` ```json ` with a `"steps"` array).
 
-**If the argument resolves to a file containing a JSON step block:** proceed normally to Step 1. The explicit argument always takes precedence — the active-plan pointer is not consulted.
+**If the argument resolves to a file containing a JSON step block:** proceed normally to Step 1. The explicit argument always takes precedence. The active-plan pointer is not consulted.
 
 **If the argument does NOT resolve to a JSON step block** (file not found, or file exists but has no `"steps"` array): read the active-plan pointer (issue mode: `.claude-work/issues/<ID>/active-plan`; side-quest mode: `.claude-work/active-plan-<slug>`) to name the resolved path in the guidance message; if the pointer file is missing or empty, use `(no active-plan pointer found)` as the resolved path. Then STOP:
 
@@ -26,7 +26,7 @@ Determine the file the user's argument points at (the path portion before `#S00N
 This skill drives execution against a JSON step block, but the working document at
 <resolved-path> is a note (no step block found).
 
-You are in the default note-based workflow — the LLM self-organizes execution using
+You are in the default note-based workflow. The LLM self-organizes execution using
 in-session task tracking. To proceed, choose one of:
 
   A. Re-run the start-phase skill with --scratchpad to produce a scratchpad instead:
@@ -36,16 +36,16 @@ in-session task tracking. To proceed, choose one of:
   B. Pass an explicit scratchpad path if you have one:
        /tackle-scratchpad-block path/to/plan.txt#S001
 
-  C. Proceed manually — ask Claude to implement the next step from the note directly.
+  C. Proceed manually: ask Claude to implement the next step from the note directly.
 
-When done with implementation, call /finish-issue directly — do NOT call /commit-msg first.
+When done with implementation, call /finish-issue directly. Do NOT call /commit-msg first.
 ```
 
 ## Step 1: Read the Target Block
 
 Parse the argument using the rules defined in `/scratchpad-ref-format`, then locate the target step.
 
-**If the reference doesn't resolve** (file not found, step ID not in JSON, lines don't exist, or content isn't actionable steps): STOP immediately and report the issue. Do not attempt to guess, search for alternatives, or infer intent.
+**If the reference doesn't resolve** (file not found, step ID not in JSON, lines don't exist, or content isn't actionable steps): STOP immediately and report the issue. Report only the resolution failure with no fallback actions.
 
 ### Check Step Status
 
@@ -64,7 +64,7 @@ Read the full scratchpad to understand:
 - Parent issue context (if noted)
 - Files to modify (from "Files to Modify" section if present)
 
-**Done-step collapsing:** For any non-target step in the JSON block whose `"status"` is `"done"`, only note its `id`, `title`, and `status` — discard its `done_when`, `depends_on`, `files`, and `tasks`. Exception: if the selected step itself has `"status": "done"` and the user confirmed re-execution (Step 1), keep its full contents in context so its `tasks` and `files` remain actionable. Collapsing non-target done steps keeps the working context lean as the plan progresses.
+**Done-step collapsing:** For any non-target step in the JSON block whose `"status"` is `"done"`, only note its `id`, `title`, and `status`. Discard its `done_when`, `depends_on`, `files`, and `tasks`. Exception: if the selected step itself has `"status": "done"` and the user confirmed re-execution (Step 1), keep its full contents in context so its `tasks` and `files` remain actionable. Collapsing non-target done steps keeps the working context lean as the plan progresses.
 
 Note: User controls execution order. Do not verify or block based on previous steps.
 
@@ -114,7 +114,7 @@ After successful execution and passing tests, update the step's status in the sc
 
 Use the Edit tool to replace `"status": "in_progress"` with `"status": "done"`. Include the `"id"` and `"title"` fields in the old_string for Edit uniqueness.
 
-**If tests fail or execution is incomplete**, leave the step as `"in_progress"` — do NOT mark it `"done"`.
+**If tests fail or execution is incomplete**, leave the step as `"in_progress"`. Do NOT mark it `"done"`.
 
 ### Completion Check
 
@@ -130,15 +130,15 @@ Count the total number of steps in the `"steps"` array (regardless of status) to
 Create a `/commit-msg` file for this step first (as described below), then invoke `/finish-issue`. Print:
 
 ```text
-All steps complete (finish_issue_on_complete: true) — invoking /finish-issue
+All steps complete (finish_issue_on_complete: true). Invoking /finish-issue
 ```
 
 **If both conditions are true AND the scratchpad has exactly one step:**
 
-Invoke `/finish-issue` directly — no commit message file needed. Print:
+Invoke `/finish-issue` directly. No commit message file needed. Print:
 
 ```text
-All steps complete (finish_issue_on_complete: true) — invoking /finish-issue
+All steps complete (finish_issue_on_complete: true). Invoking /finish-issue
 ```
 
 **Otherwise** (any step still pending/in_progress/blocked, OR the field is absent or false): create a commit message file as below.
@@ -161,7 +161,7 @@ Print:
 3. Test results (pass/fail count)
 4. Either:
    - **All steps done + `finish_issue_on_complete: true` + multi-step scratchpad:** Commit message file path, then PR description path from `/finish-issue`
-   - **All steps done + `finish_issue_on_complete: true` + single-step scratchpad:** `/finish-issue` was invoked — no commit message file
+   - **All steps done + `finish_issue_on_complete: true` + single-step scratchpad:** `/finish-issue` was invoked. No commit message file
    - **Otherwise:** Commit message file path
 
 **IMPORTANT: Do NOT run `git commit`.**

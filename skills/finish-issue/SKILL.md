@@ -1,14 +1,14 @@
 ---
 name: finish-issue
 version: 2026.05.01@e2913b7
-description: Wrap up issue or side-quest work on the current issues/* or side-quest/* branch — run verification, check documentation needs, and generate PR description
+description: Wrap up issue or side-quest work on the current issues/* or side-quest/* branch. Runs verification, checks documentation needs, and generates a PR description
 argument-hint: [optional: issue-number-or-url] [--scratchpad]
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git status), Bash(git log *), Bash(git diff *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git status), Bash(git log *), Bash(git diff *), Bash(make lint-fix *), Bash(make test *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
 # Finish Issue
 
-Wraps up work on either an `issues/*` or `side-quest/*` branch — runs verification, checks documentation needs, and generates a PR description scratchpad.
+Wraps up work on either an `issues/*` or `side-quest/*` branch. Runs verification, checks documentation needs, and generates a PR description (defaults to `/note`; use `--scratchpad` to produce a scratchpad).
 
 **Input:** $ARGUMENTS
 
@@ -43,20 +43,20 @@ Read the active-plan pointer written by `/start-issue` or `/start-side-quest` to
 - **Issue mode:** read `.claude-work/issues/<ID>/active-plan`
 - **Side-quest mode:** read `.claude-work/active-plan-<slug>`
 
-The pointer contents is a single project-root-relative path. Record it as the **resolved plan path** — this is the single source of truth for the primary plan.
+The pointer contents is a single project-root-relative path. Record it as the **resolved plan path**. This is the single source of truth for the primary plan.
 
-**If the pointer is missing:** proceed without a resolved plan — Step 4 context gathering falls back to git log and breadcrumbs only.
+**If the pointer is missing:** proceed without a resolved plan. Step 4 context gathering falls back to git log and breadcrumbs only.
 
 ## Step 2: Pre-PR Verification
 
 Run the project's standard verification commands from the project root:
 
-1. **Working document step check** — scan the resolved plan (note or scratchpad) for unfinished steps before running anything else
-2. **Format** — run the project's formatter (fix mode)
-3. **Tests** — run the full test suite; all must pass
-4. **Check status** — `git status` for uncommitted changes
+1. **Working document step check**: scan the resolved plan (note or scratchpad) for unfinished steps before running anything else
+2. **Format**: run the project's formatter (fix mode)
+3. **Tests**: run the full test suite; all must pass
+4. **Check status**: `git status` for uncommitted changes
 
-**Check 1 — Working document step check:** Read the resolved plan path (from Step 1b). If it points to a file containing a fenced JSON step block, collect all steps where `"status"` is `"pending"` or `"in_progress"`. If the resolved plan is a note (no JSON step block) or no plan was resolved, proceed silently — there's nothing structured to check.
+**Check 1. Working document step check:** Read the resolved plan path (from Step 1b). If it points to a file containing a fenced JSON step block, collect all steps where `"status"` is `"pending"` or `"in_progress"`. If the resolved plan is a note (no JSON step block) or no plan was resolved, proceed silently. There is nothing structured to check.
 
 If any unfinished steps are found, print a warning:
 
@@ -68,8 +68,8 @@ Warning: unfinished steps found in working document:
 
 Then use `AskUserQuestion` with two options:
 
-- **Proceed anyway** — continue to format, tests, and PR description generation
-- **Stop — I'll finish the steps first** — halt and print: "Stopping. Finish the outstanding steps, then re-run `/finish-issue`."
+- **Proceed anyway**: continue to format, tests, and PR description generation
+- **Stop: I'll finish the steps first**. halt and print: "Stopping. Finish the outstanding steps, then re-run `/finish-issue`."
 
 ```bash
 git status
@@ -113,9 +113,9 @@ Check if documentation updates are needed. Common touchpoints:
 Collect information from:
 
 - Commit history: read `Base branch:` from the resolved plan (recorded by `/start-issue` or `/start-side-quest`); fall back to `origin/main` if absent. Run: `git log --oneline <base-branch>..HEAD`
-- **Resolved plan** (from Step 1b) — read to extract the goal and rationale. This is the primary reference
-- Breadcrumbs (if exists) — incorporate highlights into the PR description; use the paths below based on mode
-- Auxiliary working documents — PR-comment responses, interim analysis notes. Globbed separately so multi-round PR feedback isn't lost. Use the paths below based on mode
+- **Resolved plan** (from Step 1b): read to extract the goal and rationale. This is the primary reference
+- Breadcrumbs (if exists): incorporate highlights into the PR description; use the paths below based on mode
+- Auxiliary working documents: PR-comment responses, interim analysis notes. Globbed separately so multi-round PR feedback isn't lost. Use the paths below based on mode
 
 **PR template detection:** Check the following locations in order and read the first file found:
 
@@ -123,7 +123,7 @@ Collect information from:
 2. `pull_request_template.md`
 3. `docs/pull_request_template.md`
 
-Note whether a template was found and its path — this is used in Step 5. If none of these files exist, proceed without a template. The `.github/PULL_REQUEST_TEMPLATE/` directory (multiple templates) is out of scope.
+Note whether a template was found and its path. This is used in Step 5. If none of these files exist, proceed without a template. The `.github/PULL_REQUEST_TEMPLATE/` directory (multiple templates) is out of scope.
 
 **Issue mode (path differences):**
 
@@ -141,14 +141,14 @@ Note whether a template was found and its path — this is used in Step 5. If no
 
 Choose the working-document type:
 
-- **Default (`/note`):** PR descriptions are pure prose — a note is the right fit
+- **Default (`/note`):** PR descriptions are pure prose. A note is the right fit
 - **Opt-in (`/scratchpad`):** triggered when `$ARGUMENTS` contains `--scratchpad` or when the user's invoking message contains a natural-language opt-in phrase
 
-**Issue mode** — use description: `finish-issue-<ID>`
+**Issue mode**: use description: `finish-issue-<ID>`
 
-**Side-quest mode** — use description: `finish-<slug>` (flat placement since side-quest branches don't match `issues/*`)
+**Side-quest mode**: use description: `finish-<slug>` (flat placement since side-quest branches don't match `issues/*`)
 
-**If a PR template was detected in Step 4:** use it as the structural base. Preserve its section headers and checkbox structure verbatim — only replace placeholder content with the actual information gathered (summary, changes, test plan, etc.). In issue mode, add a `Closes https://github.com/{owner}/{repo}/issues/{NUMBER}` line at the end if the template doesn't already include one. In side-quest mode, omit the Closes line.
+**If a PR template was detected in Step 4:** use it as the structural base. Preserve its section headers and checkbox structure verbatim. Only replace placeholder content with the actual information gathered (summary, changes, test plan, etc.). In issue mode, add a `Closes https://github.com/{owner}/{repo}/issues/{NUMBER}` line at the end if the template doesn't already include one. In side-quest mode, omit the Closes line.
 
 **If no PR template was found:** use the built-in template below.
 
@@ -164,7 +164,7 @@ Choose the working-document type:
 - Bulleted list of key changes
 - Omit file lists (PR shows modified files)
 - Group related changes
-- Documentation: CHANGELOG [added / not needed — reason]; README [updated / not needed — reason]
+- Documentation: CHANGELOG [added / not needed: reason]; README [updated / not needed: reason]
 
 ## Key Discoveries (if breadcrumbs exist)
 
@@ -190,6 +190,8 @@ If side-quest mode:
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
 
+Before writing the PR description, skim the text for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
+
 ## Step 6: Handle Ambiguity
 
 If unclear whether documentation is needed or other decisions arise:
@@ -214,7 +216,7 @@ Documentation:
 - README: [updated / not needed - reason]
 
 Files created:
-- <actual-path-to-pr-description> (PR description — note by default, scratchpad if --scratchpad)
+- <actual-path-to-pr-description> (PR description (note by default, scratchpad if --scratchpad))
 
 ---
 
@@ -239,7 +241,7 @@ Documentation:
 - README: [updated / not needed - reason]
 
 Files created:
-- <actual-path-to-pr-description> (PR description — note by default, scratchpad if --scratchpad)
+- <actual-path-to-pr-description> (PR description (note by default, scratchpad if --scratchpad))
 
 ---
 
@@ -263,8 +265,8 @@ Before finishing, verify:
 - [ ] Project's formatter ran successfully
 - [ ] Project's test suite passes
 - [ ] No uncommitted changes (or user has been notified)
-- [ ] Active-plan pointer resolved (or missing — Step 4 degrades to git log + breadcrumbs)
-- [ ] No pending/in-progress steps in the resolved plan (or user confirmed to proceed) — check skipped silently if the resolved plan is a note
+- [ ] Active-plan pointer resolved (or missing. Step 4 degrades to git log + breadcrumbs)
+- [ ] No pending/in-progress steps in the resolved plan (or user confirmed to proceed). Check skipped silently if the resolved plan is a note
 - [ ] PR description doesn't reference ephemeral files
 - [ ] Documentation needs have been assessed
 - [ ] Working document created with PR description (note by default, scratchpad if opted in)

@@ -8,7 +8,7 @@ allowed-tools: Read, Write, Bash(git branch --show-current), Bash(date *), Bash(
 
 # Breadcrumb
 
-Drop a timestamped note along your journey through an issue. When you run `/finish-issue`, it follows the trail back — collecting all discoveries, decisions, and reminders.
+Drop a timestamped note along your journey through an issue. When you run `/finish-issue`, it follows the trail back, collecting all discoveries, decisions, and reminders.
 
 **Input:** $ARGUMENTS (the note text to record)
 
@@ -74,7 +74,7 @@ Print a brief confirmation with the file path:
 - Issues: `Breadcrumb dropped in .claude-work/issues/<ID>/breadcrumb.md`
 - Side-quests: `Breadcrumb dropped in .claude-work/breadcrumb-<slug>.md`
 
-Do NOT print the full file contents — keep it minimal.
+Confirm by printing the path as shown above. Length: one line. Do NOT print the full file contents.
 
 ## Formatting
 

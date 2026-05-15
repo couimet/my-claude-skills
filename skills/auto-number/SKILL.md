@@ -19,7 +19,7 @@ Returns the next available sequence number for files in a directory. Run the scr
 **Arguments:**
 
 - `directory` (required, positional) -- path to scan for existing numbered files
-- `--mode` (optional) -- `prefix` for `NNNN-name.ext` or `suffix` for `name-NNNN.ext`. Default: `prefix`. **Omit `--mode` entirely when you want prefix mode** — it is the default.
+- `--mode` (optional) -- `prefix` for `NNNN-name.ext` or `suffix` for `name-NNNN.ext`. Default: `prefix`. **Omit `--mode` entirely when you want prefix mode**: it is the default.
 - `--glob` (optional) -- file filter pattern (e.g., `*.txt`). Default: all files
 - `--width` (optional) -- output width, 1-10. Default: 4. Safety: never truncates if next value needs more digits
 
@@ -29,7 +29,7 @@ Returns the next available sequence number for files in a directory. Run the scr
 
 ```bash
 # Next prefix number in .claude-work/issues/5/commit-msgs/ (default mode, default width)
-# NOTE: do NOT pass "prefix" as a positional argument — just omit --mode
+# NOTE: do NOT pass "prefix" as a positional argument. Just omit --mode
 ~/.claude/skills/auto-number/auto-number.sh .claude-work/issues/5/commit-msgs
 
 # Next suffix number, only counting .json files
@@ -41,20 +41,20 @@ Returns the next available sequence number for files in a directory. Run the scr
 
 ## Common Mistakes
 
-**WRONG** — `prefix` is not a positional argument:
+**WRONG**: `prefix` is not a positional argument:
 
 ```bash
 # This will fail with: E002 error: unexpected argument 'prefix'
 ~/.claude/skills/auto-number/auto-number.sh .claude-work/issues/5/scratchpads prefix
 ```
 
-**RIGHT** — omit `--mode` entirely for prefix (it is the default):
+**RIGHT**: omit `--mode` entirely for prefix (it is the default):
 
 ```bash
 ~/.claude/skills/auto-number/auto-number.sh .claude-work/issues/5/scratchpads
 ```
 
-**RIGHT** — use `--mode` flag when explicitly specifying a mode:
+**RIGHT**: use `--mode` flag when explicitly specifying a mode:
 
 ```bash
 ~/.claude/skills/auto-number/auto-number.sh .claude-work/issues/5/scratchpads --mode suffix

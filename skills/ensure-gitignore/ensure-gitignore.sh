@@ -6,7 +6,7 @@
 # Usage: ensure-gitignore.sh [GITIGNORE_PATH]
 #
 # Arguments:
-#   GITIGNORE_PATH  Optional path to the .gitignore file (default: .gitignore)
+#   GITIGNORE_PATH  Optional path to the .gitignore file (default: project root's .gitignore, resolved via git rev-parse --show-toplevel)
 #
 # Output (one line on stdout):
 #   present  — sentinel already in file; no changes made
@@ -18,7 +18,15 @@
 
 set -euo pipefail
 
-GITIGNORE="${1:-.gitignore}"
+if [[ -n "${1:-}" ]]; then
+  GITIGNORE="$1"
+else
+  GITIGNORE="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+    echo "Unable to determine repository root; please run from inside a git repo or pass a target .gitignore path" >&2
+    exit 1
+  }
+  GITIGNORE="$GITIGNORE/.gitignore"
+fi
 SENTINEL="# Claude skill working directories"
 BLOCK=".claude-work/"
 
