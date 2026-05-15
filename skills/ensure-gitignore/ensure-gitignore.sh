@@ -18,7 +18,15 @@
 
 set -euo pipefail
 
-GITIGNORE="${1:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.gitignore}"
+if [[ -n "${1:-}" ]]; then
+  GITIGNORE="$1"
+else
+  GITIGNORE="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+    echo "Unable to determine repository root; please run from inside a git repo or pass a target .gitignore path" >&2
+    exit 1
+  }
+  GITIGNORE="$GITIGNORE/.gitignore"
+fi
 SENTINEL="# Claude skill working directories"
 BLOCK=".claude-work/"
 
