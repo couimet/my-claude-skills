@@ -93,6 +93,8 @@ Write the entry following the tone rules (see Tone Rules section below). The ent
 2. Be one sentence for the change, optionally one for previous behavior
 3. End with an issue reference following the project's link format (read from existing entries to match the convention)
 
+Each bullet covers a single distinct change. When a PR or issue includes multiple unrelated changes, write separate bullets — do not chain them together with periods or semicolons into a single entry. The "one sentence" rule is per change, not per category subsection.
+
 Before drafting, read 3-5 recent entries in the CHANGELOG to match the project's voice and formatting conventions.
 
 ## Step 6: Implementation-Detail Check

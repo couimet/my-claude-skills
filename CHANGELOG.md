@@ -16,6 +16,10 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 - Skill prose updated across all 20 skills to follow LinkedIn-post prompt-optimization advice: em dashes replaced with standard punctuation, negative instructions rephrased positively where it improves clarity, and text-producing skills now include explicit Length/Format/Tone output anchors. Self-checks in text-producing skills now also skim for common AI-writing patterns like filler phrases and vague conclusions ([issues/136](https://github.com/couimet/my-claude-skills/issues/136))
 
+### Fixed
+
+- `/ensure-gitignore` now always targets the project root `.gitignore` (resolved via `git rev-parse --show-toplevel`) instead of resolving relative to the current working directory, preventing accidental `.gitignore` creation in subdirectories
+
 ## 2026.05.01
 
 ### Fixed
