@@ -8,11 +8,11 @@ allowed-tools: Read, Glob, Grep, Write, Bash(gh api repos/*/*/pulls/*/reviews/*)
 
 # Tackle PR Comment
 
-Analyze a PR comment, explore the referenced code, and create a detailed implementation working document. This skill is for **analysis and planning only** — it does not implement changes until the user approves.
+Analyze a PR comment, explore the referenced code, and create a detailed implementation working document. This skill is for **analysis and planning only**. It does not implement changes until the user approves.
 
 **Input:** $ARGUMENTS (a PR comment URL, optionally followed by `--scratchpad`)
 
-This skill produces an *auxiliary* working document — it does NOT overwrite the branch's active-plan pointer. `/finish-issue` will still treat the primary plan (from the original `/start-issue` or `/start-side-quest`) as the reference; this document is read as supplementary context.
+This skill produces an *auxiliary* working document. It does NOT overwrite the branch's active-plan pointer. `/finish-issue` will still treat the primary plan (from the original `/start-issue` or `/start-side-quest`) as the reference; this document is read as supplementary context.
 
 ## Step 1: Parse the URL and Fetch the Comment
 
@@ -96,9 +96,9 @@ Where:
 
 **Naming convention:** use letters (A, B, C) for feedback items in text headings. When the opt-in path applies, use `S001`, `S002` IDs for implementation steps in the JSON block. This avoids confusion when referencing "Feedback B" vs "S002".
 
-### 5a. Default path — `/note`
+### 5a. Default path: `/note`
 
-Use `/note` with the description above. The note contains (all prose — no JSON step block):
+Use `/note` with the description above. The note contains (all prose, no JSON step block):
 
 ````markdown
 # PR https://github.com/{owner}/{repo}/pull/{PR_NUMBER} Comment Response
@@ -112,21 +112,21 @@ Source: {FULL_PR_COMMENT_URL}
 {Analysis of first feedback item}
 
 Decision: ACCEPT | IGNORE
-Reason: {brief justification — omit if self-evident from the analysis above}
+Reason: {brief justification. Omit if self-evident from the analysis above}
 
 ### Feedback B: {short title}
 
 {Analysis of second feedback item}
 
 Decision: ACCEPT | IGNORE
-Reason: {brief justification — omit if self-evident from the analysis above}
+Reason: {brief justification. Omit if self-evident from the analysis above}
 
 ## Action Plan
 
 Numbered prose steps (no fenced JSON). Each step names the feedback items it addresses (e.g. "Step 1 (addresses A, C): ...") and the specific files/functions to change. Feedback items marked IGNORE do not appear here.
 ````
 
-### 5b. Opt-in path — `/scratchpad`
+### 5b. Opt-in path: `/scratchpad`
 
 Use `/scratchpad` with the description above. Same sections as 5a, except `## Action Plan` is replaced with `## Implementation Plan` containing a fenced JSON step block per the `/scratchpad` Step Tracking schema. For PR-comment work:
 
@@ -169,7 +169,7 @@ When the user approves the plan and asks to proceed:
 3. **If any reviewer feedback was ignored**: Add an `Ignored Feedback:` section after the Benefits section. For each ignored item:
    - Briefly describe the suggestion that was not implemented
    - Include reasoning for why it was skipped (prefilled based on your recommendation if the user didn't provide explicit reasoning)
-   - This ensures reviewers know the feedback wasn't missed—it was intentionally declined
+   - This ensures reviewers know the feedback wasn't missed. It was intentionally declined
 
 4. **Then**: Proceed with implementation.
 
@@ -198,7 +198,7 @@ Before finishing initial analysis (Step 7):
 
 - [ ] Comment was fetched successfully with full thread context (if applicable)
 - [ ] Working document (note or scratchpad) contains link to source PR comment
-- [ ] Working document created via `/note` (default) or `/scratchpad` (opt-in) — not both
+- [ ] Working document created via `/note` (default) or `/scratchpad` (opt-in). Not both
 - [ ] Active-plan pointer was NOT overwritten (PR-comment scratchpads are auxiliary)
 - [ ] Plan has specific file/function names
 - [ ] Each step is actionable and concrete

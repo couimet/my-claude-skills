@@ -8,7 +8,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *),
 
 # Start Side-Quest
 
-Start a "side-quest" — a focused branch for orthogonal improvements discovered while working on another issue. Side-quests keep the main issue branch clean and focused.
+Start a "side-quest": a focused branch for orthogonal improvements discovered while working on another issue. Side-quests keep the main issue branch clean and focused.
 
 **Input:** $ARGUMENTS
 
@@ -40,7 +40,7 @@ git stash push -m "WIP: <parent-branch> - paused for side-quest"
 
 Derive a slug from the description (lowercase, hyphens, no special chars).
 
-The base branch for the side-quest is the branch that was active when `/start-side-quest` was invoked (captured in Step 1). This is typically `origin/main` but may be any branch — for example, when working in a stack of PRs.
+The base branch for the side-quest is the branch that was active when `/start-side-quest` was invoked (captured in Step 1). This is typically `origin/main` but may be any branch, for example, when working in a stack of PRs.
 
 ```bash
 git fetch origin
@@ -64,14 +64,14 @@ Choose the working-document type based on whether formal step tracking is reques
 
 Side-quest branches don't match `issues/*`, so the working document lands in the flat `.claude-work/notes/` (default) or `.claude-work/scratchpads/` (opt-in) directory.
 
-### 3a. Default path — `/note`
+### 3a. Default path: `/note`
 
-Use `/note` with description `side-quest-<slug>`. The note MUST contain (all prose — no JSON step block):
+Use `/note` with description `side-quest-<slug>`. The note MUST contain (all prose, no JSON step block):
 
 ````markdown
 # Side-Quest: <Title>
 
-Base branch: <branch this was cut from — origin/main, issues/XXX, or another branch>
+Base branch: <branch this was cut from (origin/main, issues/XXX, or another branch)>
 
 ## Goal
 
@@ -82,7 +82,7 @@ Base branch: <branch this was cut from — origin/main, issues/XXX, or another b
 Numbered prose steps (no fenced JSON). Each step commit-sized and specific.
 ````
 
-### 3b. Opt-in path — `/scratchpad`
+### 3b. Opt-in path: `/scratchpad`
 
 Use `/scratchpad` with description `side-quest-<slug>`. Same sections as 3a, except `## Plan` is replaced with `## Implementation Plan` containing a fenced JSON step block per the `/scratchpad` Step Tracking schema. Set `finish_issue_on_complete: true` at the top level.
 
@@ -119,7 +119,7 @@ Branch: side-quest/<slug>
 Parent: <original branch> (stashed if had changes)
 
 Files created:
-- .claude-work/notes/<file>.txt (implementation plan — default path)
+- .claude-work/notes/<file>.txt (implementation plan, default path)
   OR .claude-work/scratchpads/<file>.txt (if --scratchpad)
 - .claude-work/active-plan-<slug> (pointer to the working document)
 - .claude-work/questions/<file>.txt (if questions needed)
@@ -148,7 +148,7 @@ Before finishing, verify:
 
 - [ ] Current work stashed (if on a work branch with changes)
 - [ ] Side-quest branch created from `<base-branch>`
-- [ ] Working document created via `/note` (default) or `/scratchpad` (opt-in) — not both
+- [ ] Working document created via `/note` (default) or `/scratchpad` (opt-in). Not both
 - [ ] `.claude-work/active-plan-<slug>` pointer written with the project-root-relative path to the working document
 - [ ] Plan has specific file/change details
 - [ ] Parent branch noted for easy return

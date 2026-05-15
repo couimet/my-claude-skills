@@ -2,7 +2,7 @@
 name: prose-style
 version: 2026.05.01@e2913b7
 user-invocable: false
-description: Canonical prose and reference formatting rules for any skill that writes to a file — hard-wrap rule, code reference syntax, GitHub reference syntax. Auto-consulted whenever a skill produces file content.
+description: Canonical prose and reference formatting rules for any skill that writes to a file: hard-wrap rule, code reference syntax, GitHub reference syntax. Auto-consulted whenever a skill produces file content.
 allowed-tools: Bash(gh repo view *)
 ---
 
@@ -12,13 +12,19 @@ Single source of truth for how skill-generated text is written. Three rules, all
 
 ## Rule 1: Each paragraph is one continuous line
 
-**Write each paragraph as ONE continuous line, no matter how long.** Use line breaks for *structure* only — between paragraphs, before/after lists, between sections, around code blocks. Do NOT insert line breaks at 72, 80, or any fixed column to make the text "look nicer." Your default instinct will be to wrap; override it.
+**Write each paragraph as ONE continuous line, no matter how long.** Use line breaks for *structure* only: between paragraphs, before/after lists, between sections, around code blocks. Do NOT insert line breaks at 72, 80, or any fixed column to make the text "look nicer." Your default instinct will be to wrap; override it.
 
 This applies to every file a skill produces: scratchpads, questions, commit messages, PR descriptions, notes, breadcrumbs, CHANGELOG entries, article drafts.
+
+### Format Anchors
+
+Format: one continuous line per paragraph, no hard wrapping. Code references: path/to/file.ts#L10 (bare, never backtick-wrapped). GitHub references: full URL only.
 
 ### Self-check before you finish
 
 Before reporting a file path back to the user, re-read the file you just wrote. For each paragraph (text between blank lines, not inside a code block or table), verify it is a single continuous line. If you find any mid-sentence line break, rewrite that paragraph as one line. This check is cheap and catches the most common failure mode.
+
+Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
 
 ## Rule 2: Code references
 
@@ -31,7 +37,7 @@ Use GitHub-style permalink syntax so references become clickable in RangeLink an
 | Char precision | `path/to/file.ts#L10C5-L20C15` | src/parser.ts#L42C3-L42C28 |
 
 - Workspace-relative paths only (never absolute).
-- Never wrap in backticks — the backticks become part of the parsed path and break navigation.
+- Write paths bare, without backticks. Backticks become part of the parsed path and break navigation.
 - Never use plain-text forms like "lines 26-37", "Line 539", or "(L42-L58)".
 
 ## Rule 3: GitHub references
@@ -56,4 +62,4 @@ Then append `/issues/{number}` or `/pull/{number}`.
 
 ## What this replaces
 
-Before 2026-04-20, the three rules above appeared as repeated epilogues in ~11 user-invocable skills, plus as separate `/code-ref` and `/github-ref` foundation skills. The audit at [issues/120](https://github.com/couimet/my-claude-skills/issues/120) consolidated everything here. Callers no longer need to repeat the rules — auto-consultation of `/prose-style` via this skill's description covers it.
+Callers no longer need to repeat the rules. Auto-consultation of `/prose-style` via this skill's description covers it.

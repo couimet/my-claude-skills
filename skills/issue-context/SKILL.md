@@ -2,7 +2,7 @@
 name: issue-context
 version: 2026.05.01@e2913b7
 user-invocable: false
-description: Contract for target-path.sh — the shell script that resolves .claude-work/ file paths from the current git branch. Referenced by name from /scratchpad, /question, /commit-msg; not auto-consulted.
+description: Contract for target-path.sh, the shell script that resolves .claude-work/ file paths from the current git branch. Referenced by name from /scratchpad, /question, /commit-msg; not auto-consulted.
 allowed-tools: Bash(*/skills/issue-context/target-path.sh *)
 ---
 
@@ -27,4 +27,4 @@ The script reads the current branch, extracts the issue ID (numeric prefix of th
 
 ## History
 
-Before the refactor in [issues/120](https://github.com/couimet/my-claude-skills/issues/120), this file contained ~118 lines of Markdown that restated the branch-parsing rules in prose — and those same rules were also inlined into `/scratchpad`, `/question`, and `/commit-msg`. The audit concluded that deterministic logic belongs in a shell script (the pattern set by `/auto-number` and `/ensure-gitignore`), not in Markdown auto-consulted for every file-creation task. This file is now a pointer to the script.
+Before the refactor in [issues/120](https://github.com/couimet/my-claude-skills/issues/120), this file contained ~118 lines of Markdown that restated the branch-parsing rules in prose, and those same rules were also inlined into `/scratchpad`, `/question`, and `/commit-msg`. The audit concluded that deterministic logic belongs in a shell script (the pattern set by `/auto-number` and `/ensure-gitignore`), not in Markdown auto-consulted for every file-creation task. This file is now a pointer to the script.

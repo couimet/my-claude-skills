@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.05.15
+
+### Changed
+
+- Skill prose updated across all 20 skills to follow LinkedIn-post prompt-optimization advice: em dashes replaced with standard punctuation, negative instructions rephrased positively where it improves clarity, and text-producing skills now include explicit Length/Format/Tone output anchors. Self-checks in text-producing skills now also skim for common AI-writing patterns like filler phrases and vague conclusions ([issues/136](https://github.com/couimet/my-claude-skills/issues/136))
+
 ## 2026.05.01
 
 ### Fixed

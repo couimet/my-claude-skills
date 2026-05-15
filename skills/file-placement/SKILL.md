@@ -26,11 +26,11 @@ When creating a new file, use this decision tree to determine the correct locati
 
 Evaluate from top to bottom. The first matching row determines the destination.
 
-Each skill owns its own file format, naming conventions, and auto-numbering. Consult the referenced skill for specifics. For the numbered working-file skills — `/scratchpad`, `/question`, and `/commit-msg` — directory organization (flat vs issue-scoped subdirectories) is handled by `~/.claude/skills/issue-context/target-path.sh`, which those skills call internally. `/note` uses timestamp-based filenames and detects branch context on its own; `/breadcrumb` writes a single file per issue directly. All ephemeral working files live under `.claude-work/`.
+Each skill owns its own file format, naming conventions, and auto-numbering. Consult the referenced skill for specifics. For the numbered working-file skills: `/scratchpad`, `/question`, and `/commit-msg`. Directory organization (flat vs issue-scoped subdirectories) is handled by `~/.claude/skills/issue-context/target-path.sh`, which those skills call internally. `/note` uses timestamp-based filenames and detects branch context on its own; `/breadcrumb` writes a single file per issue directly. All ephemeral working files live under `.claude-work/`.
 
 ## Ephemeral Path Rule
 
-`.claude-work/` paths must never appear in commits, PRs, GitHub issues, or any output visible on GitHub. These files are local-only working documents that don't exist in the repository — referencing them creates broken, meaningless links.
+`.claude-work/` paths must never appear in commits, PRs, GitHub issues, or any output visible on GitHub. These files are local-only working documents that don't exist in the repository. Referencing them creates broken, meaningless links.
 
 ## What Does NOT Go in These Directories
 

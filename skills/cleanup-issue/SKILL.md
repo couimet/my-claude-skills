@@ -83,7 +83,7 @@ rm -rf .claude-work/issues/<ID>
 Print:
 
 ```text
-Cleaned up .claude-work/issues/<ID>/ — all working files removed.
+Cleaned up .claude-work/issues/<ID>/. All working files removed.
 ```
 
 ## Step 5: Check for Side-Quest Artifacts

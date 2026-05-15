@@ -1,7 +1,7 @@
 ---
 name: scratchpad
 version: 2026.05.01@e2913b7
-description: Create an auto-numbered working document in .claude-work/scratchpads/ — implementation plans, PR descriptions, analysis notes, architecture decisions, issue drafts.
+description: Create an auto-numbered working document in .claude-work/scratchpads/: implementation plans, PR descriptions, analysis notes, architecture decisions, issue drafts.
 argument-hint: <description>
 allowed-tools: Read, Write, Glob, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
@@ -16,9 +16,15 @@ Create or update a working document in `.claude-work/`.
 
 **Every paragraph in the scratchpad is ONE continuous line.** No line breaks at 72, 80, or any fixed column. Use line breaks only for structural separation: between paragraphs, before/after lists, around code blocks, between sections. This overrides your default instinct to wrap long prose. See `/prose-style` for the full rationale.
 
+### Output Anchors
+
+Length: varies by purpose and context.
+Format: freeform text with optional fenced JSON step block for implementation plans.
+Perspective: third-person technical.
+
 ## Step 1: Resolve the Target Path
 
-Run these two commands as parallel tool calls — they are independent.
+Run these two commands as parallel tool calls. They are independent.
 
 ```bash
 ~/.claude/skills/issue-context/target-path.sh --type scratchpads --description "$ARGUMENTS"
@@ -34,7 +40,7 @@ Use the stdout of the first command as the full file path. The script handles br
 
 Files use `.txt` extension (not `.md`).
 
-The content is freeform — structure it for the purpose at hand (plan, analysis, PR description, etc.).
+The content is freeform. Structure it for the purpose at hand (plan, analysis, PR description, etc.).
 
 ## Step Tracking
 
@@ -78,22 +84,24 @@ When a scratchpad contains an implementation plan, embed the steps inside a fenc
 
 Top-level fields (siblings of `steps`):
 
-- **`finish_issue_on_complete`** — Boolean, default `false` (omit to default). When `true`, `/tackle-scratchpad-block` invokes `/finish-issue` automatically after all steps reach `"done"`. Only `/start-issue` and `/start-side-quest` set this to `true` — they mark the scratchpad as the primary issue deliverable. Every other skill that creates scratchpads (ad-hoc `/scratchpad`, `/tackle-pr-comment`, CI fix scratchpads) omits it.
+- **`finish_issue_on_complete`**: Boolean, default `false` (omit to default). When `true`, `/tackle-scratchpad-block` invokes `/finish-issue` automatically after all steps reach `"done"`. Only `/start-issue` and `/start-side-quest` set this to `true`. They mark the scratchpad as the primary issue deliverable. Every other skill that creates scratchpads (ad-hoc `/scratchpad`, `/tackle-pr-comment`, CI fix scratchpads) omits it.
 
 Step-level fields (inside each `steps` entry):
 
-- **`id`** — `S001`, `S002`, etc. Zero-padded 3-digit IDs mirroring the `/question` skill's `Q001`/`A001` pattern. Use `S001` as the short form in cross-references.
-- **`title`** — Short description of the step.
-- **`status`** — `pending` | `in_progress` | `done` | `blocked`. Planning skills always write `"pending"`. Only `/tackle-scratchpad-block` transitions status during execution.
-- **`done_when`** — Concrete completion criteria. Recommended for implementation plans. Omit only for steps where completion is self-evident (e.g., "Delete file X"). A concrete criterion here helps `/tackle-scratchpad-block` confirm the step is truly done.
-- **`depends_on`** — Array of step IDs that must be `"done"` first. Empty array means no dependencies.
-- **`files`** — Array of file paths this step touches.
-- **`tasks`** — Array of concrete action items within the step.
-- **`addresses`** — (tackle-pr-comment only) Array of feedback item letters, e.g. `["A", "C"]`.
+- **`id`**: `S001`, `S002`, etc. Zero-padded 3-digit IDs mirroring the `/question` skill's `Q001`/`A001` pattern. Use `S001` as the short form in cross-references.
+- **`title`**: Short description of the step.
+- **`status`**: `pending` | `in_progress` | `done` | `blocked`. Planning skills always write `"pending"`. Only `/tackle-scratchpad-block` transitions status during execution.
+- **`done_when`**: Concrete completion criteria. Recommended for implementation plans. Omit only for steps where completion is self-evident (e.g., "Delete file X"). A concrete criterion here helps `/tackle-scratchpad-block` confirm the step is truly done.
+- **`depends_on`**: Array of step IDs that must be `"done"` first. Empty array means no dependencies.
+- **`files`**: Array of file paths this step touches.
+- **`tasks`**: Array of concrete action items within the step.
+- **`addresses`**: (tackle-pr-comment only) Array of feedback item letters, e.g. `["A", "C"]`.
 
 ## After writing: self-check for hard-wrapping
 
-Before reporting the filepath back to the user, re-read the scratchpad you just wrote. For each paragraph in the body (text between blank lines, outside code blocks, tables, and lists), verify it is a single continuous line. If you find a mid-sentence line break, rewrite that paragraph as one line. Do not skip this check — wrapped prose is the most common failure mode for skill-generated files.
+Before reporting the filepath back to the user, re-read the scratchpad you just wrote. For each paragraph in the body (text between blank lines, outside code blocks, tables, and lists), verify it is a single continuous line. If you find a mid-sentence line break, rewrite that paragraph as one line. Always complete this check. Wrapped prose is the most common failure mode for skill-generated files.
+
+Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
 
 ## Formatting
 

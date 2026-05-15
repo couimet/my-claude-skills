@@ -1,14 +1,14 @@
 ---
 name: create-github-issue
 version: 2026.05.01@e2913b7
-description: Create a GitHub issue from a file draft or inline description — with smart label discovery and sub-issue linking
+description: Create a GitHub issue from a file draft or inline description, with smart label discovery and sub-issue linking
 argument-hint: <file-path-or-title>
 allowed-tools: Read, Write, Glob, Bash(gh repo view *), Bash(gh label list *), Bash(gh issue create *), Bash(*/skills/create-github-issue/link-sub-issue.sh *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
 # Create GitHub Issue
 
-Create a GitHub issue with smart label discovery and optional sub-issue linking. Reads from any file (scratchpad, markdown, extensionless — including drag-dropped paths) or accepts an inline title.
+Create a GitHub issue with smart label discovery and optional sub-issue linking. Reads from any file (scratchpad, markdown, extensionless, including drag-dropped paths) or accepts an inline title.
 
 **Input:** $ARGUMENTS (a file path, or a title for interactive creation)
 
@@ -16,8 +16,8 @@ Create a GitHub issue with smart label discovery and optional sub-issue linking.
 
 Determine the input mode from `$ARGUMENTS`:
 
-- **File path** — if the argument points to an existing file (any path, any extension or none), treat it as a draft to extract from. This covers `.claude-work/scratchpads/*.txt`, markdown files, extensionless files, and drag-dropped paths from the terminal.
-- **Inline title** — otherwise, treat the entire argument as the issue title for interactive creation.
+- **File path**: if the argument points to an existing file (any path, any extension or none), treat it as a draft to extract from. This covers `.claude-work/scratchpads/*.txt`, markdown files, extensionless files, and drag-dropped paths from the terminal.
+- **Inline title**: otherwise, treat the entire argument as the issue title for interactive creation.
 
 ## Step 2: Extract Issue Content
 
@@ -25,8 +25,8 @@ Determine the input mode from `$ARGUMENTS`:
 
 Read the file and extract:
 
-- **Title** — the first `#`-level heading (strip the `#` prefix)
-- **Body** — everything after the title heading
+- **Title**: the first `#`-level heading (strip the `#` prefix)
+- **Body**: everything after the title heading
 
 If the file contains a `## Parent` or `Parent: #NN` line, extract the parent issue number for sub-issue linking in Step 6.
 
@@ -34,7 +34,7 @@ If the file contains a `**Target repo:** owner/repo` line (e.g., `**Target repo:
 
 ### From Inline Title
 
-Use the argument as the title. Prompt the user to provide a body — either inline or by pointing to an existing file.
+Use the argument as the title. Prompt the user to provide a body, either inline or by pointing to an existing file.
 
 ## Step 3: Sanitize Body
 
@@ -53,7 +53,7 @@ Stripped ephemeral references:
 If no ephemeral references were found, print:
 
 ```text
-No ephemeral references found — body is clean.
+No ephemeral references found. Body is clean.
 ```
 
 ## Step 4: Discover Labels and Prompt for Selection
@@ -90,7 +90,7 @@ The script handles all GraphQL calls internally, using `jq -n` to build payloads
 If the script fails, note it in the Step 7 report as:
 
 ```text
-Sub-issue linking: failed (<error summary>) — link manually if needed.
+Sub-issue linking: failed (<error summary>). Link manually if needed.
 ```
 
 If no parent was specified, skip this step.
@@ -104,7 +104,7 @@ Created: <ISSUE_URL>
 Title: <TITLE>
 Labels: <LABEL1>, <LABEL2>
 Parent: https://github.com/{OWNER}/{REPO}/issues/{PARENT_NUMBER} (linked as sub-issue)  ← only if parent specified AND linking succeeded
-Sub-issue linking: failed (<error summary>) — link manually if needed.  ← only if parent specified AND linking failed
+Sub-issue linking: failed (<error summary>). Link manually if needed.  ← only if parent specified AND linking failed
 ```
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
