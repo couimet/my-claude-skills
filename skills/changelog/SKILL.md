@@ -1,6 +1,6 @@
 ---
 name: changelog
-version: 2026.05.15@81da5f7
+version: 2026.05.15@4fe4598
 description: Create or update CHANGELOG entries with tone guardrails, thematic grouping, and implementation-detail leak detection.
 argument-hint: <description>
 allowed-tools: Read, Edit, Bash(git log *), Bash(git diff *), Bash(git branch --show-current), AskUserQuestion
