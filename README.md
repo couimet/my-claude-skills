@@ -282,6 +282,7 @@ The [`demo/real-life/issues-10/`](demo/real-life/issues-10/) folder contains eve
 
 The most recent posts are at the top.
 
+- [I sold you on /scratchpad. Then I migrated to /note.](https://dev.to/couimet/i-sold-you-on-scratchpad-then-i-migrated-to-note-4n1o) - DEV Community
 - [I Thought I Was DRY-ing, I May Have Been Double-Paying](https://dev.to/couimet/i-thought-i-was-dry-ing-i-may-have-been-double-paying-5dli) - DEV Community
 - [From Vide Coding to Supercharged Vibe Guiding](https://dev.to/couimet/from-vide-coding-to-supercharged-vibe-guiding-6nm) - DEV Community
 - [From Blank Issue to PR — With the Thinking Exposed](https://ouimet.info/follow-alongs/my-claude-skills-issues-10.html) — a full follow-along showing how these skills turned a blank issue into a shipped PR, with every artifact visible

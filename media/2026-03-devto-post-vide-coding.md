@@ -1,10 +1,12 @@
 ---
 title: "From Vide Coding to Supercharged Vibe Guiding"
-published: false
+published: https://dev.to/couimet/from-vide-coding-to-supercharged-vibe-guiding-6nm
 description: "Vibe coding without structure is vide coding — empty results. Custom Claude Code skills turn it into something better."
 tags: ai, claudecode, productivity, devtools
 cover_image:
 ---
+
+> **Update (2026-05-21):** I've kept iterating on this workflow since publishing. See [the audit pivot](https://dev.to/couimet/i-thought-i-was-dry-ing-i-may-have-been-double-paying-5dli) for what changed in April 2026, and [the move to /note](https://dev.to/couimet/i-sold-you-on-scratchpad-then-i-migrated-to-note-4n1o) for the May 2026 shift.
 
 ## It's Not a Typo
 
