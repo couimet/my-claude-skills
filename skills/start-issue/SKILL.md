@@ -1,6 +1,6 @@
 ---
 name: start-issue
-version: 2026.05.15@4fe4598
+version: 2026.05.21@73bc968
 description: Start working on a GitHub issue - analyze, explore codebase, and create detailed implementation plan
 argument-hint: <github-issue-url> [--scratchpad]
 allowed-tools: Read, Write, Glob, Grep, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
