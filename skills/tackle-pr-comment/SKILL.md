@@ -82,6 +82,8 @@ Before creating the scratchpad, assess if the feedback is clear enough to act on
 
 ## Step 5: Create Implementation Working Document
 
+Before drafting, restate the rules that apply to this document: hard-wrap and reference rules from `/prose-style`, and the Output Anchors block below. Then re-read the comment thread, the linked code, and any files explored in Step 3. Decide ACCEPT or IGNORE on each feedback item with the actual code in mind. The analysis is the highest-leverage artifact this skill produces.
+
 Choose the working-document type based on whether formal step tracking is requested:
 
 - **Default (`/note`):** use this unless the user explicitly opted in. Produces a lightweight, freeform analysis + action plan.
@@ -123,7 +125,7 @@ Reason: {brief justification. Omit if self-evident from the analysis above}
 
 ## Action Plan
 
-Numbered prose steps (no fenced JSON). Each step names the feedback items it addresses (e.g. "Step 1 (addresses A, C): ...") and the specific files/functions to change. Feedback items marked IGNORE do not appear here.
+Numbered prose steps (no fenced JSON). Each step names the feedback items it addresses (e.g. "Step 1 (addresses A, C): ...") and the specific files/functions to change. Feedback items marked IGNORE are omitted from this list.
 ````
 
 ### 5b. Opt-in path: `/scratchpad`
@@ -135,7 +137,15 @@ Use `/scratchpad` with the description above. Same sections as 5a, except `## Ac
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
 
-**STOP HERE** - The template ends above. Do NOT add commit message sections to the working document. Commit messages are created separately in Step 8 (after user approval) using `/commit-msg`.
+### Output Anchors
+
+Deliverable: a single text file containing the analysis of each feedback item and the action plan.
+Length: 1 to 2 sentences per feedback item under Analysis. The user will ask for more depth or clarification if needed. Action Plan is however many steps the work actually requires. A single sentence is enough for a trivial change; multi-feedback responses may need several steps. Each step names the feedback letters it addresses.
+Format: prose sections (Analysis with per-item Decision + Reason, Action Plan) per the template above. No fenced JSON in the default `/note` path.
+Scope: this comment thread's feedback only. Leave broader refactors and out-of-scope improvements out of the Action Plan.
+Tone: direct, decision-first (ACCEPT or IGNORE), reviewer-facing.
+
+**STOP HERE** - The template ends above. Always end the working document at this point. Commit messages are created separately in Step 8 (after user approval) using `/commit-msg`.
 
 ## Step 6: Questions (If Needed)
 

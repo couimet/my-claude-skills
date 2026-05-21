@@ -55,6 +55,8 @@ Where `<NUMBER>` is the GitHub issue number (e.g., `issues/223`) and `<BASE_BRAN
 
 ## Step 4: Create Implementation Plan Working Document
 
+Before drafting the plan, re-read the issue body, any parent issue, and the files surfaced in Step 3. Think through actual file and function names, step ordering, and dependencies before writing. The plan is the highest-leverage artifact this skill produces. Treat it as such.
+
 Choose the working-document type based on whether formal step tracking is requested:
 
 - **Default (`/note`):** use this unless the user explicitly opted in. Produces a lightweight, freeform plan. Relies on you (the LLM) to self-organize execution in-session via TaskCreate/TaskUpdate.
@@ -103,6 +105,14 @@ After the working document is created (via either path), write the pointer file 
 Overwrite any existing pointer. Only the most recent working document is "active".
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
+
+### Output Anchors
+
+Deliverable: implementation plan note (or scratchpad, if opted in).
+Length: as long as needed to name specific files and functions. Sections are typically 1 to 4 short paragraphs. The Plan list contains however many commit-sized steps the work actually requires. A trivial fix may be one step; a large refactor may be a dozen or more. Match the issue, not a number.
+Format: prose sections (Context, Assumptions Made, Plan) per the template above. No fenced JSON in the default `/note` path.
+Scope: planning only. Name files, functions, and test updates. Skip implementation prose.
+Tone: direct, concrete, file-and-function-named. No hedging, no generic conclusions.
 
 ## Step 5: Create Questions File (Only If Necessary)
 

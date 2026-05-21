@@ -190,6 +190,14 @@ If side-quest mode:
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
 
+### Output Anchors
+
+Deliverable: a single text file whose first line is the PR title and whose remaining lines are the PR description body. Both are consumed downstream: `gh pr create --title "<first line>" --body-file <path>` reads them from one file.
+Length: title under 70 characters, formatted `[<branch-name>] Short summary`. Body: 2 to 3 sentences in Summary; 3 to 8 bullets in Changes; 2 to 5 checkboxes in Test Plan. Whole document fits on one screen unless the branch is unusually large.
+Format: line 1 is the title. Line 2 is blank. The remaining lines are the body, following the PR template sections in order (Summary, Changes, Key Discoveries, Test Plan, Related). If a repository template was detected in Step 4, follow that template's body structure instead and preserve its headers verbatim. The title-on-line-1 convention is independent of the template.
+Scope: changes that shipped on this branch only. Document future work, alternatives considered, and abandoned approaches elsewhere.
+Tone: direct, why-focused, reviewer-facing. Avoid restating the diff.
+
 Before writing the PR description, skim the text for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
 
 ## Step 6: Handle Ambiguity

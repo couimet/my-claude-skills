@@ -177,7 +177,7 @@ These rules ensure entries describe what users experience, not how the code work
 
 ## Implementation-Detail Blocklist
 
-Flag entries containing these patterns. Warn but do not block. Rare edge cases may legitimately include a technical name.
+Flag entries containing these patterns. Emit a warning and allow the entry. Rare edge cases may legitimately include a technical name.
 
 | Pattern | Why it's flagged |
 | --- | --- |

@@ -8,7 +8,7 @@ allowed-tools: Bash(*/skills/auto-number/auto-number.sh *)
 
 # Auto-Number
 
-Returns the next available sequence number for files in a directory. Run the script and use its stdout directly -- do not reimplement the numbering logic.
+Returns the next available sequence number for files in a directory. Run the script and use its stdout directly. The script is the single source of truth for the numbering logic.
 
 ## Usage
 
