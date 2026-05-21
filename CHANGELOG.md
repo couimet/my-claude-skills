@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.05.21
+
+### Changed
+
+- Second pass of LinkedIn-post prompt-optimization advice across `/start-issue`, `/tackle-pr-comment`, `/finish-issue`, and `/tackle-scratchpad-block`: added Output Anchors blocks to the prose-producing skills, a rules-restate-and-re-read prelude to the executor skills, and a one-line reasoning push at the point each skill writes prose. Also rewrote four remaining negative imperatives to positive form ([issues/138](https://github.com/couimet/my-claude-skills/issues/138))
+
 ## 2026.05.15
 
 ### Changed

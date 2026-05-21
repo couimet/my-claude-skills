@@ -78,7 +78,9 @@ Before executing, assess if the steps are clear enough:
 
 ## Step 4: Mark In-Progress and Execute
 
-Before executing, update the step's status in the scratchpad's JSON block:
+Before executing, restate the rules that govern this step: the rules from `/prose-style` for any prose this step writes, and any skill-specific output anchors that apply (e.g. `/commit-msg` anchors when the step will produce a commit message). Then re-read the full step block, its `done_when` criteria, and any cross-referenced files. Think about the actual change before writing any code or running any commands.
+
+Update the step's status in the scratchpad's JSON block:
 
 ```json
 "id": "S002",
