@@ -1,10 +1,12 @@
 ---
 title: "I thought I was DRY-ing. I may have been double-paying."
-published: false
+published: https://dev.to/couimet/i-thought-i-was-dry-ing-i-may-have-been-double-paying-5dli
 description: "A second look at my Claude Code skills: half-finished refactors may cost more than the duplication they were trying to eliminate. Here's what an independent audit surfaced, and what I changed as a result."
 tags: ai, claudecode, productivity, devtools
 cover_image:
 ---
+
+> **Update (2026-05-21):** I've kept iterating since this post. See [the move to /note](https://dev.to/couimet/i-sold-you-on-scratchpad-then-i-migrated-to-note-4n1o) for the May 2026 shift.
 
 ## Something was off
 
