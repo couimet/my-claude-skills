@@ -7,7 +7,7 @@ This is a collection of portable [Claude Code skills](https://code.claude.com/do
 > **Want to see these skills in action?** Read the [full follow-along](https://ouimet.info/follow-alongs/my-claude-skills-issues-10.html) — a real issue turned into a shipped PR, with every artifact visible.
 
 [![Follow-along](https://img.shields.io/badge/Follow--along-See%20it%20in%20action-blue)](https://ouimet.info/follow-alongs/my-claude-skills-issues-10.html)
-![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/couimet/my-claude-skills?utm_source=oss&utm_medium=github&utm_campaign=couimet%2Fmy-claude-skills&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/couimet/my-claude-skills?label=CodeRabbit+Reviews)
 
 ## Installation
 
