@@ -149,7 +149,7 @@ All working files live under `.claude-work/` and are git-ignored automatically. 
 
 ## See It In Action
 
-These skills compose into a full issue lifecycle. The default flow today: `/start-issue` writes a `/note` plan, Claude self-organizes execution in-session, `/finish-issue` wraps up with a PR description that doubles as the commit message body. When work warrants formal step tracking (typically larger issues where you want a commit per step), opt in with `--scratchpad` and Claude drives execution through `/tackle-scratchpad-block`. The May 2026 migration that introduced this default is covered in [I sold you on /scratchpad. Then I migrated to /note.](https://dev.to/couimet/i-sold-you-on-scratchpad-then-i-migrated-to-note-4n1o).
+These skills compose into a full issue lifecycle. The default flow today: `/start-issue` writes a `/note` plan, Claude self-organizes execution in-session, `/finish-issue` generates a PR description note that you reuse as the commit message body when you commit manually. When work warrants formal step tracking (typically larger issues where you want a commit per step), opt in with `--scratchpad` and Claude drives execution through `/tackle-scratchpad-block`. The May 2026 migration that introduced this default is covered in [I sold you on /scratchpad. Then I migrated to /note.](https://dev.to/couimet/i-sold-you-on-scratchpad-then-i-migrated-to-note-4n1o).
 
 ```mermaid
 flowchart TD
