@@ -19,6 +19,7 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 ### Fixed
 
 - CodeRabbit badge in README header. Stripped the custom styling params that were keeping shields.io stuck on a cached "provider or repo not found" response.
+- `make lint` now ignores `.history/**` (IDE backup snapshots), matching the existing `demo/**` ignore.
 
 ## 2026.05.21
 
