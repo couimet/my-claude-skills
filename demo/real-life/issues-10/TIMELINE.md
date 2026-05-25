@@ -4,6 +4,8 @@ This is a real, unredacted record of how Claude Code skills were used to plan an
 
 Every numbered file in this folder has a corresponding entry here. Read the folder listing top-to-bottom for the chronological story; read this file for the narrative context behind each artifact.
 
+> **Update (2026-05-21):** the workflow captured below predates the May 2026 `/note` migration. `/start-issue` and the other composite skills now default to producing a `/note` instead of a `/scratchpad`, and Claude self-organizes execution rather than going through `/tackle-scratchpad-block` per step. The original `/scratchpad`-based loop is still available as an opt-in via `--scratchpad`. The reasoning is in [I sold you on /scratchpad. Then I migrated to /note.](https://dev.to/couimet/i-sold-you-on-scratchpad-then-i-migrated-to-note-4n1o). This demo stays preserved as a complete record of the original flow.
+
 ---
 
 ## Phase 1: Pre-Planning (before any branch or formal /start-issue)

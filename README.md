@@ -7,7 +7,7 @@ This is a collection of portable [Claude Code skills](https://code.claude.com/do
 > **Want to see these skills in action?** Read the [full follow-along](https://ouimet.info/follow-alongs/my-claude-skills-issues-10.html) — a real issue turned into a shipped PR, with every artifact visible.
 
 [![Follow-along](https://img.shields.io/badge/Follow--along-See%20it%20in%20action-blue)](https://ouimet.info/follow-alongs/my-claude-skills-issues-10.html)
-![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/couimet/my-claude-skills?utm_source=oss&utm_medium=github&utm_campaign=couimet%2Fmy-claude-skills&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/couimet/my-claude-skills?label=CodeRabbit+Reviews)
 
 ## Installation
 
@@ -30,13 +30,34 @@ The install script is idempotent — safe to run on every pull. It only creates/
 
 Once installed, try these in any project:
 
-### `/scratchpad` — Create a working document
+### `/note` — Capture a quick note, finding, or plan
+
+```text
+/note api audit findings
+```
+
+Creates a `.claude-work/notes/20260521-143022-api-audit-findings.txt` file — a timestamped, freeform capture for findings, quick plans, or anything else worth writing down.
+
+<details>
+<summary>What a note looks like</summary>
+
+```text
+# API audit findings
+
+The `/v2/orders` endpoint accepts a `limit` query parameter but silently caps it at 50 regardless of the value passed. Caller code in `services/sync/poll.ts` assumes the cap is 100, which means the sync loop has been processing in half-size batches for months without anyone noticing.
+
+Two things to fix: (1) document the real cap in the OpenAPI schema, (2) widen the cap to 100 to match the original intent (no DB cost concerns since 100 still fits in one page).
+```
+
+</details>
+
+### `/scratchpad` — Create a working document with step tracking
 
 ```text
 /scratchpad plan the authentication refactor
 ```
 
-Creates a `.claude-work/scratchpads/0001-plan-the-authentication-refactor.txt` file with structured step tracking. The file is git-ignored — it's your private workspace.
+Creates a `.claude-work/scratchpads/0001-plan-the-authentication-refactor.txt` file. Like `/note` but with a structured JSON step block at the bottom: each step has a status (`pending` → `in_progress` → `done`), a `done_when` criterion, and a dependency list. Reach for this when work breaks down naturally into commit-sized steps and you want to land them one at a time. Larger issues, parallel worktrees, and anything where formal status transitions help you stay oriented are the typical uses.
 
 <details>
 <summary>See a real scratchpad from this repo</summary>
@@ -128,22 +149,41 @@ All working files live under `.claude-work/` and are git-ignored automatically. 
 
 ## See It In Action
 
-These skills aren't meant to be used in isolation — they compose into a full issue lifecycle. Here's the flow:
+These skills compose into a full issue lifecycle. The default flow today: `/start-issue` writes a `/note` plan, Claude self-organizes execution in-session, `/finish-issue` generates a PR description note that you reuse as the commit message body when you commit manually. When work warrants formal step tracking (typically larger issues where you want a commit per step), opt in with `--scratchpad` and Claude drives execution through `/tackle-scratchpad-block`. The May 2026 migration that introduced this default is covered in [I sold you on /scratchpad. Then I migrated to /note.](https://dev.to/couimet/i-sold-you-on-scratchpad-then-i-migrated-to-note-4n1o) article.
 
 ```mermaid
-graph LR
-    A["/start-issue"] --> B["/tackle-scratchpad-block"]
-    B --> C{More steps?}
-    C -- yes --> B
-    C -- no --> D["/finish-issue"]
-    B -.-> E["/breadcrumb"]
-    B -.-> F["/start-side-quest"]
-    B -.-> G["/question"]
-    B -.-> I["/create-github-issue"]
-    B -.-> J["/note"]
-    F --> B
-    D -.-> H["/cleanup-issue"]
+flowchart TD
+    A[GitHub Issue] --> B["/start-issue"]
+    B --> C{"Working document<br/>type?"}
+    C -->|default| D["/note"]
+    C -->|"--scratchpad opt-in"| E["/scratchpad"]
+
+    subgraph EX ["Execution"]
+        F["Claude self-organizes<br/>in one session"]
+        G["/tackle-scratchpad-block<br/>one or more steps per invocation"]
+    end
+
+    D --> F
+    E --> G
+    F --> H["/finish-issue"]
+    G --> H
+    H --> I["PR description<br/>(doubles as commit message)"]
+    H -.-> J["/cleanup-issue"]
+
+    EX -.-> K["/breadcrumb"]
+    EX -.-> L["/start-side-quest"]
+    EX -.-> M["/question"]
+    EX -.-> N["/create-github-issue"]
+    L -.-> EX
+
+    classDef secondary stroke-dasharray:5 5
+    class E,G secondary
 ```
+
+For a real end-to-end walkthrough — the workflow that produced this very README, captured artifact-by-artifact — open the memorabilia below.
+
+<details>
+<summary><strong>Memorabilia: the original <code>/scratchpad</code> walkthrough that built this README (replaced by <code>/note</code> in May 2026)</strong></summary>
 
 Every artifact linked below is real — generated while building the README you're reading right now ([issue #10](https://github.com/couimet/my-claude-skills/issues/10)). The full unredacted history lives in [`demo/real-life/issues-10/`](demo/real-life/issues-10/).
 
@@ -277,6 +317,8 @@ Scratchpad drafted during implementation → real GitHub issue, labels applied, 
 ### Following along
 
 The [`demo/real-life/issues-10/`](demo/real-life/issues-10/) folder contains every artifact from this issue's lifecycle — scratchpads, questions, commit messages, and README snapshots — numbered chronologically. [`TIMELINE.md`](demo/real-life/issues-10/TIMELINE.md) provides the narrative context for each one.
+
+</details>
 
 ## Featured In
 

@@ -4,7 +4,7 @@ This file provides guidance for AI agents working inside the `my-claude-skills` 
 
 ## Project Purpose
 
-This repository is a collection of portable Claude Code skills. Each skill is a `SKILL.md` file inside a `skills/<name>/` directory. Skills are installed globally at `~/.claude/skills/` (via symlinks) and loaded by Claude Code when a user types `/skill-name`. The repo's goal is to encode repeatable workflows — issue triage, PR feedback, scratchpad-driven implementation — as portable, composable instructions.
+This repository is a collection of portable Claude Code skills. Each skill is a `SKILL.md` file inside a `skills/<name>/` directory. Skills are installed globally at `~/.claude/skills/` (via symlinks) and loaded by Claude Code when a user types `/skill-name`. The repo's goal is to encode repeatable workflows — issue triage, PR feedback, plan-driven implementation — as portable, composable instructions.
 
 ## Development Commands
 
@@ -60,9 +60,9 @@ Skills reference each other using `/skill-name` syntax in prose (e.g., "Use `/sc
 
 Work on GitHub issues follows this chain:
 
-1. `/start-issue <url>` — fetches the issue, creates an `issues/<NUMBER>` branch, explores the codebase, and writes an implementation plan scratchpad
-2. `/tackle-scratchpad-block <path>` — executes one step from the scratchpad, runs tests, creates a commit message file
-3. `/finish-issue` — runs verification (lint, tests), checks documentation needs, generates a PR description scratchpad
+1. `/start-issue <url>` — fetches the issue, creates an `issues/<NUMBER>` branch, explores the codebase, and writes an implementation plan as a `/note` (or as a `/scratchpad` with `--scratchpad` opt-in for formal step tracking)
+2. **Execute the plan.** On the default note path, Claude self-organizes execution in-session from the note (one commit at the end). On the opt-in scratchpad path, run `/tackle-scratchpad-block <path>` once per step — each call runs tests and creates a commit message file
+3. `/finish-issue` — runs verification (lint, tests), checks documentation needs, and generates a PR description note
 
 ### Rules
 
