@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.05.26
+
+### Changed
+
+- README "See It In Action" section now leads with the current `/note`-based default flow and a refreshed mermaid diagram. The original `/scratchpad`-based walkthrough is preserved verbatim inside a collapsed `<details>` memorabilia block alongside the existing demo. Quick Start was re-ordered to introduce `/note` first, then `/scratchpad`, matching the May 2026 migration. CLAUDE.md's issue workflow description was updated to describe the note default with the scratchpad opt-in. An "Update" blockquote at the top of `demo/real-life/issues-10/TIMELINE.md` now signals that the demo predates the migration and links to the article ([issues/142](https://github.com/couimet/my-claude-skills/issues/142))
+
 ## 2026.05.21
 
 ### Changed
