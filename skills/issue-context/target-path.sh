@@ -128,6 +128,10 @@ if [[ "$branch" == issues/* ]]; then
   fi
 fi
 
+# --- Anchor to repo root so all paths are resolved relative to it, not CWD ---
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"
+[ -n "$repo_root" ] && cd "$repo_root"
+
 # --- Determine target directory ---
 if [ -n "$issue_id" ]; then
   target_dir=".claude-work/issues/${issue_id}/${type_arg}"
