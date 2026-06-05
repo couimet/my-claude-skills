@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.06.05.1
+
+### Fixed
+
+- `target-path.sh` now anchors all directory operations to the git repo root via `git rev-parse --show-toplevel`, so running a skill from a subdirectory no longer creates a rogue `.claude-work/` tree at the wrong level. Added a bats test covering the subdirectory-CWD scenario ([issues/148](https://github.com/couimet/my-claude-skills/issues/148))
+
 ## 2026.06.05
 
 ### Fixed

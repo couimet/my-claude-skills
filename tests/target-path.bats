@@ -217,3 +217,17 @@ teardown() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"T002"* ]]
 }
+
+# ============================================================================
+# Repo-root anchoring: output is relative to repo root, not CWD
+# ============================================================================
+
+@test "subdirectory CWD: output path is relative to repo root, not CWD" {
+  mkdir -p subdir
+  cd subdir
+  run "$SCRIPT" --type notes --description "from subdir"
+  [ "$status" -eq 0 ]
+  [ "$output" = ".claude-work/notes/0001-from-subdir.txt" ]
+  [ -d "$TEST_TEMP_DIR/.claude-work/notes" ]
+  [ ! -d "$TEST_TEMP_DIR/subdir/.claude-work" ]
+}
