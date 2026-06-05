@@ -23,7 +23,7 @@ Before starting new work, run `git branch --show-current` to detect whether the 
 Run both commands as parallel tool calls in the same response. They are independent (one reads, one writes) and both use the input URL directly:
 
 ```bash
-gh issue view $ARGUMENTS --json title,body,number,state,labels,assignees
+gh issue view $ARGUMENTS --json title,body,number,state,labels,assignees,comments
 ```
 
 ```bash
@@ -31,6 +31,8 @@ gh issue edit $ARGUMENTS --add-assignee @me
 ```
 
 The assign is additive: existing assignees are preserved, not replaced. The command is idempotent (silently succeeds if you are already assigned).
+
+**Read all comments before continuing.** If the `comments` array is non-empty, read every comment in full — treat them as equal-weight context alongside the issue body. Design discussions, CodeRabbit analysis, and follow-up decisions in comments often refine or contradict the original description.
 
 ## Step 2: Create Feature Branch
 
