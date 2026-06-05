@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.06.05
+
+### Fixed
+
+- `/start-issue` now fetches issue comments alongside the body and explicitly instructs the LLM to read every comment before planning. Previously, `gh issue view` omitted `comments` from its JSON fields entirely, so any CodeRabbit analysis or follow-up discussion added after the original description was invisible when the plan was formed ([issues/146](https://github.com/couimet/my-claude-skills/issues/146))
+
 ## 2026.05.25
 
 ### Changed
