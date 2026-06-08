@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.06.07
+
+### Added
+
+- New `/pre-write` foundation skill defines the think-before-writing rule: complete all reasoning before producing any file content. Content-generating skills (`/note`, `/scratchpad`, `/question`, `/commit-msg`, `/finish-issue`, `/start-issue`) now reference it, preventing in-progress deliberation from leaking into generated files. Documented in `README.md` and `skills/README.md`. ([issues/147](https://github.com/couimet/my-claude-skills/issues/147))
+
 ## 2026.06.05.1
 
 ### Fixed

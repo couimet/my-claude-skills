@@ -14,6 +14,8 @@ Create or update a working document in `.claude-work/`.
 
 ## Output format rule (read before writing anything)
 
+See `/pre-write` for the think-before-writing rule: complete all reasoning before writing the first word.
+
 **Every paragraph in the scratchpad is ONE continuous line.** No line breaks at 72, 80, or any fixed column. Use line breaks only for structural separation: between paragraphs, before/after lists, around code blocks, between sections. This overrides your default instinct to wrap long prose. See `/prose-style` for the full rationale.
 
 ### Output Anchors
