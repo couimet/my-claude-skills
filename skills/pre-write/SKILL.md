@@ -1,6 +1,6 @@
 ---
 name: pre-write
-version: 0.0.0@000000
+version: 2026.06.07@5ceb5b6
 description: Think-before-writing rule for content-generating skills. Complete all reasoning before producing any file content. Auto-consulted before any skill writes file content.
 user-invocable: false
 allowed-tools:
