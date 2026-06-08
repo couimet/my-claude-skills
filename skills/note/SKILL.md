@@ -47,6 +47,8 @@ Example: `20260329-143022-api-audit-findings.txt`
 
 ## Step 3: Write the File
 
+See `/pre-write` for the think-before-writing rule: complete all reasoning before writing the first word.
+
 Write the note content to the file. The format is freeform. Structure it however best fits the content being captured. There are no required sections or templates.
 
 **The one rule: each paragraph is ONE continuous line.** No line breaks at 72, 80, or any fixed column. Use line breaks only for structural separation (between paragraphs, around lists, around code blocks). Override your default instinct to wrap.

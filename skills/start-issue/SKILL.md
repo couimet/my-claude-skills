@@ -57,7 +57,7 @@ Where `<NUMBER>` is the GitHub issue number (e.g., `issues/223`) and `<BASE_BRAN
 
 ## Step 4: Create Implementation Plan Working Document
 
-Before drafting the plan, re-read the issue body, any parent issue, and the files surfaced in Step 3. Think through actual file and function names, step ordering, and dependencies before writing. The plan is the highest-leverage artifact this skill produces. Treat it as such.
+Before drafting the plan, re-read the issue body, any parent issue, and the files surfaced in Step 3. Think through actual file and function names, step ordering, and dependencies before writing. The plan is the highest-leverage artifact this skill produces. Treat it as such. See `/pre-write` for the think-before-writing rule. If any aspect of the plan is unclear after this review, use `/question` before writing.
 
 Choose the working-document type based on whether formal step tracking is requested:
 

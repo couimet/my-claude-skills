@@ -14,6 +14,8 @@ Create a questions file in `.claude-work/` for gathering user input.
 
 ## Output format rule (read before writing anything)
 
+See `/pre-write` for the think-before-writing rule: complete all reasoning before writing the first word.
+
 **Every paragraph in the questions file (Context, Options text, Recommendation reasoning, etc.) is ONE continuous line.** No line breaks at 72, 80, or any fixed column. Use line breaks only for structural separation: between questions, around the Options block, between fields. This overrides your default instinct to wrap long prose. See `/prose-style` for the full rationale.
 
 ## Core Principle

@@ -373,6 +373,7 @@ These skills aren't invoked directly — Claude consults them when the context m
 | `file-placement` | When deciding where to put a new file — routes to the right directory |
 | `github-ref` | When skill-generated text contains issue or PR references — requires full GitHub URLs, never short-form `#NNN` or `PR #NNN` |
 | `label-discovery` | When `/create-github-issue` needs labels — fetches repo labels, classifies as defaults vs structured, and prompts the user |
+| `pre-write` | Before any skill writes file content — requires complete reasoning before writing the first word, preventing in-progress deliberation from appearing in generated files |
 | `issue-context` | When on an `issues/<N>` branch — scopes working files to issue subdirectories |
 | `scratchpad-ref-format` | When `/tackle-scratchpad-block` parses its argument — defines the 4 invocation forms (`#S`, `#L`, space-separated, bare-path auto-select) |
 

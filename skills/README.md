@@ -21,6 +21,7 @@ Non-invocable skills (`user-invocable: false`) don't appear in the `/` menu. The
 | --- | --- |
 | `/file-placement` | Decision tree for where to put different file types. Claude auto-consults when deciding output locations. |
 | `/label-discovery` | Fetches GitHub labels, classifies them as defaults vs structured, and prompts the user for selection. Auto-consulted by `/create-github-issue`. |
+| `/pre-write` | Think-before-writing rule for content-generating skills. Requires complete reasoning before writing the first word — no mid-stream self-corrections in generated files. Auto-consulted before any skill writes file content. |
 | `/prose-style` | Canonical prose and reference formatting rules — hard-wrap rule, code-reference syntax, GitHub-reference syntax. Auto-consulted whenever a skill produces file content. |
 | `/scratchpad-ref-format` | Defines the 4 invocation forms for referencing scratchpad steps (`#S`, `#L`, space-separated, bare-path auto-select). Auto-consulted by `/tackle-scratchpad-block` when parsing its argument. |
 

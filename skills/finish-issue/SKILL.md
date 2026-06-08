@@ -139,6 +139,8 @@ Note whether a template was found and its path. This is used in Step 5. If none 
 
 ## Step 5: Generate PR Description Working Document
 
+See `/pre-write` for the think-before-writing rule: complete all reasoning before writing the first word.
+
 Choose the working-document type:
 
 - **Default (`/note`):** PR descriptions are pure prose. A note is the right fit
