@@ -3,7 +3,7 @@ name: commit-msg
 version: 2026.06.15@517a923
 description: Create a commit message file in .claude-work/commit-msgs/ with auto-numbered filenames. Focuses on WHY not WHAT. The diff already shows what changed. User reviews and commits manually.
 argument-hint: <description>
-allowed-tools: Read, Write, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
+allowed-tools: Read, Write, Bash(git diff *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
 # Commit Message
@@ -21,6 +21,8 @@ See `/pre-write` for the think-before-writing rule: complete all reasoning befor
 ## Core Principle
 
 Focus on **WHY**, not **WHAT**. The git diff already shows what changed. The commit message explains the motivation, the problem being solved, and the benefits. Message depth should scale with the cognitive load of the change. Not every commit needs a body or Benefits section.
+
+The diff is also the filter for WHICH changes to describe. If a change was added then reverted in the same working tree, it never happened. Don't mention it. Only include reasoning and decisions that relate to files and changes visible in the actual diff.
 
 ## Step 1: Resolve the Target Path
 
@@ -45,6 +47,20 @@ Before writing, assess the change and pick a tier. The heuristic: if you can't a
 **Moderate**: subject + 1-2 sentence body. Use for: bug fixes, small refactors, config changes with non-obvious motivation. The body explains why.
 
 **Substantial**: subject + body + Benefits list. Use for: new features or capabilities, architectural changes, multi-file behavioral changes, performance improvements, security fixes.
+
+## Capture the Actual Change Set
+
+Run these two commands as parallel tool calls. They are independent.
+
+```bash
+git diff --stat
+```
+
+```bash
+git diff
+```
+
+Use the output as the single source of truth for what changed. Cross-reference your conversation context against it: drop any reasoning, decisions, or benefits that relate to files or edits not present in the diff.
 
 ## File Format
 
@@ -101,8 +117,10 @@ Formatting: see `/prose-style` for hard-wrap and GitHub-reference rules.
 
 ## Process
 
-1. Assess the change complexity (trivial, moderate, or substantial)
-2. Create the file using the matching tier format
-3. **Self-check for hard-wrapping.** Re-read the file you just wrote. For each paragraph in the body (text between blank lines, outside code blocks and the Benefits bullet list), verify it is a single continuous line. If you find a mid-sentence line break, rewrite that paragraph as one line. This check catches the most common failure. Always complete it. Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
-4. Print the filepath in terminal
-5. Do NOT run `git commit`. The user reviews and commits manually.
+1. Capture the actual change set (see "Capture the Actual Change Set" above)
+2. Assess the change complexity (trivial, moderate, or substantial)
+3. Create the file using the matching tier format
+4. **Self-check for diff-relevance.** Cross-reference the message against the diff output. Remove any mention of files, changes, or reasoning not reflected in the diff.
+5. **Self-check for hard-wrapping.** Re-read the file you just wrote. For each paragraph in the body (text between blank lines, outside code blocks and the Benefits bullet list), verify it is a single continuous line. If you find a mid-sentence line break, rewrite that paragraph as one line. This check catches the most common failure. Always complete it. Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
+6. Print the filepath in terminal
+7. Do NOT run `git commit`. The user reviews and commits manually.

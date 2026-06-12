@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.06.15.1
+
+### Added
+
+- `/commit-msg` and `/finish-issue` now anchor content generation to the final git diff instead of conversation context. When edits are added then reverted in the same working tree, or approaches are tried then replaced, the generated commit message and PR description no longer mention those intermediate states. The diff is the single source of truth for what changed. ([issues/152](https://github.com/couimet/my-claude-skills/issues/152))
+
 ## 2026.06.15
 
 ### Added
