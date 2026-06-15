@@ -3,7 +3,7 @@ name: commit-msg
 version: 2026.06.15@517a923
 description: Create a commit message file in .claude-work/commit-msgs/ with auto-numbered filenames. Focuses on WHY not WHAT. The diff already shows what changed. User reviews and commits manually.
 argument-hint: <description>
-allowed-tools: Read, Write, Bash(git diff *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
+allowed-tools: Read, Write, AskUserQuestion, Bash(git diff *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
 # Commit Message
@@ -50,7 +50,7 @@ Before writing, assess the change and pick a tier. The heuristic: if you can't a
 
 ## Capture the Actual Change Set
 
-Run these two commands as parallel tool calls. They are independent.
+Run these four commands as parallel tool calls. They are independent.
 
 ```bash
 git diff --stat
@@ -60,7 +60,31 @@ git diff --stat
 git diff
 ```
 
-Use the output as the single source of truth for what changed. Cross-reference your conversation context against it: drop any reasoning, decisions, or benefits that relate to files or edits not present in the diff.
+```bash
+git diff --cached --stat
+```
+
+```bash
+git diff --cached
+```
+
+### Resolve the Effective Diff
+
+After capture, determine which diff(s) produced output:
+
+- **Only unstaged changes (plain `git diff` produced output, `--cached` is empty):** The user hasn't staged anything. Use the plain diff as the single source of truth.
+- **Only staged changes (`--cached` produced output, plain is empty):** The user staged everything. Use the cached diff.
+- **Both produced output (mix):** Use `AskUserQuestion` with a single question:
+
+  - **Header:** `Diff scope`
+  - **Question:** `Both staged and unstaged changes exist. Which set should the commit message describe?`
+  - **Options:**
+    1. `Staged only` — commit message describes only the staged changes (ready to commit)
+    2. `Both staged and unstaged` — commit message describes the full working-tree state
+
+  Set the effective diff(s) to the chosen scope before proceeding.
+
+Use the effective diff output as the single source of truth for what changed. Cross-reference your conversation context against it: drop any reasoning, decisions, or benefits that relate to files or edits not present in the effective diff.
 
 ## File Format
 
