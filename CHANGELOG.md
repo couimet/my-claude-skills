@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.06.15
+
+### Added
+
+- Skill extension hooks: `/start-issue`, `/finish-issue`, and `/start-side-quest` now include hook points that consult project-local foundation skills (`start-issue-hooks`, `finish-issue-hooks`, `start-side-quest-hooks`) for additional plan steps, verification checks, and PR description sections. Projects opt in by creating these hook skills in their own repository's `.claude/skills/` directory (e.g., a project adds `.claude/skills/start-issue-hooks/SKILL.md` with its project-specific requirements; the global skills in `~/.claude/skills/` remain untouched). No fork needed, zero overhead for projects that don't define hooks. Hooks add requirements only (no behavior replacement), optimizing for frugal token consumption. Documented in `docs/ADR/001-skill-extension-hooks.md`, `skills/skill-hooks/SKILL.md`, and `README.md`. ([issues/155](https://github.com/couimet/my-claude-skills/issues/155))
+
 ## 2026.06.07
 
 ### Added

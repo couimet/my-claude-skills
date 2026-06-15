@@ -54,6 +54,7 @@ Where `<NUMBER>` is the GitHub issue number (e.g., `issues/223`) and `<BASE_BRAN
   - Existing patterns to follow
   - Test files that will need updates
 - **Check integration points**: review the project's entry points, configuration, documentation, and discoverability conventions for anything the change might affect
+- **Check for project-local hooks**: if the project has a `/start-issue-hooks` skill (foundation skill at `.claude/skills/start-issue-hooks/SKILL.md`), it is loaded as additional context automatically. Read it and incorporate whatever it specifies into the plan generated in Step 4. If no such skill exists, continue with the vanilla plan. See `/skill-hooks` for the full extension mechanism.
 
 ## Step 4: Create Implementation Plan Working Document
 

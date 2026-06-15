@@ -55,6 +55,8 @@ Examples:
 - `side-quest/fix-result-type-usage`
 - `side-quest/cleanup-test-mocks`
 
+**Check for project-local hooks**: if the project has a `/start-side-quest-hooks` skill (foundation skill at `.claude/skills/start-side-quest-hooks/SKILL.md`), it is loaded as additional context automatically. Read it and incorporate whatever it specifies into the plan generated in Step 3. If no such skill exists, continue with the vanilla plan. See `/skill-hooks` for the full extension mechanism.
+
 ## Step 3: Create Implementation Working Document
 
 Choose the working-document type based on whether formal step tracking is requested:
