@@ -80,6 +80,7 @@ git status
 - If formatting makes changes → prepare a commit
 - If tests fail → investigate and fix before proceeding
 - If uncommitted changes exist → notify user
+- **Check for project-local hooks**: if the project has a `/finish-issue-hooks` skill (foundation skill at `.claude/skills/finish-issue-hooks/SKILL.md`), it is loaded as additional context automatically. Read it and incorporate whatever it specifies. If no such skill exists, continue with the vanilla workflow. See `/skill-hooks` for the full extension mechanism.
 
 ## Step 3: Documentation Review
 
