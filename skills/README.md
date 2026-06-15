@@ -39,7 +39,7 @@ Non-invocable skills (`user-invocable: false`) don't appear in the `/` menu. The
 | --- | --- | --- |
 | `cleanup-issue` | `/cleanup-issue [number]` | (inline branch parsing) |
 | `create-github-issue` | `/create-github-issue <title-or-path>` | `/scratchpad` (reads), `/question`, `/label-discovery` |
-| `finish-issue` | `/finish-issue` | `/note` (default), `/scratchpad` (opt-in, reads), `/question`, breadcrumbs (reads); handles both `issues/*` and `side-quest/*` branches |
+| `finish-issue` | `/finish-issue [optional: issue-number-or-url]` | `/note`, `/question`, breadcrumbs (reads); handles both `issues/*` and `side-quest/*` branches |
 | `start-issue` | `/start-issue <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/cleanup-issue` |
 | `start-side-quest` | `/start-side-quest <desc> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/commit-msg` (ref) |
 | `tackle-pr-comment` | `/tackle-pr-comment <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/commit-msg` |
@@ -47,7 +47,7 @@ Non-invocable skills (`user-invocable: false`) don't appear in the `/` menu. The
 
 ## Architecture
 
-**Default working document: `/note`, with `/scratchpad` as an explicit opt-in.** Composite skills (`/start-issue`, `/start-side-quest`, `/tackle-pr-comment`, `/finish-issue`) default to creating a `/note` for their working document. The premise is that LLMs are strong enough at self-organizing tasks in-session (via TaskCreate/TaskUpdate) that the structured scratchpad + `/tackle-scratchpad-block` chain is best reserved for cases where the user explicitly wants formal step tracking. Users opt in via `--scratchpad` on the skill invocation or equivalent natural-language triggers ("use a scratchpad", "with step tracking", "formal plan"). Whichever type is produced, `/start-issue` and `/start-side-quest` also write an active-plan pointer (`.claude-work/issues/<ID>/active-plan` or `.claude-work/active-plan-<slug>`) so `/finish-issue` and `/tackle-scratchpad-block` can resolve the primary plan unambiguously without globbing.
+**Default working document: `/note`, with `/scratchpad` as an explicit opt-in.** Composite skills (`/start-issue`, `/start-side-quest`, `/tackle-pr-comment`) default to creating a `/note` for their working document. The premise is that LLMs are strong enough at self-organizing tasks in-session (via TaskCreate/TaskUpdate) that the structured scratchpad + `/tackle-scratchpad-block` chain is best reserved for cases where the user explicitly wants formal step tracking. Users opt in via `--scratchpad` on the skill invocation or equivalent natural-language triggers ("use a scratchpad", "with step tracking", "formal plan"). Whichever type is produced, `/start-issue` and `/start-side-quest` also write an active-plan pointer (`.claude-work/issues/<ID>/active-plan` or `.claude-work/active-plan-<slug>`) so `/finish-issue` and `/tackle-scratchpad-block` can resolve the primary plan unambiguously without globbing.
 
 **Two-tier design:** Foundation skills define standalone conventions (file formats, numbering, placement rules). Composite skills orchestrate workflows by referencing foundations by name. In rare cases where a composite needs only a two-line foundation detail, it may deliberately inline that rule rather than cross-reference — the current example is `/cleanup-issue`, which inlines the branch-parsing rule instead of pulling in a foundation for it.
 

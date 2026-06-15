@@ -2,13 +2,13 @@
 name: finish-issue
 version: 2026.06.15.1@1405a97
 description: Wrap up issue or side-quest work on the current issues/* or side-quest/* branch. Runs verification, checks documentation needs, and generates a PR description
-argument-hint: [optional: issue-number-or-url] [--scratchpad]
+argument-hint: [optional: issue-number-or-url]
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git status), Bash(git log *), Bash(git diff *), Bash(make lint-fix *), Bash(make test *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
 # Finish Issue
 
-Wraps up work on either an `issues/*` or `side-quest/*` branch. Runs verification, checks documentation needs, and generates a PR description (defaults to `/note`; use `--scratchpad` to produce a scratchpad).
+Wraps up work on either an `issues/*` or `side-quest/*` branch. Runs verification, checks documentation needs, and generates a PR description via `/note`.
 
 **Input:** $ARGUMENTS
 
@@ -143,11 +143,6 @@ Note whether a template was found and its path. This is used in Step 5. If none 
 
 See `/pre-write` for the think-before-writing rule: complete all reasoning before writing the first word.
 
-Choose the working-document type:
-
-- **Default (`/note`):** PR descriptions are pure prose. A note is the right fit
-- **Opt-in (`/scratchpad`):** triggered when `$ARGUMENTS` contains `--scratchpad` or when the user's invoking message contains a natural-language opt-in phrase
-
 **Issue mode**: use description: `finish-issue-<ID>`
 
 **Side-quest mode**: use description: `finish-<slug>` (flat placement since side-quest branches don't match `issues/*`)
@@ -165,16 +160,20 @@ Choose the working-document type:
 
 ## Changes
 
-- Bulleted list of key changes
-- Omit file lists (PR shows modified files)
-- Group related changes
-- Documentation: CHANGELOG [added / not needed: reason]; README [updated / not needed: reason]
+Each bullet describes a capability or behaviour change, never a file. Files can appear inline as context (`via skills/finish-issue/SKILL.md`) but the bullet subject is always what changed for the user or the system. Group by theme, not by path.
 
-## Key Discoveries (if breadcrumbs exist)
+Bad (file-inventory — what this skill should never produce):
+- `skills/finish-issue/SKILL.md` — updated Changes section template
+- `skills/README.md` — updated finish-issue description
 
-- [Notable finding that shaped the approach]
-- [Key decision made and rationale]
-- (Omit this section if no breadcrumbs)
+Good (capability-grouped):
+- PR description Changes section now requires capability-focused bullets with a concrete rule and before/after example, replacing the soft "group related changes" guidance
+- Unused `--scratchpad` opt-in removed from the finish-issue skill
+- Documentation: CHANGELOG [added]; README [updated]; omit this line when the changes are either not user-facing or do not need documentation
+
+## Key Discoveries
+
+Populate from breadcrumbs or the active plan's assumptions/deviations. Each bullet is a notable finding, decision, or rationale that shaped the approach. Only include findings that relate to the final shipped changes — skip abandoned approaches and stale breadcrumbs. Omit this entire section (header and all) when there is nothing to surface.
 
 ## Test Plan
 
@@ -192,7 +191,7 @@ If side-quest mode:
 - Base branch: <branch this was cut from>
 ```
 
-**Diff-filtering rule:** The `## Changes` section must be derivable from the `git diff --stat` output captured in Step 4 — one bullet per logical grouping in the diff, not one bullet per conversation turn. Drop any mention of files, edits, or approaches that don't appear in the final diff. The `## Summary` must describe what shipped, not what was considered. The `## Key Discoveries` section should only include findings that relate to the final shipped changes. If an approach was tried then replaced, only the final approach matters.
+**Diff-filtering rule:** The `## Changes` section must be derivable from the `git diff --stat` output captured in Step 4 — one bullet per logical grouping in the diff, not one bullet per conversation turn. Drop any mention of files, edits, or approaches that don't appear in the final diff. The `## Summary` must describe what shipped, not what was considered. Populate `## Key Discoveries` from breadcrumbs or the active plan's assumptions/deviations. Only include findings that relate to the final shipped changes. If an approach was tried then replaced, only the final approach matters. Omit the section entirely when there is nothing to surface.
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
 
@@ -225,12 +224,8 @@ Verification:
 - tests: [all pass / X tests, Y passing]
 - uncommitted changes: [none / list]
 
-Documentation:
-- CHANGELOG: [entry added / not needed - reason]
-- README: [updated / not needed - reason]
-
 Files created:
-- <actual-path-to-pr-description> (PR description (note by default, scratchpad if --scratchpad))
+- <actual-path-to-pr-description> (PR description)
 
 ---
 
@@ -250,12 +245,8 @@ Verification:
 - tests: [all pass / X tests, Y passing]
 - uncommitted changes: [none / list]
 
-Documentation:
-- CHANGELOG: [entry added / not needed - reason]
-- README: [updated / not needed - reason]
-
 Files created:
-- <actual-path-to-pr-description> (PR description (note by default, scratchpad if --scratchpad))
+- <actual-path-to-pr-description> (PR description)
 
 ---
 
@@ -283,4 +274,4 @@ Before finishing, verify:
 - [ ] No pending/in-progress steps in the resolved plan (or user confirmed to proceed). Check skipped silently if the resolved plan is a note
 - [ ] PR description doesn't reference ephemeral files
 - [ ] Documentation needs have been assessed
-- [ ] Working document created with PR description (note by default, scratchpad if opted in)
+- [ ] Working document created with PR description

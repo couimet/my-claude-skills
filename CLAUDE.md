@@ -20,6 +20,8 @@ Run all commands from the project root.
 
 **After every change:** run `make lint && make test` before committing. Both must pass.
 
+**Never run `make stamp`.** Version stamps are managed by humans, not by AI. Do not run `make stamp` as part of any workflow.
+
 ## Skills Architecture
 
 ### SKILL.md Front Matter
@@ -70,6 +72,7 @@ Work on GitHub issues follows this chain:
 - **Always use the workflow skills.** Don't bypass `/start-issue` to create branches directly; don't skip `/finish-issue` before opening a PR.
 - **Never implement before the user approves the plan.** Skills that end with "STOP" mean it — wait for explicit user go-ahead ("proceed", "go ahead", "implement").
 - **Questions go to files, not terminal.** Use `/question` to create a questions file; never print design questions inline in the response.
+- **Never run `make stamp`.** Version stamps are for humans. Do not run `make stamp` as part of implementation or finish-issue workflows.
 
 ## Working Files
 
