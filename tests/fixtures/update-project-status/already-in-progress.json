@@ -1,0 +1,1 @@
+{"data":{"repository":{"issue":{"projectItems":{"nodes":[{"id":"ITM_001","project":{"id":"PRJ_001","title":"Roadmap"},"fieldValueByName":{"name":"In Progress","field":{"id":"FLD_001","name":"Status","options":[{"id":"OPT_001","name":"Todo"},{"id":"OPT_002","name":"In Progress"},{"id":"OPT_003","name":"Done"}]}}}]}}}}}

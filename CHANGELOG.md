@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.06.16.1
+
+### Changed
+
+- `/start-issue` now detects GitHub Projects V2 membership and moves the issue to "In Progress" on each linked board, with a comment documenting the transition. ([issues/160](https://github.com/couimet/my-claude-skills/issues/160))
+
 ## 2026.06.16
 
 ### Changed

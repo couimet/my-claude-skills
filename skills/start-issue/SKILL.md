@@ -3,7 +3,7 @@ name: start-issue
 version: 2026.06.16@2ba298c
 description: Start working on a GitHub issue - analyze, explore codebase, and create detailed implementation plan
 argument-hint: <github-issue-url> [--scratchpad]
-allowed-tools: Read, Write, Glob, Grep, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
+allowed-tools: Read, Write, Glob, Grep, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/start-issue/update-project-status.sh *)
 ---
 
 # Start Issue
@@ -33,6 +33,26 @@ gh issue edit $ARGUMENTS --add-assignee @me
 The assign is additive: existing assignees are preserved, not replaced. The command is idempotent (silently succeeds if you are already assigned).
 
 **Read all comments before continuing.** If the `comments` array is non-empty, read every comment in full — treat them as equal-weight context alongside the issue body. Design discussions, CodeRabbit analysis, and follow-up decisions in comments often refine or contradict the original description.
+
+## Step 1b: Update Project Status
+
+After assignment, detect whether the issue belongs to any GitHub Projects V2 boards and move those project items to "In Progress" status:
+
+```bash
+<project-root>/skills/start-issue/update-project-status.sh <owner> <repo> <issue_number>
+```
+
+Where `<owner>` and `<repo>` are extracted from the issue URL, and `<issue_number>` is the GitHub issue number.
+
+The script:
+
+- Queries the issue's project items via GraphQL, looking for a field named "Status" (case-insensitive)
+- For each item not already "In Progress", finds an option matching "In Progress" (case-insensitive) and moves it there
+- Posts an issue comment documenting each transition (e.g., "Moved Status from Todo to In Progress on project Roadmap")
+- Exits 0 and prints a summary line per updated project
+- Exits silently if: the token lacks the `project` OAuth scope, the issue isn't in any project, the project has no "Status" field, or the field has no "In Progress" option
+
+Continue regardless of the script's exit code. Project status updates are additive and must never block `/start-issue`.
 
 ## Step 2: Create Feature Branch
 
@@ -178,4 +198,5 @@ Before finishing, verify:
 - [ ] Assumptions are documented with reasoning
 - [ ] Questions (if any) would genuinely change the plan if answered differently
 - [ ] Documentation and discoverability considered
+- [ ] Project status update attempted (Step 1b) — silent failure is OK, but the step must not be skipped
 - [ ] Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
