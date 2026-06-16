@@ -8,7 +8,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-
 
 # Finish Issue
 
-Wraps up work on either an `issues/*` or `side-quest/*` branch. Runs verification, checks documentation needs, and generates a PR description via `/note`.
+Wraps up work on either an `issues/*` or `side-quest/*` branch. Runs verification, checks documentation needs, and generates a PR description (as a working document) via `/note`.
 
 **Input:** $ARGUMENTS
 
