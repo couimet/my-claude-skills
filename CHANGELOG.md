@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.06.16
+
+### Changed
+
+- `/finish-issue` PR description template now requires capability-focused Changes bullets with a concrete rule and before/after example, replacing the soft "group related changes" guidance. The Key Discoveries section populates from breadcrumbs or the active plan and is omitted entirely when empty. The unused `--scratchpad` opt-in was removed. ([issues/154](https://github.com/couimet/my-claude-skills/issues/154))
+
 ## 2026.06.15.1
 
 ### Added
