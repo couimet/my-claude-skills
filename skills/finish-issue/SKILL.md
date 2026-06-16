@@ -114,6 +114,7 @@ Check if documentation updates are needed. Common touchpoints:
 Collect information from:
 
 - Commit history: read `Base branch:` from the resolved plan (recorded by `/start-issue` or `/start-side-quest`); fall back to `origin/main` if absent. Run: `git log --oneline <base-branch>..HEAD`
+- **Actual change set**: run `git diff --stat <base-branch>..HEAD` and `git diff <base-branch>..HEAD`. This is the single source of truth for what actually changed on the branch. Use it to filter which context is relevant — if a file or change doesn't appear in the diff, don't mention it in the PR description
 - **Resolved plan** (from Step 1b): read to extract the goal and rationale. This is the primary reference
 - Breadcrumbs (if exists): incorporate highlights into the PR description; use the paths below based on mode
 - Auxiliary working documents: PR-comment responses, interim analysis notes. Globbed separately so multi-round PR feedback isn't lost. Use the paths below based on mode
@@ -190,6 +191,8 @@ If side-quest mode:
 - Orthogonal improvement discovered during active development
 - Base branch: <branch this was cut from>
 ```
+
+**Diff-filtering rule:** The `## Changes` section must be derivable from the `git diff --stat` output captured in Step 4 — one bullet per logical grouping in the diff, not one bullet per conversation turn. Drop any mention of files, edits, or approaches that don't appear in the final diff. The `## Summary` must describe what shipped, not what was considered. The `## Key Discoveries` section should only include findings that relate to the final shipped changes. If an approach was tried then replaced, only the final approach matters.
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
 
