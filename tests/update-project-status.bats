@@ -158,6 +158,16 @@ teardown() {
 }
 
 # ---------------------------------------------------------------------------
+# jq parse failure — exits 0 (malformed JSON doesn't crash the script)
+# ---------------------------------------------------------------------------
+@test "update-project-status: exits 0 when jq parse fails on malformed response" {
+  export GH_AUTH_SCOPES="'project', 'repo'"
+  export GH_FIXTURE="$PROJECT_ROOT/tests/fixtures/update-project-status/malformed-response.json"
+  run "$SCRIPT" owner repo 123
+  [ "$status" -eq 0 ]
+}
+
+# ---------------------------------------------------------------------------
 # Mutation fails — continues gracefully
 # ---------------------------------------------------------------------------
 @test "update-project-status: continues when mutation fails" {

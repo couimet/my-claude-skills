@@ -98,4 +98,4 @@ echo "$RESULT" | jq -c '
     >/dev/null 2>&1 || true
 
   echo "Project \"$PROJECT_TITLE\": moved Status from \"$PREVIOUS\" to \"In Progress\""
-done
+done || exit 0
