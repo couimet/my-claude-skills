@@ -14,7 +14,7 @@ The question: how can a project add these extensions without forking the global 
 
 ## Decision
 
-**Add prose references to hook skills at specific insertion points in the global skills.** When a global skill references `/start-issue-hooks` in its instructions, Claude Code's native skill resolution searches all directories (enterprise, personal, project, plugin) for a skill with that name. If found, it is loaded as additional context and its requirements are incorporated. If not found, the reference is inert and the vanilla skill runs unchanged.
+**Add prose references to hook skills at specific insertion points in the global skills.** When a global skill references `/start-issue-hook` in its instructions, Claude Code's native skill resolution searches all directories (enterprise, personal, project, plugin) for a skill with that name. If found, it is loaded as additional context and its requirements are incorporated. If not found, the reference is inert and the vanilla skill runs unchanged.
 
 This is purely a convention: a few lines of prose added to existing SKILL.md files. No new infrastructure, no configuration files, no settings changes. The mechanism is already built into Claude Code.
 
@@ -22,9 +22,9 @@ This is purely a convention: a few lines of prose added to existing SKILL.md fil
 
 | Skill | Hook skill name | Insertion points |
 | --- | --- | --- |
-| `start-issue` | `start-issue-hooks` | After context gathering, before plan generation |
-| `finish-issue` | `finish-issue-hooks` | During verification |
-| `start-side-quest` | `start-side-quest-hooks` | After branch creation, before plan generation |
+| `start-issue` | `start-issue-hook` | After context gathering, before plan generation |
+| `finish-issue` | `finish-issue-hook` | During verification |
+| `start-side-quest` | `start-side-quest-hook` | After branch creation, before plan generation |
 
 ### Skills explicitly excluded
 
@@ -32,7 +32,7 @@ This is purely a convention: a few lines of prose added to existing SKILL.md fil
 
 ### Hook skill conventions
 
-- **Naming:** `{parent-skill}-hooks`, e.g. `start-issue-hooks`, `finish-issue-hooks`
+- **Naming:** `{parent-skill}-hook`, e.g. `start-issue-hook`, `finish-issue-hook`
 - **Type:** Foundation skills (`user-invocable: false`), following the existing `pre-write` and `issue-context` pattern. Hooks are consulted by parent skills, never invoked directly.
 - **One hook per parent:** A single hook skill defines all project-specific requirements. No need to split into multiple hook skills per concern.
 - **Add-requirements only:** Hooks specify additional constraints, content, or checks. The parent skill owns all behavioral decisions. This keeps the hook contract simple and avoids branching logic in the parent skill that would burn tokens on existence checks.
@@ -41,7 +41,7 @@ This is purely a convention: a few lines of prose added to existing SKILL.md fil
 
 ### Positive
 
-- **Zero overhead for non-extending projects.** If `.claude/skills/start-issue-hooks/SKILL.md` doesn't exist, the reference resolves to nothing and the vanilla skill runs identically to before.
+- **Zero overhead for non-extending projects.** If `.claude/skills/start-issue-hook/SKILL.md` doesn't exist, the reference resolves to nothing and the vanilla skill runs identically to before.
 - **Discoverable.** A developer can look at `.claude/skills/` and immediately understand which workflows are extended. The naming convention is predictable.
 - **Composable.** Different projects define different hooks. Enterprise orgs can define org-wide hooks. No conflicts.
 - **Portable.** Hook skills are committed to the project repo. A new developer cloning the repo gets the hooks automatically. A developer on a machine without the project's `.claude/skills/` directory gets vanilla behavior with no errors.
@@ -51,7 +51,7 @@ This is purely a convention: a few lines of prose added to existing SKILL.md fil
 
 - **Cannot replace behavior.** Hooks can only add requirements, not change how the parent skill makes decisions. A project that wants to change note's target directory resolution cannot do so via a hook. This is intentional — behavior replacement would require the parent skill to add branching logic at every decision point, burning tokens on existence checks for a feature most projects won't use.
 - **Soft check, not a hard gate.** The hook fires when Claude reads the parent skill and resolves the reference. There is no programmatic guarantee that the hook was consulted. This is inherent to the LLM-based architecture — skills are instructions, not code.
-- **Naming collision risk.** If a project creates a skill with the same name as a global skill, the global skill wins (personal > project in Claude Code's priority model). The `-hooks` suffix avoids this by using names that don't exist in the global set.
+- **Naming collision risk.** If a project creates a skill with the same name as a global skill, the global skill wins (personal > project in Claude Code's priority model). The `-hook` suffix avoids this by using names that don't exist in the global set.
 
 ## Alternatives Considered
 
