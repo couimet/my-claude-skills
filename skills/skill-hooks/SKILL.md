@@ -20,9 +20,9 @@ A project creates a foundation skill in `.claude/skills/` with the name `{parent
 
 | Parent skill | Hook skill name | What it can add |
 | --- | --- | --- |
-| `/start-issue` | `start-issue-hooks` | Additional plan steps, context-gathering, validation gates |
-| `/finish-issue` | `finish-issue-hooks` | Additional verification steps, PR description sections |
-| `/start-side-quest` | `start-side-quest-hooks` | Additional plan steps, context-gathering, validation gates |
+| `/start-issue` | `start-issue-hook` | Additional plan steps, context-gathering, validation gates |
+| `/finish-issue` | `finish-issue-hook` | Additional verification steps, PR description sections |
+| `/start-side-quest` | `start-side-quest-hook` | Additional plan steps, context-gathering, validation gates |
 
 Hook skills are foundation skills (`user-invocable: false`). They are consulted by their parent skill, never invoked directly by the user.
 
@@ -34,11 +34,11 @@ Projects wanting to replace specific behaviors (e.g., changing where `/note` wri
 
 ## Example
 
-RangeLink wants every issue plan to cross-reference QA test cases. It creates `.claude/skills/start-issue-hooks/SKILL.md`:
+RangeLink wants every issue plan to cross-reference QA test cases. It creates `.claude/skills/start-issue-hook/SKILL.md`:
 
 ```yaml
 ---
-name: start-issue-hooks
+name: start-issue-hook
 description: QA test case cross-referencing for /start-issue plans
 user-invocable: false
 allowed-tools: Read, Grep, Glob

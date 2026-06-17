@@ -26,15 +26,15 @@ load test_helper
 # start-issue hook reference
 # =============================================================
 
-@test "start-issue skill: references /start-issue-hooks" {
-  grep -q "/start-issue-hooks" "$PROJECT_ROOT/skills/start-issue/SKILL.md"
+@test "start-issue skill: references /start-issue-hook" {
+  grep -q "/start-issue-hook" "$PROJECT_ROOT/skills/start-issue/SKILL.md"
 }
 
 @test "start-issue skill: hook reference appears after context gathering (Step 3)" {
   # The hook reference should appear after the Step 3 header and before Step 4
   STEP3_LINE=$(grep -n "^## Step 3: Gather Full Context" "$PROJECT_ROOT/skills/start-issue/SKILL.md" | cut -d: -f1)
   STEP4_LINE=$(grep -n "^## Step 4: Create Implementation Plan" "$PROJECT_ROOT/skills/start-issue/SKILL.md" | cut -d: -f1)
-  HOOK_LINE=$(grep -n "/start-issue-hooks" "$PROJECT_ROOT/skills/start-issue/SKILL.md" | cut -d: -f1)
+  HOOK_LINE=$(grep -n "/start-issue-hook" "$PROJECT_ROOT/skills/start-issue/SKILL.md" | cut -d: -f1)
 
   [ "$HOOK_LINE" -gt "$STEP3_LINE" ]
   [ "$HOOK_LINE" -lt "$STEP4_LINE" ]
@@ -44,21 +44,21 @@ load test_helper
 # finish-issue hook references
 # =============================================================
 
-@test "finish-issue skill: references /finish-issue-hooks" {
-  grep -q "/finish-issue-hooks" "$PROJECT_ROOT/skills/finish-issue/SKILL.md"
+@test "finish-issue skill: references /finish-issue-hook" {
+  grep -q "/finish-issue-hook" "$PROJECT_ROOT/skills/finish-issue/SKILL.md"
 }
 
 @test "finish-issue skill: hook reference appears in verification (Step 2)" {
   STEP2_LINE=$(grep -n "^## Step 2: Pre-PR Verification" "$PROJECT_ROOT/skills/finish-issue/SKILL.md" | cut -d: -f1)
   STEP3_LINE=$(grep -n "^## Step 3: Documentation Review" "$PROJECT_ROOT/skills/finish-issue/SKILL.md" | cut -d: -f1)
-  HOOK_LINE=$(grep -n "/finish-issue-hooks" "$PROJECT_ROOT/skills/finish-issue/SKILL.md" | cut -d: -f1)
+  HOOK_LINE=$(grep -n "/finish-issue-hook" "$PROJECT_ROOT/skills/finish-issue/SKILL.md" | cut -d: -f1)
 
   [ "$HOOK_LINE" -gt "$STEP2_LINE" ]
   [ "$HOOK_LINE" -lt "$STEP3_LINE" ]
 }
 
-@test "finish-issue skill: has exactly one /finish-issue-hooks reference" {
-  COUNT=$(grep -c "/finish-issue-hooks" "$PROJECT_ROOT/skills/finish-issue/SKILL.md")
+@test "finish-issue skill: has exactly one /finish-issue-hook reference" {
+  COUNT=$(grep -c "/finish-issue-hook" "$PROJECT_ROOT/skills/finish-issue/SKILL.md")
   [ "$COUNT" -eq 1 ]
 }
 
@@ -66,14 +66,14 @@ load test_helper
 # start-side-quest hook reference
 # =============================================================
 
-@test "start-side-quest skill: references /start-side-quest-hooks" {
-  grep -q "/start-side-quest-hooks" "$PROJECT_ROOT/skills/start-side-quest/SKILL.md"
+@test "start-side-quest skill: references /start-side-quest-hook" {
+  grep -q "/start-side-quest-hook" "$PROJECT_ROOT/skills/start-side-quest/SKILL.md"
 }
 
 @test "start-side-quest skill: hook reference appears after branch creation (Step 2) and before plan generation (Step 3)" {
   STEP2_LINE=$(grep -n "^## Step 2: Create Side-Quest Branch" "$PROJECT_ROOT/skills/start-side-quest/SKILL.md" | cut -d: -f1)
   STEP3_LINE=$(grep -n "^## Step 3: Create Implementation Working Document" "$PROJECT_ROOT/skills/start-side-quest/SKILL.md" | cut -d: -f1)
-  HOOK_LINE=$(grep -n "/start-side-quest-hooks" "$PROJECT_ROOT/skills/start-side-quest/SKILL.md" | cut -d: -f1)
+  HOOK_LINE=$(grep -n "/start-side-quest-hook" "$PROJECT_ROOT/skills/start-side-quest/SKILL.md" | cut -d: -f1)
 
   [ "$HOOK_LINE" -gt "$STEP2_LINE" ]
   [ "$HOOK_LINE" -lt "$STEP3_LINE" ]

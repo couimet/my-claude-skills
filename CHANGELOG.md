@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.06.17
+
+### Fixed
+
+- Renamed hook skill convention from plural `{parent}-hooks` to singular `{parent}-hook` (`start-issue-hook`, `finish-issue-hook`, `start-side-quest-hook`). A project defines exactly one hook skill per parent skill, so singular is more accurate. ([issues/155](https://github.com/couimet/my-claude-skills/issues/155))
+
 ## 2026.06.16.1
 
 ### Changed
