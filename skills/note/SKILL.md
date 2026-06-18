@@ -1,6 +1,6 @@
 ---
 name: note
-version: 2026.06.18@b488abf
+version: 2026.06.18.1@070653d
 description: Capture a quick note, finding, or result in a timestamped file under .claude-work/. Lightweight alternative to /scratchpad with no foundation skill dependencies
 argument-hint: <description>
 allowed-tools: Read, Write, Glob, Bash(git branch --show-current), Bash(mkdir -p *), Bash(date *)
