@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.06.18.1
+
+### Fixed
+
+- Added `target-path.sh` to `allowed-tools` for all five user-invocable skills (`start-issue`, `finish-issue`, `start-side-quest`, `tackle-pr-comment`, `create-github-issue`) that cross-reference foundation skills which call it. Previously, following a foundation skill's instructions inline (without going through `Skill()`) would run the script against the top-level skill's `allowed-tools` and prompt the user. ([issues/166](https://github.com/couimet/my-claude-skills/issues/166))
+
 ## 2026.06.18
 
 ### Changed
