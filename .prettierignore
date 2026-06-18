@@ -1,0 +1,13 @@
+# Working directories and generated/historical artifacts
+.claude-work/
+.history/
+demo/
+
+# markdownlint is the sole Markdown authority in this repo (issue #159, Q004).
+# Prettier is scoped to YAML/JSON so two formatters don't fight over Markdown.
+*.md
+
+# Test fixtures are data representing external API payloads (and one is
+# intentionally malformed to exercise error handling), so Prettier must not
+# touch them.
+tests/fixtures/

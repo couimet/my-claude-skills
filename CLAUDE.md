@@ -12,13 +12,15 @@ Run all commands from the project root.
 
 | Command | What it does |
 | --- | --- |
-| `make all` | Run lint + test (default target) |
-| `make lint` | `markdownlint-cli2 "**/*.md"` — lint all Markdown files |
-| `make lint-fix` | `markdownlint-cli2 --fix "**/*.md"` — auto-fix lint issues |
+| `make check` | Run lint + test — the full gate CI mirrors (default target) |
+| `make lint` | Run `lint-md` + `fmt-check` + `lint-sh` (markdownlint, Prettier `--check`, shellcheck) |
+| `make lint-fix` | Run `lint-md-fix` + `format` (auto-fix markdownlint, apply Prettier) |
+| `make lint-md` / `lint-sh` / `fmt-check` / `format` | Individual tool runs (markdownlint, shellcheck, Prettier check, Prettier write) |
 | `make test` | `bats tests/` — run the bats test suite |
+| `make install-prereqs` | Verify node, bats, and shellcheck are installed; print install hints for any missing tool |
 | `make stamp` | Stamp `version: <CalVer>@<SHA>` into all `skills/*/SKILL.md` front matter; reads CalVer from the latest `CHANGELOG.md` heading and SHA from `git rev-parse --short HEAD` |
 
-**After every change:** run `make lint && make test` before committing. Both must pass.
+**After every change:** run `make check` (lint + test) before committing. Both must pass.
 
 **Never run `make stamp`.** Version stamps are managed by humans, not by AI. Do not run `make stamp` as part of any workflow.
 

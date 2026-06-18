@@ -1,0 +1,8 @@
+# Sourced from @couimet/eslint-config/prettier
+# https://github.com/couimet/ts-npm-packages/blob/c0b71777a4e6b5b0944f29d2fa7914d3d65a3fcc/packages/eslint-config/prettier.js
+# Note: prettier-plugin-packagejson omitted because it cannot be resolved
+# through the npx --yes pattern used in the Makefile.
+tabWidth: 2
+singleQuote: true
+printWidth: 160
+trailingComma: all
