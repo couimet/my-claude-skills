@@ -24,6 +24,8 @@ Focus on **WHY**, not **WHAT**. The git diff already shows what changed. The com
 
 The diff is also the filter for WHICH changes to describe. If a change was added then reverted in the same working tree, it never happened. Don't mention it. Only include reasoning and decisions that relate to files and changes visible in the actual diff.
 
+Always create a new file. Never edit an existing commit-msg file. `target-path.sh` already guarantees unique filenames via auto-numbering. Old files stay on disk as historical artifacts. Two invocations without an intermediate commit simply produce two files — the user picks whichever they want at commit time.
+
 ## Step 1: Resolve the Target Path
 
 Run these two commands as parallel tool calls. They are independent.
@@ -82,9 +84,9 @@ After capture, determine which diff(s) produced output:
     1. `Staged only` — commit message describes only the staged changes (ready to commit)
     2. `Both staged and unstaged` — commit message describes the full working-tree state
 
-  Set the effective diff(s) to the chosen scope before proceeding.
+  Set the effective diff(s) to the chosen scope before proceeding. The corresponding stat output — `git diff --stat` for unstaged, `git diff --cached --stat` for staged, or both combined for "Both" — becomes the source for the `Files:` footer.
 
-Use the effective diff output as the single source of truth for what changed. Cross-reference your conversation context against it: drop any reasoning, decisions, or benefits that relate to files or edits not present in the effective diff.
+**Gate** (a hard checkpoint — must be satisfied, not a suggestion): **exclude already-committed topics.** Use the effective diff output as the single source of truth for what changed. If a change, fix, or decision was discussed in the conversation but does NOT appear in the effective diff, it is not part of this change set. Exclude it from this message. The message describes ONLY the changes visible in THIS diff.
 
 ## File Format
 
@@ -100,6 +102,7 @@ Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `style`
 
 ```text
 [docs] Add changelog entry for auto-assign feature
+Files: CHANGELOG.md (+3)
 ```
 
 ### Moderate
@@ -108,6 +111,7 @@ Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `style`
 [fix] Prevent duplicate webhook delivery on retry
 
 The retry logic was not checking idempotency keys, causing downstream services to process the same event twice when the initial response timed out.
+Files: src/webhooks/delivery.ts (+12)
 ```
 
 ### Substantial
@@ -121,20 +125,21 @@ Following official conventions eliminates conflicts where tsc could overwrite es
 Benefits:
 - Impossible for tsc --watch to interfere with packaging
 - Standard convention matching VSCode templates
+Files: tsconfig.json (+8, -3), package.json (+2, -2), scripts/build.sh (+5)
 ```
 
 ### Rules
 
-1. **No file lists**. Redundant with the diff.
-2. **Length**: 1 line (trivial), 3-5 lines (moderate), under 15 lines (substantial).
+1. **No file lists in prose.** The `Files:` footer is a structured metadata line derived from the effective diff's stat output, not a prose list. Do not enumerate files in the body.
+2. **Body length**: 1 line (trivial), 3-5 lines (moderate), under 15 lines (substantial). The subject line and `Files:` footer do not count toward the body line budget.
 3. **Keep the working issue link in the PR description only.** `/finish-issue` adds the `Closes` link there. That is the single source of truth for issue linkage. Repeating it in commit messages is redundant noise.
 4. **Other issue/PR references are fine** when they add context (e.g., "fixes regression from `https://github.com/.../pull/42`"), include them.
 
 ### Output Anchors
 
 Subject: [type] summary, imperative mood, no period, under 72 characters.
-Length: 1 line (trivial), 3-5 lines (moderate), under 15 lines (substantial).
-Format: plain text, no markdown. One continuous line per paragraph.
+Body length: 1 line (trivial), 3-5 lines (moderate), under 15 lines (substantial). The subject line and `Files:` footer do not count toward the body line budget.
+Format: plain text, no markdown. One continuous line per paragraph. Every message ends with a `Files:` line derived from the effective diff's stat output. Derive the `Files:` line by parsing each stat line into `path (+N, -N)`, omitting `-N` when zero, joining with commas, and skipping the summary line.
 Tone: professional, specific, why-focused.
 
 Formatting: see `/prose-style` for hard-wrap and GitHub-reference rules.
@@ -143,8 +148,8 @@ Formatting: see `/prose-style` for hard-wrap and GitHub-reference rules.
 
 1. Capture the actual change set (see "Capture the Actual Change Set" above)
 2. Assess the change complexity (trivial, moderate, or substantial)
-3. Create the file using the matching tier format
-4. **Self-check for diff-relevance.** Cross-reference the message against the diff output. Remove any mention of files, changes, or reasoning not reflected in the diff.
+3. Write the file using the matching tier format, including the `Files:` footer derived from the effective diff's stat output
+4. **Self-check for diff-relevance (Gate).** If a change, fix, or decision was discussed in the conversation but does NOT appear in the effective diff, it is not part of this change set. Remove it from this message. The message describes ONLY the changes visible in THIS diff.
 5. **Self-check for hard-wrapping.** Re-read the file you just wrote. For each paragraph in the body (text between blank lines, outside code blocks and the Benefits bullet list), verify it is a single continuous line. If you find a mid-sentence line break, rewrite that paragraph as one line. This check catches the most common failure. Always complete it. Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
 6. Print the filepath in terminal
 7. Do NOT run `git commit`. The user reviews and commits manually.

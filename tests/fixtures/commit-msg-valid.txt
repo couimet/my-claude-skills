@@ -5,3 +5,4 @@ Input validation was scattered across three handlers with inconsistent error mes
 Benefits:
 - Single source of truth for input validation rules
 - Testable in isolation without spinning up the full server
+Files: src/parser/index.ts (+45), src/handlers/auth.ts (+12, -8), src/handlers/upload.ts (+8, -5)
