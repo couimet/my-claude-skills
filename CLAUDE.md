@@ -43,6 +43,8 @@ allowed-tools: Read, Write, Glob, Grep, Bash(git status *), Bash(gh issue view *
 
 **`allowed-tools:`** — restricts which Bash commands the skill may use. Use specific patterns (`Bash(git checkout *)`) rather than `Bash(*)` unless the skill genuinely needs unrestricted shell access (only `tackle-scratchpad-block` does, because it runs arbitrary user-authored steps).
 
+**Transitive coverage rule:** When a skill cross-references a foundation skill that calls a script (e.g., `/question` calls `target-path.sh` from `issue-context`), the cross-referencing skill must also declare that script in its own `allowed-tools`. The AI does not always route through `Skill()` when following a cross-reference — it may follow the foundation skill's instructions inline, and those Bash calls are checked against the top-level skill's `allowed-tools`. Missing entries cause permission prompts.
+
 **`version:`** is managed by `make stamp` — never edit it by hand.
 
 ### Skill Cross-References
