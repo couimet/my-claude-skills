@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.06.18
+
+### Changed
+
+- `/commit-msg` now always creates a new auto-numbered file (never edits an existing one), uses a hard Gate to exclude already-committed topics from the message body, and appends a `Files:` footer to every file for immediate scope visibility. ([issues/164](https://github.com/couimet/my-claude-skills/issues/164))
+
 ## 2026.06.17
 
 ### Fixed
