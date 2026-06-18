@@ -131,14 +131,14 @@ Files: tsconfig.json (+8, -3), package.json (+2, -2), scripts/build.sh (+5)
 ### Rules
 
 1. **No file lists in prose.** The `Files:` footer is a structured metadata line derived from the effective diff's stat output, not a prose list. Do not enumerate files in the body.
-2. **Body length**: 1 line (trivial), 3-5 lines (moderate), under 15 lines (substantial). The subject line and `Files:` footer do not count toward the body line budget.
+2. **Body length**: 1 line (trivial), 1-2 lines (moderate), under 15 lines (substantial). The subject line and `Files:` footer do not count toward the body line budget.
 3. **Keep the working issue link in the PR description only.** `/finish-issue` adds the `Closes` link there. That is the single source of truth for issue linkage. Repeating it in commit messages is redundant noise.
 4. **Other issue/PR references are fine** when they add context (e.g., "fixes regression from `https://github.com/.../pull/42`"), include them.
 
 ### Output Anchors
 
 Subject: [type] summary, imperative mood, no period, under 72 characters.
-Body length: 1 line (trivial), 3-5 lines (moderate), under 15 lines (substantial). The subject line and `Files:` footer do not count toward the body line budget.
+Body length: 1 line (trivial), 1-2 lines (moderate), under 15 lines (substantial). The subject line and `Files:` footer do not count toward the body line budget.
 Format: plain text, no markdown. One continuous line per paragraph. Every message ends with a `Files:` line derived from the effective diff's stat output. Derive the `Files:` line by parsing each stat line into `path (+N, -N)`, omitting `-N` when zero, joining with commas, and skipping the summary line.
 Tone: professional, specific, why-focused.
 
