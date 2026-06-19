@@ -407,7 +407,7 @@ Run the setup script once to install dev tools:
 ```
 
 ```bash
-make lint    # check markdown formatting
+make lint    # markdownlint + Prettier (YAML/JSON) + shellcheck
 make test    # run the bats test suite
 make stamp   # stamp all SKILL.md files with the current version (CalVer@SHA)
 ```
