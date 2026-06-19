@@ -1,6 +1,6 @@
 ---
 name: issue-context
-version: 2026.06.18.1@070653d
+version: 2026.06.18.1@9557c94
 user-invocable: false
 description: Contract for target-path.sh, the shell script that resolves .claude-work/ file paths from the current git branch. Referenced by name from /scratchpad, /question, /commit-msg; not auto-consulted.
 allowed-tools: Bash(*/skills/issue-context/target-path.sh *)
