@@ -96,6 +96,8 @@ All ephemeral working files live under `.claude-work/` (git-ignored). Never comm
   commit-msgs/
 ```
 
+**Git worktree sharing:** `.claude-work/` lives at the main checkout root (resolved by `skills/issue-context/claude-work-root.sh`). In the primary checkout this is `git rev-parse --show-toplevel` (unchanged from before). In a linked git worktree it is `dirname(git rev-parse --git-common-dir)` — the main checkout — so all worktrees of the same repo share a single `.claude-work/` copy. Skills that write `.claude-work/` files use absolute paths to avoid ambiguity about which worktree the files live in. Skills never edit source files outside the current worktree; the shared location is only for ephemeral working artifacts.
+
 **Auto-numbering:** File sequence numbers (`NNNN`) are managed by `skills/auto-number/auto-number.sh`. Foundation skills call it automatically — don't reimplement the logic.
 
 ## CHANGELOG Conventions

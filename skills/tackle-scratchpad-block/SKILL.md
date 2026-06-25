@@ -12,7 +12,7 @@ Execute a specific block of implementation steps from a scratchpad file, then cr
 
 **Note on `Bash(*)` permission:** This skill intentionally uses unrestricted Bash access because it executes arbitrary implementation steps and test suites from user-authored scratchpad content. Other skills use allowlisted commands for their specific workflows. Users should review scratchpad content before invoking this skill.
 
-**Input:** $ARGUMENTS (a code reference to scratchpad lines, e.g. `.claude-work/issues/70/scratchpads/0001-plan.txt#L25-L67` or `path/to/plan.txt#S003`)
+**Input:** $ARGUMENTS (a code reference to scratchpad lines, e.g. `/Users/x/project/.claude-work/issues/70/scratchpads/0001-plan.txt#L25-L67` or `path/to/plan.txt#S003`)
 
 ## Step 0: Resolve Active Plan and Sanity-Check
 
@@ -20,7 +20,7 @@ Determine the file the user's argument points at (the path portion before `#S00N
 
 **If the argument resolves to a file containing a JSON step block:** proceed normally to Step 1. The explicit argument always takes precedence. The active-plan pointer is not consulted.
 
-**If the argument does NOT resolve to a JSON step block** (file not found, or file exists but has no `"steps"` array): read the active-plan pointer (issue mode: `.claude-work/issues/<ID>/active-plan`; side-quest mode: `.claude-work/active-plan-<slug>`) to name the resolved path in the guidance message; if the pointer file is missing or empty, use `(no active-plan pointer found)` as the resolved path. Then STOP:
+**If the argument does NOT resolve to a JSON step block** (file not found, or file exists but has no `"steps"` array): resolve `<base>` via `~/.claude/skills/issue-context/claude-work-root.sh`, then read the active-plan pointer (issue mode: `<base>/issues/<ID>/active-plan`; side-quest mode: `<base>/active-plan-<slug>`) to name the resolved path in the guidance message; if the pointer file is missing or empty, use `(no active-plan pointer found)` as the resolved path. Then STOP:
 
 ```text
 This skill drives execution against a JSON step block, but the working document at
