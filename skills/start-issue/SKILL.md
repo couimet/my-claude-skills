@@ -39,7 +39,7 @@ The assign is additive: existing assignees are preserved, not replaced. The comm
 After assignment, detect whether the issue belongs to any GitHub Projects V2 boards and move those project items to "In Progress" status:
 
 ```bash
-<project-root>/skills/start-issue/update-project-status.sh <owner> <repo> <issue_number>
+~/.claude/skills/start-issue/update-project-status.sh <owner> <repo> <issue_number>
 ```
 
 Where `<owner>` and `<repo>` are extracted from the issue URL, and `<issue_number>` is the GitHub issue number.

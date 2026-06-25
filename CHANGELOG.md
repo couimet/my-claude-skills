@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.06.25
+
+### Fixed
+
+- Fixed `update-project-status.sh` path in `/start-issue` to use `~/.claude/skills/` instead of `<project-root>/skills/`, so the script is found regardless of whether the target project has vendored skills. ([issues/172](https://github.com/couimet/my-claude-skills/issues/172))
+
 ## 2026.06.18.1
 
 ### Fixed
