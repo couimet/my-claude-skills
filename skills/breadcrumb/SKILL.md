@@ -3,7 +3,7 @@ name: breadcrumb
 version: 2026.06.25@7353cfe
 description: Drop a timestamped note for the current issue - collected by /finish-issue for PR descriptions
 argument-hint: <note text>
-allowed-tools: Read, Write, Bash(git branch --show-current), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
+allowed-tools: Read, Write, Bash(git branch --show-current), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Breadcrumb
@@ -14,10 +14,14 @@ Drop a timestamped note along your journey through an issue. When you run `/fini
 
 ## Step 1: Detect Branch Context
 
-Read the current branch:
+Run both commands as parallel tool calls. They are independent:
 
 ```bash
 git branch --show-current
+```
+
+```bash
+~/.claude/skills/issue-context/claude-work-root.sh
 ```
 
 Extract the breadcrumb identifier based on branch pattern:
@@ -32,6 +36,8 @@ Extract the breadcrumb identifier based on branch pattern:
 - Print: "Not on a work branch. Breadcrumbs require an `issues/*` or `side-quest/*` branch."
 - STOP
 
+Use the stdout of `claude-work-root.sh` as the base path (e.g., `/Users/x/project/.claude-work`). This script automatically detects git worktrees and returns the shared `.claude-work/` location.
+
 ## Step 2: Validate Input
 
 **If $ARGUMENTS is empty or whitespace:**
@@ -43,10 +49,10 @@ Extract the breadcrumb identifier based on branch pattern:
 
 **File location depends on branch pattern:**
 
-- Issues: `.claude-work/issues/<ID>/breadcrumb.md`
-- Side-quests: `.claude-work/breadcrumb-<slug>.md`
+- Issues: `<base>/issues/<ID>/breadcrumb.md`
+- Side-quests: `<base>/breadcrumb-<slug>.md`
 
-Where `<ID>` or `<slug>` is the value extracted in Step 1.
+Where `<base>` is the stdout from `claude-work-root.sh`, `<ID>` or `<slug>` is the value extracted in Step 1.
 
 **If file doesn't exist**, create it with `<!-- markdownlint-disable MD013 -->` as the very first line, then the header:
 
@@ -69,10 +75,10 @@ date "+%Y-%m-%d %H:%M:%S"
 
 ## Step 4: Confirm
 
-Print a brief confirmation with the file path:
+Print a brief confirmation with the file path (the full absolute path from `<base>`):
 
-- Issues: `Breadcrumb dropped in .claude-work/issues/<ID>/breadcrumb.md`
-- Side-quests: `Breadcrumb dropped in .claude-work/breadcrumb-<slug>.md`
+- Issues: `Breadcrumb dropped in <base>/issues/<ID>/breadcrumb.md`
+- Side-quests: `Breadcrumb dropped in <base>/breadcrumb-<slug>.md`
 
 Confirm by printing the path as shown above. Length: one line. Do NOT print the full file contents.
 

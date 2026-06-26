@@ -3,7 +3,7 @@ name: finish-issue
 version: 2026.06.25@7353cfe
 description: Wrap up issue or side-quest work on the current issues/* or side-quest/* branch. Runs verification, checks documentation needs, and generates a PR description
 argument-hint: [optional: issue-number-or-url]
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git status), Bash(git log *), Bash(git diff *), Bash(make lint-fix *), Bash(make test *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *)
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git status), Bash(git log *), Bash(git diff *), Bash(make lint-fix *), Bash(make test *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Finish Issue
@@ -38,10 +38,18 @@ Current branch: <branch>
 
 ## Step 1b: Resolve Active Plan
 
+First, resolve the `.claude-work/` root directory:
+
+```bash
+~/.claude/skills/issue-context/claude-work-root.sh
+```
+
+Use the stdout as `<base>` for all `.claude-work/` paths below. This script automatically detects git worktrees and returns the shared location.
+
 Read the active-plan pointer written by `/start-issue` or `/start-side-quest` to locate the primary working document:
 
-- **Issue mode:** read `.claude-work/issues/<ID>/active-plan`
-- **Side-quest mode:** read `.claude-work/active-plan-<slug>`
+- **Issue mode:** read `<base>/issues/<ID>/active-plan`
+- **Side-quest mode:** read `<base>/active-plan-<slug>`
 
 The pointer contents is a single project-root-relative path. Record it as the **resolved plan path**. This is the single source of truth for the primary plan.
 
@@ -129,15 +137,15 @@ Note whether a template was found and its path. This is used in Step 5. If none 
 
 **Issue mode (path differences):**
 
-- Breadcrumbs: `.claude-work/issues/<ID>/breadcrumb.md`
-- Auxiliary notes: `Glob(pattern="**/*", path=".claude-work/issues/<ID>/notes")` (excluding the resolved plan if it's a note)
-- Auxiliary scratchpads: `Glob(pattern="**/*", path=".claude-work/issues/<ID>/scratchpads")` (excluding the resolved plan if it's a scratchpad)
+- Breadcrumbs: `<base>/issues/<ID>/breadcrumb.md`
+- Auxiliary notes: `Glob(pattern="**/*", path="<base>/issues/<ID>/notes")` (excluding the resolved plan if it's a note)
+- Auxiliary scratchpads: `Glob(pattern="**/*", path="<base>/issues/<ID>/scratchpads")` (excluding the resolved plan if it's a scratchpad)
 
 **Side-quest mode (path differences):**
 
-- Breadcrumbs: `.claude-work/breadcrumb-<slug>.md`
-- Auxiliary notes: `Glob(pattern="*side-quest-<slug>*", path=".claude-work/notes")` (excluding the resolved plan)
-- Auxiliary scratchpads: `Glob(pattern="*side-quest-<slug>*", path=".claude-work/scratchpads")` (excluding the resolved plan)
+- Breadcrumbs: `<base>/breadcrumb-<slug>.md`
+- Auxiliary notes: `Glob(pattern="*side-quest-<slug>*", path="<base>/notes")` (excluding the resolved plan)
+- Auxiliary scratchpads: `Glob(pattern="*side-quest-<slug>*", path="<base>/scratchpads")` (excluding the resolved plan)
 
 ## Step 5: Generate PR Description Working Document
 

@@ -3,7 +3,7 @@ name: note
 version: 2026.06.25@7353cfe
 description: Capture a quick note, finding, or result in a timestamped file under .claude-work/. Lightweight alternative to /scratchpad with no foundation skill dependencies
 argument-hint: <description>
-allowed-tools: Read, Write, Glob, Bash(git branch --show-current), Bash(mkdir -p *), Bash(date *)
+allowed-tools: Read, Write, Glob, Bash(git branch --show-current), Bash(mkdir -p *), Bash(date *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Note
@@ -14,7 +14,11 @@ Capture a note, finding, or result in a lightweight timestamped file. Use this i
 
 ## Step 1: Determine Target Directory and Timestamp
 
-Run both commands as parallel tool calls. They are independent:
+Run these three commands as parallel tool calls. They are independent:
+
+```bash
+~/.claude/skills/issue-context/claude-work-root.sh
+```
 
 ```bash
 git branch --show-current
@@ -24,10 +28,12 @@ git branch --show-current
 date +%Y%m%d-%H%M%S
 ```
 
+Use the stdout of `claude-work-root.sh` as the base path (e.g., `/Users/x/project/.claude-work`). This script automatically detects git worktrees and returns the shared `.claude-work/` location.
+
 If the branch starts with `issues/`, extract the issue number (characters after `issues/` up to the first `-` or `_`, only if those characters are purely numeric; otherwise use the full string after `issues/`):
 
-- **On an issue branch:** `.claude-work/issues/<ID>/notes/`
-- **Otherwise:** `.claude-work/notes/`
+- **On an issue branch:** `<base>/issues/<ID>/notes/`
+- **Otherwise:** `<base>/notes/`
 
 Create the directory if it doesn't exist:
 

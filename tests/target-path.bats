@@ -11,6 +11,9 @@ SCRIPT="$PROJECT_ROOT/skills/issue-context/target-path.sh"
 # Run the script inside a fresh git repo so branch detection is deterministic.
 setup() {
   TEST_TEMP_DIR="$(mktemp -d)"
+  # Resolve any symlinks (macOS /var → /private/var) so path comparisons
+  # against git rev-parse --show-toplevel output match exactly.
+  TEST_TEMP_DIR="$(cd "$TEST_TEMP_DIR" && pwd -P)"
   cd "$TEST_TEMP_DIR"
   git init -q
   git config user.email "test@example.com"
@@ -30,28 +33,28 @@ teardown() {
   git checkout -q -b issues/42
   run "$SCRIPT" --type scratchpads --description "Plan the refactor"
   [ "$status" -eq 0 ]
-  [ "$output" = ".claude-work/issues/42/scratchpads/0001-plan-the-refactor.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/0001-plan-the-refactor.txt" ]
 }
 
 @test "issues/120-extract-numeric-prefix → extracts 120" {
   git checkout -q -b issues/120-audit-cleanup
   run "$SCRIPT" --type questions --description "Scope question"
   [ "$status" -eq 0 ]
-  [ "$output" = ".claude-work/issues/120/questions/0001-scope-question.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/120/questions/0001-scope-question.txt" ]
 }
 
 @test "issues/120_with_underscore → extracts 120" {
   git checkout -q -b issues/120_audit
   run "$SCRIPT" --type scratchpads --description "Test"
   [ "$status" -eq 0 ]
-  [ "$output" = ".claude-work/issues/120/scratchpads/0001-test.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/120/scratchpads/0001-test.txt" ]
 }
 
 @test "issues/rfc-auth → non-numeric prefix uses full segment" {
   git checkout -q -b issues/rfc-auth
   run "$SCRIPT" --type commit-msgs --description "Draft message"
   [ "$status" -eq 0 ]
-  [ "$output" = ".claude-work/issues/rfc-auth/commit-msgs/0001-draft-message.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/rfc-auth/commit-msgs/0001-draft-message.txt" ]
 }
 
 # ============================================================================
@@ -64,14 +67,14 @@ teardown() {
   git checkout -q -B main
   run "$SCRIPT" --type scratchpads --description "Hello world"
   [ "$status" -eq 0 ]
-  [ "$output" = ".claude-work/scratchpads/0001-hello-world.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/scratchpads/0001-hello-world.txt" ]
 }
 
 @test "side-quest/foo branch → flat-root placement" {
   git checkout -q -b side-quest/foo
   run "$SCRIPT" --type questions --description "Side quest question"
   [ "$status" -eq 0 ]
-  [ "$output" = ".claude-work/questions/0001-side-quest-question.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/questions/0001-side-quest-question.txt" ]
 }
 
 # ============================================================================
@@ -81,11 +84,11 @@ teardown() {
 @test "second call increments NNNN" {
   git checkout -q -b issues/42
   run "$SCRIPT" --type scratchpads --description "First"
-  [ "$output" = ".claude-work/issues/42/scratchpads/0001-first.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/0001-first.txt" ]
   # Create the file so auto-number sees it on the next call
   touch ".claude-work/issues/42/scratchpads/0001-first.txt"
   run "$SCRIPT" --type scratchpads --description "Second"
-  [ "$output" = ".claude-work/issues/42/scratchpads/0002-second.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/0002-second.txt" ]
 }
 
 # ============================================================================
@@ -96,14 +99,14 @@ teardown() {
   git checkout -q -b issues/42
   run "$SCRIPT" --type scratchpads --description "Some   MIXED--Case & punctuation!"
   [ "$status" -eq 0 ]
-  [ "$output" = ".claude-work/issues/42/scratchpads/0001-some-mixed-case-punctuation.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/0001-some-mixed-case-punctuation.txt" ]
 }
 
 @test "slug trims leading and trailing hyphens" {
   git checkout -q -b issues/42
   run "$SCRIPT" --type scratchpads --description "  hello world  "
   [ "$status" -eq 0 ]
-  [ "$output" = ".claude-work/issues/42/scratchpads/0001-hello-world.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/0001-hello-world.txt" ]
 }
 
 # ============================================================================
@@ -114,14 +117,14 @@ teardown() {
   git checkout -q -B main
   run "$SCRIPT" --type scratchpads --description "Config" --ext json
   [ "$status" -eq 0 ]
-  [ "$output" = ".claude-work/scratchpads/0001-config.json" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/scratchpads/0001-config.json" ]
 }
 
 @test "--ext md still works alongside json" {
   git checkout -q -B main
   run "$SCRIPT" --type scratchpads --description "Doc" --ext md
   [ "$status" -eq 0 ]
-  [ "$output" = ".claude-work/scratchpads/0001-doc.md" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/scratchpads/0001-doc.md" ]
 }
 
 # ============================================================================
@@ -196,14 +199,14 @@ teardown() {
   git checkout -q -b issues/42
   run "$SCRIPT" --type notes --description "Plan the work"
   [ "$status" -eq 0 ]
-  [ "$output" = ".claude-work/issues/42/notes/0001-plan-the-work.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/notes/0001-plan-the-work.txt" ]
 }
 
 @test "notes type on main branch → flat-root notes path" {
   git checkout -q -B main
   run "$SCRIPT" --type notes --description "Quick finding"
   [ "$status" -eq 0 ]
-  [ "$output" = ".claude-work/notes/0001-quick-finding.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/notes/0001-quick-finding.txt" ]
 }
 
 @test "invalid --type errors with T100" {
@@ -219,15 +222,31 @@ teardown() {
 }
 
 # ============================================================================
-# Repo-root anchoring: output is relative to repo root, not CWD
+# Linked worktree: output resolves to main checkout, not worktree local
 # ============================================================================
 
-@test "subdirectory CWD: output path is relative to repo root, not CWD" {
+@test "linked worktree: output resolves to main checkout .claude-work" {
+  # Main checkout stays on the default branch; create a linked worktree
+  # on issues/99 so the branch is not already checked out.
+  git worktree add "$TEST_TEMP_DIR/wt-linked" -b issues/99 -q
+  cd "$TEST_TEMP_DIR/wt-linked"
+  run "$SCRIPT" --type notes --description "from worktree"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/99/notes/0001-from-worktree.txt" ]
+  # Worktree directory should NOT have its own .claude-work
+  [ ! -d "$TEST_TEMP_DIR/wt-linked/.claude-work" ]
+}
+
+# ============================================================================
+# Repo-root anchoring: output is an absolute path independent of CWD
+# ============================================================================
+
+@test "subdirectory CWD: output path is absolute, independent of CWD" {
   mkdir -p subdir
   cd subdir
   run "$SCRIPT" --type notes --description "from subdir"
   [ "$status" -eq 0 ]
-  [ "$output" = ".claude-work/notes/0001-from-subdir.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/notes/0001-from-subdir.txt" ]
   [ -d "$TEST_TEMP_DIR/.claude-work/notes" ]
   [ ! -d "$TEST_TEMP_DIR/subdir/.claude-work" ]
 }
