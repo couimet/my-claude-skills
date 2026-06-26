@@ -38,14 +38,15 @@ repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || {
 repo_root="$(cd "$repo_root" && pwd -P)"
 
 # --- Resolve a git-rev-parse path to an absolute path ---
-# Paths from --git-dir / --git-common-dir are relative to --show-toplevel
-# when inside the repo (or absolute on newer git).  Normalise both cases.
+# --git-dir / --git-common-dir are relative to CWD (or absolute on newer git).
+# Resolve relative paths against $PWD so nested invocations point at the correct
+# git directories regardless of where the script was invoked from.
 resolve_abs() {
   local p="$1"
   if [[ "$p" == /* ]]; then
     printf '%s\n' "$p"
   else
-    printf '%s/%s\n' "$repo_root" "$p"
+    printf '%s/%s\n' "$PWD" "$p"
   fi
 }
 
@@ -55,8 +56,12 @@ resolve_abs() {
 git_dir_raw="$(git rev-parse --git-dir 2>/dev/null)"
 git_common_dir_raw="$(git rev-parse --git-common-dir 2>/dev/null)"
 
-git_dir_abs="$(cd "$(resolve_abs "$git_dir_raw")" 2>/dev/null && pwd -P || true)"
-git_common_dir_abs="$(cd "$(resolve_abs "$git_common_dir_raw")" 2>/dev/null && pwd -P || true)"
+if ! git_dir_abs="$(cd "$(resolve_abs "$git_dir_raw")" 2>/dev/null && pwd -P)"; then
+  git_dir_abs=""
+fi
+if ! git_common_dir_abs="$(cd "$(resolve_abs "$git_common_dir_raw")" 2>/dev/null && pwd -P)"; then
+  git_common_dir_abs=""
+fi
 
 if [ -z "$git_dir_abs" ] || [ -z "$git_common_dir_abs" ]; then
   # Fallback: if resolution failed, assume primary checkout.

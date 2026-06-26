@@ -73,7 +73,7 @@ SKILL="$PROJECT_ROOT/skills/note/SKILL.md"
 }
 
 @test "note skill: routes to <base>/issues/<ID>/notes/ on issue branches" {
-  grep -q 'issues/.*notes/' "$SKILL"
+  grep -q '<base>/issues/.*notes/' "$SKILL"
 }
 
 @test "note skill: routes to <base>/notes/ as fallback" {

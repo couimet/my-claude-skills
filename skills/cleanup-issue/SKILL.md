@@ -3,7 +3,7 @@ name: cleanup-issue
 version: 2026.06.25@7353cfe
 description: Delete an issue's working directory (.claude-work/issues/<ID>/) after confirming with the user via interactive prompt
 argument-hint: [optional: issue-number]
-allowed-tools: Read, Glob, AskUserQuestion, Bash(git branch --show-current), Bash(rm -rf *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Glob, AskUserQuestion, Bash(git branch --show-current), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Cleanup Issue
@@ -28,11 +28,7 @@ Extract the issue ID from the `issues/<ID>` pattern (numeric prefix before the f
 
 ### Validate the ID
 
-Before proceeding, the extracted ID MUST match `^[A-Za-z0-9._-]+$`. If it contains slashes, whitespace, shell metacharacters, or path-traversal sequences (`..`, `/`, spaces, `*`, `$`, backticks, etc.), STOP immediately:
-
-- Print: "Refusing to proceed: extracted issue ID `<ID>` contains unsafe characters. Expected `[A-Za-z0-9._-]+`."
-
-This is a hard guard: the ID is interpolated into `rm -rf <base>/issues/<ID>` in Step 4, and an unsanitized value (e.g. `..` or one with embedded path separators) could delete the wrong directory. Fail closed on any surprise.
+The `remove-issue-dir.sh` script enforces ID validation internally (regex `^[A-Za-z0-9][A-Za-z0-9._-]*$`, rejects `.` and `..`). The ID extracted above is passed verbatim to the script in Step 4; if invalid, the script exits with a clear error and performs no deletion. No separate prose validation step is needed.
 
 ## Step 2: Check for Issue Directory
 
@@ -82,16 +78,16 @@ AskUserQuestion(
 
 ### Delete
 
-Only reached if the ID passed the whitelist check in Step 1. Do not run this step otherwise.
+Only reached if the user selected Delete in Step 3. The `remove-issue-dir.sh` script validates the ID, verifies the base path, checks that the resolved physical path stays under `<base>/issues/`, and performs the removal. No raw `rm -rf` is used.
 
 ```bash
-rm -rf <base>/issues/<ID>
+~/.claude/skills/cleanup-issue/remove-issue-dir.sh <base> <ID>
 ```
 
-Print:
+The script prints the removed path on stdout. Report that path to the user:
 
 ```text
-Cleaned up <base>/issues/<ID>/. All working files removed.
+Cleaned up <stdout>/. All working files removed.
 ```
 
 ## Step 5: Check for Side-Quest Artifacts

@@ -222,6 +222,22 @@ teardown() {
 }
 
 # ============================================================================
+# Linked worktree: output resolves to main checkout, not worktree local
+# ============================================================================
+
+@test "linked worktree: output resolves to main checkout .claude-work" {
+  # Main checkout stays on the default branch; create a linked worktree
+  # on issues/99 so the branch is not already checked out.
+  git worktree add "$TEST_TEMP_DIR/wt-linked" -b issues/99 -q
+  cd "$TEST_TEMP_DIR/wt-linked"
+  run "$SCRIPT" --type notes --description "from worktree"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/99/notes/0001-from-worktree.txt" ]
+  # Worktree directory should NOT have its own .claude-work
+  [ ! -d "$TEST_TEMP_DIR/wt-linked/.claude-work" ]
+}
+
+# ============================================================================
 # Repo-root anchoring: output is an absolute path independent of CWD
 # ============================================================================
 
