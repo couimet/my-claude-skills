@@ -10,6 +10,16 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.07.02
+
+### Added
+
+- Added `.claude/settings.json` with `ask` permission guardrails for `install.sh` and `setup.sh` — Claude will prompt before running either script, since `install.sh` modifies `~/.claude/skills/` (global Claude config) and `setup.sh` installs system packages. Updated `.gitignore` with a negation pattern so the committed settings file is not blocked by the blanket `.claude/` ignore. ([issues/178](https://github.com/couimet/my-claude-skills/issues/178))
+
+### Changed
+
+- Refreshed `CLAUDE.md` with a Repository Layout section documenting `install.sh`, `setup.sh`, `demo/`, `docs/ADR/`, `scripts/stamp-skills.sh`, and the `versions.mk` include. ([issues/178](https://github.com/couimet/my-claude-skills/issues/178))
+
 ## 2026.06.25.1
 
 ### Changed

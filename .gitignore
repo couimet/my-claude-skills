@@ -9,4 +9,5 @@ demo/__pycache__/
 
 .venv/
 
-.claude/
+.claude/*
+!.claude/settings.json

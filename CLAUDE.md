@@ -6,6 +6,19 @@ This file provides guidance for AI agents working inside the `my-claude-skills` 
 
 This repository is a collection of portable Claude Code skills. Each skill is a `SKILL.md` file inside a `skills/<name>/` directory. Skills are installed globally at `~/.claude/skills/` (via symlinks) and loaded by Claude Code when a user types `/skill-name`. The repo's goal is to encode repeatable workflows — issue triage, PR feedback, plan-driven implementation — as portable, composable instructions.
 
+## Repository Layout
+
+Beyond `skills/` (the core product), these top-level files and directories matter:
+
+| Path | What it is |
+| --- | --- |
+| `install.sh` | Creates symlinks from `~/.claude/skills/` to this repo's `skills/` directory. Must be run after adding a new skill so it gets a symlink. Idempotent — safe to run repeatedly. Touches the user's global Claude config, so it must never run without explicit user approval. |
+| `setup.sh` | Installs the brew prerequisites that `make lint` and `make test` depend on. One-time contributor setup. Touches the system outside the repo, so it must never run without explicit user approval. |
+| `Makefile` | Includes `versions.mk` to pin linter versions matching CI. See Development Commands below. |
+| `demo/` | Static site generator (`generate.py`, `templates/`, `static/`) for the project homepage. Also contains `real-life/` — actual workflow artifacts from past issues, used as reference examples in README. |
+| `docs/ADR/` | Architecture Decision Records. Read these to understand design rationale for skill extension hooks and other structural choices. |
+| `scripts/stamp-skills.sh` | Called by `make stamp`. Stamps `version:` into every `skills/*/SKILL.md` front matter. CI-only — never run locally. |
+
 ## Development Commands
 
 Run all commands from the project root.

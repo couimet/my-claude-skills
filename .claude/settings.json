@@ -1,0 +1,5 @@
+{
+  "permissions": {
+    "ask": ["Bash(./install.sh *)", "Bash(./setup.sh *)"]
+  }
+}
