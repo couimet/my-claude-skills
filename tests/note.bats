@@ -36,8 +36,8 @@ SKILL="$PROJECT_ROOT/skills/note/SKILL.md"
 # Self-contained: no foundation skill cross-references
 # =============================================================
 
-@test "note skill: does not cross-reference /issue-context" {
-  ! grep -q "/issue-context" "$SKILL"
+@test "note skill: references issue-context scripts for path resolution" {
+  grep -q "issue-context/claude-work-root.sh" "$SKILL"
 }
 
 @test "note skill: does not cross-reference /auto-number" {
@@ -72,12 +72,12 @@ SKILL="$PROJECT_ROOT/skills/note/SKILL.md"
   grep -q "git branch --show-current" "$SKILL"
 }
 
-@test "note skill: routes to .claude-work/issues/<ID>/notes/ on issue branches" {
-  grep -q '\.claude-work/issues/.*notes/' "$SKILL"
+@test "note skill: routes to <base>/issues/<ID>/notes/ on issue branches" {
+  grep -q '<base>/issues/.*notes/' "$SKILL"
 }
 
-@test "note skill: routes to .claude-work/notes/ as fallback" {
-  grep -q '\.claude-work/notes/' "$SKILL"
+@test "note skill: routes to <base>/notes/ as fallback" {
+  grep -q '<base>/notes/' "$SKILL"
 }
 
 @test "note skill: uses .txt extension" {

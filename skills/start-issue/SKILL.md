@@ -3,7 +3,7 @@ name: start-issue
 version: 2026.06.25@7353cfe
 description: Start working on a GitHub issue - analyze, explore codebase, and create detailed implementation plan
 argument-hint: <github-issue-url> [--scratchpad]
-allowed-tools: Read, Write, Glob, Grep, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/start-issue/update-project-status.sh *)
+allowed-tools: Read, Write, Glob, Grep, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/start-issue/update-project-status.sh *)
 ---
 
 # Start Issue
@@ -14,7 +14,17 @@ Analyze a GitHub issue, explore the codebase, and create a detailed implementati
 
 ## Step 0: Clean Up Current Issue Artifacts
 
-Before starting new work, run `git branch --show-current` to detect whether the current branch is `issues/<ID>`. If so, extract the ID (numeric prefix before the first `-`/`_`, or the full segment after `issues/`) and use `Glob(pattern="*", path=".claude-work/issues/<ID>")` to check whether the issue's working directory has contents. If the directory exists and has files, invoke `/cleanup-issue` to offer cleanup of that specific directory. Other issue directories are left untouched. The user may return to them later.
+Run both commands as parallel tool calls:
+
+```bash
+git branch --show-current
+```
+
+```bash
+~/.claude/skills/issue-context/claude-work-root.sh
+```
+
+Use the stdout of `claude-work-root.sh` as `<base>` for all `.claude-work/` paths in this skill. Detect whether the current branch is `issues/<ID>`. If so, extract the ID (numeric prefix before the first `-`/`_`, or the full segment after `issues/`) and use `Glob(pattern="*", path="<base>/issues/<ID>")` to check whether the issue's working directory has contents. If the directory exists and has files, invoke `/cleanup-issue` to offer cleanup of that specific directory. Other issue directories are left untouched. The user may return to them later.
 
 **If no issue context on the current branch, or the directory doesn't exist or is empty:** proceed directly to Step 1.
 
@@ -117,7 +127,7 @@ Use `/scratchpad` with description `start-issue-plan`. The scratchpad uses the s
 
 After the working document is created (via either path), write the pointer file so `/finish-issue` and `/tackle-scratchpad-block` can resolve the primary plan without guessing:
 
-**Path:** `.claude-work/issues/<NUMBER>/active-plan`
+**Path:** `<base>/issues/<NUMBER>/active-plan` (where `<base>` is from Step 0)
 
 **Contents:** the project-root-relative path to the working document (a single line, no trailing newline required), for example:
 
@@ -191,7 +201,7 @@ Before finishing, verify:
 
 - [ ] Feature branch `issues/<NUMBER>` was created
 - [ ] Working document created via `/note` (default) or `/scratchpad` (opt-in), not both
-- [ ] `.claude-work/issues/<NUMBER>/active-plan` pointer written with the project-root-relative path to the working document
+- [ ] `<base>/issues/<NUMBER>/active-plan` pointer written with the project-root-relative path to the working document
 - [ ] Plan has specific file/function names (not "update the code")
 - [ ] Each step is small enough to be one commit
 - [ ] Test updates are mentioned for each step that changes behavior

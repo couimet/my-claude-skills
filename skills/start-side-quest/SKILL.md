@@ -3,7 +3,7 @@ name: start-side-quest
 version: 2026.06.25@7353cfe
 description: Start a side-quest branch for orthogonal improvements discovered while working on an issue
 argument-hint: <description | path/to/file.ts#L10-L20> [--scratchpad]
-allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *), Bash(git branch --show-current), Bash(git status *), Bash(git stash *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *)
+allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *), Bash(git branch --show-current), Bash(git status *), Bash(git stash *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Start Side-Quest
@@ -64,7 +64,7 @@ Choose the working-document type based on whether formal step tracking is reques
 - **Default (`/note`):** use this unless the user explicitly opted in. Produces a lightweight, freeform plan. Relies on you (the LLM) to self-organize execution in-session.
 - **Opt-in (`/scratchpad`):** triggered when `$ARGUMENTS` contains `--scratchpad`, or when the user's invoking message contains a natural-language opt-in phrase ("use a scratchpad", "with step tracking", "formal plan", "track steps"). Produces a scratchpad with a JSON step block so `/tackle-scratchpad-block` can drive execution.
 
-Side-quest branches don't match `issues/*`, so the working document lands in the flat `.claude-work/notes/` (default) or `.claude-work/scratchpads/` (opt-in) directory.
+Side-quest branches don't match `issues/*`, so the working document lands in the flat `<base>/notes/` (default) or `<base>/scratchpads/` (opt-in) directory, where `<base>` is the output of `~/.claude/skills/issue-context/claude-work-root.sh`.
 
 ### 3a. Default path: `/note`
 
@@ -92,7 +92,7 @@ Use `/scratchpad` with description `side-quest-<slug>`. Same sections as 3a, exc
 
 After the working document is created (via either path), write the pointer file so `/finish-issue` and `/tackle-scratchpad-block` can resolve the primary plan:
 
-**Path:** `.claude-work/active-plan-<slug>`
+**Path:** `<base>/active-plan-<slug>` (where `<base>` is from `claude-work-root.sh`)
 
 **Contents:** the project-root-relative path to the working document, for example:
 
@@ -121,10 +121,10 @@ Branch: side-quest/<slug>
 Parent: <original branch> (stashed if had changes)
 
 Files created:
-- .claude-work/notes/<file>.txt (implementation plan, default path)
-  OR .claude-work/scratchpads/<file>.txt (if --scratchpad)
-- .claude-work/active-plan-<slug> (pointer to the working document)
-- .claude-work/questions/<file>.txt (if questions needed)
+- <base>/notes/<file>.txt (implementation plan, default path)
+  OR <base>/scratchpads/<file>.txt (if --scratchpad)
+- <base>/active-plan-<slug> (pointer to the working document)
+- <base>/questions/<file>.txt (if questions needed)
 
 Stash: <stash message if applicable>
 
@@ -151,7 +151,7 @@ Before finishing, verify:
 - [ ] Current work stashed (if on a work branch with changes)
 - [ ] Side-quest branch created from `<base-branch>`
 - [ ] Working document created via `/note` (default) or `/scratchpad` (opt-in). Not both
-- [ ] `.claude-work/active-plan-<slug>` pointer written with the project-root-relative path to the working document
+- [ ] `<base>/active-plan-<slug>` pointer written with the project-root-relative path to the working document
 - [ ] Plan has specific file/change details
 - [ ] Parent branch noted for easy return
 

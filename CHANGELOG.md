@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.06.25.1
+
+### Changed
+
+- Made `.claude-work/` path resolution git worktree-aware. In a linked git worktree, `.claude-work/` now lives at the main checkout root (shared across all worktrees) instead of the worktree root, preventing duplicate artifacts. Added `claude-work-root.sh` helper that returns the absolute shared path. Updated `target-path.sh`, `note`, `breadcrumb`, and all reading skills (`finish-issue`, `cleanup-issue`, `start-issue`, `start-side-quest`, `tackle-scratchpad-block`, `tackle-pr-comment`, `create-github-issue`) to use it. All `.claude-work/` paths are now absolute to avoid ambiguity. ([issues/173](https://github.com/couimet/my-claude-skills/issues/173))
+
 ## 2026.06.25
 
 ### Fixed

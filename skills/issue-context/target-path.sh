@@ -128,15 +128,23 @@ if [[ "$branch" == issues/* ]]; then
   fi
 fi
 
-# --- Anchor to repo root so all paths are resolved relative to it, not CWD ---
-repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"
-[ -n "$repo_root" ] && cd "$repo_root"
+# --- Resolve script directory early (needed for sibling scripts) ---
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# --- Resolve .claude-work root (worktree-aware) ---
+# In the primary checkout this is <repo-root>/.claude-work; in a linked
+# worktree it is the main checkout's .claude-work, so all worktrees share
+# a single copy.
+claude_work_root="$("${script_dir}/claude-work-root.sh")" || {
+  echo "target-path $ERR_BRANCH_DETECT error: claude-work-root.sh failed" >&2
+  exit 1
+}
 
 # --- Determine target directory ---
 if [ -n "$issue_id" ]; then
-  target_dir=".claude-work/issues/${issue_id}/${type_arg}"
+  target_dir="${claude_work_root}/issues/${issue_id}/${type_arg}"
 else
-  target_dir=".claude-work/${type_arg}"
+  target_dir="${claude_work_root}/${type_arg}"
 fi
 
 # --- Slugify description ---
@@ -151,7 +159,6 @@ if [ -z "$slug" ]; then
 fi
 
 # --- Get next sequence number via auto-number ---
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 auto_number_script="${script_dir}/../auto-number/auto-number.sh"
 
 if [ ! -x "$auto_number_script" ]; then

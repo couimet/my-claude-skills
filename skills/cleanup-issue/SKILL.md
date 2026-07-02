@@ -3,7 +3,7 @@ name: cleanup-issue
 version: 2026.06.25@7353cfe
 description: Delete an issue's working directory (.claude-work/issues/<ID>/) after confirming with the user via interactive prompt
 argument-hint: [optional: issue-number]
-allowed-tools: Read, Glob, AskUserQuestion, Bash(git branch --show-current), Bash(rm -rf .claude-work/issues/*)
+allowed-tools: Read, Glob, AskUserQuestion, Bash(git branch --show-current), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Cleanup Issue
@@ -28,29 +28,33 @@ Extract the issue ID from the `issues/<ID>` pattern (numeric prefix before the f
 
 ### Validate the ID
 
-Before proceeding, the extracted ID MUST match `^[A-Za-z0-9._-]+$`. If it contains slashes, whitespace, shell metacharacters, or path-traversal sequences (`..`, `/`, spaces, `*`, `$`, backticks, etc.), STOP immediately:
-
-- Print: "Refusing to proceed: extracted issue ID `<ID>` contains unsafe characters. Expected `[A-Za-z0-9._-]+`."
-
-This is a hard guard: the ID is interpolated into `rm -rf .claude-work/issues/<ID>` in Step 4, and an unsanitized value (e.g. `..` or one with embedded path separators) could delete the wrong directory. Fail closed on any surprise.
+The `remove-issue-dir.sh` script enforces ID validation internally (regex `^[A-Za-z0-9][A-Za-z0-9._-]*$`, rejects `.` and `..`). The ID extracted above is passed verbatim to the script in Step 4; if invalid, the script exits with a clear error and performs no deletion. No separate prose validation step is needed.
 
 ## Step 2: Check for Issue Directory
+
+First, resolve the `.claude-work/` root directory:
+
+```bash
+~/.claude/skills/issue-context/claude-work-root.sh
+```
+
+Use the stdout as `<base>` for all `.claude-work/` paths below. This script automatically detects git worktrees and returns the shared location.
 
 Check if the issue directory exists:
 
 ```text
-.claude-work/issues/<ID>/
+<base>/issues/<ID>/
 ```
 
 Use Glob to list contents:
 
 ```text
-Glob(pattern="**/*", path=".claude-work/issues/<ID>")
+Glob(pattern="**/*", path="<base>/issues/<ID>")
 ```
 
 **If directory doesn't exist or is empty:**
 
-- Print: "No working directory found for issue #`<ID>` at `.claude-work/issues/<ID>/`."
+- Print: "No working directory found for issue #`<ID>` at `<base>/issues/<ID>/`."
 - Skip to Step 5
 
 ## Step 3: Confirm Deletion
@@ -59,9 +63,9 @@ Use `AskUserQuestion` to prompt for confirmation. Include the full directory pat
 
 ```text
 AskUserQuestion(
-  question: "Delete working directory for issue #<ID>?\n\n.claude-work/issues/<ID>/ contains:\n<file list from Step 2>\n\nThis is irreversible.",
+  question: "Delete working directory for issue #<ID>?\n\n<base>/issues/<ID>/ contains:\n<file list from Step 2>\n\nThis is irreversible.",
   options: [
-    { label: "Delete", description: "Remove .claude-work/issues/<ID>/ and all contents" },
+    { label: "Delete", description: "Remove <base>/issues/<ID>/ and all contents" },
     { label: "Keep", description: "Leave everything untouched" }
   ]
 )
@@ -70,30 +74,30 @@ AskUserQuestion(
 ## Step 4: Act on Answer
 
 - **Delete** → proceed to deletion
-- **Keep** → print "Keeping `.claude-work/issues/<ID>/` untouched." and STOP
+- **Keep** → print "Keeping `<base>/issues/<ID>/` untouched." and STOP
 
 ### Delete
 
-Only reached if the ID passed the whitelist check in Step 1. Do not run this step otherwise.
+Only reached if the user selected Delete in Step 3. The `remove-issue-dir.sh` script validates the ID, verifies the base path, checks that the resolved physical path stays under `<base>/issues/`, and performs the removal. No raw `rm -rf` is used.
 
 ```bash
-rm -rf .claude-work/issues/<ID>
+~/.claude/skills/cleanup-issue/remove-issue-dir.sh <base> <ID>
 ```
 
-Print:
+The script prints the removed path on stdout. Report that path to the user:
 
 ```text
-Cleaned up .claude-work/issues/<ID>/. All working files removed.
+Cleaned up <stdout>/. All working files removed.
 ```
 
 ## Step 5: Check for Side-Quest Artifacts
 
-Regardless of whether the issue directory existed or was deleted, scan for orphaned side-quest files in the `.claude-work/` root:
+Regardless of whether the issue directory existed or was deleted, scan for orphaned side-quest files in the `.claude-work/` root (using `<base>` from Step 2):
 
 ```text
-Glob(pattern="breadcrumb-*.md", path=".claude-work")
-Glob(pattern="scratchpads/*side-quest*", path=".claude-work")
-Glob(pattern="commit-msgs/*side-quest*", path=".claude-work")
+Glob(pattern="breadcrumb-*.md", path="<base>")
+Glob(pattern="scratchpads/*side-quest*", path="<base>")
+Glob(pattern="commit-msgs/*side-quest*", path="<base>")
 ```
 
 **If side-quest artifacts are found:**
