@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   ci:
@@ -26,3 +27,4 @@ jobs:
       - uses: couimet/github-actions/bats-test@main
         with:
           test-directory: tests
+          github-token: ${{ secrets.GITHUB_TOKEN }}
