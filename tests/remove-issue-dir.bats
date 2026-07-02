@@ -130,6 +130,17 @@ teardown() {
   [ "$output" = "$BASE/issues/99" ]
 }
 
+@test "idempotent: succeeds when issues/ parent directory does not exist" {
+  # Simulates a .claude-work/ with no issues/ subdirectory at all.
+  # The script must resolve the physical path from the base directory.
+  rm -rf "$BASE/issues"
+  [ ! -d "$BASE/issues" ]
+
+  run "$SCRIPT" "$BASE" "42"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$BASE/issues/42" ]
+}
+
 @test "accepts alphanumeric and dot-hyphen IDs" {
   mkdir -p "$BASE/issues/rfc-auth-v2.test/notes"
   [ -d "$BASE/issues/rfc-auth-v2.test" ]

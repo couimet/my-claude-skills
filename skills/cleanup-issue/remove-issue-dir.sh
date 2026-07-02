@@ -60,10 +60,10 @@ target="${base}/issues/${id}"
 
 # Resolve physical path to catch symlink-based escapes.
 # If the directory doesn't exist, resolve the longest existing prefix.
-target_physical="$(cd "$target" 2>/dev/null && pwd -P || true)"
+target_physical="$(if cd "$target" 2>/dev/null; then pwd -P; fi)"
 if [ -z "$target_physical" ]; then
   # Directory doesn't exist — resolve the parent to check it's safe.
-  target_physical="$(cd "$(dirname "$target")" 2>/dev/null && pwd -P || true)"
+  target_physical="$(if cd "$(dirname "$target")" 2>/dev/null; then pwd -P; fi)"
   if [ -z "$target_physical" ]; then
     # Parent doesn't exist either.  Construct what it would be.
     base_physical="$(cd "$base" 2>/dev/null && pwd -P)"
