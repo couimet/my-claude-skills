@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.07.10
+
+### Added
+
+- Skill attribution footers on commit messages, PR descriptions, and GitHub issue bodies. Each footer names the skill, its version, and links back to this repo. `/commit-msg` uses a `Skill:` git trailer; `/finish-issue` and `/create-github-issue` use a markdown-linked prose line matching the harness convention. ([issues/181](https://github.com/couimet/my-claude-skills/issues/181))
+
 ## 2026.07.02
 
 ### Added

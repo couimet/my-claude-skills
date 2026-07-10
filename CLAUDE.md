@@ -90,6 +90,7 @@ Work on GitHub issues follows this chain:
 - **Never implement before the user approves the plan.** Skills that end with "STOP" mean it — wait for explicit user go-ahead ("proceed", "go ahead", "implement").
 - **Questions go to files, not terminal.** Use `/question` to create a questions file; never print design questions inline in the response.
 - **Never run `make stamp`.** Version stamps are for humans. Do not run `make stamp` as part of implementation or finish-issue workflows.
+- **Always edit skill files in the repo's `skills/` directory, never `~/.claude/skills/`.** `~/.claude/skills/` is a symlink farm managed by `install.sh`. Changes must land in the repo copy at `skills/<name>/SKILL.md` so they are visible to git and survive re-installs.
 
 ## Working Files
 
@@ -110,6 +111,8 @@ All ephemeral working files live under `.claude-work/` (git-ignored). Never comm
 ```
 
 **Git worktree sharing:** `.claude-work/` lives at the main checkout root (resolved by `skills/issue-context/claude-work-root.sh`). In the primary checkout this is `git rev-parse --show-toplevel` (unchanged from before). In a linked git worktree it is `dirname(git rev-parse --git-common-dir)` — the main checkout — so all worktrees of the same repo share a single `.claude-work/` copy. Skills that write `.claude-work/` files use absolute paths to avoid ambiguity about which worktree the files live in. Skills never edit source files outside the current worktree; the shared location is only for ephemeral working artifacts.
+
+**`install.sh` symlink rule:** `install.sh` creates symlinks from `~/.claude/skills/` to the main checkout's `skills/` directory — never to a worktree directory. The global skill install is shared across all worktrees, so the target is always the main checkout (e.g., `/Users/couimet/geek/my-claude-skills/skills/`).
 
 **Auto-numbering:** File sequence numbers (`NNNN`) are managed by `skills/auto-number/auto-number.sh`. Foundation skills call it automatically — don't reimplement the logic.
 
