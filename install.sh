@@ -4,6 +4,15 @@ set -euo pipefail
 SKILLS_DIR="$HOME/.claude/skills"
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)/skills"
 
+# When invoked from a linked git worktree, resolve to the main checkout's
+# skills/ directory instead so global symlinks survive worktree removal.
+# git-common-dir is the shared .git directory; its parent is the main
+# checkout root in all worktree configurations.
+if git_common="$(git rev-parse --git-common-dir 2>/dev/null)"; then
+  [[ "$git_common" == /* ]] || git_common="$PWD/$git_common"
+  REPO_DIR="$(cd "$(dirname "$git_common")" && pwd -P)/skills"
+fi
+
 echo "Installing skills from $REPO_DIR → $SKILLS_DIR"
 
 mkdir -p "$SKILLS_DIR"
