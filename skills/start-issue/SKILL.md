@@ -182,10 +182,10 @@ do NOT call /commit-msg first. The PR description file doubles as the commit mes
 
 ```text
 Next: use `/tackle-scratchpad-block` to execute steps one at a time.
-Example: /tackle-scratchpad-block <path-to-scratchpad>
+Example: /tackle-scratchpad-block <absolute-path-to-scratchpad>
 (auto-selects first pending, unblocked step)
 If multiple pending, unblocked steps exist, specify which one:
-  /tackle-scratchpad-block <path-to-scratchpad>#S002
+  /tackle-scratchpad-block <absolute-path-to-scratchpad>#S002
 ```
 
 **IMPORTANT: Do NOT proceed with implementation.**
