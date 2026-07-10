@@ -238,7 +238,7 @@ Verification:
 - uncommitted changes: [none / list]
 
 Files created:
-- <actual-path-to-pr-description> (PR description)
+- <actual-absolute-path-to-pr-description> (PR description)
 
 ---
 
@@ -259,7 +259,7 @@ Verification:
 - uncommitted changes: [none / list]
 
 Files created:
-- <actual-path-to-pr-description> (PR description)
+- <actual-absolute-path-to-pr-description> (PR description)
 
 ---
 

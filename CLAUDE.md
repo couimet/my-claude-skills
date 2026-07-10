@@ -112,6 +112,8 @@ All ephemeral working files live under `.claude-work/` (git-ignored). Never comm
 
 **Git worktree sharing:** `.claude-work/` lives at the main checkout root (resolved by `skills/issue-context/claude-work-root.sh`). In the primary checkout this is `git rev-parse --show-toplevel` (unchanged from before). In a linked git worktree it is `dirname(git rev-parse --git-common-dir)` — the main checkout — so all worktrees of the same repo share a single `.claude-work/` copy. Skills that write `.claude-work/` files use absolute paths to avoid ambiguity about which worktree the files live in. Skills never edit source files outside the current worktree; the shared location is only for ephemeral working artifacts.
 
+**Always use absolute paths in terminal output:** When reporting a generated file path (notes, scratchpads, questions, commit messages, PR descriptions, breadcrumbs), always print the full absolute path. Absolute paths are CMD+CLICKable in the IDE and survive CWD changes. Relative paths (`.claude-work/...`) fail in worktree setups where the CWD differs from the project root. See `/prose-style` (absolute paths rule) for the full rule.
+
 **`install.sh` symlink rule:** `install.sh` creates symlinks from `~/.claude/skills/` to the main checkout's `skills/` directory — never to a worktree directory. The global skill install is shared across all worktrees, so the target is always the main checkout (e.g., `/Users/couimet/geek/my-claude-skills/skills/`).
 
 **Auto-numbering:** File sequence numbers (`NNNN`) are managed by `skills/auto-number/auto-number.sh`. Foundation skills call it automatically — don't reimplement the logic.

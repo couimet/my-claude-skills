@@ -18,10 +18,10 @@ All deterministic logic for "where should this file go?" lives in the scripts. S
 ~/.claude/skills/issue-context/target-path.sh --type <scratchpads|questions|commit-msgs|notes> --description "<text>" [--ext txt]
 ```
 
-The script reads the current branch, extracts the issue ID (numeric prefix of the segment after `issues/` when applicable, full segment otherwise, empty on non-issue branches), slugifies the description, runs `auto-number.sh` internally, creates the target directory, and prints the full file path on stdout.
+The script reads the current branch, extracts the issue ID (numeric prefix of the segment after `issues/` when applicable, full segment otherwise, empty on non-issue branches), slugifies the description, runs `auto-number.sh` internally, creates the target directory, and prints the absolute file path on stdout.
 
-- On `issues/<ID>` branches: `.claude-work/issues/<ID>/<type>/NNNN-<slug>.<ext>`
-- Everywhere else: `.claude-work/<type>/NNNN-<slug>.<ext>`
+- On `issues/<ID>` branches: absolute path ending in `.claude-work/issues/<ID>/<type>/NNNN-<slug>.<ext>`
+- Everywhere else: absolute path ending in `.claude-work/<type>/NNNN-<slug>.<ext>`
 
 ## Script: claude-work-root.sh
 

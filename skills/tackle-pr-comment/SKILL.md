@@ -157,8 +157,8 @@ Only create a questions file for decisions that would fundamentally change the i
 
 Print:
 
-1. The working-document file path (labelled "note" or "scratchpad" to match which path was taken)
-2. The questions file path (if created)
+1. The absolute working-document file path (labelled "note" or "scratchpad" to match which path was taken)
+2. The absolute questions file path (if created)
 3. Brief summary of what you found
 
 **IMPORTANT: Do NOT start implementing changes.**

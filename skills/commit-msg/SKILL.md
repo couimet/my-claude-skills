@@ -38,7 +38,7 @@ Run these two commands as parallel tool calls. They are independent.
 ~/.claude/skills/ensure-gitignore/ensure-gitignore.sh
 ```
 
-Use the stdout of the first command as the full file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is `.claude-work/issues/<ID>/commit-msgs/NNNN-<slug>.txt`; otherwise `.claude-work/commit-msgs/NNNN-<slug>.txt`.
+Use the stdout of the first command as the full absolute file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is an absolute path ending in `/.claude-work/issues/<ID>/commit-msgs/NNNN-<slug>.txt`; otherwise an absolute path ending in `/.claude-work/commit-msgs/NNNN-<slug>.txt`.
 
 ## Complexity Assessment
 
@@ -169,5 +169,5 @@ Formatting: see `/prose-style` for hard-wrap and GitHub-reference rules.
 4. **Self-check for diff-relevance (Gate).** If a change, fix, or decision was discussed in the conversation but does NOT appear in the effective diff, it is not part of this change set. Remove it from this message. The message describes ONLY the changes visible in THIS diff.
 5. **Self-check for hard-wrapping.** Re-read the file you just wrote. For each paragraph in the body (text between blank lines, outside code blocks and the Benefits bullet list), verify it is a single continuous line. If you find a mid-sentence line break, rewrite that paragraph as one line. This check catches the most common failure. Always complete it. Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
 Also verify the complete skill footer contract: the footer is the very last line of the file, is separated from the `Files:` line by exactly one blank line, contains no `Co-Authored-By` trailer anywhere in the file, and the version matches this SKILL.md's front matter `version:` field.
-6. Print the filepath in terminal
+6. Print the absolute filepath in terminal
 7. Do NOT run `git commit`. The user reviews and commits manually.
