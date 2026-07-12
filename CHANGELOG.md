@@ -22,6 +22,12 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 - Relative path friction in skill terminal output. After the worktree-aware `.claude-work/` changes in [issues/173](https://github.com/couimet/my-claude-skills/issues/173), path-producing scripts correctly emit absolute paths but the SKILL.md prose described paths in relative form (`.claude-work/...`), which the LLM sometimes echoed back — producing paths that aren't CMD+CLICKable, especially in worktree setups where `.claude-work/` is at the main checkout root. All path-reporting instructions now require absolute paths, and `/prose-style`'s absolute-paths rule establishes this as a global convention. ([issues/184](https://github.com/couimet/my-claude-skills/issues/184))
 
+## 2026.07.12
+
+### Changed
+
+- Removed `Files:` footer from `/commit-msg` output. The footer listed changed files with line counts from `git diff --stat`, which largely repeated what the diff already shows above the commit message file. The derivation rule, examples, and test fixtures have all been updated to drop it. ([issues/185](https://github.com/couimet/my-claude-skills/issues/185))
+
 ## 2026.07.02
 
 ### Added
