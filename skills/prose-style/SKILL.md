@@ -18,7 +18,7 @@ This applies to every file a skill produces: scratchpads, questions, commit mess
 
 ### Format Anchors
 
-Format: one continuous line per paragraph, no hard wrapping. Code references: path/to/file.ts#L10 (bare, never backtick-wrapped). GitHub references: full URL only.
+Format: one continuous line per paragraph, no hard wrapping. Code references: path/to/file.ts#L10 (bare in file content, never backtick-wrapped). GitHub references: full URL only. Generated file paths in terminal output: absolute only.
 
 ### Self-check before you finish
 
@@ -26,9 +26,9 @@ Before reporting a file path back to the user, re-read the file you just wrote. 
 
 Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
 
-## Rule 2: Code references
+## Rule 2: Code references (in file content)
 
-Use GitHub-style permalink syntax so references become clickable in RangeLink and similar tools.
+Use GitHub-style permalink syntax so references become clickable in RangeLink and similar tools. This rule applies to code references written inside generated files (scratchpads, questions, commit messages, PR descriptions). It does NOT apply to terminal output reporting generated file paths — see Rule 4 for that.
 
 | Reference type | Syntax | Example |
 | --- | --- | --- |
@@ -59,6 +59,12 @@ gh repo view --json url -q .url
 ```
 
 Then append `/issues/{number}` or `/pull/{number}`.
+
+## Rule 4: Generated file paths in terminal output must be absolute
+
+When reporting a generated file path to the user (e.g., "Created: ...", "File: ...", "Breadcrumb dropped in ..."), always use the full absolute path. Absolute paths are clickable in terminal and IDE (CMD+CLICK). Relative paths (`.claude-work/...`) are not — they break when the current working directory differs from the project root, as happens in git worktrees where `.claude-work/` is at the main checkout root.
+
+This applies to every skill that prints a file path: notes, scratchpads, questions, commit messages, PR descriptions, breadcrumbs.
 
 ## What this replaces
 

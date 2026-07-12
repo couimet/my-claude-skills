@@ -16,6 +16,12 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 - Skill attribution footers on commit messages, PR descriptions, and GitHub issue bodies. Each footer names the skill, its version, and links back to this repo. `/commit-msg` uses a `Skill:` git trailer; `/finish-issue` and `/create-github-issue` use a markdown-linked prose line matching the harness convention. ([issues/181](https://github.com/couimet/my-claude-skills/issues/181))
 
+## 2026.07.10.1
+
+### Fixed
+
+- Relative path friction in skill terminal output. After the worktree-aware `.claude-work/` changes in [issues/173](https://github.com/couimet/my-claude-skills/issues/173), path-producing scripts correctly emit absolute paths but the SKILL.md prose described paths in relative form (`.claude-work/...`), which the LLM sometimes echoed back — producing paths that aren't CMD+CLICKable, especially in worktree setups where `.claude-work/` is at the main checkout root. All path-reporting instructions now require absolute paths, and `/prose-style`'s absolute-paths rule establishes this as a global convention. ([issues/184](https://github.com/couimet/my-claude-skills/issues/184))
+
 ## 2026.07.02
 
 ### Added

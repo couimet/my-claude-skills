@@ -34,7 +34,7 @@ Run these two commands as parallel tool calls. They are independent.
 ~/.claude/skills/ensure-gitignore/ensure-gitignore.sh
 ```
 
-Use the stdout of the first command as the full file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is `.claude-work/issues/<ID>/questions/NNNN-<slug>.txt`; otherwise `.claude-work/questions/NNNN-<slug>.txt`.
+Use the stdout of the first command as the full absolute file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is an absolute path ending in `/.claude-work/issues/<ID>/questions/NNNN-<slug>.txt`; otherwise an absolute path ending in `/.claude-work/questions/NNNN-<slug>.txt`.
 
 ## File Format
 
@@ -107,7 +107,7 @@ See `/prose-style` for hard-wrap and GitHub-reference rules.
 
 1. Create the file with questions formatted as above
 2. **Self-check for hard-wrapping.** Re-read the file. For each Context, Recommendation, and option description, verify the text is a single continuous line. If you find a mid-sentence line break in any of those fields, rewrite as one line. Always complete this check. Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
-3. Print ONLY the filepath in terminal. Nothing else.
+3. Print ONLY the absolute filepath in terminal. Nothing else.
 4. Wait for the user to edit answers in the file
 5. The file is the single source of truth. Read it back to get answers
 

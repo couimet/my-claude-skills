@@ -238,13 +238,13 @@ Verification:
 - uncommitted changes: [none / list]
 
 Files created:
-- <actual-path-to-pr-description> (PR description)
+- <actual-absolute-path-to-pr-description> (PR description)
 
 ---
 
 Ready for PR. Review the file and:
-1. Commit: git add -p && git commit -F <actual-path-to-pr-description>
-2. Push and create PR: gh pr create --title "..." --body-file <actual-path-to-pr-description>
+1. Commit: git add -p && git commit -F <actual-absolute-path-to-pr-description>
+2. Push and create PR: gh pr create --title "..." --body-file <actual-absolute-path-to-pr-description>
 3. Or ask Claude to create the PR
 ```
 
@@ -259,13 +259,13 @@ Verification:
 - uncommitted changes: [none / list]
 
 Files created:
-- <actual-path-to-pr-description> (PR description)
+- <actual-absolute-path-to-pr-description> (PR description)
 
 ---
 
 Ready for PR. Review the file and:
-1. Commit: git add -p && git commit -F <actual-path-to-pr-description>
-2. Push and create PR: gh pr create --title "..." --body-file <actual-path-to-pr-description>
+1. Commit: git add -p && git commit -F <actual-absolute-path-to-pr-description>
+2. Push and create PR: gh pr create --title "..." --body-file <actual-absolute-path-to-pr-description>
 3. Or ask Claude to create the PR
 ```
 

@@ -70,7 +70,7 @@ Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to t
 
 ## Step 4: Confirm
 
-Print only the filepath:
+Print only the absolute filepath:
 
 ```text
 <target-directory>/<filename>

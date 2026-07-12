@@ -36,7 +36,7 @@ Run these two commands as parallel tool calls. They are independent.
 ~/.claude/skills/ensure-gitignore/ensure-gitignore.sh
 ```
 
-Use the stdout of the first command as the full file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is `.claude-work/issues/<ID>/scratchpads/NNNN-<slug>.txt`; otherwise `.claude-work/scratchpads/NNNN-<slug>.txt`.
+Use the stdout of the first command as the full absolute file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is an absolute path ending in `/.claude-work/issues/<ID>/scratchpads/NNNN-<slug>.txt`; otherwise an absolute path ending in `/.claude-work/scratchpads/NNNN-<slug>.txt`.
 
 ## File Format
 
@@ -101,7 +101,7 @@ Step-level fields (inside each `steps` entry):
 
 ## After writing: self-check for hard-wrapping
 
-Before reporting the filepath back to the user, re-read the scratchpad you just wrote. For each paragraph in the body (text between blank lines, outside code blocks, tables, and lists), verify it is a single continuous line. If you find a mid-sentence line break, rewrite that paragraph as one line. Always complete this check. Wrapped prose is the most common failure mode for skill-generated files.
+Before reporting the absolute filepath back to the user, re-read the scratchpad you just wrote. For each paragraph in the body (text between blank lines, outside code blocks, tables, and lists), verify it is a single continuous line. If you find a mid-sentence line break, rewrite that paragraph as one line. Always complete this check. Wrapped prose is the most common failure mode for skill-generated files.
 
 Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
 
