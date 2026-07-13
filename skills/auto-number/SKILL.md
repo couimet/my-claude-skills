@@ -1,6 +1,6 @@
 ---
 name: auto-number
-version: 2026.07.10@aa48370
+version: 2026.07.10@5d45ce7
 user-invocable: false
 description: Reusable file sequence numbering with prefix (NNNN-name) and suffix (name-NNNN) modes. Returns the next available zero-padded sequence number for a given directory.
 allowed-tools: Bash(*/skills/auto-number/auto-number.sh *)
