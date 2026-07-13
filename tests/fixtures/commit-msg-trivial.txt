@@ -1,2 +1,1 @@
 [docs] Add changelog entry for auto-assign feature
-Files: CHANGELOG.md (+3)
