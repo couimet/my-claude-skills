@@ -13,7 +13,7 @@ setup() {
   TEST_TEMP_DIR="$(mktemp -d)"
   TEST_TEMP_DIR="$(cd "$TEST_TEMP_DIR" && pwd -P)"
   cd "$TEST_TEMP_DIR"
-  git init -q
+  git init --initial-branch=main -q
   git config user.email "test@example.com"
   git config user.name "Test"
   git commit --allow-empty -q -m "initial commit"
