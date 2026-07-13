@@ -28,8 +28,12 @@ case "$1" in
         echo "mock: query failed" >&2
         exit 1
       fi
-      # Project items query — return fixture or default empty
-      cat "${GH_FIXTURE:-/dev/stdin}"
+      # Project items query — return fixture or empty JSON (no projects)
+      if [ -n "${GH_FIXTURE:-}" ]; then
+        cat "$GH_FIXTURE"
+      else
+        echo '{"data":{"repository":{"issue":{"projectItems":{"nodes":[]}}}}}'
+      fi
     elif [[ "$*" == *"updateProjectV2ItemFieldValue"* ]]; then
       # Mutation — fail if GH_MUTATION_FAIL is set
       if [ "${GH_MUTATION_FAIL:-}" = "true" ]; then
