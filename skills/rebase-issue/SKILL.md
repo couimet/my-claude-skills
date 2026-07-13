@@ -4,7 +4,7 @@ version: 2026.07.10@aa48370
 description: Rebase the current issue branch onto origin/main (or a specified target) after upstream PRs merge. Handles conflict resolution, squashes to a single commit, and runs autonomously
 argument-hint: <target>
 user-invocable: true
-allowed-tools: Read, Write, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git log *), Bash(git diff *), Bash(git rebase *), Bash(git reset *), Bash(git commit *), Bash(git add *), Bash(git checkout *), Bash(git merge-base *), Bash(git rev-parse *), Bash(git status *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Write, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git log *), Bash(git diff *), Bash(git rebase *), Bash(git reset *), Bash(git commit *), Bash(git add *), Bash(git checkout *), Bash(git merge-base *), Bash(git rev-parse *), Bash(git status *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(find * -print0), Bash(sort -z), Bash(tail -z -n1), Bash(xargs -0 echo)
 ---
 
 # Rebase Issue
@@ -44,7 +44,7 @@ If `$ARGUMENTS` was provided, use it as the target ref. Otherwise default to `or
 git log --oneline <target>..HEAD
 ```
 
-Shows commits on our branch that are not on the target. If empty, there is nothing to rebase. Skip to Step 12 (report nothing to do).
+Shows commits on our branch that are not on the target. If empty, there is nothing to rebase. Report "No upstream changes — nothing to rebase" and stop the procedure here.
 
 ## Step 5: Show Divergence — Target Commits
 
@@ -142,9 +142,9 @@ Where `<commit-message-file>` is the path to the file contents obtained in Step 
 
 Report: branch now has 1 commit on top of `<target>`. Show `git log --oneline -1` and `git diff <target> --stat`.
 
-Then use `AskUserQuestion` to ask whether to push:
+First, use `AskUserQuestion` to confirm the target remote and branch (default to the configured upstream remote and current branch name; if no upstream is configured, default to `origin` and the current branch name). Then use `AskUserQuestion` to ask whether to push:
 
-- **Yes, push with --force-with-lease**: run `git push --force-with-lease` (harness will prompt for permission since push is not auto-allowed)
+- **Yes, push with --force-with-lease**: run `git push --force-with-lease <confirmed-remote> <confirmed-branch>` (harness will prompt for permission since push is not auto-allowed)
 - **No, I'll push manually**: report that the branch is ready for manual push
 
 ## Conflict Resolution Strategy
