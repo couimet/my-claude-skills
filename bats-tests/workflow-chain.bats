@@ -2,7 +2,7 @@
 
 load test_helper
 
-FIXTURES="$PROJECT_ROOT/tests/fixtures"
+FIXTURES="$PROJECT_ROOT/bats-tests/fixtures"
 
 # --- Helper: extract JSON block from scratchpad ---
 

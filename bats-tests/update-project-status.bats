@@ -73,7 +73,7 @@ teardown() {
 # ---------------------------------------------------------------------------
 @test "update-project-status: exits 0 when issue not in any project" {
   export GH_AUTH_SCOPES="'project', 'repo'"
-  export GH_FIXTURE="$PROJECT_ROOT/tests/fixtures/update-project-status/no-projects.json"
+  export GH_FIXTURE="$PROJECT_ROOT/bats-tests/fixtures/update-project-status/no-projects.json"
   run "$SCRIPT" owner repo 123
   [ "$status" -eq 0 ]
   [ -z "$output" ]
@@ -84,7 +84,7 @@ teardown() {
 # ---------------------------------------------------------------------------
 @test "update-project-status: skips items already In Progress" {
   export GH_AUTH_SCOPES="'project', 'repo'"
-  export GH_FIXTURE="$PROJECT_ROOT/tests/fixtures/update-project-status/already-in-progress.json"
+  export GH_FIXTURE="$PROJECT_ROOT/bats-tests/fixtures/update-project-status/already-in-progress.json"
   run "$SCRIPT" owner repo 123
   [ "$status" -eq 0 ]
   [ -z "$output" ]
@@ -97,7 +97,7 @@ teardown() {
 # ---------------------------------------------------------------------------
 @test "update-project-status: moves item to In Progress and comments" {
   export GH_AUTH_SCOPES="'project', 'repo'"
-  export GH_FIXTURE="$PROJECT_ROOT/tests/fixtures/update-project-status/needs-update.json"
+  export GH_FIXTURE="$PROJECT_ROOT/bats-tests/fixtures/update-project-status/needs-update.json"
   run "$SCRIPT" owner repo 123
   [ "$status" -eq 0 ]
   # Should print summary line
@@ -112,7 +112,7 @@ teardown() {
 # ---------------------------------------------------------------------------
 @test "update-project-status: updates multiple projects" {
   export GH_AUTH_SCOPES="'project', 'repo'"
-  export GH_FIXTURE="$PROJECT_ROOT/tests/fixtures/update-project-status/multiple-projects.json"
+  export GH_FIXTURE="$PROJECT_ROOT/bats-tests/fixtures/update-project-status/multiple-projects.json"
   run "$SCRIPT" owner repo 123
   [ "$status" -eq 0 ]
   # Both projects should appear in output
@@ -128,7 +128,7 @@ teardown() {
 # ---------------------------------------------------------------------------
 @test "update-project-status: skips project items with no Status field" {
   export GH_AUTH_SCOPES="'project', 'repo'"
-  export GH_FIXTURE="$PROJECT_ROOT/tests/fixtures/update-project-status/no-status-field.json"
+  export GH_FIXTURE="$PROJECT_ROOT/bats-tests/fixtures/update-project-status/no-status-field.json"
   run "$SCRIPT" owner repo 123
   [ "$status" -eq 0 ]
   [ -z "$output" ]
@@ -140,7 +140,7 @@ teardown() {
 # ---------------------------------------------------------------------------
 @test "update-project-status: skips when no In Progress option exists" {
   export GH_AUTH_SCOPES="'project', 'repo'"
-  export GH_FIXTURE="$PROJECT_ROOT/tests/fixtures/update-project-status/no-in-progress-option.json"
+  export GH_FIXTURE="$PROJECT_ROOT/bats-tests/fixtures/update-project-status/no-in-progress-option.json"
   run "$SCRIPT" owner repo 123
   [ "$status" -eq 0 ]
   [ -z "$output" ]
@@ -162,7 +162,7 @@ teardown() {
 # ---------------------------------------------------------------------------
 @test "update-project-status: exits 0 when jq parse fails on malformed response" {
   export GH_AUTH_SCOPES="'project', 'repo'"
-  export GH_FIXTURE="$PROJECT_ROOT/tests/fixtures/update-project-status/malformed-response.json"
+  export GH_FIXTURE="$PROJECT_ROOT/bats-tests/fixtures/update-project-status/malformed-response.json"
   run "$SCRIPT" owner repo 123
   [ "$status" -eq 0 ]
 }
@@ -172,7 +172,7 @@ teardown() {
 # ---------------------------------------------------------------------------
 @test "update-project-status: continues when mutation fails" {
   export GH_AUTH_SCOPES="'project', 'repo'"
-  export GH_FIXTURE="$PROJECT_ROOT/tests/fixtures/update-project-status/needs-update.json"
+  export GH_FIXTURE="$PROJECT_ROOT/bats-tests/fixtures/update-project-status/needs-update.json"
   export GH_MUTATION_FAIL="true"
   run "$SCRIPT" owner repo 123
   [ "$status" -eq 0 ]
@@ -187,7 +187,7 @@ teardown() {
 # ---------------------------------------------------------------------------
 @test "update-project-status: succeeds even when comment posting fails" {
   export GH_AUTH_SCOPES="'project', 'repo'"
-  export GH_FIXTURE="$PROJECT_ROOT/tests/fixtures/update-project-status/needs-update.json"
+  export GH_FIXTURE="$PROJECT_ROOT/bats-tests/fixtures/update-project-status/needs-update.json"
   export GH_COMMENT_FAIL="true"
   run "$SCRIPT" owner repo 123
   [ "$status" -eq 0 ]
