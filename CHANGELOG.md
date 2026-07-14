@@ -22,6 +22,12 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 - Relative path friction in skill terminal output. After the worktree-aware `.claude-work/` changes in [issues/173](https://github.com/couimet/my-claude-skills/issues/173), path-producing scripts correctly emit absolute paths but the SKILL.md prose described paths in relative form (`.claude-work/...`), which the LLM sometimes echoed back — producing paths that aren't CMD+CLICKable, especially in worktree setups where `.claude-work/` is at the main checkout root. All path-reporting instructions now require absolute paths, and `/prose-style`'s absolute-paths rule establishes this as a global convention. ([issues/184](https://github.com/couimet/my-claude-skills/issues/184))
 
+## 2026.07.14
+
+### Fixed
+
+- `/start-issue`, `/finish-issue`, `/start-side-quest`, `/tackle-pr-comment`, and `/breadcrumb` now include `Bash(mkdir -p *)` in their `allowed-tools`, eliminating permission prompts that fired whenever `/note` (invoked transitively) or `/breadcrumb` needed to create a `.claude-work/` directory. The transitive coverage rule in CLAUDE.md requires the top-level skill to declare every command its dependencies may call. ([issues/194](https://github.com/couimet/my-claude-skills/issues/194))
+
 ## 2026.07.12
 
 ### Changed
