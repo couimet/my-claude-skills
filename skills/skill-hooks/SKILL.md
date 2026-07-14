@@ -16,7 +16,7 @@ Some skills in this collection (like `/start-issue`, `/finish-issue`, and `/star
 
 ## Convention
 
-A project creates a foundation skill in `.claude/skills/` with the name `{parent-skill}-hooks`:
+A project creates a foundation skill in `.claude/skills/` with the name `{parent-skill}-hook`:
 
 | Parent skill | Hook skill name | What it can add |
 | --- | --- | --- |

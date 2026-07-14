@@ -28,6 +28,12 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 - `/start-issue`, `/finish-issue`, `/start-side-quest`, `/tackle-pr-comment`, and `/breadcrumb` now include `Bash(mkdir -p *)` in their `allowed-tools`, eliminating permission prompts that fired whenever `/note` (invoked transitively) or `/breadcrumb` needed to create a `.claude-work/` directory. The transitive coverage rule in CLAUDE.md requires the top-level skill to declare every command its dependencies may call. ([issues/194](https://github.com/couimet/my-claude-skills/issues/194))
 
+## 2026.07.14.1
+
+### Fixed
+
+- Fixed a one-word plural typo in `/skill-hooks`: the convention line said `{parent-skill}-hooks` (plural) while the rest of the repo consistently uses `-hook` (singular). This was the last remaining inconsistency from the June 17 rename. ([issues/192](https://github.com/couimet/my-claude-skills/issues/192))
+
 ## 2026.07.12
 
 ### Changed
