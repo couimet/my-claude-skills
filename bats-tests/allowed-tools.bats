@@ -47,3 +47,11 @@ load test_helper
 @test "allowed-tools: breadcrumb does not have unrestricted Bash(*)" {
   ! grep "^allowed-tools:" "$PROJECT_ROOT/skills/breadcrumb/SKILL.md" | grep -q 'Bash(\*)'
 }
+
+@test "allowed-tools: start-side-quest does not have unrestricted Bash(*)" {
+  ! grep "^allowed-tools:" "$PROJECT_ROOT/skills/start-side-quest/SKILL.md" | grep -q 'Bash(\*)'
+}
+
+@test "allowed-tools: tackle-pr-comment does not have unrestricted Bash(*)" {
+  ! grep "^allowed-tools:" "$PROJECT_ROOT/skills/tackle-pr-comment/SKILL.md" | grep -q 'Bash(\*)'
+}
