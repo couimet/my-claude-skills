@@ -29,7 +29,7 @@ Run all commands from the project root.
 | `make lint` | Verify prerequisites, then run `lint-md` + `fmt-check` + `lint-sh` (markdownlint, Prettier `--check`, shellcheck) |
 | `make lint-fix` | Verify prerequisites, then run `lint-md-fix` + `format` (auto-fix markdownlint, apply Prettier) |
 | `make lint-md` / `lint-sh` / `fmt-check` / `format` | Individual tool runs (markdownlint, shellcheck, Prettier check, Prettier write) |
-| `make test` | `bats tests/` — run the bats test suite |
+| `make test` | `bats bats-tests/` — run the bats test suite |
 | `make install-prereqs` | Verify node, bats, and shellcheck are installed; print install hints for any missing tool |
 | `make stamp` | Stamp `version: <CalVer>@<SHA>` into all `skills/*/SKILL.md` front matter; reads CalVer from the latest `CHANGELOG.md` heading and SHA from `git rev-parse --short HEAD` |
 

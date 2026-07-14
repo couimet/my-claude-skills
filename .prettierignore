@@ -10,4 +10,4 @@ demo/
 # Test fixtures are data representing external API payloads (and one is
 # intentionally malformed to exercise error handling), so Prettier must not
 # touch them.
-tests/fixtures/
+bats-tests/fixtures/

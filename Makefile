@@ -27,7 +27,7 @@ lint-sh:
 		-exec shellcheck {} +
 
 test: install-prereqs
-	bats tests/
+	bats bats-tests/
 
 install-prereqs:
 	@ok=true; \
