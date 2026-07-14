@@ -34,6 +34,16 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 - Fixed a one-word plural typo in `/skill-hooks`: the convention line said `{parent-skill}-hooks` (plural) while the rest of the repo consistently uses `-hook` (singular). This was the last remaining inconsistency from the June 17 rename. ([issues/192](https://github.com/couimet/my-claude-skills/issues/192))
 
+## 2026.07.13
+
+### Added
+
+- New `/rebase-issue` skill for rebasing issue branches onto origin/main after upstream PRs merge. Handles fetch, conflict resolution, squash, commit message sourcing, and push confirmation. ([issues/186](https://github.com/couimet/my-claude-skills/issues/186))
+
+### Changed
+
+- `/finish-issue` now writes a `last-finish-issue` pointer file after generating the PR description, so `/rebase-issue` can reliably find the commit message. ([issues/186](https://github.com/couimet/my-claude-skills/issues/186))
+
 ## 2026.07.12
 
 ### Changed
