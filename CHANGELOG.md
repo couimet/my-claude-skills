@@ -10,29 +10,27 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
-## 2026.07.10
+## 2026.07.14.2
 
 ### Added
 
-- Skill attribution footers on commit messages, PR descriptions, and GitHub issue bodies. Each footer names the skill, its version, and links back to this repo. `/commit-msg` uses a `Skill:` git trailer; `/finish-issue` and `/create-github-issue` use a markdown-linked prose line matching the harness convention. ([issues/181](https://github.com/couimet/my-claude-skills/issues/181))
-
-## 2026.07.10.1
+- `/finish-issue-hook` foundation skill at `.claude/skills/finish-issue-hook/SKILL.md` checks that CHANGELOG.md was modified on user-facing branches and validates heading order before PR creation. ([issues/199](https://github.com/couimet/my-claude-skills/issues/199))
 
 ### Fixed
 
-- Relative path friction in skill terminal output. After the worktree-aware `.claude-work/` changes in [issues/173](https://github.com/couimet/my-claude-skills/issues/173), path-producing scripts correctly emit absolute paths but the SKILL.md prose described paths in relative form (`.claude-work/...`), which the LLM sometimes echoed back — producing paths that aren't CMD+CLICKable, especially in worktree setups where `.claude-work/` is at the main checkout root. All path-reporting instructions now require absolute paths, and `/prose-style`'s absolute-paths rule establishes this as a global convention. ([issues/184](https://github.com/couimet/my-claude-skills/issues/184))
-
-## 2026.07.14
-
-### Fixed
-
-- `/start-issue`, `/finish-issue`, `/start-side-quest`, `/tackle-pr-comment`, and `/breadcrumb` now include `Bash(mkdir -p *)` in their `allowed-tools`, eliminating permission prompts that fired whenever `/note` (invoked transitively) or `/breadcrumb` needed to create a `.claude-work/` directory. The transitive coverage rule in CLAUDE.md requires the top-level skill to declare every command its dependencies may call. ([issues/194](https://github.com/couimet/my-claude-skills/issues/194))
+- CHANGELOG version headings were out of descending order across multiple releases. Re-sorted into strict newest-first order, added an ordering rule to CLAUDE.md CHANGELOG Conventions, and hardened `/changelog` to enforce descending placement with CalVer and SemVer examples plus a post-write verification step. ([issues/199](https://github.com/couimet/my-claude-skills/issues/199))
 
 ## 2026.07.14.1
 
 ### Fixed
 
 - Fixed a one-word plural typo in `/skill-hooks`: the convention line said `{parent-skill}-hooks` (plural) while the rest of the repo consistently uses `-hook` (singular). This was the last remaining inconsistency from the June 17 rename. ([issues/192](https://github.com/couimet/my-claude-skills/issues/192))
+
+## 2026.07.14
+
+### Fixed
+
+- `/start-issue`, `/finish-issue`, `/start-side-quest`, `/tackle-pr-comment`, and `/breadcrumb` now include `Bash(mkdir -p *)` in their `allowed-tools`, eliminating permission prompts that fired whenever `/note` (invoked transitively) or `/breadcrumb` needed to create a `.claude-work/` directory. The transitive coverage rule in CLAUDE.md requires the top-level skill to declare every command its dependencies may call. ([issues/194](https://github.com/couimet/my-claude-skills/issues/194))
 
 ## 2026.07.13
 
@@ -49,6 +47,18 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 ### Changed
 
 - Removed `Files:` footer from `/commit-msg` output. The footer listed changed files with line counts from `git diff --stat`, which largely repeated what the diff already shows above the commit message file. The derivation rule, examples, and test fixtures have all been updated to drop it. ([issues/185](https://github.com/couimet/my-claude-skills/issues/185))
+
+## 2026.07.10.1
+
+### Fixed
+
+- Relative path friction in skill terminal output. After the worktree-aware `.claude-work/` changes in [issues/173](https://github.com/couimet/my-claude-skills/issues/173), path-producing scripts correctly emit absolute paths but the SKILL.md prose described paths in relative form (`.claude-work/...`), which the LLM sometimes echoed back — producing paths that aren't CMD+CLICKable, especially in worktree setups where `.claude-work/` is at the main checkout root. All path-reporting instructions now require absolute paths, and `/prose-style`'s absolute-paths rule establishes this as a global convention. ([issues/184](https://github.com/couimet/my-claude-skills/issues/184))
+
+## 2026.07.10
+
+### Added
+
+- Skill attribution footers on commit messages, PR descriptions, and GitHub issue bodies. Each footer names the skill, its version, and links back to this repo. `/commit-msg` uses a `Skill:` git trailer; `/finish-issue` and `/create-github-issue` use a markdown-linked prose line matching the harness convention. ([issues/181](https://github.com/couimet/my-claude-skills/issues/181))
 
 ## 2026.07.02
 

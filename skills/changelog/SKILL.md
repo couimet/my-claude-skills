@@ -67,7 +67,7 @@ AskUserQuestion(
 
 Reorder options so the auto-detected category appears first with "(Recommended)".
 
-## Step 4: Determine Version Heading
+## Step 4: Determine Version Heading and Position
 
 Determine where to place the entry based on the versioning scheme detected in Step 2:
 
@@ -79,11 +79,15 @@ Determine where to place the entry based on the versioning scheme detected in St
 **CalVer projects (date-based headings):**
 
 - If today's date heading already exists, check for micro suffixes. Create a new heading with the next micro suffix (e.g., `2026.03.19` exists → `2026.03.19.1`; `2026.03.19.1` exists → `2026.03.19.2`).
-- If today's date heading doesn't exist, create a new one above the most recent heading. Use the date format matching existing headings (read from CLAUDE.md or infer from the file).
+- If today's date heading doesn't exist, create a new one. Use the date format matching existing headings (read from CLAUDE.md or infer from the file).
 
 **Other schemes:**
 
 - Match the existing heading pattern. If uncertain, ask the user via `AskUserQuestion`.
+
+### Positioning Rule (All Schemes)
+
+**Newest entries go at the top.** Version headings must appear in strict descending order — the most recent release at the top of the file, the oldest at the bottom. For CalVer: within the same calendar date, higher micro suffixes are newer and come first (e.g., `2026.07.14.2` above `2026.07.14.1` above `2026.07.14`). For SemVer: within the same minor version, higher patch versions are newer and come first (e.g., `[1.2.3]` above `[1.2.2]` above `[1.2.1]`). When adding a new heading, insert it above all older headings — never append to the bottom. After writing, verify with `grep '^## ' CHANGELOG.md | head -20`. The output must print headings in descending order. If they are out of order, re-sort before presenting to the user.
 
 ## Step 5: Draft the Entry
 

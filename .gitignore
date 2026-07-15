@@ -11,3 +11,4 @@ demo/__pycache__/
 
 .claude/*
 !.claude/settings.json
+!.claude/skills/
