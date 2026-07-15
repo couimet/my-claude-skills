@@ -166,9 +166,9 @@ if [ "$subject_owner" = "$target_owner" ] && [ "$subject_repo" = "$target_repo" 
 fi
 
 # --- Temp files for GraphQL payloads ---
-subject_payload="$(mktemp "${TMPDIR:-/tmp}/link-dependency.subject.XXXXXX.json")"
-target_payload="$(mktemp "${TMPDIR:-/tmp}/link-dependency.target.XXXXXX.json")"
-mutation_payload="$(mktemp "${TMPDIR:-/tmp}/link-dependency.mutation.XXXXXX.json")"
+subject_payload="$(mktemp "${TMPDIR:-/tmp}/link-dependency.subject.XXXXXX")"
+target_payload="$(mktemp "${TMPDIR:-/tmp}/link-dependency.target.XXXXXX")"
+mutation_payload="$(mktemp "${TMPDIR:-/tmp}/link-dependency.mutation.XXXXXX")"
 trap 'rm -f "$subject_payload" "$target_payload" "$mutation_payload"' EXIT
 
 # --- Step 1: Fetch subject node ID ---

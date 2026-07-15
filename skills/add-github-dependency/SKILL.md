@@ -4,7 +4,7 @@ version: 2026.07.14@local
 description: Add a dependency relationship between GitHub issues using the native addBlockedBy mutation
 argument-hint: <blocked-by|is-blocking> <issue-url>
 user-invocable: true
-allowed-tools: Read, Bash(*/skills/create-github-issue/link-dependency.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Bash(*/skills/create-github-issue/link-dependency.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(gh repo view *)
 ---
 
 # Add GitHub Dependency
