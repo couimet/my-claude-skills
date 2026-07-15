@@ -347,6 +347,7 @@ I've used Claude Code on dozens of real issues and kept running into the same fr
 
 | Command | What It Does |
 | --- | --- |
+| `/add-github-dependency <blocked-by\|is-blocking> <issue-url>` | Add a dependency relationship between two GitHub issues using the native `addBlockedBy` mutation — works cross-repo |
 | `/breadcrumb <note>` | Drop a timestamped note collected by `/finish-issue` for the PR description |
 | `/changelog <desc>` | Create or update a CHANGELOG entry with tone guardrails, thematic grouping, and detail-leak detection — adapts to SemVer, CalVer, and mono-repo layouts |
 | `/cleanup-issue [number]` | Delete an issue's working directory (`.claude-work/issues/<ID>/`) after confirming with the user |
