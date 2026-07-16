@@ -347,6 +347,7 @@ I've used Claude Code on dozens of real issues and kept running into the same fr
 
 | Command | What It Does |
 | --- | --- |
+| `/add-github-dependency <blocked-by\|is-blocking> <issue-url>` | Add a dependency relationship between two GitHub issues using the native `addBlockedBy` mutation — works cross-repo |
 | `/breadcrumb <note>` | Drop a timestamped note collected by `/finish-issue` for the PR description |
 | `/changelog <desc>` | Create or update a CHANGELOG entry with tone guardrails, thematic grouping, and detail-leak detection — adapts to SemVer, CalVer, and mono-repo layouts |
 | `/cleanup-issue [number]` | Delete an issue's working directory (`.claude-work/issues/<ID>/`) after confirming with the user |
@@ -355,6 +356,7 @@ I've used Claude Code on dozens of real issues and kept running into the same fr
 | `/finish-issue` | Verify work, collect breadcrumbs, check docs, and generate a PR description |
 | `/note <desc>` | Capture a quick note, finding, or result — lightweight `/scratchpad` alternative with no foundation skill dependencies |
 | `/question <topic>` | Surface design decisions as a structured Q&A file you edit in-place |
+| `/rebase-issue <target>` | Rebase an issue branch onto `<target>` (defaults to `origin/main`) after upstream PRs merge — handles conflicts, squashes to one commit, and confirms before push |
 | `/scratchpad <desc>` | Create a working document — plans, analysis, PR drafts, anything temporary |
 | `/start-issue <url>` | Analyze a GitHub issue, create a branch, and produce an implementation plan |
 | `/start-side-quest <desc>` | Branch off for an orthogonal improvement without polluting the current issue |
