@@ -3,7 +3,7 @@ name: create-github-issue
 version: 2026.07.14.2@af93660
 description: Create a GitHub issue from a file draft or inline description, with smart label discovery and sub-issue linking
 argument-hint: <file-path-or-title>
-allowed-tools: Read, Write, Glob, Bash(gh repo view *), Bash(gh label list *), Bash(gh issue create *), Bash(*/skills/create-github-issue/link-sub-issue.sh *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Write, Glob, Bash(gh repo view *), Bash(gh label list *), Bash(gh issue create *), Bash(*/skills/create-github-issue/link-sub-issue.sh *), Bash(*/skills/create-github-issue/link-dependency.sh *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Create GitHub Issue
@@ -29,6 +29,8 @@ Read the file and extract:
 - **Body**: everything after the title heading
 
 If the file contains a `## Parent` or `Parent: #NN` line, extract the parent issue number for sub-issue linking in Step 6.
+
+Scan the body for dependency relationships to other GitHub issues. The user may express these in natural language — "depends on X", "needs X first", "waiting on X", "blocked by X", "this blocks Y", "unblocks Z", etc. — not with any required phrasing. For each relationship you detect, determine the direction (blocked-by or is-blocking) and extract the full GitHub issue URL. These can reference issues in any repository, including the current one. There can be zero, one, or multiple such relationships.
 
 If the file contains a `**Target repo:** owner/repo` line (e.g., `**Target repo:** couimet/my-claude-skills`), extract it as the target repository override. When no target repo line is present, infer owner/repo from the current git remote (`gh repo view --json owner,name`).
 
@@ -94,7 +96,7 @@ Run the script once per child issue to link:
 
 The script handles all GraphQL calls internally, using `jq -n` to build payloads via temp files to avoid zsh history expansion stripping `!` from GraphQL type annotations (`String!`, `Int!`, `ID!`). It prints `linked #<child> → #<parent>` on success or an error message on failure (exit 1).
 
-If the script fails, note it in the Step 7 report as:
+If the script fails, note it in the Step 8 report as:
 
 ```text
 Sub-issue linking: failed (<error summary>). Link manually if needed.
@@ -102,7 +104,38 @@ Sub-issue linking: failed (<error summary>). Link manually if needed.
 
 If no parent was specified, skip this step.
 
-## Step 7: Report
+## Step 7: Link Dependencies (If Blocked By / Is Blocking Specified)
+
+If `Blocked by` or `Is blocking` URLs were extracted in Step 2, link each dependency using the `link-dependency.sh` script.
+
+Parse `OWNER`, `REPO`, and `SUBJECT_NUMBER` from the issue URL returned in Step 5 (`https://github.com/{OWNER}/{REPO}/issues/{SUBJECT_NUMBER}`). If a target repo override was extracted in Step 2, use that owner/repo instead.
+
+For each dependency URL detected in Step 2, parse `TARGET_OWNER`, `TARGET_REPO`, and `TARGET_NUMBER` from the URL, then run:
+
+```bash
+~/.claude/skills/create-github-issue/link-dependency.sh \
+  --subject-owner "$OWNER" \
+  --subject-repo "$REPO" \
+  --subject-number "$SUBJECT_NUMBER" \
+  --target-owner "$TARGET_OWNER" \
+  --target-repo "$TARGET_REPO" \
+  --target-number "$TARGET_NUMBER" \
+  --relationship "$RELATIONSHIP"
+```
+
+Where `$RELATIONSHIP` is `blocked-by` (when this issue depends on the other) or `is-blocking` (when this issue unblocks the other), as inferred from the natural language in the body. The script handles all GraphQL calls internally, using `jq -n` to build payloads via temp files to avoid zsh history expansion stripping `!` from GraphQL type annotations (`String!`, `Int!`, `ID!`). It maps the relationship to `addBlockedBy` argument order and prints `blocked #<subject> ← #<target>` or `blocking #<subject> → #<target>` on success.
+
+If the script fails, note it in the Step 8 report as:
+
+```text
+Dependency linking: failed for <URL> (<error summary>). Link manually if needed.
+```
+
+To add dependencies to an existing issue (rather than at creation time), use `/add-github-dependency <blocked-by|is-blocking> <issue-url>`.
+
+If no dependency URLs were extracted, skip this step.
+
+## Step 8: Report
 
 Print a summary:
 
@@ -112,6 +145,9 @@ Title: <TITLE>
 Labels: <LABEL1>, <LABEL2>
 Parent: https://github.com/{OWNER}/{REPO}/issues/{PARENT_NUMBER} (linked as sub-issue)  ← only if parent specified AND linking succeeded
 Sub-issue linking: failed (<error summary>). Link manually if needed.  ← only if parent specified AND linking failed
+Blocked by: <URL> (linked)  ← one per successful blocked-by dependency
+Is blocking: <URL> (linked)  ← one per successful is-blocking dependency
+Dependency linking: failed for <URL> (<error summary>). Link manually if needed.  ← one per failed dependency
 ```
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.

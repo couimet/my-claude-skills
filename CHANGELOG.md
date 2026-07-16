@@ -10,6 +10,16 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.07.14.3
+
+### Added
+
+- `/add-github-dependency` skill: add `blocked-by` or `is-blocking` dependency relationships between GitHub issues using the native `addBlockedBy` mutation. Works cross-repo — node IDs are globally unique, so same-repo and cross-repo linking use the same code path. Accepts a relationship type and target URL as arguments (e.g., `/add-github-dependency blocked-by https://github.com/other/repo/issues/42`). ([issues/182](https://github.com/couimet/my-claude-skills/issues/182))
+
+### Changed
+
+- `/create-github-issue` now infers dependency relationships from natural language in issue drafts — "depends on", "blocked by", "waiting on", "this blocks", "unblocks", etc. — and creates native dependency links via `addBlockedBy` at issue creation time. No required phrasing. Cross-references `/add-github-dependency` for post-creation workflows. Backed by a unified `link-dependency.sh` script shared by both skills. ([issues/182](https://github.com/couimet/my-claude-skills/issues/182))
+
 ## 2026.07.14.2
 
 ### Added
