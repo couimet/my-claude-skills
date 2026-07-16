@@ -1,6 +1,6 @@
 ---
 name: add-github-dependency
-version: 2026.07.14.3@bec3d01
+version: 2026.07.14.3@8469237
 description: Add a dependency relationship between GitHub issues using the native addBlockedBy mutation
 argument-hint: <blocked-by|is-blocking> <issue-url>
 user-invocable: true
