@@ -1,6 +1,6 @@
 ---
 name: scratchpad
-version: 2026.07.14.2@af93660
+version: 2026.07.14.3@bec3d01
 description: Create an auto-numbered working document in .claude-work/scratchpads/: implementation plans, PR descriptions, analysis notes, architecture decisions, issue drafts.
 argument-hint: <description>
 allowed-tools: Read, Write, Glob, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
