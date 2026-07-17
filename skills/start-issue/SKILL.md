@@ -137,6 +137,32 @@ After the working document is created (via either path), write the pointer file 
 
 Overwrite any existing pointer. Only the most recent working document is "active".
 
+### 4d. Write the base-branch marker
+
+Record the base branch so `/rebase-issue` can later determine whether to use stacked diff-apply or normal rebase. Like the active-plan pointer in Step 4c, this marker uses an absolute path resolved via `claude-work-root.sh`.
+
+First, run `claude-work-root.sh` to get the absolute `<base>`:
+
+```bash
+~/.claude/skills/issue-context/claude-work-root.sh
+```
+
+**Path:** `<base>/issues/<NUMBER>/base-branch` (absolute path)
+
+**Contents:** the base branch ref recorded in the plan's `Base branch:` field (a single line, no trailing newline). Examples:
+
+```text
+origin/main
+```
+
+```text
+issues/186
+```
+
+Always write this file — even when the base is `origin/main`. Consistency gives `/rebase-issue` a single code path: always read the marker, always check remote existence.
+
+Overwrite any existing marker. Only the most recent `/start-issue` invocation matters.
+
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
 
 ### Output Anchors

@@ -10,6 +10,13 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.07.17
+
+### Changed
+
+- `/start-issue` now writes a base-branch marker file at `.claude-work/issues/<ID>/base-branch` recording the branch the work was cut from. Always written — even when the base is `origin/main` — so `/rebase-issue` has a single, consistent code path for target resolution. ([issues/202](https://github.com/couimet/my-claude-skills/issues/202))
+- `/rebase-issue` now resolves its target from the base-branch marker file when no explicit argument is given. It checks whether the recorded base still exists remotely (`git ls-remote origin <base>`) — if the ref exists, the base PR is still open and stacked diff-apply mode is used; if the ref is gone (merged/deleted), the stacked branch automatically graduates to `origin/main` in normal rebase mode. Stacked mode skips `git rebase` entirely: it captures the unique stacked diff, resets to the base tip, and applies only the incremental changes, preventing old-commit residue from contaminating the squashed diff. ([issues/202](https://github.com/couimet/my-claude-skills/issues/202))
+
 ## 2026.07.14.3
 
 ### Added

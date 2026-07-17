@@ -4,7 +4,7 @@ version: 2026.07.14.3@8469237
 description: Rebase the current issue branch onto origin/main (or a specified target) after upstream PRs merge. Handles conflict resolution, squashes to a single commit, and runs autonomously
 argument-hint: <target>
 user-invocable: true
-allowed-tools: Read, Write, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git log *), Bash(git diff *), Bash(git rebase *), Bash(git reset *), Bash(git commit *), Bash(git add *), Bash(git checkout *), Bash(git merge-base *), Bash(git rev-parse *), Bash(git status *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/rebase-issue/resolve-commit-msg.sh *)
+allowed-tools: Read, Write, AskUserQuestion, Bash(git branch *), Bash(git fetch *), Bash(git log *), Bash(git diff *), Bash(git rebase *), Bash(git reset *), Bash(git commit *), Bash(git add *), Bash(git checkout *), Bash(git merge-base *), Bash(git rev-parse *), Bash(git status *), Bash(git apply *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/rebase-issue/resolve-commit-msg.sh *)
 ---
 
 # Rebase Issue
@@ -36,7 +36,19 @@ git fetch origin
 
 ## Step 3: Resolve Target
 
-If `$ARGUMENTS` was provided, use it as the target ref. Otherwise default to `origin/main`. Accept any valid git ref: `origin/main`, `main`, another issue branch (for stacked PRs), and so on.
+If `$ARGUMENTS` was provided, use it as the target ref. Otherwise, resolve the target automatically from the base-branch marker:
+
+1. Read the base-branch marker. Resolve the absolute path via `claude-work-root.sh`, then read `<base>/issues/<NUMBER>/base-branch` (written by `/start-issue`). If the marker is missing or unreadable, default to `origin/main`.
+2. Check whether the recorded base branch still exists remotely:
+
+   ```bash
+   git ls-remote origin <base-branch>
+   ```
+
+3. If the remote ref exists (non-empty output), the base PR hasn't been merged yet. Use the recorded base branch as the target and record the mode as **stacked** for use in Steps 7 and 10.
+4. If the remote ref does not exist (empty output), the base PR was merged and the branch was deleted. Fall back to `origin/main` in normal mode.
+
+Accept any valid git ref as an explicit argument: `origin/main`, `main`, another issue branch, and so on. An explicit argument always wins over the marker file.
 
 ## Step 4: Show Divergence — Our Commits
 
@@ -68,11 +80,57 @@ git log --name-only HEAD..<target>
 
 Compare the file lists. Files appearing in both lists are potential conflict areas. Report these to the user before proceeding so they know what to expect.
 
-## Step 7: Rebase
+## Step 7: Rebase (Normal Mode) or Diff-Apply (Stacked Mode)
+
+**Normal mode** (target is `origin/main` or any non-`issues/*` ref):
 
 ```bash
 git rebase <target>
 ```
+
+**Stacked mode** (base branch still exists remotely, determined in Step 3):
+
+Skip `git rebase` entirely. Replaying every commit from the stacked branch's history contaminates the diff with old-commit residue whose changes already exist in the squashed base. Instead, apply only the unique stacked diff:
+
+1. Save current HEAD to a temp branch ref so it survives the reset:
+
+   ```bash
+   git branch tmp-rebase-stacked-HEAD
+   ```
+
+2. Capture the unique diff — everything on the stacked branch that is not on the target:
+
+   ```bash
+   git diff <target>..tmp-rebase-stacked-HEAD > /tmp/stacked-diff.patch
+   ```
+
+3. Start clean from the base tip:
+
+   ```bash
+   git reset --hard <target>
+   ```
+
+4. Apply the unique changes:
+
+   ```bash
+   git apply /tmp/stacked-diff.patch
+   ```
+
+5. If `git apply` succeeds, stage the applied changes and clean up the temp ref:
+
+   ```bash
+   git add -A
+   git branch -D tmp-rebase-stacked-HEAD
+   ```
+
+6. If `git apply` fails (the diff doesn't apply cleanly), resolve manually. The diff contains only the stacked branch's unique changes — it's small and focused. Inspect the rejected hunks, hand-apply the changes, then stage and clean up:
+
+   ```bash
+   git add -A
+   git branch -D tmp-rebase-stacked-HEAD
+   ```
+
+Proceed to Step 9. Skip Step 8 — the conflict resolution strategy in Step 8 targets `git rebase` conflicts; stacked-mode apply failures are resolved inline above.
 
 ## Step 8: Handle Conflicts (If Any)
 
@@ -96,11 +154,21 @@ Verify only issue-specific changes remain. Then run the project's formatter and 
 
 ## Step 10: Squash
 
+**Normal mode:**
+
 ```bash
 git reset --soft <target>
 ```
 
 All changes are now staged as a single diff, ready for one commit.
+
+**Stacked mode:** changes are already staged from the diff apply in Step 7. Verify the staging looks correct:
+
+```bash
+git diff --cached --stat
+```
+
+Confirm only the expected unique stacked changes are present, then proceed to Step 11.
 
 ## Step 11: Read Commit Message
 
@@ -148,7 +216,8 @@ When `git rebase` encounters conflicts during Step 8, apply this strategy:
 ## Edge Cases
 
 - **No upstream changes:** `HEAD..<target>` is empty. Nothing to rebase -- report and exit at Step 4.
-- **Stacked PRs:** when `<target>` is another issue branch, the workflow is identical; the AskUserQuestion in Step 13 should confirm the correct remote branch.
+- **Stacked PRs:** when the base-branch marker file records another `issues/*` branch that still exists remotely (verified via `git ls-remote origin` in Step 3), `git rebase` is replaced with a diff-apply procedure (Step 7). The unique stacked diff is captured to a patch file, the branch is reset to the base tip, and only the unique changes are applied. This prevents contamination from old commits whose changes already exist in the squashed base. When the recorded base branch disappears from the remote (PR merged and branch deleted), the stacked branch automatically graduates to targeting `origin/main` in normal rebase mode.
+- **Diff apply conflicts:** when `git apply` fails in stacked mode, resolve manually. The diff is limited to the stacked branch's unique changes, so conflicts are narrow and focused.
 - **Clean rebase:** `git rebase <target>` completes with no conflicts. Proceed directly to Step 9.
 - **Unresolvable conflicts:** abort with `git rebase --abort` and ask the user.
 - **Missing pointer file:** fall back to find, then to git log (Step 11).
@@ -169,6 +238,7 @@ Before finishing, verify:
 - [ ] Target resolved correctly (from argument or defaulted to `origin/main`)
 - [ ] Conflicts handled with the defined strategy (upstream infrastructure wins; our logic ported on top)
 - [ ] Rebase completed cleanly (or conflicts resolved)
+- [ ] Stacked mode (if applicable): temp ref created and cleaned up, unique diff captured and applied, no old-commit residue in staged changes
 - [ ] Project formatter ran successfully
 - [ ] Project test suite passes
 - [ ] Changes squashed to a single commit on top of `<target>`
