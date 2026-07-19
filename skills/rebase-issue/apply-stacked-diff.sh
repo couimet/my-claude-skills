@@ -61,7 +61,7 @@ patch_file="$(mktemp /tmp/stacked-diff-XXXXXX.patch)"
 
 # --- Cleanup trap ---
 
-# shellcheck disable=SC2329 # invoked via trap
+# shellcheck disable=SC2317,SC2329 # invoked via trap
 cleanup() {
   git branch -D "$temp_branch" 2>/dev/null || true
 }
