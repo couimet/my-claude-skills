@@ -247,6 +247,33 @@ setup_remote_with_branch() {
   [[ "$output" == *"MODE=normal"* ]]
 }
 
+@test "marker has origin/feature-branch, remote ref exists → use base-branch" {
+  local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
+  write_file "$marker_dir/base-branch" "origin/my-feature"
+
+  # Push a non-main feature branch to the remote.
+  git branch my-feature main
+  setup_remote_with_branch "my-feature"
+
+  run "$SCRIPT" "42"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"TARGET=origin/my-feature"* ]]
+  [[ "$output" == *"MODE=normal"* ]]
+}
+
+@test "marker has origin/feature-branch, remote ref absent → fallback to origin/main" {
+  local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
+  write_file "$marker_dir/base-branch" "origin/nonexistent"
+
+  # origin exists but does NOT have a branch named "nonexistent".
+  setup_remote_with_branch "main"
+
+  run "$SCRIPT" "42"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"TARGET=origin/main"* ]]
+  [[ "$output" == *"MODE=normal"* ]]
+}
+
 # ============================================================================
 # Output format
 # ============================================================================
