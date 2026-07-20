@@ -64,6 +64,7 @@ patch_file="$(mktemp /tmp/stacked-diff-XXXXXX.patch)"
 # shellcheck disable=SC2317,SC2329 # invoked via trap
 cleanup() {
   git branch -D "$temp_branch" 2>/dev/null || true
+  [ "${keep_patch_file:-0}" -ne 1 ] && rm -f "$patch_file"
 }
 trap cleanup EXIT
 
@@ -101,12 +102,13 @@ fi
 
 # --- Failure path ---
 
+keep_patch_file=1
 echo "apply-stacked-diff $ERR_APPLY error: git apply --reject failed" >&2
 echo "" >&2
 echo "Clean hunks were applied. Rejected hunks were written to .rej files:" >&2
 
 # List .rej files for the user.
-find . -maxdepth 3 -name '*.rej' -type f 2>/dev/null | while IFS= read -r rej; do
+find . -name '*.rej' -type f 2>/dev/null | while IFS= read -r rej; do
   echo "  $rej" >&2
 done
 

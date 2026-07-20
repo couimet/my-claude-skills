@@ -85,6 +85,7 @@ else
 
   if [ -f "$marker_file" ] && [ -r "$marker_file" ] && [ -s "$marker_file" ]; then
     base_branch="$(head -n1 "$marker_file" | tr -d '\n')"
+    base_branch="${base_branch#origin/}"
 
     if [ -n "$base_branch" ]; then
       # Verify the recorded base branch still exists remotely.

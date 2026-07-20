@@ -94,10 +94,6 @@ commit_file() {
 @test "single-file modification applies cleanly" {
   # Branch off main and modify a.txt.
   git checkout -q -b issues/200
-  echo "line2-modified" > a.txt
-  echo "line1" >> a.txt
-  sed -i '' 's/line2/line2-modified/' a.txt 2>/dev/null || sed -i 's/line2/line2-modified/' a.txt
-  # Actually, sed -i is fragile across platforms. Use printf instead.
   printf 'line1\nline2-modified\nline3\n' > a.txt
   git add a.txt
   git commit -q -m "modify a.txt"

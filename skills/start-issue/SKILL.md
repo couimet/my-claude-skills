@@ -228,6 +228,7 @@ Before finishing, verify:
 - [ ] Feature branch `issues/<NUMBER>` was created
 - [ ] Working document created via `/note` (default) or `/scratchpad` (opt-in), not both
 - [ ] `<base>/issues/<NUMBER>/active-plan` pointer written with the project-root-relative path to the working document
+- [ ] `<base>/issues/<NUMBER>/base-branch` marker written with the recorded `Base branch:` ref
 - [ ] Plan has specific file/function names (not "update the code")
 - [ ] Each step is small enough to be one commit
 - [ ] Test updates are mentioned for each step that changes behavior
