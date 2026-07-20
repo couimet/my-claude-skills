@@ -85,12 +85,14 @@ else
 
   if [ -f "$marker_file" ] && [ -r "$marker_file" ] && [ -s "$marker_file" ]; then
     base_branch="$(head -n1 "$marker_file" | tr -d '\n')"
-    base_branch="${base_branch#origin/}"
 
     if [ -n "$base_branch" ]; then
-      # Verify the recorded base branch still exists remotely.
-      if git ls-remote origin "$base_branch" 2>/dev/null | grep -q .; then
+      # Strip origin/ prefix for the ls-remote check — ls-remote expects
+      # bare branch names (e.g., "main", not "origin/main").
+      check_ref="${base_branch#origin/}"
+      if git ls-remote origin "$check_ref" 2>/dev/null | grep -q .; then
         # Base PR hasn't been merged yet — rebase onto it.
+        # Use the original value so the origin/ prefix is preserved in the target.
         target="$base_branch"
       fi
     fi
