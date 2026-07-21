@@ -91,7 +91,7 @@ else
   current_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" || true
   if [ -n "$current_branch" ] && command -v gh >/dev/null 2>&1; then
     base_ref="$(gh pr list --head "$current_branch" --json baseRefName --jq '.[0].baseRefName' 2>/dev/null)" || true
-    if [ -n "$base_ref" ]; then
+    if [ -n "$base_ref" ] && [ "$base_ref" != "null" ]; then
       # Guard against double origin/ prefix.
       if [[ "$base_ref" != origin/* ]]; then
         base_ref="origin/${base_ref}"
@@ -112,7 +112,7 @@ else
         # Strip origin/ prefix for the ls-remote check — ls-remote expects
         # bare branch names (e.g., "main", not "origin/main").
         check_ref="${base_branch#origin/}"
-        if git ls-remote origin "$check_ref" 2>/dev/null | grep -q .; then
+        if git ls-remote origin "refs/heads/$check_ref" 2>/dev/null | grep -q .; then
           # Base PR hasn't been merged yet — rebase onto it.
           # Use the original value so the origin/ prefix is preserved in the target.
           target="$base_branch"

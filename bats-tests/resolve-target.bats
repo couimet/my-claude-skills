@@ -253,6 +253,23 @@ setup_remote_with_branch() {
   [[ "$output" == *"MODE=stacked"* ]]
 }
 
+@test "gh pr list returns literal null → falls through to marker" {
+  local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
+  write_file "$marker_dir/base-branch" "issues/100"
+
+  setup_remote_with_branch "issues/100"
+
+  gh() {
+    echo 'null'
+  }
+  export -f gh
+
+  run "$SCRIPT" "42"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"TARGET=issues/100"* ]]
+  [[ "$output" == *"MODE=stacked"* ]]
+}
+
 @test "gh pr list not available → falls through to marker" {
   local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
   write_file "$marker_dir/base-branch" "issues/100"
@@ -375,6 +392,24 @@ setup_remote_with_branch() {
 
   # origin exists but does NOT have a branch named "nonexistent".
   setup_remote_with_branch "main"
+
+  run "$SCRIPT" "42"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"T004"* ]]
+  [[ "$output" == *"no longer exists on remote"* ]]
+}
+
+@test "marker ref matches a tag but not a branch → error T004" {
+  local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
+  write_file "$marker_dir/base-branch" "issues/100"
+
+  # Create a bare remote and push only a tag (no branch) named issues/100.
+  local bare_repo="$TEST_TEMP_DIR/bare-remote.git"
+  git init --bare -q "$bare_repo"
+  git remote add origin "$bare_repo"
+
+  git tag "issues/100" main
+  git push -q origin "refs/tags/issues/100" 2>/dev/null
 
   run "$SCRIPT" "42"
   [ "$status" -eq 1 ]
