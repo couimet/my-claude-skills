@@ -86,6 +86,22 @@ setup_remote_with_branch() {
   [[ "$output" == *"Usage:"* ]]
 }
 
+@test "claude-work-root.sh not found → error T003" {
+  local claude_root_script="$PROJECT_ROOT/skills/issue-context/claude-work-root.sh"
+
+  # Temporarily move the script aside so resolve-target.sh cannot find it.
+  mv "$claude_root_script" "${claude_root_script}.bak"
+
+  run "$SCRIPT" "42" "origin/main"
+  local actual_status="$status"
+
+  # Restore immediately so other tests are not affected.
+  mv "${claude_root_script}.bak" "$claude_root_script"
+
+  [ "$actual_status" -eq 1 ]
+  [[ "$output" == *"T003"* ]]
+}
+
 # ============================================================================
 # Explicit target — resolution
 # ============================================================================

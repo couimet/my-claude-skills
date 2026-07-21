@@ -275,6 +275,31 @@ commit_file() {
   [ "$(cat base-only.txt)" = "base file content" ]
 }
 
+@test "preserves new commits on the target branch (simulating upstream merge)" {
+  # Create a base branch with a file
+  git checkout -q -b base-branch
+  commit_file "base.txt" "base content"
+
+  # Stack a branch on top and add a change
+  git checkout -q -b issues/200
+  commit_file "stacked.txt" "stacked change"
+
+  # Simulate the base branch moving forward with a new upstream commit
+  git checkout -q base-branch
+  commit_file "new-base.txt" "new upstream content"
+
+  # Run the script from the stacked branch
+  git checkout -q issues/200
+  run "$SCRIPT" "base-branch"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"applied and staged successfully"* ]]
+
+  # Both the new upstream commit and the stacked change should be present
+  [ -f new-base.txt ]
+  [ "$(cat stacked.txt)" = "stacked change" ]
+}
+
 # ============================================================================
 # Apply failure path (A004)
 # ============================================================================

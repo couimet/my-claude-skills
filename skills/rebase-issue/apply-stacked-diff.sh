@@ -29,6 +29,7 @@ readonly ERR_ARGS="A001"
 readonly ERR_INVALID_TARGET="A002"
 readonly ERR_NO_DIFF="A003"
 readonly ERR_APPLY="A004"
+readonly ERR_DIRTY_TREE="A005"
 
 usage() {
   cat <<'EOF'
@@ -68,6 +69,13 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# --- Verify clean working tree ---
+
+if ! git diff-index --quiet HEAD --; then
+  echo "apply-stacked-diff $ERR_DIRTY_TREE error: working tree has uncommitted changes. Please commit or stash them before rebasing." >&2
+  exit 1
+fi
+
 # --- Save HEAD to temp branch ---
 
 current_head="$(git rev-parse HEAD)"
@@ -75,11 +83,11 @@ git branch "$temp_branch" "$current_head"
 
 # --- Capture unique diff ---
 
-git diff "$target".."$temp_branch" > "$patch_file"
+git diff --binary "$target"..."$temp_branch" > "$patch_file"
 
 # Verify the patch is non-empty.
 if [ ! -s "$patch_file" ]; then
-  echo "apply-stacked-diff $ERR_NO_DIFF error: no unique changes to apply — diff '$target..$temp_branch' is empty" >&2
+  echo "apply-stacked-diff $ERR_NO_DIFF error: no unique changes to apply — diff '$target...$temp_branch' is empty" >&2
   rm -f "$patch_file"
   exit 1
 fi
@@ -115,8 +123,8 @@ done
 echo "" >&2
 echo "To resolve:" >&2
 echo "  1. Inspect each .rej file and hand-apply the rejected hunks to the corresponding source file" >&2
-echo "  2. Run: git add -A" >&2
-echo "  3. Delete the .rej files when done" >&2
+echo "  2. Delete the .rej files when done" >&2
+echo "  3. Run: git add -A" >&2
 echo "" >&2
 echo "The full patch is preserved at: $patch_file" >&2
 
