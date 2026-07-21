@@ -10,6 +10,13 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.07.19
+
+### Changed
+
+- `/start-issue` now writes a base-branch marker file at `.claude-work/issues/<ID>/base-branch` recording the branch the work was cut from. Always written — even when the base is `origin/main` — so `/rebase-issue` has a single, consistent code path for target resolution. ([issues/202](https://github.com/couimet/my-claude-skills/issues/202))
+- `/rebase-issue` now handles stacked PRs (branches built on other `issues/*` branches) by applying only the unique diff instead of replaying every commit via `git rebase`. The base branch is resolved from the marker file written by `/start-issue`; if the recorded base still exists remotely, stacked diff-apply mode captures only the unique changes, preventing old-commit residue from contaminating the squashed diff. If the base is gone (merged/deleted), the branch automatically graduates to `origin/main` normal rebase. Target resolution is extracted into `resolve-target.sh` for deterministic outcomes, and the diff-apply procedure is extracted into `apply-stacked-diff.sh` with per-run unique resource names (`mktemp`, PID-based branch refs), `trap` cleanup on all exit paths, and `git apply --reject` for actionable conflict artifacts. `Bash(git branch *)` restricted to `Bash(git branch --show-current)` — temp branch operations moved into the script. ([issues/202](https://github.com/couimet/my-claude-skills/issues/202))
+
 ## 2026.07.14.3
 
 ### Added

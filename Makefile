@@ -21,19 +21,25 @@ fmt-check:
 format:
 	npx --yes prettier@$(PRETTIER_VERSION) --write .
 
-lint-sh:
+lint-sh: install-prereqs
 	find . -type f \( -name '*.sh' -o -name '*.bash' \) \
 		-not -path '*/.claude-work/*' -not -path '*/.history/*' -not -path '*/demo/*' \
+		-not -path '*/.git/*' -not -path '*/node_modules/*' \
 		-exec shellcheck {} +
 
-test: install-prereqs
+test: install-prereqs lint-sh
 	bats bats-tests/
 
 install-prereqs:
 	@ok=true; \
 	command -v node >/dev/null 2>&1 || { echo "Missing: node — install it: brew install node@24"; ok=false; }; \
 	command -v bats >/dev/null 2>&1 || { echo "Missing: bats — install it: brew install bats-core"; ok=false; }; \
-	command -v shellcheck >/dev/null 2>&1 || { echo "Missing: shellcheck — install it: brew install shellcheck"; ok=false; }; \
+	if command -v shellcheck >/dev/null 2>&1; then \
+	  ver=$$(shellcheck --version | grep '^version:' | awk '{print $$2}'); \
+	  [ "$$ver" = "$(SHELLCHECK_VERSION)" ] || { echo "Wrong shellcheck version: $$ver (expected $(SHELLCHECK_VERSION)) — update it: brew upgrade shellcheck"; ok=false; }; \
+	else \
+	  echo "Missing: shellcheck — install it: brew install shellcheck"; ok=false; \
+	fi; \
 	$$ok || { echo; echo "Install the missing prerequisites above, then re-run."; exit 1; }
 
 stamp:
