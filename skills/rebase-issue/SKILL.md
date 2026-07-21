@@ -4,7 +4,7 @@ version: 2026.07.19@1a9d2a6
 description: Rebase the current issue branch onto origin/main (or a specified target) after upstream PRs merge. Handles conflict resolution, squashes to a single commit, and runs autonomously
 argument-hint: <target>
 user-invocable: true
-allowed-tools: Read, Write, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git log *), Bash(git diff *), Bash(git rebase *), Bash(git reset *), Bash(git commit *), Bash(git add *), Bash(git checkout *), Bash(git merge-base *), Bash(git rev-parse *), Bash(git status *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/rebase-issue/resolve-target.sh *), Bash(*/skills/rebase-issue/apply-stacked-diff.sh *), Bash(*/skills/rebase-issue/resolve-commit-msg.sh *)
+allowed-tools: Read, Write, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git log *), Bash(git diff *), Bash(git rebase *), Bash(git reset *), Bash(git commit *), Bash(git add *), Bash(git checkout *), Bash(git merge-base *), Bash(git rev-parse *), Bash(git status *), Bash(gh pr list *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/rebase-issue/resolve-target.sh *), Bash(*/skills/rebase-issue/apply-stacked-diff.sh *), Bash(*/skills/rebase-issue/resolve-commit-msg.sh *)
 ---
 
 # Rebase Issue
@@ -42,7 +42,7 @@ Run the target resolution script:
 ~/.claude/skills/rebase-issue/resolve-target.sh <NUMBER> [$ARGUMENTS]
 ```
 
-The script resolves the target from the explicit argument (if provided), the base-branch marker file, or falls back to `origin/main`. It outputs two lines:
+The script resolves the target from the explicit argument (if provided), `gh pr list` (authoritative for PR stacking relationships), the base-branch marker file, or falls back to `origin/main`. It outputs two lines:
 
 ```text
 TARGET=<ref>
@@ -188,7 +188,7 @@ When `git rebase` encounters conflicts during Step 8, apply this strategy:
 ## Edge Cases
 
 - **No upstream changes:** `HEAD..<target>` is empty. Nothing to rebase -- report and exit at Step 4.
-- **Stacked PRs:** when the base-branch marker file records another `issues/*` branch that still exists remotely, `git rebase` is replaced with a diff-apply via `apply-stacked-diff.sh` (Step 7). The script captures only the unique stacked diff, avoiding contamination from old commits whose changes already exist in the squashed base. When the recorded base branch disappears from the remote (PR merged and branch deleted), the stacked branch automatically graduates to targeting `origin/main` in normal rebase mode. Classification is handled uniformly by `resolve-target.sh` — any target matching `issues/*` (whether from an explicit argument or auto-resolution) uses stacked mode.
+- **Stacked PRs:** when the base-branch marker file records another `issues/*` branch that still exists remotely, `git rebase` is replaced with a diff-apply via `apply-stacked-diff.sh` (Step 7). The script captures only the unique stacked diff, avoiding contamination from old commits whose changes already exist in the squashed base. When the recorded base branch disappears from the remote (PR merged and branch deleted), `resolve-target.sh` exits with a `T004` error telling the user the marker is stale. The user must specify an explicit target via `/rebase-issue <target>`. Classification is handled uniformly by `resolve-target.sh` — any target matching `issues/*` (whether from an explicit argument or auto-resolution) uses stacked mode.
 - **Diff apply conflicts:** when `git apply --reject` fails in stacked mode, `.rej` files and the patch file are preserved for manual resolution. The diff is limited to the stacked branch's unique changes, so conflicts are narrow and focused.
 - **Clean rebase:** `git rebase <target>` completes with no conflicts. Proceed directly to Step 9.
 - **Unresolvable conflicts:** abort with `git rebase --abort` and ask the user.

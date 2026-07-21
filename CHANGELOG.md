@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.07.21
+
+### Fixed
+
+- `resolve-target.sh`: use `gh pr list` as authoritative source for stacked PR base refs, fix mode classification regex to handle `origin/issues/*` targets, and error on stale base-branch markers instead of silently falling back to `origin/main` ([issues/205](https://github.com/couimet/my-claude-skills/issues/205))
+
 ## 2026.07.19
 
 ### Changed
