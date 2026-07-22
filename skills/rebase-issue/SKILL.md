@@ -50,7 +50,7 @@ MODE=<stacked|normal>
 ```
 
 - `TARGET` is the git ref to rebase onto (e.g., `origin/main`, `issues/200`).
-- `MODE` is `stacked` when the target is an `issues/*` branch, `normal` otherwise. This classification applies uniformly whether the target came from an explicit argument or auto-resolution.
+- `MODE` is `stacked` by default (any feature branch), `normal` only for long-lived base branches (`main`, `master`). This classification applies uniformly whether the target came from an explicit argument or auto-resolution. The logic makes no assumptions about branch naming conventions — side-quests, custom branches, and any future naming scheme all get stacked diff-apply.
 
 Use these values throughout the remaining steps.
 
@@ -188,7 +188,7 @@ When `git rebase` encounters conflicts during Step 8, apply this strategy:
 ## Edge Cases
 
 - **No upstream changes:** `HEAD..<target>` is empty. Nothing to rebase -- report and exit at Step 4.
-- **Stacked PRs:** when the base-branch marker file records another `issues/*` branch that still exists remotely, `git rebase` is replaced with a diff-apply via `apply-stacked-diff.sh` (Step 7). The script captures only the unique stacked diff, avoiding contamination from old commits whose changes already exist in the squashed base. When the recorded base branch disappears from the remote (PR merged and branch deleted), `resolve-target.sh` exits with a `T004` error telling the user the marker is stale. The user must specify an explicit target via `/rebase-issue <target>`. Classification is handled uniformly by `resolve-target.sh` — any target matching `issues/*` (whether from an explicit argument or auto-resolution) uses stacked mode.
+- **Stacked PRs:** when the base-branch marker file records a feature branch that still exists remotely, `git rebase` is replaced with a diff-apply via `apply-stacked-diff.sh` (Step 7). The script captures only the unique stacked diff, avoiding contamination from old commits whose changes already exist in the squashed base. When the recorded base branch disappears from the remote (PR merged and branch deleted), `resolve-target.sh` exits with a `T004` error telling the user the marker is stale. The user must specify an explicit target via `/rebase-issue <target>`. Classification is handled uniformly by `resolve-target.sh` — any target that is not a long-lived base branch (`main`, `master`) uses stacked mode, regardless of naming convention.
 - **Diff apply conflicts:** when `git apply --reject` fails in stacked mode, `.rej` files and the patch file are preserved for manual resolution. The diff is limited to the stacked branch's unique changes, so conflicts are narrow and focused.
 - **Clean rebase:** `git rebase <target>` completes with no conflicts. Proceed directly to Step 9.
 - **Unresolvable conflicts:** abort with `git rebase --abort` and ask the user.

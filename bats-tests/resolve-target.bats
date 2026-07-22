@@ -173,16 +173,16 @@ setup_remote_with_branch() {
   [[ "$output" == *"MODE=normal"* ]]
 }
 
-@test "issues without a digit → MODE=normal" {
+@test "issues/foo (non-numeric) → MODE=stacked" {
   run "$SCRIPT" "42" "issues/foo"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"MODE=normal"* ]]
+  [[ "$output" == *"MODE=stacked"* ]]
 }
 
-@test "nested issues/ path → MODE=normal (only anchored matches count)" {
+@test "feature/issues/200 → MODE=stacked (any non-main/master target is stacked)" {
   run "$SCRIPT" "42" "feature/issues/200"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"MODE=normal"* ]]
+  [[ "$output" == *"MODE=stacked"* ]]
 }
 @test "origin/issues/200 → MODE=stacked" {
   run "$SCRIPT" "42" "origin/issues/200"
@@ -192,6 +192,12 @@ setup_remote_with_branch() {
 
 @test "origin/issues/123-some-feature → MODE=stacked" {
   run "$SCRIPT" "42" "origin/issues/123-some-feature"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"MODE=stacked"* ]]
+}
+
+@test "origin/issues/side-quest (non-numeric) → MODE=stacked" {
+  run "$SCRIPT" "42" "origin/issues/side-quest"
   [ "$status" -eq 0 ]
   [[ "$output" == *"MODE=stacked"* ]]
 }
@@ -372,7 +378,7 @@ setup_remote_with_branch() {
   [[ "$output" == *"MODE=normal"* ]]
 }
 
-@test "marker has origin/feature-branch, remote ref exists → use base-branch" {
+@test "marker has origin/feature-branch, remote ref exists → use base-branch, MODE=stacked" {
   local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
   write_file "$marker_dir/base-branch" "origin/my-feature"
 
@@ -383,7 +389,7 @@ setup_remote_with_branch() {
   run "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=origin/my-feature"* ]]
-  [[ "$output" == *"MODE=normal"* ]]
+  [[ "$output" == *"MODE=stacked"* ]]
 }
 
 @test "marker has origin/feature-branch, remote ref absent → error T004" {

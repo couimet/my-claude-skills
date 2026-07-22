@@ -3,8 +3,8 @@
 # resolve-target.sh — Resolve the rebase target ref and mode (normal or stacked)
 # for an issue branch. The target comes from an explicit argument, gh pr list
 # (authoritative for PR stacking relationships), the base-branch marker file,
-# or a fallback to origin/main. Mode is classified uniformly as stacked when
-# the target matches issues/*, normal otherwise.
+# or a fallback to origin/main. Mode is classified as stacked by default,
+# normal only for long-lived base branches (main, master).
 #
 # Usage: resolve-target.sh <issue-number> [explicit-target]
 #
@@ -134,10 +134,10 @@ fi
 
 # --- Classify mode ---
 
-mode="normal"
+mode="stacked"
 bare_target="${target#origin/}"
-if [[ "$bare_target" =~ ^issues/[0-9] ]]; then
-  mode="stacked"
+if [[ "$bare_target" == "main" ]] || [[ "$bare_target" == "master" ]]; then
+  mode="normal"
 fi
 
 # --- Output ---

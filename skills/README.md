@@ -42,6 +42,7 @@ Non-invocable skills (`user-invocable: false`) don't appear in the `/` menu. The
 | `finish-issue` | `/finish-issue [optional: issue-number-or-url]` | `/note`, `/question`, breadcrumbs (reads); handles both `issues/*` and `side-quest/*` branches |
 | `start-issue` | `/start-issue <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/cleanup-issue` |
 | `start-side-quest` | `/start-side-quest <desc> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/commit-msg` (ref) |
+| `rebase-issue` | `/rebase-issue [target]` | `resolve-target.sh`, `apply-stacked-diff.sh`, `resolve-commit-msg.sh` |
 | `tackle-pr-comment` | `/tackle-pr-comment <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/commit-msg` |
 | `tackle-scratchpad-block` | `/tackle-scratchpad-block <path#lines>` | `/scratchpad-ref-format`, `/question`, `/commit-msg`, `/scratchpad` (reads) |
 
