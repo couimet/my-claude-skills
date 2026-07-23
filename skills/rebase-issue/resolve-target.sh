@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 #
 # resolve-target.sh — Resolve the rebase target ref and mode (normal or stacked)
-# for an issue branch. The target comes from an explicit argument, the
-# base-branch marker file, or a fallback to origin/main. Mode is classified
-# uniformly as stacked when the target matches issues/*, normal otherwise.
+# for an issue branch. The target comes from an explicit argument, gh pr list
+# (authoritative for PR stacking relationships), the base-branch marker file,
+# or a fallback to origin/main. Mode is classified as stacked by default,
+# normal only for long-lived base branches (main, master).
 #
 # Usage: resolve-target.sh <issue-number> [explicit-target]
 #
@@ -22,12 +23,14 @@
 #   T001 — wrong number of arguments
 #   T002 — invalid issue number
 #   T003 — claude-work-root.sh failed
+#   T004 — base-branch marker ref no longer exists on remote
 
 set -euo pipefail
 
 readonly ERR_ARGS="T001"
 readonly ERR_INVALID_ISSUE="T002"
 readonly ERR_CLAUDE_ROOT="T003"
+readonly ERR_STALE_MARKER="T004"
 
 usage() {
   cat <<'EOF'
@@ -80,25 +83,50 @@ if [ -n "$explicit_target" ]; then
   # Explicit argument always wins.
   target="$explicit_target"
 else
-  # Auto-resolve from base-branch marker.
+  # Auto-resolve from gh pr list (authoritative) or base-branch marker.
   marker_file="${claude_work_root}/issues/${issue_number}/base-branch"
 
-  if [ -f "$marker_file" ] && [ -r "$marker_file" ] && [ -s "$marker_file" ]; then
-    base_branch="$(head -n1 "$marker_file" | tr -d '\n')"
+  # First, try gh pr list as the authoritative source. The GitHub PR owns the
+  # stacking relationship. gh may not be available (tests), so guard with command -v.
+  current_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" || true
+  if [ -n "$current_branch" ] && command -v gh >/dev/null 2>&1; then
+    base_ref="$(gh pr list --head "$current_branch" --json baseRefName --jq '.[0].baseRefName' 2>/dev/null)" || true
+    if [ -n "$base_ref" ] && [ "$base_ref" != "null" ]; then
+      # Guard against double origin/ prefix.
+      if [[ "$base_ref" != origin/* ]]; then
+        base_ref="origin/${base_ref}"
+      fi
+      target="$base_ref"
+      # Update the marker file so it stays current.
+      mkdir -p "$(dirname "$marker_file")"
+      printf '%s' "$base_ref" > "$marker_file"
+    fi
+  fi
 
-    if [ -n "$base_branch" ]; then
-      # Strip origin/ prefix for the ls-remote check — ls-remote expects
-      # bare branch names (e.g., "main", not "origin/main").
-      check_ref="${base_branch#origin/}"
-      if git ls-remote origin "$check_ref" 2>/dev/null | grep -q .; then
-        # Base PR hasn't been merged yet — rebase onto it.
-        # Use the original value so the origin/ prefix is preserved in the target.
-        target="$base_branch"
+  # If gh pr list didn't resolve, fall back to the marker file.
+  if [ -z "$target" ]; then
+    if [ -f "$marker_file" ] && [ -r "$marker_file" ] && [ -s "$marker_file" ]; then
+      base_branch="$(head -n1 "$marker_file" | tr -d '\n')"
+
+      if [ -n "$base_branch" ]; then
+        # Strip origin/ prefix for the ls-remote check — ls-remote expects
+        # bare branch names (e.g., "main", not "origin/main").
+        check_ref="${base_branch#origin/}"
+        if git ls-remote origin "refs/heads/$check_ref" 2>/dev/null | grep -q .; then
+          # Base PR hasn't been merged yet — rebase onto it.
+          # Use the original value so the origin/ prefix is preserved in the target.
+          target="$base_branch"
+        else
+          # Remote ref no longer exists — the upstream branch was likely
+          # merged and deleted. The marker is stale; don't guess.
+          echo "resolve-target $ERR_STALE_MARKER error: base-branch marker points to '$base_branch' which no longer exists on remote. The upstream branch was likely merged and deleted. Run '/rebase-issue <new-target>' to specify the correct target, or update the marker file at '$marker_file'." >&2
+          exit 1
+        fi
       fi
     fi
   fi
 
-  # Fallback if marker was missing, empty, or the remote ref is gone.
+  # Fallback if no marker exists and gh pr list returned nothing.
   if [ -z "$target" ]; then
     target="origin/main"
   fi
@@ -106,9 +134,10 @@ fi
 
 # --- Classify mode ---
 
-mode="normal"
-if [[ "$target" =~ ^issues/[0-9] ]]; then
-  mode="stacked"
+mode="stacked"
+bare_target="${target#origin/}"
+if [[ "$bare_target" == "main" ]] || [[ "$bare_target" == "master" ]]; then
+  mode="normal"
 fi
 
 # --- Output ---

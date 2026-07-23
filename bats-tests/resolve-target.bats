@@ -173,16 +173,119 @@ setup_remote_with_branch() {
   [[ "$output" == *"MODE=normal"* ]]
 }
 
-@test "issues without a digit → MODE=normal" {
+@test "issues/foo (non-numeric) → MODE=stacked" {
   run "$SCRIPT" "42" "issues/foo"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"MODE=normal"* ]]
+  [[ "$output" == *"MODE=stacked"* ]]
 }
 
-@test "nested issues/ path → MODE=normal (only anchored matches count)" {
+@test "feature/issues/200 → MODE=stacked (any non-main/master target is stacked)" {
   run "$SCRIPT" "42" "feature/issues/200"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"MODE=normal"* ]]
+  [[ "$output" == *"MODE=stacked"* ]]
+}
+@test "origin/issues/200 → MODE=stacked" {
+  run "$SCRIPT" "42" "origin/issues/200"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"MODE=stacked"* ]]
+}
+
+@test "origin/issues/123-some-feature → MODE=stacked" {
+  run "$SCRIPT" "42" "origin/issues/123-some-feature"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"MODE=stacked"* ]]
+}
+
+@test "origin/issues/side-quest (non-numeric) → MODE=stacked" {
+  run "$SCRIPT" "42" "origin/issues/side-quest"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"MODE=stacked"* ]]
+}
+
+# ============================================================================
+# Auto-resolution: gh pr list
+# ============================================================================
+
+@test "gh pr list returns base ref → TARGET=origin/<base>, MODE=stacked, marker updated" {
+  setup_remote_with_branch "main"
+
+  gh() {
+    if [[ "$1" == "pr" && "$2" == "list" ]]; then
+      echo 'issues/233-layer-one'
+    fi
+  }
+  export -f gh
+
+  run "$SCRIPT" "42"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"TARGET=origin/issues/233-layer-one"* ]]
+  [[ "$output" == *"MODE=stacked"* ]]
+
+  local marker_file="$TEST_TEMP_DIR/.claude-work/issues/42/base-branch"
+  [ -f "$marker_file" ]
+  [ "$(cat "$marker_file")" = "origin/issues/233-layer-one" ]
+}
+
+@test "gh pr list returns base ref with origin/ prefix → no double prefix" {
+  setup_remote_with_branch "main"
+
+  gh() {
+    if [[ "$1" == "pr" && "$2" == "list" ]]; then
+      echo 'origin/issues/233-layer-one'
+    fi
+  }
+  export -f gh
+
+  run "$SCRIPT" "42"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"TARGET=origin/issues/233-layer-one"* ]]
+  [[ "$output" != *"origin/origin/"* ]]
+}
+
+@test "gh pr list returns empty → falls through to marker" {
+  local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
+  write_file "$marker_dir/base-branch" "issues/100"
+
+  setup_remote_with_branch "issues/100"
+
+  gh() {
+    return 0
+  }
+  export -f gh
+
+  run "$SCRIPT" "42"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"TARGET=issues/100"* ]]
+  [[ "$output" == *"MODE=stacked"* ]]
+}
+
+@test "gh pr list returns literal null → falls through to marker" {
+  local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
+  write_file "$marker_dir/base-branch" "issues/100"
+
+  setup_remote_with_branch "issues/100"
+
+  gh() {
+    echo 'null'
+  }
+  export -f gh
+
+  run "$SCRIPT" "42"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"TARGET=issues/100"* ]]
+  [[ "$output" == *"MODE=stacked"* ]]
+}
+
+@test "gh pr list not available → falls through to marker" {
+  local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
+  write_file "$marker_dir/base-branch" "issues/100"
+
+  setup_remote_with_branch "issues/100"
+
+  run "$SCRIPT" "42"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"TARGET=issues/100"* ]]
+  [[ "$output" == *"MODE=stacked"* ]]
 }
 
 # ============================================================================
@@ -224,19 +327,31 @@ setup_remote_with_branch() {
   [[ "$output" == *"MODE=stacked"* ]]
 }
 
-@test "marker has issues/ branch, no remote → fallback to origin/main, MODE=normal" {
+@test "marker has origin/issues/100, remote ref exists → TARGET=origin/issues/100, MODE=stacked" {
+  local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
+  write_file "$marker_dir/base-branch" "origin/issues/100"
+
+  setup_remote_with_branch "issues/100"
+
+  run "$SCRIPT" "42"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"TARGET=origin/issues/100"* ]]
+  [[ "$output" == *"MODE=stacked"* ]]
+}
+
+@test "marker has issues/ branch, no remote → error T004" {
   local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
   write_file "$marker_dir/base-branch" "issues/100"
 
   # No remote configured — git ls-remote origin will fail.
 
   run "$SCRIPT" "42"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=origin/main"* ]]
-  [[ "$output" == *"MODE=normal"* ]]
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"T004"* ]]
+  [[ "$output" == *"no longer exists on remote"* ]]
 }
 
-@test "marker has issues/ branch, remote exists but ref absent → fallback to origin/main" {
+@test "marker has issues/ branch, remote exists but ref absent → error T004" {
   local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
   write_file "$marker_dir/base-branch" "issues/999"
 
@@ -245,9 +360,9 @@ setup_remote_with_branch() {
   setup_remote_with_branch "issues/100"
 
   run "$SCRIPT" "42"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=origin/main"* ]]
-  [[ "$output" == *"MODE=normal"* ]]
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"T004"* ]]
+  [[ "$output" == *"no longer exists on remote"* ]]
 }
 
 @test "marker has origin/main base → MODE=normal (not an issues/ ref)" {
@@ -263,7 +378,7 @@ setup_remote_with_branch() {
   [[ "$output" == *"MODE=normal"* ]]
 }
 
-@test "marker has origin/feature-branch, remote ref exists → use base-branch" {
+@test "marker has origin/feature-branch, remote ref exists → use base-branch, MODE=stacked" {
   local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
   write_file "$marker_dir/base-branch" "origin/my-feature"
 
@@ -274,10 +389,10 @@ setup_remote_with_branch() {
   run "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=origin/my-feature"* ]]
-  [[ "$output" == *"MODE=normal"* ]]
+  [[ "$output" == *"MODE=stacked"* ]]
 }
 
-@test "marker has origin/feature-branch, remote ref absent → fallback to origin/main" {
+@test "marker has origin/feature-branch, remote ref absent → error T004" {
   local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
   write_file "$marker_dir/base-branch" "origin/nonexistent"
 
@@ -285,9 +400,27 @@ setup_remote_with_branch() {
   setup_remote_with_branch "main"
 
   run "$SCRIPT" "42"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=origin/main"* ]]
-  [[ "$output" == *"MODE=normal"* ]]
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"T004"* ]]
+  [[ "$output" == *"no longer exists on remote"* ]]
+}
+
+@test "marker ref matches a tag but not a branch → error T004" {
+  local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
+  write_file "$marker_dir/base-branch" "issues/100"
+
+  # Create a bare remote and push only a tag (no branch) named issues/100.
+  local bare_repo="$TEST_TEMP_DIR/bare-remote.git"
+  git init --bare -q "$bare_repo"
+  git remote add origin "$bare_repo"
+
+  git tag "issues/100" main
+  git push -q origin "refs/tags/issues/100" 2>/dev/null
+
+  run "$SCRIPT" "42"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"T004"* ]]
+  [[ "$output" == *"no longer exists on remote"* ]]
 }
 
 # ============================================================================
