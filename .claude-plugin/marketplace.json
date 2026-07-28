@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace-manifest.json",
+  "name": "my-claude-skills",
+  "owner": {
+    "name": "couimet",
+    "url": "https://github.com/couimet"
+  },
+  "description": "A collection of portable Claude Code skills for structured development workflows.",
+  "plugins": [
+    {
+      "name": "my-claude-skills",
+      "source": "./",
+      "description": "Portable Claude Code skills for structured development workflows — issue tracking, PR feedback, plan-driven implementation, and more. Includes /start-issue, /finish-issue, /scratchpad, /note, /question, /commit-msg, /rebase-issue, and more.",
+      "license": "MIT",
+      "keywords": ["workflow", "issue-tracking", "code-review", "planning", "skills", "development"]
+    }
+  ]
+}

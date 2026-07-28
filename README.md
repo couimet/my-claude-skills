@@ -26,6 +26,29 @@ cd ~/src/my-claude-skills && git pull && ./install.sh
 
 The install script is idempotent — safe to run on every pull. It only creates/updates symlinks; it never deletes non-symlink directories.
 
+### Marketplace Installation
+
+As an alternative to the direct install, the [Claude Code plugin marketplace](https://code.claude.com/docs/en/plugins) lets you install these skills as a plugin. Skills are namespaced under the plugin name when installed this way, so they must be invoked with a prefix instead of their bare name.
+
+```bash
+/plugin marketplace add couimet/my-claude-skills
+/plugin install my-claude-skills@my-claude-skills
+```
+
+The `@` separates plugin name from marketplace name (`plugin@marketplace`). Here they happen to be the same. Prefer the [direct install](#installation) if you want shorter invocation names — marketplace-installed skills are namespaced (`/my-claude-skills:start-issue`), while symlink-installed skills keep their bare names (`/start-issue`).
+
+Once installed, invoke any skill with the plugin prefix:
+
+```text
+/my-claude-skills:start-issue https://github.com/...
+```
+
+To update:
+
+```text
+/plugin update my-claude-skills
+```
+
 ## Quick Start
 
 Once installed, try these in any project:
