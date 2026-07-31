@@ -243,9 +243,7 @@ Verification:
 - tests: [all pass / X tests, Y passing]
 - uncommitted changes: [none / list]
 
-Files created:
-- <actual-absolute-path-to-pr-description> (PR description)
-- <actual-absolute-path-to-pointer> (last-finish-issue pointer)
+PR description: <actual-absolute-path-to-pr-description>
 
 ---
 
@@ -265,9 +263,7 @@ Verification:
 - tests: [all pass / X tests, Y passing]
 - uncommitted changes: [none / list]
 
-Files created:
-- <actual-absolute-path-to-pr-description> (PR description)
-(last-finish-issue pointer skipped — side-quest mode)
+PR description: <actual-absolute-path-to-pr-description>
 
 ---
 

@@ -120,11 +120,9 @@ Print a summary:
 Branch: side-quest/<slug>
 Parent: <original branch> (stashed if had changes)
 
-Files created:
-- <base>/notes/<file>.txt (implementation plan, absolute path, default)
+Plan: <base>/notes/<file>.txt (absolute path, default)
   OR <base>/scratchpads/<file>.txt (if --scratchpad, absolute path)
-- <base>/active-plan-<slug> (absolute path, pointer to the working document)
-- <base>/questions/<file>.txt (if questions needed, absolute path)
+Questions: <base>/questions/<file>.txt (if needed, absolute path)
 
 Stash: <stash message if applicable>
 
