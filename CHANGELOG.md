@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.07.31
+
+### Changed
+
+- Internal pointer paths (active-plan, last-finish-issue) are no longer printed in `/start-issue`, `/start-side-quest`, and `/finish-issue` terminal output; these are implementation details consumed by downstream skills, not user-actionable paths. "Files created:" sections simplified to direct labels. ([issues/213](https://github.com/couimet/my-claude-skills/issues/213))
+
 ## 2026.07.27
 
 ### Added

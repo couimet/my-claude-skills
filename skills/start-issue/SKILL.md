@@ -193,7 +193,7 @@ If questions are needed, use `/question` to create a questions file. Add a `**Pl
 
 ## Step 6: Report Status and STOP
 
-Print the branch name, the absolute working-document path, the absolute active-plan pointer path, and any absolute questions file path. Then print a "Next" line that matches the path taken in Step 4:
+Print the branch name, the absolute working-document path, and any absolute questions file path. Then print a "Next" line that matches the path taken in Step 4:
 
 **Default path (note):**
 
