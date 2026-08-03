@@ -1,6 +1,6 @@
 ---
 name: start-issue
-version: 2026.07.22@9fcae14
+version: 2026.07.31@9c64603
 description: Start working on a GitHub issue - analyze, explore codebase, and create detailed implementation plan
 argument-hint: <github-issue-url> [--scratchpad]
 allowed-tools: Read, Write, Glob, Grep, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(mkdir -p *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/start-issue/update-project-status.sh *)
@@ -193,7 +193,7 @@ If questions are needed, use `/question` to create a questions file. Add a `**Pl
 
 ## Step 6: Report Status and STOP
 
-Print the branch name, the absolute working-document path, the absolute active-plan pointer path, and any absolute questions file path. Then print a "Next" line that matches the path taken in Step 4:
+Print the branch name, the absolute working-document path, and any absolute questions file path. Then print a "Next" line that matches the path taken in Step 4:
 
 **Default path (note):**
 

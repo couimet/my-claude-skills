@@ -1,6 +1,6 @@
 ---
 name: start-side-quest
-version: 2026.07.22@9fcae14
+version: 2026.07.31@9c64603
 description: Start a side-quest branch for orthogonal improvements discovered while working on an issue
 argument-hint: <description | path/to/file.ts#L10-L20> [--scratchpad]
 allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *), Bash(git branch --show-current), Bash(git status *), Bash(git stash *), Bash(mkdir -p *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
@@ -120,11 +120,9 @@ Print a summary:
 Branch: side-quest/<slug>
 Parent: <original branch> (stashed if had changes)
 
-Files created:
-- <base>/notes/<file>.txt (implementation plan, absolute path, default)
+Plan: <base>/notes/<file>.txt (absolute path, default)
   OR <base>/scratchpads/<file>.txt (if --scratchpad, absolute path)
-- <base>/active-plan-<slug> (absolute path, pointer to the working document)
-- <base>/questions/<file>.txt (if questions needed, absolute path)
+Questions: <base>/questions/<file>.txt (if needed, absolute path)
 
 Stash: <stash message if applicable>
 

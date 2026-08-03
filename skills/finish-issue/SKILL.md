@@ -1,6 +1,6 @@
 ---
 name: finish-issue
-version: 2026.07.22@9fcae14
+version: 2026.07.31@9c64603
 description: Wrap up issue or side-quest work on the current issues/* or side-quest/* branch. Runs verification, checks documentation needs, and generates a PR description
 argument-hint: [optional: issue-number-or-url]
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git status), Bash(git log *), Bash(git diff *), Bash(make lint-fix *), Bash(make test *), Bash(mkdir -p *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
@@ -243,9 +243,7 @@ Verification:
 - tests: [all pass / X tests, Y passing]
 - uncommitted changes: [none / list]
 
-Files created:
-- <actual-absolute-path-to-pr-description> (PR description)
-- <actual-absolute-path-to-pointer> (last-finish-issue pointer)
+PR description: <actual-absolute-path-to-pr-description>
 
 ---
 
@@ -265,9 +263,7 @@ Verification:
 - tests: [all pass / X tests, Y passing]
 - uncommitted changes: [none / list]
 
-Files created:
-- <actual-absolute-path-to-pr-description> (PR description)
-(last-finish-issue pointer skipped — side-quest mode)
+PR description: <actual-absolute-path-to-pr-description>
 
 ---
 
