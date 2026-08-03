@@ -1,6 +1,6 @@
 ---
 name: scratchpad-ref-format
-version: 2026.07.31@9c64603
+version: 2026.07.31@f2725bf
 user-invocable: false
 description: Defines the 4 invocation forms for referencing scratchpad steps: step-ID (#S), line-range (#L), space-separated, and bare-path auto-select. Auto-consulted by /tackle-scratchpad-block when parsing its argument.
 allowed-tools: Read
