@@ -28,7 +28,10 @@ load test_helper
 # (name + allowed-tools only) and vary only the pair under test.
 # =============================================================
 
-MANIFEST_SKILLS="start-issue note scratchpad question cleanup-issue start-side-quest finish-issue tackle-pr-comment commit-msg tackle-scratchpad-block create-github-issue label-discovery"
+# Derive the manifest skill list from the script's INVOKES block so
+# the fixtures stay in sync when the manifest grows.
+MANIFEST_SKILLS="$(sed -n '/^INVOKES=(/,/^)/p' "$PROJECT_ROOT/scripts/check-transitive-tools.sh" | grep -oE '[a-z][a-z-]+' | sort -u | tr '
+' ' ')"
 
 # create_manifest_skills <root> <allowed-tools>
 # Creates a minimal SKILL.md for every manifest skill under <root>.
@@ -103,8 +106,11 @@ create_manifest_skills() {
   printf -- '---\nname: note\nallowed-tools: Read, Bash(date *)\n---\n' > "$repo/skills/note/SKILL.md"
   git -C "$repo" add .
   git -C "$repo" commit -q -m "baseline"
+  printf -- 'Some prose that mentions no invocation.\n' >> "$repo/skills/start-issue/SKILL.md"
+  git -C "$repo" add .
+  git -C "$repo" commit -q -m "add-prose"
 
-  run "$PROJECT_ROOT/scripts/check-transitive-tools.sh" --diff HEAD..HEAD "$repo"
+  run "$PROJECT_ROOT/scripts/check-transitive-tools.sh" --diff HEAD~1..HEAD "$repo"
 
   [ "$status" -eq 0 ]
   [[ "$output" == *"no new gaps"* ]]

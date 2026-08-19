@@ -133,6 +133,13 @@ extract_tools() {
 # wildcard: Bash(*) satisfies every Bash(...) entry of the invoked skill).
 # Plain tools like Read, Write, Glob, Grep, Edit, AskUserQuestion match
 # exactly.
+#
+# Permissions compare as exact strings: Bash(*) is the only wildcard. Broader
+# Bash patterns do not satisfy narrower declarations — a caller declaring
+# Bash(git status *) does not cover an invoked Bash(git status), and
+# Bash(*/skills/*) does not cover Bash(*/skills/note/note.sh *). Callers must
+# therefore copy the invoked skill's declarations verbatim, per the
+# transitive coverage rule in CLAUDE.md.
 caller_has() {
   local caller_tools="$1" tool="$2"
   if grep -qxF "$tool" <<<"$caller_tools"; then
@@ -207,15 +214,26 @@ base_mode() {
 
 # invoked_references <repo-root> <range> <file> <skills-root>
 # Prints one skill name per line for every reference to an existing skill
-# directory found in the added lines of <file>, but only when the line is an
-# invocation context: a use/using/invoke/invokes/call/calls/run/runs/follow/
-# via/create/creates/through/with verb (case-insensitive) immediately
-# followed by optional spaces and the /skill token.
+# directory found in the added lines of <file>, but only when the skill
+# token is directly preceded by an invocation verb: use/using/invoke/
+# invokes/call/calls/run/runs/follow/via/create/creates/through/with
+# (case-insensitive), optional spaces, and the /skill token. The verb and
+# token are matched together as one expression, so a token is emitted only
+# when that specific token is directly preceded by an invocation verb: a
+# line that invokes one skill and merely mentions another in prose emits
+# only the invoked token.
 invoked_references() {
   local repo_root="$1" range="$2" file="$3" skills_root="$4"
-  local line offset tok next
+  local line remaining tok prior_nocasematch
   local verbs="use|using|invoke|invokes|call|calls|run|runs|follow|via|create|creates|through|with"
   local re="($verbs)[[:space:]]+/([a-z][a-z-]+)"
+
+  # Match verbs case-insensitively, as the original grep -qiE did. The
+  # matching loop below runs in a pipeline subshell, which inherits this
+  # option; restore the prior value once done.
+  prior_nocasematch=0
+  [[ -o nocasematch ]] && prior_nocasematch=1
+  shopt -s nocasematch
 
   # Added lines only: start with "+", but not the "+++" hunk header.
   git -C "$repo_root" diff "$range" -- "$file" \
@@ -223,21 +241,25 @@ invoked_references() {
     | grep -v '^+++' \
     | sed 's/^+//' \
     | while IFS= read -r line; do
-        while IFS=: read -r offset tok; do
-          [[ -n "$tok" ]] || continue
+        remaining="$line"
+        while [[ "$remaining" =~ $re ]]; do
+          tok="${BASH_REMATCH[2]}"
+          # Advance past this match: remaining now starts at the character
+          # immediately after the token (character-indexed, so no byte
+          # offset arithmetic is needed).
+          remaining="${remaining#*"${BASH_REMATCH[0]}"}"
           # Skip path components: a token immediately followed by a "/" is
           # part of a path like /skills/issue-context/, not a /skill
           # reference.
-          next="${line:$((offset + ${#tok})):1}"
-          if [[ "$next" == "/" ]]; then
+          if [[ "${remaining:0:1}" == "/" || ! -d "$skills_root/$tok" ]]; then
             continue
           fi
-          if [[ -d "$skills_root/$tok" ]] && grep -qiE "$re" <<<"$line"; then
-            printf '%s\n' "$tok"
-          fi
-        done < <(grep -boE '[a-z][a-z-]+' <<<"$line")
+          printf '%s\n' "$tok"
+        done
       done \
     || true
+
+  [[ "$prior_nocasematch" -eq 1 ]] || shopt -u nocasematch
 }
 
 diff_mode() {
