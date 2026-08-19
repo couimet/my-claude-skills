@@ -3,30 +3,12 @@
 load test_helper
 
 # =============================================================
-# Transitive coverage: skills that invoke /note must declare
-# Bash(mkdir -p *) because /note calls mkdir -p to create the
-# target directory before writing.
+# Transitive coverage (skills that invoke /note must declare the
+# permission /note requires) is now enforced by
+# scripts/check-transitive-tools.sh via bats-tests/transitive-tools.bats.
+# The tests below cover only the cases the validator does not:
+# skills that call mkdir -p directly.
 # =============================================================
-
-@test "allowed-tools: start-issue has Bash(mkdir -p *) (invokes /note transitively)" {
-  grep "^allowed-tools:" "$PROJECT_ROOT/skills/start-issue/SKILL.md" | grep -q 'Bash(mkdir -p \*)'
-}
-
-@test "allowed-tools: finish-issue has Bash(mkdir -p *) (invokes /note transitively)" {
-  grep "^allowed-tools:" "$PROJECT_ROOT/skills/finish-issue/SKILL.md" | grep -q 'Bash(mkdir -p \*)'
-}
-
-@test "allowed-tools: start-side-quest has Bash(mkdir -p *) (invokes /note transitively)" {
-  grep "^allowed-tools:" "$PROJECT_ROOT/skills/start-side-quest/SKILL.md" | grep -q 'Bash(mkdir -p \*)'
-}
-
-@test "allowed-tools: tackle-pr-comment has Bash(mkdir -p *) (invokes /note transitively)" {
-  grep "^allowed-tools:" "$PROJECT_ROOT/skills/tackle-pr-comment/SKILL.md" | grep -q 'Bash(mkdir -p \*)'
-}
-
-@test "allowed-tools: create-github-issue has Bash(mkdir -p *) (invokes /note transitively)" {
-  grep "^allowed-tools:" "$PROJECT_ROOT/skills/create-github-issue/SKILL.md" | grep -q 'Bash(mkdir -p \*)'
-}
 
 @test "allowed-tools: breadcrumb has Bash(mkdir -p *) (writes to .claude-work/ directories)" {
   grep "^allowed-tools:" "$PROJECT_ROOT/skills/breadcrumb/SKILL.md" | grep -q 'Bash(mkdir -p \*)'

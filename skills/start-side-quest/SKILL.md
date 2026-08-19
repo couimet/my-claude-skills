@@ -3,7 +3,7 @@ name: start-side-quest
 version: 2026.08.18@86bafb9
 description: Start a side-quest branch for orthogonal improvements discovered while working on an issue
 argument-hint: <description | path/to/file.ts#L10-L20> [--scratchpad]
-allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *), Bash(git branch --show-current), Bash(git status *), Bash(git stash *), Bash(mkdir -p *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *), Bash(git branch --show-current), Bash(git status *), Bash(git stash *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Start Side-Quest

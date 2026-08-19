@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.08.19
+
+### Changed
+
+- Composite skills now declare the complete permission set for their nested skill calls, so nested workflows no longer stop for unexpected permission prompts; a repo-local check now validates transitive permission coverage in CI, and /finish-issue flags newly introduced gaps on PRs that change skills. ([issues/217](https://github.com/couimet/my-claude-skills/issues/217))
+
 ## 2026.08.18
 
 ### Changed
