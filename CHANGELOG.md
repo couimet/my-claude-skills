@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.08.18
+
+### Changed
+
+- Converted `/create-github-issue` to write its issue-body draft via `/note` instead of `/scratchpad`, completing the note-default migration. Added the `/note` transitive permissions to the skill's `allowed-tools` and removed the now-unused `/scratchpad` transitive entries. ([issues/216](https://github.com/couimet/my-claude-skills/issues/216))
+
 ## 2026.07.31
 
 ### Changed

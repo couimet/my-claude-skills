@@ -3,7 +3,7 @@ name: create-github-issue
 version: 2026.07.31@f2725bf
 description: Create a GitHub issue from a file draft or inline description, with smart label discovery and sub-issue linking
 argument-hint: <file-path-or-title>
-allowed-tools: Read, Write, Glob, Bash(gh repo view *), Bash(gh label list *), Bash(gh issue create *), Bash(*/skills/create-github-issue/link-sub-issue.sh *), Bash(*/skills/create-github-issue/link-dependency.sh *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Write, Glob, Bash(git branch --show-current), Bash(mkdir -p *), Bash(gh repo view *), Bash(gh label list *), Bash(gh issue create *), Bash(*/skills/create-github-issue/link-sub-issue.sh *), Bash(*/skills/create-github-issue/link-dependency.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Create GitHub Issue
@@ -42,7 +42,7 @@ Use the argument as the title. Prompt the user to provide a body, either inline 
 
 Strip references to ephemeral local paths that don't exist on GitHub:
 
-- `.claude-work/` paths (scratchpads, questions, commit-msgs, breadcrumbs)
+- `.claude-work/` paths (scratchpads, notes, questions, commit-msgs, breadcrumbs)
 
 **Print the list of stripped references** so the user can verify nothing important was removed. Format as:
 
@@ -64,7 +64,7 @@ Follow `/label-discovery` to fetch labels, classify them, and prompt the user. P
 
 ## Step 5: Create the Issue
 
-Use the Write tool to save the sanitized body to an auto-numbered file in the issue's scratchpads folder via `/scratchpad` (e.g., `.claude-work/issues/<ID>/scratchpads/NNNN-issue-body.txt`). This keeps the body traceable alongside other working files and avoids heredoc compound commands that don't match `allowed-tools` globs.
+Use `/note` with description `issue-body` to save the sanitized body to a timestamped file in the issue's notes folder (e.g., `.claude-work/issues/<ID>/notes/YYYYMMDD-HHMMSS-issue-body.txt`). This keeps the body traceable alongside other working files and avoids heredoc compound commands that don't match `allowed-tools` globs.
 
 Before creating the issue, append a footer line to the body file identifying the skill that generated it. Precede it with a blank line so it stands out from the body content. Read the `version:` field from this SKILL.md's front matter to fill `<VERSION>`. Use the Edit tool to append to the body file:
 

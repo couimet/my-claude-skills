@@ -24,6 +24,10 @@ load test_helper
   grep "^allowed-tools:" "$PROJECT_ROOT/skills/tackle-pr-comment/SKILL.md" | grep -q 'Bash(mkdir -p \*)'
 }
 
+@test "allowed-tools: create-github-issue has Bash(mkdir -p *) (invokes /note transitively)" {
+  grep "^allowed-tools:" "$PROJECT_ROOT/skills/create-github-issue/SKILL.md" | grep -q 'Bash(mkdir -p \*)'
+}
+
 @test "allowed-tools: breadcrumb has Bash(mkdir -p *) (writes to .claude-work/ directories)" {
   grep "^allowed-tools:" "$PROJECT_ROOT/skills/breadcrumb/SKILL.md" | grep -q 'Bash(mkdir -p \*)'
 }
