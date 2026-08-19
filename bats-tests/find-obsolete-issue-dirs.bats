@@ -193,25 +193,19 @@ count_deletable() {
 @test "gh not on PATH → notice, exit 0, no DELETABLE lines" {
   mkdir -p "$BASE/issues/42"
 
-  # Learn the real binary locations so we can build a PATH that keeps git
-  # but excludes gh.
-  local gh_path git_path git_dir restricted_path
-  gh_path="$(command -v gh 2>/dev/null || true)"
-  git_path="$(command -v git)"
-  git_dir="$(dirname "$git_path")"
+  # Build a minimal PATH containing only bash. The script's shebang is
+  # /usr/bin/env bash, so env resolves bash through PATH. No gh symlink means
+  # `command -v gh` fails even when gh shares a directory with bash (CI).
+  # The gh-missing guard exits before git or any other binary is needed.
+  local path_bin
+  path_bin="$TEST_TEMP_DIR/path-bin"
+  mkdir -p "$path_bin"
+  ln -s "$(command -v bash)" "$path_bin/bash"
 
   # Drop any exported mock so gh is genuinely unavailable to the script.
   unset -f gh || true
 
-  restricted_path="$git_dir:/usr/bin:/bin"
-  if [ -n "$gh_path" ]; then
-    restricted_path="$(printf '%s' "$restricted_path" | tr ':' '\n' | grep -Fv -- "$(dirname "$gh_path")" | paste -sd: -)"
-    if [ -z "$restricted_path" ]; then
-      restricted_path="/usr/bin:/bin"
-    fi
-  fi
-
-  run env "PATH=$restricted_path" "$SCRIPT" "$BASE"
+  run env "PATH=$path_bin" "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
   [[ "$output" == *"gh not available"* ]]
