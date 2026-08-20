@@ -226,6 +226,61 @@ count_deletable() {
   [[ "$output" != *"DELETABLE"* ]]
 }
 
+@test "gh pr list fails while closed-issue fixture reports 42 → exit 0, no DELETABLE lines" {
+  mkdir -p "$BASE/issues/42"
+
+  gh() {
+    if [[ "$1" == "issue" && "$2" == "list" ]]; then
+      printf '42\n'
+    else
+      return 1
+    fi
+  }
+  export -f gh
+
+  run "$SCRIPT" "$BASE"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"gh pr list failed"* ]]
+  [[ "$output" != *"DELETABLE"* ]]
+}
+
+@test "gh issue list fails while merged-PR fixture exists → exit 0, no DELETABLE lines" {
+  mkdir -p "$BASE/issues/42"
+
+  gh() {
+    if [[ "$1" == "pr" && "$2" == "list" ]]; then
+      printf 'issues/42\tmain\tMERGED\t42\n'
+    else
+      return 1
+    fi
+  }
+  export -f gh
+
+  run "$SCRIPT" "$BASE"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"gh issue list failed"* ]]
+  [[ "$output" != *"DELETABLE"* ]]
+}
+
+@test "git branch fails while closed-issue fixture reports 42 → exit 0, no DELETABLE lines" {
+  mkdir -p "$BASE/issues/42"
+  export GH_CLOSED_ISSUES="42"
+  mock_gh
+
+  git() {
+    return 1
+  }
+  export -f git
+
+  run "$SCRIPT" "$BASE"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"git branch failed"* ]]
+  [[ "$output" != *"DELETABLE"* ]]
+}
+
 # ============================================================================
 # Empty directory and output format
 # ============================================================================

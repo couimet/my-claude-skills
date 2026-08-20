@@ -47,19 +47,32 @@ if [ ! -d "$base" ] || [[ "$base" != /* ]] || [[ "$base" != */.claude-work ]]; t
   exit 1
 fi
 
-# --- Gather state (all guarded — failures are conservative) ---
+# --- Gather state (any failed query stops classification) ---
 # gh missing entirely: can't know anything, so treat every folder as keep.
 if ! command -v gh >/dev/null 2>&1; then
   echo "find-obsolete-issue-dirs: gh not available; treating all folders as keep" >&2
   exit 0
 fi
 
+# Each query must succeed: a failed query must not read as an empty answer,
+# or a folder could be marked DELETABLE while the state of its PR or branch
+# is unknown. Empty output from a successful query is legitimate (no PRs,
+# no closed issues, no local branches).
 # pr_rows: TAB-separated headRefName, baseRefName, state, PR number.
-pr_rows="$(gh pr list --state all --limit 1000 --json headRefName,baseRefName,state,number --jq '.[] | [.headRefName, .baseRefName, .state, .number] | @tsv' 2>/dev/null)" || pr_rows=""
+if ! pr_rows="$(gh pr list --state all --limit 1000 --json headRefName,baseRefName,state,number --jq '.[] | [.headRefName, .baseRefName, .state, .number] | @tsv' 2>/dev/null)"; then
+  echo "find-obsolete-issue-dirs: gh pr list failed; treating all folders as keep" >&2
+  exit 0
+fi
 # closed_issues: newline-separated closed issue numbers.
-closed_issues="$(gh issue list --state closed --limit 1000 --json number --jq '.[].number' 2>/dev/null)" || closed_issues=""
+if ! closed_issues="$(gh issue list --state closed --limit 1000 --json number --jq '.[].number' 2>/dev/null)"; then
+  echo "find-obsolete-issue-dirs: gh issue list failed; treating all folders as keep" >&2
+  exit 0
+fi
 # local_branches: newline-separated local issues/* branch names.
-local_branches="$(git branch --format='%(refname:short)' --list 'issues/*' 2>/dev/null)" || local_branches=""
+if ! local_branches="$(git branch --format='%(refname:short)' --list 'issues/*' 2>/dev/null)"; then
+  echo "find-obsolete-issue-dirs: git branch failed; treating all folders as keep" >&2
+  exit 0
+fi
 
 # --- Classify each child directory of <base>/issues/, sorted ---
 # Non-directory entries are ignored. DELETABLE lines print first, then the
