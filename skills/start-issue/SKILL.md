@@ -3,7 +3,7 @@ name: start-issue
 version: 2026.08.19@68e86d7
 description: Start working on a GitHub issue - analyze, explore codebase, and create detailed implementation plan
 argument-hint: <github-issue-url> [--scratchpad]
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/start-issue/update-project-status.sh *)
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/start-issue/update-project-status.sh *)
 ---
 
 # Start Issue
@@ -25,6 +25,19 @@ git branch --show-current
 ```
 
 Use the stdout of `claude-work-root.sh` as `<base>` for all `.claude-work/` paths in this skill. Detect whether the current branch is `issues/<ID>`. If so, extract the ID (numeric prefix before the first `-`/`_`, or the full segment after `issues/`) and use `Glob(pattern="*", path="<base>/issues/<ID>")` to check whether the issue's working directory has contents. If the directory exists and has files, invoke `/cleanup-issue` to offer cleanup of that specific directory. Other issue directories are left untouched. The user may return to them later.
+
+If issue directories have piled up, check for obsolete folders. Run the finder with the `<base>` resolved above:
+
+```bash
+~/.claude/skills/cleanup-issue/find-obsolete-issue-dirs.sh <base>
+```
+
+Each DELETABLE line has the form `DELETABLE<TAB><path><TAB><reason>`. Count the DELETABLE lines in the output. If fewer than 5, skip silently. If 5 or more, present one AskUserQuestion whose question text lists the deletable folder paths from the output (the path field of each DELETABLE line), with these options:
+
+- **Prune now**: delete each listed folder via `~/.claude/skills/cleanup-issue/remove-issue-dir.sh <base> <ID>`, then report each removed path
+- **Keep everything**: leave all folders untouched (safe default)
+
+If the user picks Prune now, delete each listed folder with `remove-issue-dir.sh` and report the removed paths. Otherwise continue to Step 1 untouched. The manual `/cleanup-issue --sweep` mode always shows the full list regardless of threshold.
 
 **If no issue context on the current branch, or the directory doesn't exist or is empty:** proceed directly to Step 1.
 
