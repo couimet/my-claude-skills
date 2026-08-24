@@ -59,10 +59,22 @@ fi
 # is unknown. Empty output from a successful query is legitimate (no PRs,
 # no closed issues, no local branches).
 # pr_rows: TAB-separated headRefName, baseRefName, state, PR number.
-if ! pr_rows="$(gh pr list --state all --limit 1000 --json headRefName,baseRefName,state,number --jq '.[] | [.headRefName, .baseRefName, .state, .number] | @tsv' 2>/dev/null)"; then
-  echo "find-obsolete-issue-dirs: gh pr list failed; treating all folders as keep" >&2
-  exit 0
-fi
+# gh pr list has no --paginate flag and caps at 100 rows per page, so page
+# through the full inventory: a capped view could miss an older open PR and
+# wrongly mark its folder DELETABLE.
+pr_rows=""
+page=1
+while :; do
+  if ! page_rows="$(gh pr list --state all --limit 100 --page "$page" --json headRefName,baseRefName,state,number --jq '.[] | [.headRefName, .baseRefName, .state, .number] | @tsv' 2>/dev/null)"; then
+    echo "find-obsolete-issue-dirs: gh pr list failed; treating all folders as keep" >&2
+    exit 0
+  fi
+  [ -z "$page_rows" ] && break
+  pr_rows+="$page_rows"$'\n'
+  rows_in_page="$(printf '%s' "$page_rows" | grep -c . || true)"
+  [ "$rows_in_page" -lt 100 ] && break
+  page=$((page + 1))
+done
 # closed_issues: newline-separated closed issue numbers.
 if ! closed_issues="$(gh issue list --state closed --limit 1000 --json number --jq '.[].number' 2>/dev/null)"; then
   echo "find-obsolete-issue-dirs: gh issue list failed; treating all folders as keep" >&2
@@ -93,7 +105,7 @@ while IFS= read -r dir; do
   open_pr="no"
   while IFS=$'\t' read -r head base state prnum; do
     [ -z "$head" ] && continue
-    [ "$head" != "issues/$name" ] && continue
+    [[ ! "$head" =~ ^issues/${name}([-_].*)?$ ]] && continue
     if [ "$state" = "MERGED" ] && [ "$base" = "main" ]; then
       merged_pr="$prnum"
     fi
@@ -106,7 +118,7 @@ while IFS= read -r dir; do
     printf 'DELETABLE\t%s\tmerged PR into main (PR #%s)\n' "$dir" "$merged_pr"
   elif printf '%s\n' "$closed_issues" | grep -qx "$name" \
       && [ "$open_pr" = "no" ] \
-      && ! grep -qx "issues/$name" <<< "$local_branches"; then
+      && ! grep -Eq "^issues/${name}([-_].*)?$" <<< "$local_branches"; then
     printf 'DELETABLE\t%s\tissue closed, no open PR, no local branch\n' "$dir"
   fi
 done < <(find "$base/issues" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort)

@@ -33,6 +33,9 @@ teardown() {
 mock_gh() {
   gh() {
     if [[ "$1" == "pr" && "$2" == "list" ]]; then
+      if [[ " $* " != *" --page 1 "* ]]; then
+        return 0
+      fi
       if [ -n "${GH_PR_ROWS:-}" ]; then
         printf '%s\n' "$GH_PR_ROWS"
       fi
@@ -144,6 +147,58 @@ count_deletable() {
 
   [ "$status" -eq 0 ]
   [[ "$output" != *"DELETABLE"* ]]
+}
+
+# ============================================================================
+# Suffixed issue branches
+# ============================================================================
+
+@test "closed issue with open PR head issues/42-fix → not deletable" {
+  mkdir -p "$BASE/issues/42"
+  export GH_PR_ROWS=$'issues/42-fix\tmain\tOPEN\t42'
+  mock_gh
+  run "$SCRIPT" "$BASE"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"DELETABLE"* ]]
+}
+
+@test "closed issue with open PR head issues/42_fix → not deletable" {
+  mkdir -p "$BASE/issues/42"
+  export GH_PR_ROWS=$'issues/42_fix\tmain\tOPEN\t42'
+  mock_gh
+  run "$SCRIPT" "$BASE"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"DELETABLE"* ]]
+}
+
+@test "closed issue with local branch issues/42-fix → not deletable" {
+  mkdir -p "$BASE/issues/42"
+  git branch issues/42-fix
+  export GH_CLOSED_ISSUES="42"
+  mock_gh
+  run "$SCRIPT" "$BASE"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"DELETABLE"* ]]
+}
+
+@test "closed issue with local branch issues/42_fix → not deletable" {
+  mkdir -p "$BASE/issues/42"
+  git branch issues/42_fix
+  export GH_CLOSED_ISSUES="42"
+  mock_gh
+  run "$SCRIPT" "$BASE"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"DELETABLE"* ]]
+}
+
+@test "closed issue with unrelated branch issues/42x → still deletable" {
+  mkdir -p "$BASE/issues/42"
+  export GH_PR_ROWS=$'issues/42x\tmain\tOPEN\t42'
+  export GH_CLOSED_ISSUES="42"
+  mock_gh
+  run "$SCRIPT" "$BASE"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"DELETABLE"* ]]
 }
 
 # ============================================================================
