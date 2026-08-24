@@ -29,12 +29,13 @@ teardown() {
 # Export a mock `gh` that answers from fixture env vars:
 #   GH_PR_ROWS        — TAB-separated rows: headRefName<TAB>baseRefName<TAB>state<TAB>number
 #   GH_CLOSED_ISSUES  — one closed issue number per line
-# Any other invocation returns 1.
+# Any other invocation returns 1. A pr list call that does not request the
+# full-inventory --limit fails, pinning the complete-inventory contract.
 mock_gh() {
   gh() {
     if [[ "$1" == "pr" && "$2" == "list" ]]; then
-      if [[ " $* " != *" --page 1 "* ]]; then
-        return 0
+      if [[ " $* " != *" --limit 10000 "* ]]; then
+        return 1
       fi
       if [ -n "${GH_PR_ROWS:-}" ]; then
         printf '%s\n' "$GH_PR_ROWS"
@@ -224,6 +225,28 @@ count_deletable() {
 
   [ "$status" -eq 0 ]
   [[ "$output" != *"DELETABLE"* ]]
+}
+
+@test "matching open PR beyond the first 100 rows → not deletable" {
+  mkdir -p "$BASE/issues/42"
+  # 100 unrelated OPEN rows, then the matching issues/42 row at position
+  # 101: a capped --limit 100 inventory would miss it and wrongly mark the
+  # folder DELETABLE, so the script must request the full inventory. The
+  # mock fails any call without the full-inventory --limit, so the absence
+  # of the "gh pr list failed" notice proves the query succeeded.
+  local tab=$'\t' rows="" i
+  for ((i = 100; i < 200; i++)); do
+    rows+="issues/$i${tab}main${tab}OPEN${tab}$i"$'\n'
+  done
+  rows+="issues/42${tab}main${tab}OPEN${tab}42"
+  export GH_PR_ROWS="$rows"
+  mock_gh
+
+  run "$SCRIPT" "$BASE"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" != *"gh pr list failed"* ]]
 }
 
 # ============================================================================

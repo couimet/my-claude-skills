@@ -59,22 +59,15 @@ fi
 # is unknown. Empty output from a successful query is legitimate (no PRs,
 # no closed issues, no local branches).
 # pr_rows: TAB-separated headRefName, baseRefName, state, PR number.
-# gh pr list has no --paginate flag and caps at 100 rows per page, so page
-# through the full inventory: a capped view could miss an older open PR and
-# wrongly mark its folder DELETABLE.
-pr_rows=""
-page=1
-while :; do
-  if ! page_rows="$(gh pr list --state all --limit 100 --page "$page" --json headRefName,baseRefName,state,number --jq '.[] | [.headRefName, .baseRefName, .state, .number] | @tsv' 2>/dev/null)"; then
-    echo "find-obsolete-issue-dirs: gh pr list failed; treating all folders as keep" >&2
-    exit 0
-  fi
-  [ -z "$page_rows" ] && break
-  pr_rows+="$page_rows"$'\n'
-  rows_in_page="$(printf '%s' "$page_rows" | grep -c . || true)"
-  [ "$rows_in_page" -lt 100 ] && break
-  page=$((page + 1))
-done
+# gh pr list has no --paginate flag, and --page is not a supported flag
+# (gh rejects it), so there is no manual page loop: gh pr list pages
+# through the API internally up to --limit, set far beyond any repo's PR
+# count so the inventory is complete. A capped view could miss an older
+# open PR and wrongly mark its folder DELETABLE.
+if ! pr_rows="$(gh pr list --state all --limit 10000 --json headRefName,baseRefName,state,number --jq '.[] | [.headRefName, .baseRefName, .state, .number] | @tsv' 2>/dev/null)"; then
+  echo "find-obsolete-issue-dirs: gh pr list failed; treating all folders as keep" >&2
+  exit 0
+fi
 # closed_issues: newline-separated closed issue numbers.
 if ! closed_issues="$(gh issue list --state closed --limit 1000 --json number --jq '.[].number' 2>/dev/null)"; then
   echo "find-obsolete-issue-dirs: gh issue list failed; treating all folders as keep" >&2
