@@ -2,13 +2,14 @@
 #
 # find-obsolete-issue-dirs.sh — List issue working directories under the
 # shared .claude-work/ root whose issue is obsolete: the PR was merged into
-# main, or the issue is closed with no open PR and no local issues/* branch.
+# main and no open PR remains on its branch, or the issue is closed with no
+# open PR and no local issues/* branch.
 #
 # Classification is conservative: any failure to gather state keeps the
 # folder. This script only reports — the caller decides what to delete.
 #
-# Must be run from the repo checkout: gh pr list / gh issue list resolve the
-# repo from CWD, and git branch --list reads the CWD repo.
+# Must be run from the repo checkout: gh api resolves {owner}/{repo} from the
+# CWD remote, and git branch --list reads the CWD repo.
 #
 # Usage: find-obsolete-issue-dirs.sh <base>
 #
@@ -58,19 +59,20 @@ fi
 # or a folder could be marked DELETABLE while the state of its PR or branch
 # is unknown. Empty output from a successful query is legitimate (no PRs,
 # no closed issues, no local branches).
-# pr_rows: TAB-separated headRefName, baseRefName, state, PR number.
-# gh pr list has no --paginate flag, and --page is not a supported flag
-# (gh rejects it), so there is no manual page loop: gh pr list pages
-# through the API internally up to --limit, set far beyond any repo's PR
-# count so the inventory is complete. A capped view could miss an older
-# open PR and wrongly mark its folder DELETABLE.
-if ! pr_rows="$(gh pr list --state all --limit 10000 --json headRefName,baseRefName,state,number --jq '.[] | [.headRefName, .baseRefName, .state, .number] | @tsv' 2>/dev/null)"; then
-  echo "find-obsolete-issue-dirs: gh pr list failed; treating all folders as keep" >&2
+# pr_rows: TAB-separated head branch, base branch, state, PR number.
+# gh pr list / gh issue list cap results at --limit, and a capped view is
+# unsafe: a PR past the cap could hide an open PR and wrongly mark its
+# folder DELETABLE, and a closed issue past the cap would hide a valid
+# cleanup candidate. gh api --paginate instead follows every Link-header
+# page until exhaustion — the inventory is complete with no cap.
+if ! pr_rows="$(gh api --paginate 'repos/{owner}/{repo}/pulls?state=all&per_page=100' --jq '.[] | [.head.ref, .base.ref, (if .merged then "MERGED" elif .state == "open" then "OPEN" else "CLOSED" end), .number] | @tsv' 2>/dev/null)"; then
+  echo "find-obsolete-issue-dirs: gh pulls query failed; treating all folders as keep" >&2
   exit 0
 fi
-# closed_issues: newline-separated closed issue numbers.
-if ! closed_issues="$(gh issue list --state closed --limit 1000 --json number --jq '.[].number' 2>/dev/null)"; then
-  echo "find-obsolete-issue-dirs: gh issue list failed; treating all folders as keep" >&2
+# closed_issues: newline-separated closed issue numbers. The REST issues
+# endpoint also returns pull requests, so exclude them via .pull_request.
+if ! closed_issues="$(gh api --paginate 'repos/{owner}/{repo}/issues?state=closed&per_page=100' --jq '.[] | select(.pull_request | not) | .number' 2>/dev/null)"; then
+  echo "find-obsolete-issue-dirs: gh issues query failed; treating all folders as keep" >&2
   exit 0
 fi
 # local_branches: newline-separated local issues/* branch names.
@@ -92,8 +94,8 @@ while IFS= read -r dir; do
     continue
   fi
 
-  # Scan PR rows for this folder's branch. Merged into main wins; an open PR
-  # blocks the closed-issue path below.
+  # Scan PR rows for this folder's branch. Any open PR blocks deletion;
+  # otherwise a merged PR into main wins.
   merged_pr=""
   open_pr="no"
   while IFS=$'\t' read -r head base state prnum; do
@@ -107,10 +109,11 @@ while IFS= read -r dir; do
     fi
   done <<< "$pr_rows"
 
-  if [ -n "$merged_pr" ]; then
+  if [ "$open_pr" = "yes" ]; then
+    continue
+  elif [ -n "$merged_pr" ]; then
     printf 'DELETABLE\t%s\tmerged PR into main (PR #%s)\n' "$dir" "$merged_pr"
   elif printf '%s\n' "$closed_issues" | grep -qx "$name" \
-      && [ "$open_pr" = "no" ] \
       && ! grep -Eq "^issues/${name}([-_].*)?$" <<< "$local_branches"; then
     printf 'DELETABLE\t%s\tissue closed, no open PR, no local branch\n' "$dir"
   fi

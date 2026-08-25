@@ -27,23 +27,31 @@ teardown() {
 # --- Helpers ---
 
 # Export a mock `gh` that answers from fixture env vars:
-#   GH_PR_ROWS        — TAB-separated rows: headRefName<TAB>baseRefName<TAB>state<TAB>number
+#   GH_PR_ROWS        — TAB-separated rows: head<TAB>base<TAB>state<TAB>number
 #   GH_CLOSED_ISSUES  — one closed issue number per line
-# Any other invocation returns 1. A pr list call that does not request the
-# full-inventory --limit fails, pinning the complete-inventory contract.
+# The script must gather both inventories via gh api --paginate (complete
+# pagination, no --limit cap): any call without --paginate or with a
+# different URL fails, pinning the complete-inventory contract. gh api
+# substitutes {owner}/{repo} from the repo remote, so the mock matches the
+# templated URLs the script passes.
 mock_gh() {
   gh() {
-    if [[ "$1" == "pr" && "$2" == "list" ]]; then
-      if [[ " $* " != *" --limit 10000 "* ]]; then
-        return 1
-      fi
-      if [ -n "${GH_PR_ROWS:-}" ]; then
-        printf '%s\n' "$GH_PR_ROWS"
-      fi
-    elif [[ "$1" == "issue" && "$2" == "list" ]]; then
-      if [ -n "${GH_CLOSED_ISSUES:-}" ]; then
-        printf '%s\n' "$GH_CLOSED_ISSUES"
-      fi
+    if [[ "$1" == "api" && "$2" == "--paginate" ]]; then
+      case "$3" in
+        "repos/{owner}/{repo}/pulls?state=all&per_page=100")
+          if [ -n "${GH_PR_ROWS:-}" ]; then
+            printf '%s\n' "$GH_PR_ROWS"
+          fi
+          ;;
+        "repos/{owner}/{repo}/issues?state=closed&per_page=100")
+          if [ -n "${GH_CLOSED_ISSUES:-}" ]; then
+            printf '%s\n' "$GH_CLOSED_ISSUES"
+          fi
+          ;;
+        *)
+          return 1
+          ;;
+      esac
     else
       return 1
     fi
@@ -227,13 +235,28 @@ count_deletable() {
   [[ "$output" != *"DELETABLE"* ]]
 }
 
+@test "merged PR plus open PR on same issue → not deletable (open PR blocks)" {
+  mkdir -p "$BASE/issues/42"
+  # One matching PR merged into main while a newer matching PR is still
+  # open: active work remains, so the folder must be kept even though the
+  # merged-PR criterion alone would report DELETABLE.
+  export GH_PR_ROWS=$'issues/42\tmain\tMERGED\t10\nissues/42\tmain\tOPEN\t11'
+  mock_gh
+
+  run "$SCRIPT" "$BASE"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"DELETABLE"* ]]
+}
+
 @test "matching open PR beyond the first 100 rows → not deletable" {
   mkdir -p "$BASE/issues/42"
   # 100 unrelated OPEN rows, then the matching issues/42 row at position
-  # 101: a capped --limit 100 inventory would miss it and wrongly mark the
-  # folder DELETABLE, so the script must request the full inventory. The
-  # mock fails any call without the full-inventory --limit, so the absence
-  # of the "gh pr list failed" notice proves the query succeeded.
+  # 101: the REST pulls API serves 100 records per page, so this row sits
+  # beyond the first page and a non-paginated query would miss it, wrongly
+  # marking the folder DELETABLE. The mock fails any pulls call without
+  # --paginate, so the absence of the "gh pulls query failed" notice proves
+  # the script requested complete pagination.
   local tab=$'\t' rows="" i
   for ((i = 100; i < 200; i++)); do
     rows+="issues/$i${tab}main${tab}OPEN${tab}$i"$'\n'
@@ -246,7 +269,25 @@ count_deletable() {
 
   [ "$status" -eq 0 ]
   [[ "$output" != *"DELETABLE"* ]]
-  [[ "$output" != *"gh pr list failed"* ]]
+  [[ "$output" != *"gh pulls query failed"* ]]
+}
+
+@test "closed issue beyond the first 100 records → DELETABLE" {
+  mkdir -p "$BASE/issues/42"
+  # 100 unrelated closed issues, then issue 42: a single-page query would
+  # return only the first 100 records and the sweep would miss the folder.
+  local issues="" i
+  for ((i = 100; i < 200; i++)); do
+    issues+="$i"$'\n'
+  done
+  issues+="42"
+  export GH_CLOSED_ISSUES="$issues"
+  mock_gh
+
+  run "$SCRIPT" "$BASE"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"DELETABLE"* ]]
 }
 
 # ============================================================================
@@ -304,11 +345,12 @@ count_deletable() {
   [[ "$output" != *"DELETABLE"* ]]
 }
 
-@test "gh pr list fails while closed-issue fixture reports 42 → exit 0, no DELETABLE lines" {
+@test "gh pulls query fails while closed-issue fixture reports 42 → exit 0, no DELETABLE lines" {
   mkdir -p "$BASE/issues/42"
 
   gh() {
-    if [[ "$1" == "issue" && "$2" == "list" ]]; then
+    if [[ "$1" == "api" && "$2" == "--paginate" ]] \
+        && [[ "$3" == "repos/{owner}/{repo}/issues?state=closed&per_page=100" ]]; then
       printf '42\n'
     else
       return 1
@@ -319,15 +361,16 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"gh pr list failed"* ]]
+  [[ "$output" == *"gh pulls query failed"* ]]
   [[ "$output" != *"DELETABLE"* ]]
 }
 
-@test "gh issue list fails while merged-PR fixture exists → exit 0, no DELETABLE lines" {
+@test "gh issues query fails while merged-PR fixture exists → exit 0, no DELETABLE lines" {
   mkdir -p "$BASE/issues/42"
 
   gh() {
-    if [[ "$1" == "pr" && "$2" == "list" ]]; then
+    if [[ "$1" == "api" && "$2" == "--paginate" ]] \
+        && [[ "$3" == "repos/{owner}/{repo}/pulls?state=all&per_page=100" ]]; then
       printf 'issues/42\tmain\tMERGED\t42\n'
     else
       return 1
@@ -338,7 +381,7 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"gh issue list failed"* ]]
+  [[ "$output" == *"gh issues query failed"* ]]
   [[ "$output" != *"DELETABLE"* ]]
 }
 
