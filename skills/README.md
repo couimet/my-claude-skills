@@ -37,7 +37,7 @@ Non-invocable skills (`user-invocable: false`) don't appear in the `/` menu. The
 
 | Skill | Invocation | Foundation Dependencies |
 | --- | --- | --- |
-| `cleanup-issue` | `/cleanup-issue [number]` | (inline branch parsing) |
+| `cleanup-issue` | `/cleanup-issue [number \| --sweep]` | (inline branch parsing) |
 | `create-github-issue` | `/create-github-issue <title-or-path>` | `/note` (writes), `/question`, `/label-discovery` |
 | `finish-issue` | `/finish-issue [optional: issue-number-or-url]` | `/note`, `/question`, breadcrumbs (reads); handles both `issues/*` and `side-quest/*` branches |
 | `start-issue` | `/start-issue <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/cleanup-issue` |

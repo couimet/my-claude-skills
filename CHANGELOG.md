@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.08.19.1
+
+### Added
+
+- `/cleanup-issue --sweep` mode: `find-obsolete-issue-dirs.sh` lists `.claude-work/issues/` folders whose PRs merged into main or whose issues closed with no open PR and no local branch, then asks for confirmation before deleting. `/start-issue` Step 0 now offers pruning when 5 or more obsolete folders accumulate. ([issues/219](https://github.com/couimet/my-claude-skills/issues/219))
+
 ## 2026.08.19
 
 ### Changed

@@ -2,15 +2,15 @@
 name: cleanup-issue
 version: 2026.08.19@68e86d7
 description: Delete an issue's working directory (.claude-work/issues/<ID>/) after confirming with the user via interactive prompt
-argument-hint: [optional: issue-number]
-allowed-tools: Read, Glob, AskUserQuestion, Bash(git branch --show-current), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
+argument-hint: [optional: issue-number | --sweep]
+allowed-tools: Read, Glob, AskUserQuestion, Bash(git branch --show-current), Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Cleanup Issue
 
 Remove an issue's working directory after the work is done. Uses `AskUserQuestion` to confirm before deleting anything.
 
-**Input:** $ARGUMENTS (optional issue number; if omitted, detects from branch)
+**Input:** $ARGUMENTS (optional issue number, or `--sweep`; if omitted, detects from branch)
 
 ## Step 1: Determine Issue ID
 
@@ -106,6 +106,83 @@ Glob(pattern="commit-msgs/*side-quest*", path="<base>")
 - Print: "These side-quest files may be from completed work. Clean them up manually if no longer needed."
 
 **If no side-quest artifacts found:** skip silently.
+
+## Sweep Mode (--sweep)
+
+When `$ARGUMENTS` is `--sweep`, skip the single-folder Steps 1-4 and follow this section instead.
+
+### Sweep Step 1: Resolve the Base Directory
+
+Resolve the `.claude-work/` root directory:
+
+```bash
+~/.claude/skills/issue-context/claude-work-root.sh
+```
+
+Use the stdout as `<base>`.
+
+### Sweep Step 2: Find Obsolete Folders
+
+Run the sweep script:
+
+```bash
+~/.claude/skills/cleanup-issue/find-obsolete-issue-dirs.sh <base>
+```
+
+The script prints one line per deletable folder on stdout:
+
+```text
+DELETABLE<TAB><absolute path><TAB><reason>
+```
+
+It also prints one line per skipped folder:
+
+```text
+Skipped: <name> (non-numeric ID, not checked)
+```
+
+Display all DELETABLE lines (path plus reason) and all Skipped lines to the user. If the script exits 1 with an F001 or F002 error, show the error message and STOP.
+
+**If there are no DELETABLE lines:** print "No obsolete issue working folders found." and STOP.
+
+### Sweep Step 3: Confirm Deletion
+
+Use `AskUserQuestion` to prompt for confirmation. List every deletable folder path with its reason:
+
+```text
+AskUserQuestion(
+  question: "Delete N obsolete issue working folders?\n\n<path> - <reason>\n<path> - <reason>\n\nThis is irreversible.",
+  options: [
+    { label: "Delete all N folders", description: "Remove each listed folder via remove-issue-dir.sh" },
+    { label: "Keep everything", description: "Delete nothing and leave all folders untouched" }
+  ]
+)
+```
+
+### Sweep Step 4: Act on Answer
+
+- **Delete all N folders** → proceed to deletion
+- **Keep everything** → print "Keeping all obsolete issue folders untouched." and STOP
+
+### Sweep Delete
+
+Only reached if the user selected Delete all N folders in Sweep Step 3. For each listed path, run the removal script once per folder, where `<ID>` is the folder name (the last segment of the path):
+
+```bash
+~/.claude/skills/cleanup-issue/remove-issue-dir.sh <base> <ID>
+```
+
+The script prints the removed path on stdout. Report each removed path to the user:
+
+```text
+Cleaned up <stdout>/. All working files removed.
+```
+
+### Sweep Step 5: Check for Side-Quest Artifacts
+
+Perform the side-quest artifact scan from the single-folder Step 5 (Glob for `breadcrumb-*.md`, `scratchpads/*side-quest*`, and `commit-msgs/*side-quest*` in `<base>` and report findings the same way).
+
+Note: `/start-issue` Step 0 also offers pruning automatically when 5 or more obsolete folders accumulate. This manual `--sweep` mode always shows the full list.
 
 ## Formatting
 
