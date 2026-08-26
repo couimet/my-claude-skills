@@ -58,7 +58,7 @@ fi
 # --- Per-run unique resource names ---
 
 temp_branch="rebase-stacked-$$"
-patch_file="$(mktemp /tmp/stacked-diff-XXXXXX.patch)"
+patch_file="$(mktemp /tmp/stacked-diff-XXXXXX).patch"
 
 # --- Cleanup trap ---
 

@@ -10,6 +10,16 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.08.25
+
+### Added
+
+- Skills are now installable through the skills CLI: `npx skills add couimet/my-claude-skills --global` installs the whole suite (or a `--skill` subset) straight from the GitHub repo, joining the clone + `install.sh` and plugin-marketplace paths; the README documents the quick install and updates via `npx skills update`. ([issues/208](https://github.com/couimet/my-claude-skills/issues/208))
+
+### Fixed
+
+- `/rebase-issue` no longer fails on macOS: `apply-stacked-diff.sh` used a BSD-incompatible `mktemp` template, so the patch file collided on every run after the first. ([issues/208](https://github.com/couimet/my-claude-skills/issues/208))
+
 ## 2026.08.19.1
 
 ### Added

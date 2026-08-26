@@ -24,3 +24,4 @@ We follow the format from [adr.github.io](https://adr.github.io/):
 | # | Title | Status |
 | --- | --- | --- |
 | [0001](./001-skill-extension-hooks.md) | Skill Extension Hooks — Project-Local Customization | Accepted |
+| [0002](./002-skill-distribution-via-skills-cli.md) | Skill Distribution via the Skills CLI | Accepted |
