@@ -164,6 +164,7 @@ count_deletable() {
 
 @test "closed issue with open PR head issues/42-fix → not deletable" {
   mkdir -p "$BASE/issues/42"
+  export GH_CLOSED_ISSUES="42"
   export GH_PR_ROWS=$'issues/42-fix\tmain\tOPEN\t42'
   mock_gh
   run "$SCRIPT" "$BASE"
@@ -173,6 +174,7 @@ count_deletable() {
 
 @test "closed issue with open PR head issues/42_fix → not deletable" {
   mkdir -p "$BASE/issues/42"
+  export GH_CLOSED_ISSUES="42"
   export GH_PR_ROWS=$'issues/42_fix\tmain\tOPEN\t42'
   mock_gh
   run "$SCRIPT" "$BASE"
@@ -226,6 +228,7 @@ count_deletable() {
 
 @test "open PR exists → not deletable" {
   mkdir -p "$BASE/issues/42"
+  export GH_CLOSED_ISSUES="42"
   export GH_PR_ROWS=$'issues/42\tmain\tOPEN\t42'
   mock_gh
 
@@ -251,6 +254,7 @@ count_deletable() {
 
 @test "matching open PR beyond the first 100 rows → not deletable" {
   mkdir -p "$BASE/issues/42"
+  export GH_CLOSED_ISSUES="42"
   # 100 unrelated OPEN rows, then the matching issues/42 row at position
   # 101: the REST pulls API serves 100 records per page, so this row sits
   # beyond the first page and a non-paginated query would miss it, wrongly
