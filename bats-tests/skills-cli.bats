@@ -19,8 +19,11 @@ SKILLS_CLI="npx --yes skills@${SKILLS_CLI_VERSION}"
   run $SKILLS_CLI add "$PROJECT_ROOT" --list
 
   [ "$status" -eq 0 ]
+  # The CLI colors skill names with ANSI escapes when CI=true; strip them so
+  # the "$" anchor matches the name regardless of terminal styling.
+  plain_output="$(printf '%s\n' "$output" | sed "s/$(printf '\033')\[[0-9;?]*[a-zA-Z]//g")"
   for name in $expected; do
-    printf '%s\n' "$output" | grep -qE "${name}$" || {
+    printf '%s\n' "$plain_output" | grep -qE "${name}$" || {
       echo "Skill not discovered by skills CLI: $name"
       return 1
     }
