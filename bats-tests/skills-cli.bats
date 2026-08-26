@@ -3,11 +3,9 @@
 load test_helper
 
 # =============================================================
-# The skills CLI (skills.sh, `npx skills add <repo> --global`) is
-# the cross-agent installer behind the README quick-install path.
-# These tests prove the CLI can discover and install this repo's
-# skill suite with companion scripts intact. The CLI version is
-# pinned so CI and local runs stay deterministic.
+# The skills CLI (skills.sh, `npx skills add <repo> --global`) is the cross-agent installer behind the README quick-install path.
+# These tests prove the CLI can discover and install this repo's skill suite with companion scripts intact.
+# The CLI version is pinned so CI and local runs stay deterministic.
 # =============================================================
 
 SKILLS_CLI_VERSION=1.5.23
