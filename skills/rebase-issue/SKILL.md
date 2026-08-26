@@ -1,6 +1,6 @@
 ---
 name: rebase-issue
-version: 2026.08.19@68e86d7
+version: 2026.08.19.1@8e9c94b
 description: Rebase the current issue branch onto origin/main (or a specified target) after upstream PRs merge. Handles conflict resolution, squashes to a single commit, and runs autonomously
 argument-hint: <target>
 user-invocable: true
