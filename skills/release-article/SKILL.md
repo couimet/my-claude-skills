@@ -33,13 +33,13 @@ Use the stdout of `claude-work-root.sh` as `<base>` for all `.claude-work/` path
 - When `$ARGUMENTS` is an issue URL, validate that it matches `https://github.com/{owner}/{repo}/issues/{number}` before running any command. Fetch it with `gh issue view "$ARGUMENTS" --json title,body` — the validated URL always goes as a single quoted argument — and use its stated release (the issue may name the draft template file and the README update, as in the rangeLink #727 pattern).
 - When `$ARGUMENTS` is empty, use the latest version heading in the changelog.
 
-Locate the changelog. Start at the repo root `CHANGELOG.md`. In a monorepo the root changelog is often only an index, so when the root has no version headings, scan `packages/*/` for a package that pairs a `CHANGELOG.md` with a README containing a "Featured In" section. Report which changelog was used.
+Locate the changelog. Start at the repo root `CHANGELOG.md`. In a monorepo the root changelog is often only an index, so when the root has no version headings, scan `packages/*/` for a package that pairs a `CHANGELOG.md` with a README containing a "Featured In" section. When several packages match, narrow the candidates against the requested release or tag and the project identity: the package whose changelog contains the target release and whose README names the product being released. If multiple candidates still match, ask the user via `AskUserQuestion` which changelog to use before proceeding. Report which changelog was used.
 
 ## Step 2: Resolve the Article Output Location
 
 The output location is **never guessed**. Read the target repo's `CLAUDE.md` (when present) and look for a section that names `release-article` and defines where the skill's outputs go, including naming conventions (e.g., `media/devto-post-<product>-<version>.md`).
 
-- If the section exists, use its location and naming rules for the article draft.
+- If the section exists, use its location and naming rules for the article draft, after validating the resolved path: it must be a project-relative destination inside the target repository or inside the documented `<base>` working area. Reject absolute paths and `..` traversal outside those roots. If `CLAUDE.md` names an external destination, **STOP** and ask the user via `AskUserQuestion` for explicit approval before any write.
 - If it does not exist, **STOP** and prompt the user with `AskUserQuestion`:
   - **Define it now**: the user adds a `release-article` section to the target repo's `CLAUDE.md` (location + naming rules); wait for the edit, then use it.
   - **Use the fallback**: write drafts to the standard note location, `<base>/issues/<NNN>/notes/` on an issue branch, else `<base>/notes/`; the user moves the file later.
@@ -77,7 +77,7 @@ Report which source was used (sibling clone or API). The tone corpus and `projec
 
 Create the working document via `/note` with description `release-article-draft`. The draft carries YAML front matter (`title`, `published: TBD`, `tags`, `cover_image`), a narrative "What's New" structure that reorganizes the changelog by user impact, and only behaviors the changelog and repository sources support. No invented features.
 
-Then write the deliverable file to the location resolved in Step 2, using the resolved naming convention (e.g., `media/devto-post-vscode-extension-2.1.0.md`). Creating this new draft file is the workflow's deliverable and carries **no approval gate** — but only for first-time creation. Before writing, check whether the resolved path already exists. If it exists, do not overwrite it: stop and ask the user via `AskUserQuestion` whether to replace it, choose a different name, or edit the existing draft. Write automatically only when the path is absent. Reference companion screenshots from Step 4 where they support the copy.
+Then write the deliverable file to the location resolved in Step 2, using the resolved naming convention (e.g., `media/devto-post-vscode-extension-2.1.0.md`), re-applying the Step 2 path validation to the destination immediately before writing. Creating this new draft file is the workflow's deliverable and carries **no approval gate** — but only for first-time creation within a validated destination. Before writing, check whether the resolved path already exists. If it exists, do not overwrite it: stop and ask the user via `AskUserQuestion` whether to replace it, choose a different name, or edit the existing draft. Write automatically only when the path is absent. Reference companion screenshots from Step 4 where they support the copy.
 
 ## Step 7: Generate Promotion Drafts
 
@@ -102,7 +102,7 @@ When the current repo is not `couimet/couimet.github.io`, help register the arti
 
 ## Step 9: Report and Approval Gate
 
-Print every output with its absolute path: the article draft file, the prioritized change summary, the social media copy, the "Featured In" entry, the `promotions.yml` entry draft, and the handoff draft when applicable. List the assumptions and any missing source material.
+Print the absolute path of the Step 6 working document once and identify the change summary, social media copy, "Featured In" entry, and `promotions.yml` entry draft sections within it. Print the absolute path of the article draft file and of the handoff note when applicable. List the assumptions and any missing source material.
 
 **IMPORTANT: Do NOT publish to dev.to, do NOT post on social media, do NOT modify existing files (README, `promotions.yml`, `articles.yml`, `CLAUDE.md`), and do NOT create GitHub issues without explicit user approval.** The only automatic write is the new article draft when the Step 2-resolved path is absent (Step 6).
 
