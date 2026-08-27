@@ -1,6 +1,6 @@
 ---
 name: prose-style
-version: 2026.08.19.1@8e9c94b
+version: 2026.08.25@102ff9a
 user-invocable: false
 description: "Canonical prose and reference formatting rules for any skill that writes to a file: hard-wrap rule, code reference syntax, GitHub reference syntax. Auto-consulted whenever a skill produces file content."
 allowed-tools: Bash(gh repo view *)
