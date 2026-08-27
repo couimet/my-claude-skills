@@ -77,7 +77,7 @@ Report which source was used (sibling clone or API). The tone corpus and `projec
 
 Create the working document via `/note` with description `release-article-draft`. The draft carries YAML front matter (`title`, `published: TBD`, `tags`, `cover_image`), a narrative "What's New" structure that reorganizes the changelog by user impact, and only behaviors the changelog and repository sources support. No invented features.
 
-Then write the deliverable file to the location resolved in Step 2, using the resolved naming convention (e.g., `media/devto-post-vscode-extension-2.1.0.md`). Creating this new draft file is the workflow's deliverable and carries **no approval gate**. Reference companion screenshots from Step 4 where they support the copy.
+Then write the deliverable file to the location resolved in Step 2, using the resolved naming convention (e.g., `media/devto-post-vscode-extension-2.1.0.md`). Creating this new draft file is the workflow's deliverable and carries **no approval gate** — but only for first-time creation. Before writing, check whether the resolved path already exists. If it exists, do not overwrite it: stop and ask the user via `AskUserQuestion` whether to replace it, choose a different name, or edit the existing draft. Write automatically only when the path is absent. Reference companion screenshots from Step 4 where they support the copy.
 
 ## Step 7: Generate Promotion Drafts
 
