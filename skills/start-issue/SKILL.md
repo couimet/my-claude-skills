@@ -188,19 +188,14 @@ Tone: direct, concrete, file-and-function-named. No hedging, no generic conclusi
 
 ## Step 5: Create Questions File (Only If Necessary)
 
-**Only create questions for decisions that would FUNDAMENTALLY change the implementation plan.**
+Create a questions file only for decisions that change at least two plan steps, or the deliverable's location or nature.
 
-Do NOT ask questions about:
+Run every candidate decision through the When to Use / When NOT to Use checklist at the top of `/question`. It is the single source of trigger truth: do not restate the criteria here, or the two skills drift and disagree on the bar again.
 
-- Minor choices with clear best practices (assume the better option)
-- Decisions where the codebase already establishes a clear, consistent pattern to follow
-- Information you can verify by reading code or documentation rather than asking
+Worked example, fundamental vs minor:
 
-DO ask questions about:
-
-- Architectural decisions with no clear winner
-- User-facing behavior where preference matters
-- Scope clarification when requirements are ambiguous
+- Fundamental, ask: where the article draft lives before approval (issue #228). Two defensible readings exist, the answer changes which steps run and where the deliverable lands, and no precedent settles it. It failed the precedent test and passed the user-facing test.
+- Minor, just decide: the filename of a draft inside an already-resolved location. The resolved naming convention is the precedent, and guessing wrong is a detail.
 
 If questions are needed, use `/question` to create a questions file. Add a `**Plan impact:**` line after the `Recommendation:` in each question to explain which steps would change based on the answer.
 
