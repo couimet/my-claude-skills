@@ -11,12 +11,37 @@ This is a collection of portable [Claude Code skills](https://code.claude.com/do
 
 ## Installation
 
+### Quick Install (npx skills)
+
+The fastest way to install the whole suite is the [skills CLI](https://skills.sh/) — the cross-agent installer used by the skills.sh ecosystem:
+
+```bash
+npx skills add couimet/my-claude-skills --global
+```
+
+This pulls the skills straight from the GitHub repo and makes them available in every Claude Code project. Leave off `--global` to install them only in the current project.
+
+Install a subset of skills by name (repeatable) or target a specific agent:
+
+```bash
+npx skills add couimet/my-claude-skills --global --skill start-issue --skill note
+npx skills add couimet/my-claude-skills --global --agent claude-code
+```
+
+Update later with `npx skills update` (add `-g` to update only globally-installed skills).
+
+One caveat: the CLI installs into the same `~/.claude/skills/` directory that `install.sh` manages, so pick one install path and stick with it — mixing both for the same skills can overwrite each other's copies.
+
+### Clone and Symlink
+
 ```bash
 git clone git@github.com:couimet/my-claude-skills.git ~/src/my-claude-skills
 ~/src/my-claude-skills/install.sh
 ```
 
-This creates symlinks from `~/.claude/skills/` to the repo, making all skills globally available in every Claude Code project. Skills are the [standard Claude Code extension mechanism](https://code.claude.com/docs/en/skills) — each one is a markdown file with instructions that Claude follows when you invoke it.
+This creates symlinks from `~/.claude/skills/` to the repo, making all skills globally available in every Claude Code project. Skills are the [standard Claude Code extension mechanism](https://code.claude.com/docs/en/skills) — each one is a markdown file with instructions that Claude follows when you invoke it. Best for contributors and anyone who wants a live checkout that updates with `git pull`.
+
+`install.sh` requires bash (macOS/Linux). On Windows, use the [quick install](#quick-install-npx-skills) or [marketplace](#marketplace-installation) paths instead.
 
 ### Updating
 
@@ -25,6 +50,8 @@ cd ~/src/my-claude-skills && git pull && ./install.sh
 ```
 
 The install script is idempotent — safe to run on every pull. It only creates/updates symlinks; it never deletes non-symlink directories.
+
+Installed via `npx skills`? Update with `npx skills update -g` instead (see [Quick Install](#quick-install-npx-skills)).
 
 ### Marketplace Installation
 
