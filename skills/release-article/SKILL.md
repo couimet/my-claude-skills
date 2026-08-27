@@ -30,7 +30,7 @@ git branch --show-current
 Use the stdout of `claude-work-root.sh` as `<base>` for all `.claude-work/` paths in this skill. Record whether the current repo is `couimet/couimet.github.io` (it decides whether Step 8 applies). Determine the target release:
 
 - When `$ARGUMENTS` is a version or tag, use it.
-- When `$ARGUMENTS` is an issue URL, fetch it with `gh issue view $ARGUMENTS --json title,body` and use its stated release (the issue may name the draft template file and the README update, as in the rangeLink #727 pattern).
+- When `$ARGUMENTS` is an issue URL, validate that it matches `https://github.com/{owner}/{repo}/issues/{number}` before running any command. Fetch it with `gh issue view "$ARGUMENTS" --json title,body` — the validated URL always goes as a single quoted argument — and use its stated release (the issue may name the draft template file and the README update, as in the rangeLink #727 pattern).
 - When `$ARGUMENTS` is empty, use the latest version heading in the changelog.
 
 Locate the changelog. Start at the repo root `CHANGELOG.md`. In a monorepo the root changelog is often only an index, so when the root has no version headings, scan `packages/*/` for a package that pairs a `CHANGELOG.md` with a README containing a "Featured In" section. Report which changelog was used.
@@ -48,13 +48,13 @@ Do not hardcode `media/` or `articles/_sources/` as defaults. Report the resolve
 
 ## Step 3: Read and Prioritize the Changelog
 
-Read the entries for the target release in the located changelog. Preserve the sub-section ordering: the author already orders entries by importance within `### Added`, `### Changed`, and `### Fixed`, so do not reorder them. Collect the `(#NNN)` issue references from each entry so links survive into the article. Produce the prioritized change summary by user impact, ordered headline feature first, with each item carrying its issue links.
+Read the entries for the target release in the located changelog. Preserve the sub-section ordering: the author already orders entries by importance within `### Added`, `### Changed`, and `### Fixed`, so do not reorder them. Collect the `(#NNN)` issue references from each entry and resolve each one to its full GitHub URL before generating any draft, per `/prose-style` Rule 3: build `https://github.com/{owner}/{repo}/issues/{number}` from the current remote (e.g., `gh repo view --json url`). Produce the prioritized change summary by user impact, ordered headline feature first, with each item carrying its full issue URLs.
 
 ## Step 4: Gather Project Context
 
 - **Terminology**: read the project README and note the exact product terms the article must preserve (no invented names).
 - **"Featured In" format**: capture the exact README section format (newest first, `- [Title](url) - DEV Community` style).
-- **Prior articles**: list prior article drafts in the project `media/` folder or in `couimet.github.io/articles/_sources/`; skim them so the new article does not repeat already-covered ground.
+- **Prior articles**: list prior article drafts in the Step 2-resolved output directory first, then in the project `media/` folder, then in `couimet.github.io/articles/_sources/`; skim them so the new article does not repeat already-covered ground.
 - **Media assets**: list available screenshots and their naming conventions (e.g., `devto-post-<product>-<version>-<feature>.png`); note which changelog entries have visual support.
 
 ## Step 5: Read Tone and Registry Sources
@@ -94,20 +94,19 @@ All promotion drafts live in the Step 6 working document. Edits to **existing** 
 When the current repo is not `couimet/couimet.github.io`, help register the article in the central promotion backlog:
 
 1. Determine the article status: `draft`, `published`, or `not created`. A draft is never described as published.
-2. Duplicate-check `couimet/couimet.github.io` issues for an existing registration matching the source repo, release version, or article URL:
-   `gh issue list --repo couimet/couimet.github.io --state all --search "<repo> <version> <url>"`. Skip the handoff when a match exists.
-3. Write the handoff draft via `/note` with description `release-article-handoff`. The draft must contain: a `#` heading as title; a `**Target repo:** couimet/couimet.github.io` line; the source repository URL and name; the release version, tag, or changelog section; the local article path (the real project path, not a `.claude-work/` path); the public article URL when published; the article status; relevant release, PR, and issue URLs; the proposed `projects` value with the reason for it; a reference to the promotion copy draft; and a checklist for updating `_data/promotions.yml` and reviewing the centralized publishing tone.
+2. Duplicate-check `couimet/couimet.github.io` issues for an existing registration. Run one `gh issue list --repo couimet/couimet.github.io --state all --limit 100 --search "<identifier>"` per non-empty identifier — the source repository, the release version, and the public article URL when published — and inspect the titles and bodies of the results for a registration match. Skip the handoff when any identifier matches.
+3. Only when no identifier matches, write the handoff draft via `/note` with description `release-article-handoff`. The draft must contain: a `#` heading as title; a `**Target repo:** couimet/couimet.github.io` line; the source repository URL and name; the release version, tag, or changelog section; the local article path (the real project path, or the Step 2 `.claude-work/` fallback path labeled as a working draft not yet in the repository); the public article URL when published; the article status; relevant release, PR, and issue URLs; the proposed `projects` value with the reason for it; a reference to the promotion copy draft; and a checklist for updating `_data/promotions.yml` and reviewing the centralized publishing tone.
 4. Ask the user to confirm via `AskUserQuestion`. Only after confirmation, suggest:
    `/create-github-issue <handoff-draft-path>`
-5. Never create the issue automatically. The duplicate check and the handoff draft always run; the registry data in Step 5 comes from the sibling clone or the public API, so there is no missing-access branch.
+5. Never create the issue automatically. The duplicate check always runs; the handoff draft and confirmation prompt run only when no duplicate registration matches. The registry data in Step 5 comes from the sibling clone or the public API, so there is no missing-access branch.
 
 ## Step 9: Report and Approval Gate
 
 Print every output with its absolute path: the article draft file, the prioritized change summary, the social media copy, the "Featured In" entry, the `promotions.yml` entry draft, and the handoff draft when applicable. List the assumptions and any missing source material.
 
-**IMPORTANT: Do NOT publish to dev.to, do NOT post on social media, do NOT modify existing files (README, `promotions.yml`, `articles.yml`, `CLAUDE.md`), and do NOT create GitHub issues without explicit user approval.**
+**IMPORTANT: Do NOT publish to dev.to, do NOT post on social media, do NOT modify existing files (README, `promotions.yml`, `articles.yml`, `CLAUDE.md`), and do NOT create GitHub issues without explicit user approval.** The only automatic write is the new article draft when the Step 2-resolved path is absent (Step 6).
 
-Wait for the user to review the drafts. Only proceed with a write, edit, or issue creation the user explicitly asks for.
+Wait for the user to review the drafts. Only proceed with a write to an existing path, an edit, or an issue creation the user explicitly asks for.
 
 ## Formatting
 

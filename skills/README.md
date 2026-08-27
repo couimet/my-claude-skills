@@ -43,7 +43,7 @@ Non-invocable skills (`user-invocable: false`) don't appear in the `/` menu. The
 | `start-issue` | `/start-issue <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/cleanup-issue` |
 | `start-side-quest` | `/start-side-quest <desc> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/commit-msg` (ref) |
 | `rebase-issue` | `/rebase-issue [target]` | `resolve-target.sh`, `apply-stacked-diff.sh`, `resolve-commit-msg.sh` |
-| `release-article` | `/release-article [version-or-url]` | `/note` (writes), `/create-github-issue` (handoff), `/question`, `/prose-style` |
+| `release-article` | `/release-article [version-or-url]` | `/note` (writes), `/create-github-issue` (handoff), `/prose-style` |
 | `tackle-pr-comment` | `/tackle-pr-comment <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/commit-msg` |
 | `tackle-scratchpad-block` | `/tackle-scratchpad-block <path#lines>` | `/scratchpad-ref-format`, `/question`, `/commit-msg`, `/scratchpad` (reads) |
 
