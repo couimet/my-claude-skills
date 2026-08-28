@@ -188,9 +188,7 @@ Tone: direct, concrete, file-and-function-named. No hedging, no generic conclusi
 
 ## Step 5: Create Questions File (Only If Necessary)
 
-Create a questions file only for decisions that change at least two plan steps, or the deliverable's location or nature.
-
-Run every candidate decision through the When to Use / When NOT to Use checklist at the top of `/question`. It is the single source of trigger truth: do not restate the criteria here, or the two skills drift and disagree on the bar again.
+Run every candidate decision through the trigger predicate and its checklist at the top of `/question`. It is the single source of trigger truth: do not restate the criteria here, or the two skills drift and disagree on the bar again.
 
 Worked example, fundamental vs minor:
 

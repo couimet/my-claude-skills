@@ -14,14 +14,14 @@ Create a questions file in `.claude-work/` for gathering user input.
 
 ## When to Use
 
-Run each candidate decision through this checklist while planning. When a decision changes which steps run, their order, or the files they touch, and no precedent settles it, ask.
+**Trigger predicate:** ask when the answer changes which steps run, their order, or the files they touch, and no precedent settles it; default to asking when the candidate fails the precedent test and passes the user-facing test, because asking costs the user one file edit and a short answer while a wrong assumption costs plan rework.
+
+Run each candidate decision through the checklist below while planning. The four bullets operationalize the trigger predicate rather than adding new gates.
 
 - Does the answer change which steps run, their order, or the files touched?
 - Is there a direct precedent (schema, template, existing file, prior issue) that settles it?
 - Is the decision user-facing (naming, defaults, approval gates, deliverable location)?
 - Would guessing wrong mean rework of the plan, not just a detail?
-
-Cost lens: asking costs the user one file edit and a short answer; a wrong assumption costs plan rework at review time or mid-implementation. Default to asking when the candidate fails the precedent test and passes the user-facing test.
 
 Fallback rule: when a question-worthy decision is skipped for a reason, record it in the plan's Assumptions Made section with that reason. Never drop it silently.
 
