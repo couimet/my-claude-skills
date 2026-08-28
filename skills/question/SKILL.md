@@ -12,6 +12,29 @@ Create a questions file in `.claude-work/` for gathering user input.
 
 **Input:** $ARGUMENTS (a short topic description for the filename)
 
+## When to Use
+
+**Trigger predicate:** ask when the answer changes which steps run, their order, or the files they touch, and no precedent settles it; default to asking when the candidate fails the precedent test and passes the user-facing test, because asking costs the user one file edit and a short answer while a wrong assumption costs plan rework.
+
+Run each candidate decision through the checklist below while planning. The four bullets operationalize the trigger predicate rather than adding new gates.
+
+- Does the answer change which steps run, their order, or the files touched?
+- Is there a direct precedent (schema, template, existing file, prior issue) that settles it?
+- Is the decision user-facing (naming, defaults, approval gates, deliverable location)?
+- Would guessing wrong mean rework of the plan, not just a detail?
+
+Fallback rule: when a question-worthy decision is skipped for a reason, record it in the plan's Assumptions Made section with that reason. Never drop it silently.
+
+Worked example: while planning the `/release-article` skill (issue #228), where the article draft lives before approval looked like a minor location default. Two defensible readings exist: drafts start in `.claude-work/` working documents with real files written only after approval, or the release workflow's own template names a `media/` file as the deliverable and its constraint targets modifying existing files, not creating the new draft. The answer changes which steps run and where the deliverable lands, it is user-facing (approval gates, deliverable location), and no precedent settles it. It failed the precedent test and passed the user-facing test, so it crossed the bar. The plan skipped it anyway, and the question was later confirmed worth asking.
+
+## When NOT to Use
+
+- Minor choices with clear best practices (just decide)
+- Decisions where the codebase already establishes a clear, consistent pattern to follow
+- Information you can verify by reading code or documentation rather than asking
+
+These are the negative form of the checklist: a precedent settles them, or guessing wrong is a detail.
+
 ## Output format rule (read before writing anything)
 
 See `/pre-write` for the think-before-writing rule: complete all reasoning before writing the first word.
@@ -110,16 +133,3 @@ See `/prose-style` for hard-wrap and GitHub-reference rules.
 3. Print ONLY the absolute filepath in terminal. Nothing else.
 4. Wait for the user to edit answers in the file
 5. The file is the single source of truth. Read it back to get answers
-
-## When to Use
-
-- Design decisions that need user input
-- Architectural choices with no clear winner
-- User-facing behavior where preference matters
-- Scope clarification when requirements are ambiguous
-
-## When NOT to Use
-
-- Minor choices with clear best practices (just decide)
-- Decisions where the codebase already establishes a clear, consistent pattern to follow
-- Information you can verify by reading code or documentation rather than asking

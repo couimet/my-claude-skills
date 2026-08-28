@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.08.27
+
+### Changed
+
+- `/question` trigger guidance moved to the top and rewritten as a testable checklist (step/order/file impact, precedent, user-facing, rework cost) with a worked borderline example and a fallback rule for skipped questions; `/start-issue` now defers to it as the single source of trigger truth with a defined bar. ([issues/229](https://github.com/couimet/my-claude-skills/issues/229))
+
 ## 2026.08.26
 
 ### Added
