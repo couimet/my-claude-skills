@@ -100,7 +100,7 @@ Run the diff-apply script:
 ~/.claude/skills/rebase-issue/apply-stacked-diff.sh <target>
 ```
 
-The script saves the current HEAD to a unique temp branch, captures the unique diff against the target, resets to the target, and applies the changes with `--reject`. On success, all changes are staged and temp resources are cleaned up. On failure, `.rej` files and the patch file are preserved for manual resolution. Inspect the `.rej` files, hand-apply the changes, stage with `git add -A`, and continue to Step 9.
+The script saves the current HEAD to a unique temp branch, captures the unique diff against the target, resets to the target, and applies the changes with `--reject`. On success, all changes are staged and temp resources are cleaned up. On failure, `.rej` files and the patch file are preserved for manual resolution. Inspect the `.rej` files beside the affected source files, hand-apply the changes, delete all generated `.rej` files, then stage with `git add -A`. `apply-stacked-diff.sh` writes the patch file to `/tmp`, outside the repo, so it is not staged. Continue to Step 9.
 
 Proceed to Step 9. Skip Step 8. The conflict resolution strategy in Step 8 targets `git rebase` conflicts. Stacked-mode apply failures are resolved inline per the script's output.
 
@@ -189,7 +189,7 @@ When `git rebase` encounters conflicts during Step 8, apply this strategy:
 
 - **No upstream changes:** `HEAD..<target>` is empty. Nothing to rebase. Report and exit at Step 4.
 - **Stacked PRs:** when the base-branch marker file records a feature branch that still exists remotely, `git rebase` is replaced with a diff-apply via `apply-stacked-diff.sh` (Step 7). The script captures only the unique stacked diff, avoiding contamination from old commits whose changes already exist in the squashed base. When the recorded base branch disappears from the remote (PR merged and branch deleted), `resolve-target.sh` exits with a `T004` error telling the user the marker is stale. The user must specify an explicit target via `/rebase-issue <target>`. Classification is handled uniformly by `resolve-target.sh`. Any target that is not a long-lived base branch (`main`, `master`) uses stacked mode, regardless of naming convention.
-- **Diff apply conflicts:** when `git apply --reject` fails in stacked mode, `.rej` files and the patch file are preserved for manual resolution. The diff is limited to the stacked branch's unique changes, so conflicts are narrow and focused.
+- **Diff apply conflicts:** when `git apply --reject` fails in stacked mode, `.rej` files and the patch file (written to `/tmp` by `apply-stacked-diff.sh`) are preserved for manual resolution. The diff is limited to the stacked branch's unique changes, so conflicts are narrow and focused.
 - **Clean rebase:** `git rebase <target>` completes with no conflicts. Proceed directly to Step 9.
 - **Unresolvable conflicts:** abort with `git rebase --abort` and ask the user.
 - **Missing pointer file:** fall back to find, then to git log (Step 11).

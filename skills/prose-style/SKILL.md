@@ -26,7 +26,7 @@ Before reporting a file path back to the user, re-read the file you just wrote. 
 
 Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
 
-Then apply the conciseness pass from `/concise-output`.
+Then apply the conciseness pass from `/concise-output`. After the pass, re-run this self-check so the final file satisfies the hard-wrap and reference rules as well as the conciseness rules.
 
 ## Rule 2: Code references (in file content)
 

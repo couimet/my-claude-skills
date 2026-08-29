@@ -98,6 +98,8 @@ Where:
 
 **Naming convention:** use letters (A, B, C) for feedback items in text headings. When the opt-in path applies, use `S001`, `S002` IDs for implementation steps in the JSON block. This avoids confusion when referencing "Feedback B" vs "S002".
 
+**No new CHANGELOG entries.** The working document must never include a step that adds a new CHANGELOG entry. The current branch's existing entry for the in-flight PR may be amended to stay accurate, but no new heading or entry is created — even if the branch has no entry at all. Never draft an "Add CHANGELOG entry" step.
+
 ### 5a. Default path: `/note`
 
 Use `/note` with the description above. The note contains (all prose, no JSON step block):
@@ -212,6 +214,7 @@ Before finishing initial analysis (Step 7):
 - [ ] Active-plan pointer was NOT overwritten (PR-comment scratchpads are auxiliary)
 - [ ] Plan has specific file/function names
 - [ ] Each step is actionable and concrete
+- [ ] Action plan includes NO new CHANGELOG entry (existing branch entry may be amended only)
 - [ ] User was informed if clarification from reviewer is needed
 
 After user approves (Step 8):

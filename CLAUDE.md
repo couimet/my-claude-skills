@@ -135,6 +135,8 @@ This project uses [Calendar Versioning](https://calver.org/): `YYYY.MM.DD`. When
 
 **When to add an entry:** User-facing changes (new skill, changed behavior, bug fix, removed skill) always get entries. Pure internal changes (new tests, refactors, CI updates) with no user-facing effect do NOT get entries.
 
+**PR-comment feedback never adds an entry:** Running `/tackle-pr-comment` must never result in a new CHANGELOG entry. The current branch's existing entry for the in-flight PR may be amended to stay accurate, but no new heading or entry is created — even if the branch has no entry at all.
+
 **Link to the issue:** End each entry with `([issues/NN](https://github.com/couimet/my-claude-skills/issues/NN))`.
 
 **Ordering: newest first.** Version headings must appear in strict descending order — the most recent release at the top of the file, the oldest at the bottom. Within the same calendar date, higher micro suffixes are newer and come first (e.g., `2026.07.14.2` above `2026.07.14.1` above `2026.07.14`). When adding a new heading, insert it above all older headings — never append to the bottom. Before committing, verify `grep '^## YYYY.' CHANGELOG.md` prints headings in descending order.

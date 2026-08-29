@@ -12,9 +12,9 @@ Conciseness rules for skill-generated text and for console text the user asks to
 
 ## When to apply
 
-Apply the pass to every file a skill produces: notes, scratchpads, questions, commit messages, PR descriptions, changelogs, breadcrumbs, and article drafts. Use STE-flavored mode: concise and unambiguous, but not a personality transplant. Preserve every fact, every condition, and every hedge. Never add a claim the source did not make.
+Apply the pass to prose regions in every file a skill produces: notes, scratchpads, questions, commit messages, PR descriptions, changelogs, breadcrumbs, and article drafts. Preserve YAML front matter, fenced code blocks (including scratchpad JSON step blocks), shell commands, URLs, and required exact-match strings. Use STE-flavored mode: concise and unambiguous, but not a personality transplant. Preserve every fact, every condition, and every hedge. Never add a claim the source did not make.
 
-When invoked directly, rewrite the given text with the pass and print only the rewritten text. Do not write a file and do not add a preamble.
+When invoked directly, rewrite the given text with the pass and print only the rewritten text. Suppress any `Kept as-is:` line the external skill appends. Do not write a file and do not add a preamble.
 
 Auto-consult descriptions (prose-style, note, concise-output) may exceed the 25-word cap. They keep the trigger phrases that load the pass.
 

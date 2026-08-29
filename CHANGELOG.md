@@ -14,7 +14,7 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 ### Added
 
-- New `concise-output` foundation skill: generated files get a conciseness pass that invokes the external `/asd-ste100` skill (Simplified Technical English) when installed and a condensed built-in fallback when it is not; wired into `/prose-style` so all content skills inherit the pass. ([issues/235](https://github.com/couimet/my-claude-skills/issues/235))
+- New `concise-output` foundation skill: prose regions in generated files get a conciseness pass that invokes the external `/asd-ste100` skill (Simplified Technical English) when installed and a condensed built-in fallback when it is not; machine-readable regions are preserved and direct invocation prints only rewritten text; wired into `/prose-style` so all content skills inherit the pass. ([issues/235](https://github.com/couimet/my-claude-skills/issues/235))
 
 ### Changed
 
