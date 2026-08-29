@@ -36,7 +36,7 @@ Run these two commands as parallel tool calls. They are independent.
 ~/.claude/skills/ensure-gitignore/ensure-gitignore.sh
 ```
 
-Use the stdout of the first command as the full absolute file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is an absolute path ending in `/.claude-work/issues/<ID>/scratchpads/NNNN-<slug>.txt`; otherwise an absolute path ending in `/.claude-work/scratchpads/NNNN-<slug>.txt`.
+Use the stdout of the first command as the full absolute file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is an absolute path ending in `/.claude-work/issues/<ID>/scratchpads/NNNN-<slug>.txt`. Otherwise it is an absolute path ending in `/.claude-work/scratchpads/NNNN-<slug>.txt`.
 
 ## File Format
 
@@ -46,7 +46,7 @@ The content is freeform. Structure it for the purpose at hand (plan, analysis, P
 
 ## Step Tracking
 
-When a scratchpad contains an implementation plan, embed the steps inside a fenced JSON block within the `## Implementation Plan` section. The outer scratchpad remains freeform text; only the steps are structured.
+When a scratchpad contains an implementation plan, embed the steps inside a fenced JSON block within the `## Implementation Plan` section. The outer scratchpad remains freeform text. Only the steps are structured.
 
 ### JSON Schema
 
@@ -117,7 +117,7 @@ If design questions arise while creating or updating a scratchpad:
 2. Wait for user to fill in answers
 3. Then create/update the scratchpad with resolved decisions inlined
 
-The questions workflow lets the user edit answers in-file; the scratchpad captures the resolved state.
+The questions workflow lets the user edit answers in-file. The scratchpad captures the resolved state.
 
 ## When to Use
 

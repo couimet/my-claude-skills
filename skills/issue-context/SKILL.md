@@ -8,7 +8,7 @@ allowed-tools: Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issu
 
 # Issue Context
 
-All deterministic logic for "where should this file go?" lives in the scripts. Skills that write numbered working files call `target-path.sh`; skills that only need the `.claude-work/` root directory call `claude-work-root.sh`.
+All deterministic logic for "where should this file go?" lives in the scripts. Skills that write numbered working files call `target-path.sh`. Skills that only need the `.claude-work/` root directory call `claude-work-root.sh`.
 
 ## Script: target-path.sh
 
@@ -18,7 +18,7 @@ All deterministic logic for "where should this file go?" lives in the scripts. S
 ~/.claude/skills/issue-context/target-path.sh --type <scratchpads|questions|commit-msgs|notes> --description "<text>" [--ext txt]
 ```
 
-The script reads the current branch, extracts the issue ID (numeric prefix of the segment after `issues/` when applicable, full segment otherwise, empty on non-issue branches), slugifies the description, runs `auto-number.sh` internally, creates the target directory, and prints the absolute file path on stdout.
+The script reads the current branch and extracts the issue ID (numeric prefix of the segment after `issues/` when applicable, full segment otherwise, empty on non-issue branches). It slugifies the description, runs `auto-number.sh` internally, creates the target directory, and prints the absolute file path on stdout.
 
 - On `issues/<ID>` branches: absolute path ending in `.claude-work/issues/<ID>/<type>/NNNN-<slug>.<ext>`
 - Everywhere else: absolute path ending in `.claude-work/<type>/NNNN-<slug>.<ext>`
@@ -31,9 +31,9 @@ The script reads the current branch, extracts the issue ID (numeric prefix of th
 
 Returns the absolute path to the `.claude-work/` root directory, taking git worktrees into account. In the primary checkout `.claude-work/` lives at `--show-toplevel` (same as before). In a linked worktree (detected by comparing `--git-dir` against `--git-common-dir`), `.claude-work/` lives at the main checkout root so all worktrees share a single copy.
 
-The script outputs an absolute path on stdout (e.g., `/Users/x/project/.claude-work`). The directory is NOT created by this script — callers handle that.
+The script outputs an absolute path on stdout (e.g., `/Users/x/project/.claude-work`). The directory is NOT created by this script. Callers handle that.
 
-Skills that need the `.claude-work/` root but don't use `target-path.sh` (like `/note` and `/breadcrumb`) call this script directly to get the base directory, then append their subdirectory and filename.
+Skills that need the `.claude-work/` root but don't use `target-path.sh` (like `/note` and `/breadcrumb`) call this script directly to get the base directory. They append their subdirectory and filename.
 
 ## Breadcrumbs
 

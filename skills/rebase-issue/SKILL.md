@@ -50,7 +50,7 @@ MODE=<stacked|normal>
 ```
 
 - `TARGET` is the git ref to rebase onto (e.g., `origin/main`, `issues/200`).
-- `MODE` is `stacked` by default (any feature branch), `normal` only for long-lived base branches (`main`, `master`). This classification applies uniformly whether the target came from an explicit argument or auto-resolution. The logic makes no assumptions about branch naming conventions — side-quests, custom branches, and any future naming scheme all get stacked diff-apply.
+- `MODE` is `stacked` by default (any feature branch), `normal` only for long-lived base branches (`main`, `master`). This classification applies uniformly whether the target came from an explicit argument or auto-resolution. The logic makes no assumptions about branch naming conventions. Side-quests, custom branches, and any future naming scheme all get stacked diff-apply.
 
 Use these values throughout the remaining steps.
 
@@ -100,9 +100,9 @@ Run the diff-apply script:
 ~/.claude/skills/rebase-issue/apply-stacked-diff.sh <target>
 ```
 
-The script saves the current HEAD to a unique temp branch, captures the unique diff against the target, resets to the target, and applies the changes with `--reject`. On success, all changes are staged and temp resources are cleaned up. On failure, `.rej` files and the patch file are preserved for manual resolution — inspect the `.rej` files, hand-apply the changes, stage with `git add -A`, and continue to Step 9.
+The script saves the current HEAD to a unique temp branch, captures the unique diff against the target, resets to the target, and applies the changes with `--reject`. On success, all changes are staged and temp resources are cleaned up. On failure, `.rej` files and the patch file are preserved for manual resolution. Inspect the `.rej` files, hand-apply the changes, stage with `git add -A`, and continue to Step 9.
 
-Proceed to Step 9. Skip Step 8 — the conflict resolution strategy in Step 8 targets `git rebase` conflicts; stacked-mode apply failures are resolved inline per the script's output.
+Proceed to Step 9. Skip Step 8. The conflict resolution strategy in Step 8 targets `git rebase` conflicts. Stacked-mode apply failures are resolved inline per the script's output.
 
 ## Step 8: Handle Conflicts (If Any)
 
@@ -122,7 +122,7 @@ After rebase completes (cleanly or after conflict resolution):
 git diff <target> --stat
 ```
 
-Verify only issue-specific changes remain. Then run the project's formatter and test suite (project-agnostic — the harness will prompt for the specific commands). If tests fail, investigate and fix before proceeding.
+Verify only issue-specific changes remain. Then run the project's formatter and test suite. The commands are project-agnostic. The harness will prompt for the specific commands. If tests fail, investigate and fix before proceeding.
 
 ## Step 10: Squash
 
@@ -170,7 +170,7 @@ If the script failed (exit 1), all sources are empty. Abort and ask the user for
 
 Report: branch now has 1 commit on top of `<target>`. Show `git log --oneline -1` and `git diff <target> --stat`.
 
-First, use `AskUserQuestion` to confirm the target remote and branch (default to the configured upstream remote and current branch name; if no upstream is configured, default to `origin` and the current branch name). Then use `AskUserQuestion` to ask whether to push:
+First, use `AskUserQuestion` to confirm the target remote and branch. Default to the configured upstream remote and current branch name. If no upstream is configured, default to `origin` and the current branch name. Then use `AskUserQuestion` to ask whether to push:
 
 - **Yes, push with --force-with-lease**: run `git push --force-with-lease <confirmed-remote> <confirmed-branch>` (harness will prompt for permission since push is not auto-allowed)
 - **No, I'll push manually**: report that the branch is ready for manual push
@@ -187,19 +187,19 @@ When `git rebase` encounters conflicts during Step 8, apply this strategy:
 
 ## Edge Cases
 
-- **No upstream changes:** `HEAD..<target>` is empty. Nothing to rebase -- report and exit at Step 4.
-- **Stacked PRs:** when the base-branch marker file records a feature branch that still exists remotely, `git rebase` is replaced with a diff-apply via `apply-stacked-diff.sh` (Step 7). The script captures only the unique stacked diff, avoiding contamination from old commits whose changes already exist in the squashed base. When the recorded base branch disappears from the remote (PR merged and branch deleted), `resolve-target.sh` exits with a `T004` error telling the user the marker is stale. The user must specify an explicit target via `/rebase-issue <target>`. Classification is handled uniformly by `resolve-target.sh` — any target that is not a long-lived base branch (`main`, `master`) uses stacked mode, regardless of naming convention.
+- **No upstream changes:** `HEAD..<target>` is empty. Nothing to rebase. Report and exit at Step 4.
+- **Stacked PRs:** when the base-branch marker file records a feature branch that still exists remotely, `git rebase` is replaced with a diff-apply via `apply-stacked-diff.sh` (Step 7). The script captures only the unique stacked diff, avoiding contamination from old commits whose changes already exist in the squashed base. When the recorded base branch disappears from the remote (PR merged and branch deleted), `resolve-target.sh` exits with a `T004` error telling the user the marker is stale. The user must specify an explicit target via `/rebase-issue <target>`. Classification is handled uniformly by `resolve-target.sh`. Any target that is not a long-lived base branch (`main`, `master`) uses stacked mode, regardless of naming convention.
 - **Diff apply conflicts:** when `git apply --reject` fails in stacked mode, `.rej` files and the patch file are preserved for manual resolution. The diff is limited to the stacked branch's unique changes, so conflicts are narrow and focused.
 - **Clean rebase:** `git rebase <target>` completes with no conflicts. Proceed directly to Step 9.
 - **Unresolvable conflicts:** abort with `git rebase --abort` and ask the user.
 - **Missing pointer file:** fall back to find, then to git log (Step 11).
-- **Tests fail after rebase:** investigate and fix before proceeding; check if project prerequisites need updating first.
-- **Many commits on branch:** still squash to 1; the finish-issue PR description is the authoritative message.
+- **Tests fail after rebase:** investigate and fix before proceeding. Check if project prerequisites need updating first.
+- **Many commits on branch:** still squash to 1. The finish-issue PR description is the authoritative message.
 
 ## Interaction with Other Skills
 
 - `/finish-issue` generates the PR description and writes the `last-finish-issue` pointer file. Run `/rebase-issue` AFTER a PR has been reviewed and upstream PRs have been merged.
-- `/commit-msg` generates per-commit message files; those commits get squashed into the single commit.
+- `/commit-msg` generates per-commit message files. Those commits get squashed into the single commit.
 - The rebase skill produces output suitable for `git push --force-with-lease` to update the existing PR.
 
 ## Quality Checklist

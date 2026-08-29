@@ -2,7 +2,7 @@
 name: prose-style
 version: 2026.08.27@9a8f7e9
 user-invocable: false
-description: "Canonical prose and reference formatting rules for any skill that writes to a file: hard-wrap rule, code reference syntax, GitHub reference syntax. Auto-consulted whenever a skill produces file content."
+description: 'Prose, reference, and conciseness rules for any skill that writes to a file: the hard-wrap rule, code-reference syntax, GitHub-reference syntax, and the /concise-output pass. Auto-consulted when a skill produces file content.'
 allowed-tools: Bash(gh repo view *)
 ---
 
@@ -25,6 +25,8 @@ Format: one continuous line per paragraph, no hard wrapping. Code references: pa
 Before reporting a file path back to the user, re-read the file you just wrote. For each paragraph (text between blank lines, not inside a code block or table), verify it is a single continuous line. If you find any mid-sentence line break, rewrite that paragraph as one line. This check is cheap and catches the most common failure mode.
 
 Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
+
+Then apply the conciseness pass from `/concise-output`.
 
 ## Rule 2: Code references (in file content)
 

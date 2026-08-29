@@ -8,7 +8,7 @@ allowed-tools: Read, Write, Bash(git branch --show-current), Bash(date *), Bash(
 
 # Breadcrumb
 
-Drop a timestamped note along your journey through an issue. When you run `/finish-issue`, it follows the trail back, collecting all discoveries, decisions, and reminders.
+Drop a timestamped note while working on an issue. When you run `/finish-issue`, it collects all discoveries, decisions, and reminders.
 
 **Input:** $ARGUMENTS (the note text to record)
 
@@ -26,10 +26,10 @@ git branch --show-current
 
 Extract the breadcrumb identifier based on branch pattern:
 
-| Branch pattern | Identifier | Example |
-| --- | --- | --- |
-| `issues/*` | Issue ID (numeric prefix before `-`/`_`, or full segment after `issues/`) | `issues/332` → `332` |
-| `side-quest/*` | Full slug after `side-quest/` | `side-quest/cleanup-test-mocks` → `cleanup-test-mocks` |
+| Branch pattern | Identifier                                                                | Example                                                |
+| -------------- | ------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `issues/*`     | Issue ID (numeric prefix before `-`/`_`, or full segment after `issues/`) | `issues/332` → `332`                                   |
+| `side-quest/*` | Full slug after `side-quest/`                                             | `side-quest/cleanup-test-mocks` → `cleanup-test-mocks` |
 
 **If branch matches neither pattern:**
 

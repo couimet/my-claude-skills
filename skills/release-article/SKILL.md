@@ -8,7 +8,7 @@ allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-
 
 # Release Article
 
-Gather context for a software release and produce publication-ready drafts: a dev.to article, a prioritized change summary, social media copy, a "Featured In" entry, and a `promotions.yml` entry. When run outside `couimet/couimet.github.io`, optionally propose a cross-repo registration handoff via `/create-github-issue`. This skill **drafts only** — it never publishes, posts, or modifies existing files without explicit approval.
+Gather context for a software release and produce publication-ready drafts: a dev.to article, a prioritized change summary, social media copy, a "Featured In" entry, and a `promotions.yml` entry. When run outside `couimet/couimet.github.io`, optionally propose a cross-repo registration handoff via `/create-github-issue`. This skill **drafts only**. It never publishes, posts, or modifies existing files without explicit approval.
 
 **Input:** `$ARGUMENTS` (optional). A release version or tag (e.g., `2.1.0`), or a release-writing reminder issue URL (e.g., the [couimet/rangeLink #727](https://github.com/couimet/rangeLink/issues/727) pattern). When omitted, the target release is the latest version heading in the changelog.
 
@@ -45,8 +45,8 @@ The output location is **never guessed**. Read the target repo's `CLAUDE.md` (wh
 
 - If the section exists, use its location and naming rules for the article draft, after validating the resolved path: it must be a project-relative destination inside the target repository or inside the documented `<base>` working area. Reject absolute paths and `..` traversal outside those roots. If `CLAUDE.md` names an external destination, **STOP** and ask the user via `AskUserQuestion` for explicit approval before any write.
 - If it does not exist, **STOP** and prompt the user with `AskUserQuestion`:
-  - **Define it now**: the user adds a `release-article` section to the target repo's `CLAUDE.md` (location + naming rules); wait for the edit, then use it.
-  - **Use the fallback**: write drafts to the standard note location, `<base>/issues/<NNN>/notes/` on an issue branch, else `<base>/notes/`; the user moves the file later.
+  - **Define it now**: the user adds a `release-article` section to the target repo's `CLAUDE.md` (location + naming rules). Wait for the edit, then use it.
+  - **Use the fallback**: write drafts to the standard note location, `<base>/issues/<NNN>/notes/` on an issue branch, else `<base>/notes/`. The user moves the file later.
 
 Do not hardcode `media/` or `articles/_sources/` as defaults. Report the resolved location and its naming convention in the final report.
 
@@ -76,10 +76,10 @@ gh api repos/couimet/couimet.github.io/contents/_data/articles.yml -H "Accept: a
 From these files:
 
 - The `content` values are the tone corpus: first-person, emoji, `👉 <url>` sign-offs, short paragraphs, occasional FR/EN variants. Match it.
-- The distinct `projects` values are the only slugs that exist today; Step 7 reuses or extends them.
+- The distinct `projects` values are the only slugs that exist today. Step 7 reuses or extends them.
 - The `anchor` slug is the join key between a promotion and its article.
 
-Report which source was used (sibling clone or API). The tone corpus and `projects` values come from the registry either way; there is no degraded-mode fallback.
+Report which source was used (sibling clone or API). The tone corpus and `projects` values come from the registry either way. There is no degraded-mode fallback.
 
 ## Step 6: Draft the Article
 
@@ -92,7 +92,7 @@ Then write the deliverable file to the location resolved in Step 2, using the re
 All promotion drafts live in the Step 6 working document. Edits to **existing** files (README, `promotions.yml`, `articles.yml`, `CLAUDE.md`) are proposals, never direct writes.
 
 - **Social media copy**: `linkedin` and `x` content in the tone of the Step 5 corpus.
-- **`projects` value**: reuse an existing slug when it represents the source project; if several match, ask the user to select one; if none matches, propose a new value and require user confirmation. Never guess silently.
+- **`projects` value**: reuse an existing slug when it represents the source project. If several match, ask the user to select one. If none matches, propose a new value and require user confirmation. Never guess silently.
 - **"Featured In" entry**: tracked in the working-document metadata as `published: TBD`, together with the prospective bullet in the Step 4 README format (`- [Title](url) - DEV Community`) using a title placeholder. The README bullet itself is proposed only once a real URL exists.
 - **`promotions.yml` entry draft**: schema-valid (`date`, `context`, `anchor`, optional `summary` and `projects`, plus at least one of `linkedin`/`x` with `url` and `content`).
 - **Inside `couimet/couimet.github.io`**: also propose the `articles.yml` entry (with the matching `anchor`) as a draft for approval.
@@ -106,7 +106,7 @@ When the current repo is not `couimet/couimet.github.io`, help register the arti
 3. Only when no correlated match exists, write the handoff draft via `/note` with description `release-article-handoff`. The draft must contain: a `#` heading as title; a `**Target repo:** couimet/couimet.github.io` line; the source repository URL and name; the release version, tag, or changelog section; the local article path (the real project path, or a statement that the draft is local and not yet in the repository when the article lives at the Step 2 `.claude-work/` fallback — `.claude-work/` paths never appear in the draft, whose body becomes a GitHub issue); the public article URL when published; the article status; relevant release, PR, and issue URLs; the proposed `projects` value with the reason for it; a reference to the promotion copy draft; and a checklist for updating `_data/promotions.yml` and reviewing the centralized publishing tone.
 4. Ask the user to confirm via `AskUserQuestion`. Only after confirmation, suggest:
    `/create-github-issue <handoff-draft-path>`
-5. Never create the issue automatically. The duplicate check always runs; the handoff draft and confirmation prompt run only when no correlated match exists. The registry data in Step 5 comes from the sibling clone or the public API, so there is no missing-access branch.
+5. Never create the issue automatically. The duplicate check always runs. The handoff draft and confirmation prompt run only when no correlated match exists. The registry data in Step 5 comes from the sibling clone or the public API, so there is no missing-access branch.
 
 ## Step 9: Report and Approval Gate
 

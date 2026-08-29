@@ -64,13 +64,13 @@ Choose the working-document type based on whether formal step tracking is reques
 - **Default (`/note`):** use this unless the user explicitly opted in. Produces a lightweight, freeform plan. Relies on you (the LLM) to self-organize execution in-session.
 - **Opt-in (`/scratchpad`):** triggered when `$ARGUMENTS` contains `--scratchpad`, or when the user's invoking message contains a natural-language opt-in phrase ("use a scratchpad", "with step tracking", "formal plan", "track steps"). Produces a scratchpad with a JSON step block so `/tackle-scratchpad-block` can drive execution.
 
-Side-quest branches don't match `issues/*`, so the working document lands in the flat `<base>/notes/` (default) or `<base>/scratchpads/` (opt-in) directory, where `<base>` is the output of `~/.claude/skills/issue-context/claude-work-root.sh`.
+Side-quest branches don't match `issues/*`, so the working document lands in the flat `<base>/notes/` (default) or `<base>/scratchpads/` (opt-in) directory. `<base>` is the output of `~/.claude/skills/issue-context/claude-work-root.sh`.
 
 ### 3a. Default path: `/note`
 
 Use `/note` with description `side-quest-<slug>`. The note MUST contain (all prose, no JSON step block):
 
-````markdown
+```markdown
 # Side-Quest: <Title>
 
 Base branch: <branch this was cut from (origin/main, issues/XXX, or another branch)>
@@ -82,7 +82,7 @@ Base branch: <branch this was cut from (origin/main, issues/XXX, or another bran
 ## Plan
 
 Numbered prose steps (no fenced JSON). Each step commit-sized and specific.
-````
+```
 
 ### 3b. Opt-in path: `/scratchpad`
 

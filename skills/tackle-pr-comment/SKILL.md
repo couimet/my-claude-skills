@@ -12,7 +12,7 @@ Analyze a PR comment, explore the referenced code, and create a detailed impleme
 
 **Input:** $ARGUMENTS (a PR comment URL, optionally followed by `--scratchpad`)
 
-This skill produces an *auxiliary* working document. It does NOT overwrite the branch's active-plan pointer. `/finish-issue` will still treat the primary plan (from the original `/start-issue` or `/start-side-quest`) as the reference; this document is read as supplementary context.
+This skill produces an _auxiliary_ working document. It does NOT overwrite the branch's active-plan pointer. `/finish-issue` will still treat the primary plan (from the original `/start-issue` or `/start-side-quest`) as the reference. This document is read as supplementary context.
 
 ## Step 1: Parse the URL and Fetch the Comment
 
@@ -102,7 +102,7 @@ Where:
 
 Use `/note` with the description above. The note contains (all prose, no JSON step block):
 
-````markdown
+```markdown
 # PR https://github.com/{owner}/{repo}/pull/{PR_NUMBER} Comment Response
 
 Source: {FULL_PR_COMMENT_URL}
@@ -126,7 +126,7 @@ Reason: {brief justification. Omit if self-evident from the analysis above}
 ## Action Plan
 
 Numbered prose steps (no fenced JSON). Each step names the feedback items it addresses (e.g. "Step 1 (addresses A, C): ...") and the specific files/functions to change. Feedback items marked IGNORE are omitted from this list.
-````
+```
 
 ### 5b. Opt-in path: `/scratchpad`
 
@@ -140,7 +140,7 @@ Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-referen
 ### Output Anchors
 
 Deliverable: a single text file containing the analysis of each feedback item and the action plan.
-Length: 1 to 2 sentences per feedback item under Analysis. The user will ask for more depth or clarification if needed. Action Plan is however many steps the work actually requires. A single sentence is enough for a trivial change; multi-feedback responses may need several steps. Each step names the feedback letters it addresses.
+Length: 1 to 2 sentences per feedback item under Analysis. The user will ask for more depth or clarification if needed. Action Plan is however many steps the work actually requires. A single sentence is enough for a trivial change. Multi-feedback responses may need several steps. Each step names the feedback letters it addresses.
 Format: prose sections (Analysis with per-item Decision + Reason, Action Plan) per the template above. No fenced JSON in the default `/note` path.
 Scope: this comment thread's feedback only. Leave broader refactors and out-of-scope improvements out of the Action Plan.
 Tone: direct, decision-first (ACCEPT or IGNORE), reviewer-facing.

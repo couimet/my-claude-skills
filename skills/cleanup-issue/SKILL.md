@@ -10,7 +10,7 @@ allowed-tools: Read, Glob, AskUserQuestion, Bash(git branch --show-current), Bas
 
 Remove an issue's working directory after the work is done. Uses `AskUserQuestion` to confirm before deleting anything.
 
-**Input:** $ARGUMENTS (optional issue number, or `--sweep`; if omitted, detects from branch)
+**Input:** $ARGUMENTS (optional issue number, or `--sweep`. If omitted, detects from branch)
 
 ## Step 1: Determine Issue ID
 
@@ -28,7 +28,7 @@ Extract the issue ID from the `issues/<ID>` pattern (numeric prefix before the f
 
 ### Validate the ID
 
-The `remove-issue-dir.sh` script enforces ID validation internally (regex `^[A-Za-z0-9][A-Za-z0-9._-]*$`, rejects `.` and `..`). The ID extracted above is passed verbatim to the script in Step 4; if invalid, the script exits with a clear error and performs no deletion. No separate prose validation step is needed.
+The `remove-issue-dir.sh` script enforces ID validation internally (regex `^[A-Za-z0-9][A-Za-z0-9._-]*$`, rejects `.` and `..`). The ID extracted above is passed verbatim to the script in Step 4. If invalid, the script exits with a clear error and performs no deletion. No separate prose validation step is needed.
 
 ## Step 2: Check for Issue Directory
 
@@ -59,7 +59,7 @@ Glob(pattern="**/*", path="<base>/issues/<ID>")
 
 ## Step 3: Confirm Deletion
 
-Use `AskUserQuestion` to prompt for confirmation. Include the full directory path and file list in the question so the user knows exactly what will be deleted.
+Use `AskUserQuestion` to prompt for confirmation. Include the full directory path and file list in the question so the user knows exactly what the script will delete.
 
 ```text
 AskUserQuestion(
