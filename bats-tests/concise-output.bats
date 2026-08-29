@@ -40,6 +40,10 @@ SKILL="$PROJECT_ROOT/skills/concise-output/SKILL.md"
   grep -q "Graceful degradation" "$SKILL"
 }
 
+@test "concise-output skill: fallback applies when asd-ste100 is installed but cannot load or invoke" {
+  grep -q "cannot load or invoke" "$SKILL"
+}
+
 @test "concise-output skill: is wired from prose-style" {
   grep -q "/concise-output" "$PROJECT_ROOT/skills/prose-style/SKILL.md"
 }

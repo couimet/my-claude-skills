@@ -24,7 +24,7 @@ Reference `/asd-ste100` for the full treatment. When that skill resolves, apply 
 
 ## Graceful degradation
 
-If `/asd-ste100` does not resolve because the skill is not installed, apply these condensed fallback rules instead:
+If `/asd-ste100` is not installed, or is installed but cannot load or invoke, apply these condensed fallback rules instead:
 
 1. Use the active voice. "The agent deletes the file." not "The file is deleted by the agent."
 2. Keep each sentence at or below 25 words, one idea per sentence.
