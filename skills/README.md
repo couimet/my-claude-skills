@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | `note` | `/note <desc>` | Creates `.claude-work/notes/YYYYMMDD-HHMMSS-slug.txt` — lightweight capture; default working-document type for composite skills |
 | `scratchpad` | `/scratchpad <desc>` | Creates `.claude-work/scratchpads/NNNN-description.txt` with auto-numbering and a JSON step block; opt-in when composite skills need formal step tracking via `/tackle-scratchpad-block` |
-| `question` | `/question <topic> [--format-only]` | Creates `.claude-work/questions/NNNN-topic.txt` for user Q&A; a bare call delegates the challenge of what to ask to `/g2q`, while `--format-only` only creates the file |
+| `question` | `/question [--format-only] <topic>` | Creates `.claude-work/questions/NNNN-topic.txt` for user Q&A; a bare call delegates the challenge of what to ask to `/g2q`, while `--format-only` only creates the file |
 | `changelog` | `/changelog <desc>` | Creates or updates a CHANGELOG entry with tone guardrails, thematic grouping, and detail-leak detection |
 | `commit-msg` | `/commit-msg <desc>` | Creates `.claude-work/commit-msgs/NNNN-description.txt` |
 | `breadcrumb` | `/breadcrumb <note>` | Appends timestamped note to `.claude-work/issues/<ID>/breadcrumb.md` |

@@ -2,7 +2,7 @@
 name: question
 version: 2026.08.29@f067475
 description: Create a questions file in .claude-work/questions/ for gathering user input on design decisions. Questions go to file (never terminal). The user edits answers in-file as the single source of truth. A bare call delegates the challenge of what to ask to /g2q; --format-only skips the challenge and only creates the file.
-argument-hint: <topic> [--format-only]
+argument-hint: '[--format-only] <topic>'
 allowed-tools: Read, Write, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
@@ -37,7 +37,9 @@ See `/pre-write` for the think-before-writing rule: complete all reasoning befor
 
 Questions are NEVER printed in terminal output. They go to a file that the user edits directly. The file is the single source of truth for both questions and answers.
 
-## Step 1: Resolve the Target Path
+## Step 1: Resolve the Target Path (format-only mode only)
+
+Run this step only in format-only mode. In delegation mode, skip it: `/g2q` resolves the path exactly once via `/question --format-only`, so `target-path.sh` is invoked at most once per invocation.
 
 Run these two commands as parallel tool calls. They are independent.
 
@@ -127,6 +129,6 @@ See `/prose-style` for hard-wrap and GitHub-reference rules.
 
 ## Process
 
-1. **Delegation mode (no `--format-only`).** Delegate the challenge to `/g2q` with the same topic. `/g2q` grills the topic, drafts the questions following the file format above, creates the file via `/question --format-only <topic>`, and reports the path plus whether any questions were raised. Relay the report, printing ONLY the absolute filepath in terminal. Nothing else.
-2. **Format-only mode (`--format-only`).** Resolve the target path (Step 1, stripping the flag), create the file with a `# <Topic>` heading, and print ONLY the absolute filepath in terminal. Nothing else. The caller writes the drafted questions into the file.
-3. Wait for the user to edit answers in the file. The file is the single source of truth. Read it back to get answers.
+1. **Delegation mode (no `--format-only`).** Delegate the challenge to `/g2q` with the same topic. Do NOT resolve the target path here (skip Step 1): `/g2q` resolves it exactly once via `/question --format-only`. `/g2q` grills the topic, drafts the questions following the file format above, creates the file via `/question --format-only <topic>`, and reports the path plus whether any questions were raised. Relay the report, printing ONLY the absolute filepath in terminal. Nothing else.
+2. **Format-only mode (`--format-only`).** Resolve the target path (Step 1, stripping the flag), create the file with a `# <Topic>` heading, print ONLY the absolute filepath in terminal, and return immediately. Nothing else: do NOT wait for answers, since the caller writes the drafted questions into the file.
+3. **Wait for answers (delegation mode only).** The file is the single source of truth. Read it back to get answers.

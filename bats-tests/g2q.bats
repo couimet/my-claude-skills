@@ -82,7 +82,7 @@ load test_helper
 # =============================================================
 
 @test "question skill: argument-hint advertises --format-only" {
-  grep -q "argument-hint: <topic> \[--format-only\]" "$PROJECT_ROOT/skills/question/SKILL.md"
+  grep -q "argument-hint: '\[--format-only\] <topic>'" "$PROJECT_ROOT/skills/question/SKILL.md"
 }
 
 @test "question skill: delegates the challenge to /g2q" {
