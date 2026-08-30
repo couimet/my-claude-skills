@@ -8,7 +8,7 @@ allowed-tools: Read, Write, AskUserQuestion, Bash(git diff *), Bash(*/skills/iss
 
 # Commit Message
 
-Create a commit message file in `.claude-work/`. You write the message, the user reviews and runs `git commit` themselves.
+Create a commit message file in `.claude-work/`. You write the message. The user reviews and runs `git commit` themselves.
 
 **Input:** $ARGUMENTS (a short description for the filename)
 
@@ -38,7 +38,7 @@ Run these two commands as parallel tool calls. They are independent.
 ~/.claude/skills/ensure-gitignore/ensure-gitignore.sh
 ```
 
-Use the stdout of the first command as the full absolute file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is an absolute path ending in `/.claude-work/issues/<ID>/commit-msgs/NNNN-<slug>.txt`; otherwise an absolute path ending in `/.claude-work/commit-msgs/NNNN-<slug>.txt`.
+Use the stdout of the first command as the full absolute file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch, the output is an absolute path ending in `/.claude-work/issues/<ID>/commit-msgs/NNNN-<slug>.txt`. Otherwise it ends in `/.claude-work/commit-msgs/NNNN-<slug>.txt`.
 
 ## Complexity Assessment
 
@@ -147,7 +147,7 @@ This footer replaces the default `Co-Authored-By: Claude <noreply@anthropic.com>
 1. **No file lists in prose.** Do not enumerate files in the body.
 2. **Body length**: 1 line (trivial), 1-2 lines (moderate), under 15 lines (substantial). The subject line does not count toward the body line budget.
 3. **Keep the working issue link in the PR description only.** `/finish-issue` adds the `Closes` link there. That is the single source of truth for issue linkage. Repeating it in commit messages is redundant noise.
-4. **Other issue/PR references are fine** when they add context (e.g., "fixes regression from `https://github.com/.../pull/42`"), include them.
+4. **Other issue/PR references are fine** when they add context (e.g., "fixes regression from `https://github.com/.../pull/42`"). Include them.
 
 ### Output Anchors
 

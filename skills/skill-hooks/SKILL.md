@@ -18,19 +18,19 @@ Some skills in this collection (like `/start-issue`, `/finish-issue`, and `/star
 
 A project creates a foundation skill in `.claude/skills/` with the name `{parent-skill}-hook`:
 
-| Parent skill | Hook skill name | What it can add |
-| --- | --- | --- |
-| `/start-issue` | `start-issue-hook` | Additional plan steps, context-gathering, validation gates |
-| `/finish-issue` | `finish-issue-hook` | Additional verification steps, PR description sections |
+| Parent skill        | Hook skill name         | What it can add                                            |
+| ------------------- | ----------------------- | ---------------------------------------------------------- |
+| `/start-issue`      | `start-issue-hook`      | Additional plan steps, context-gathering, validation gates |
+| `/finish-issue`     | `finish-issue-hook`     | Additional verification steps, PR description sections     |
 | `/start-side-quest` | `start-side-quest-hook` | Additional plan steps, context-gathering, validation gates |
 
 Hook skills are foundation skills (`user-invocable: false`). They are consulted by their parent skill, never invoked directly by the user.
 
 ## Scope
 
-Hooks add requirements — they cannot replace the parent skill's behavior. The parent skill owns all decisions; the hook contributes constraints and content. This optimizes for frugal token consumption: the parent skill doesn't branch on hook existence, and projects without hooks pay zero overhead.
+Hooks add requirements — they cannot replace the parent skill's behavior. The parent skill owns all decisions. The hook contributes constraints and content. This optimizes for frugal token consumption: the parent skill doesn't branch on hook existence, and projects without hooks pay zero overhead.
 
-Projects wanting to replace specific behaviors (e.g., changing where `/note` writes files) should use CLAUDE.md instructions or fork the repo and add yield points at the decisions they need to customize.
+Projects wanting to replace specific behaviors (e.g., changing where `/note` writes files) should use CLAUDE.md instructions. Alternatively, fork the repo and add yield points at the decisions they need to customize.
 
 ## Example
 

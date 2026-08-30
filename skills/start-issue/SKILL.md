@@ -112,7 +112,7 @@ Choose the working-document type based on whether formal step tracking is reques
 
 Use `/note` with description `start-issue-plan`. The note MUST contain these sections (all prose, no JSON step block):
 
-````markdown
+```markdown
 # Issue #NUMBER: Title
 
 Base branch: <branch this was cut from (origin/main, or another branch if instructed)>
@@ -130,7 +130,7 @@ Parent: https://github.com/{owner}/{repo}/issues/{XX} (omit if no parent)
 ## Plan
 
 Numbered prose steps (no fenced JSON). Each step should be commit-sized, specific (name files/functions), ordered (dependencies clear), and mention test updates where relevant.
-````
+```
 
 ### 4b. Opt-in path: `/scratchpad`
 
@@ -181,7 +181,7 @@ Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-referen
 ### Output Anchors
 
 Deliverable: implementation plan note (or scratchpad, if opted in).
-Length: as long as needed to name specific files and functions. Sections are typically 1 to 4 short paragraphs. The Plan list contains however many commit-sized steps the work actually requires. A trivial fix may be one step; a large refactor may be a dozen or more. Match the issue, not a number.
+Length: as long as needed to name specific files and functions. Sections are typically 1 to 4 short paragraphs. The Plan list contains however many commit-sized steps the work actually requires. A trivial fix may be one step. A large refactor may be a dozen or more. Match the issue, not a number.
 Format: prose sections (Context, Assumptions Made, Plan) per the template above. No fenced JSON in the default `/note` path.
 Scope: planning only. Name files, functions, and test updates. Skip implementation prose.
 Tone: direct, concrete, file-and-function-named. No hedging, no generic conclusions.

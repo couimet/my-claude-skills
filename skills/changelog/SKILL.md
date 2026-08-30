@@ -41,12 +41,12 @@ Also check the project's CLAUDE.md for any explicit CHANGELOG conventions (headi
 
 Auto-detect the most likely category from context:
 
-| Signal | Category |
-| --- | --- |
-| New files added (`git diff --name-status` shows `A`) | Added |
-| Bug fix (issue labels, commit messages mentioning "fix") | Fixed |
-| Deleted files or removed features | Removed |
-| Everything else | Changed |
+| Signal                                                   | Category |
+| -------------------------------------------------------- | -------- |
+| New files added (`git diff --name-status` shows `A`)     | Added    |
+| Bug fix (issue labels, commit messages mentioning "fix") | Fixed    |
+| Deleted files or removed features                        | Removed  |
+| Everything else                                          | Changed  |
 
 **If the detection is confident** (clear signal from the table above), proceed without prompting.
 
@@ -105,7 +105,7 @@ Before drafting, read 3-5 recent entries in the CHANGELOG to match the project's
 
 Scan the draft entry against the blocklist patterns (see Implementation-Detail Blocklist section). For each match:
 
-- Print a warning: `Possible implementation detail: "<matched text>"` Consider rephrasing in user-facing terms
+- Print a warning: `Possible implementation detail: "<matched text>"`. Consider rephrasing in user-facing terms
 - Do NOT block. The user may have a legitimate reason to include the detail
 
 If no matches, proceed silently.
@@ -183,16 +183,16 @@ These rules ensure entries describe what users experience, not how the code work
 
 Flag entries containing these patterns. Emit a warning and allow the entry. Rare edge cases may legitimately include a technical name.
 
-| Pattern | Why it's flagged |
-| --- | --- |
-| `onDid`, `onWill` | Event handler names (VS Code, etc.) |
-| `setTimeout`, `setInterval`, `requestAnimationFrame` | Timer/scheduling implementation details |
-| `mock`, `stub`, `spy` | Test infrastructure, not user-facing |
-| `listener`, `handler`, `callback`, `middleware` | Internal architecture |
-| `PascalCase` words that aren't feature names | Likely class/type names (e.g., `SearchResultDTO`, `PreviewRenderer`) |
-| `flag`, `isFoo`, `hasFoo` | Internal boolean state |
-| Event name patterns (`Event`, `Emitter`, `dispatch`) | Internal pub/sub details |
-| Library-internal APIs (`dangerouslySetInnerHTML`, `useEffect`, `__dirname`) | Framework internals |
+| Pattern                                                                     | Why it's flagged                                                     |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `onDid`, `onWill`                                                           | Event handler names (VS Code, etc.)                                  |
+| `setTimeout`, `setInterval`, `requestAnimationFrame`                        | Timer/scheduling implementation details                              |
+| `mock`, `stub`, `spy`                                                       | Test infrastructure, not user-facing                                 |
+| `listener`, `handler`, `callback`, `middleware`                             | Internal architecture                                                |
+| `PascalCase` words that aren't feature names                                | Likely class/type names (e.g., `SearchResultDTO`, `PreviewRenderer`) |
+| `flag`, `isFoo`, `hasFoo`                                                   | Internal boolean state                                               |
+| Event name patterns (`Event`, `Emitter`, `dispatch`)                        | Internal pub/sub details                                             |
+| Library-internal APIs (`dangerouslySetInnerHTML`, `useEffect`, `__dirname`) | Framework internals                                                  |
 
 ## Thematic Grouping Rules
 

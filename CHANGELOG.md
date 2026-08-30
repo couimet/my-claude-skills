@@ -10,6 +10,16 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.08.29
+
+### Added
+
+- New `concise-output` foundation skill: prose regions in generated files get a conciseness pass that invokes the external `/asd-ste100` skill (Simplified Technical English) when installed and a condensed built-in fallback when it is not; machine-readable regions are preserved and direct invocation prints only rewritten text; wired into `/prose-style` so all content skills inherit the pass. ([issues/235](https://github.com/couimet/my-claude-skills/issues/235))
+
+### Changed
+
+- Existing skills' instruction prose and descriptions tightened with the STE-flavored conciseness pass. ([issues/235](https://github.com/couimet/my-claude-skills/issues/235))
+
 ## 2026.08.27
 
 ### Changed

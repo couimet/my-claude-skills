@@ -22,11 +22,11 @@ When creating a new file, use this decision tree to determine the correct locati
 
 ## How to Use
 
-**Composite skills default to `/note`.** `/start-issue`, `/start-side-quest`, and `/tackle-pr-comment` all create a `/note` by default and only fall back to `/scratchpad` when the user explicitly opts in (`--scratchpad` flag or equivalent natural-language trigger). The opt-in path is reserved for workflows that want `/tackle-scratchpad-block` to drive execution against a JSON step block; otherwise, the LLM self-organizes in-session.
+**Composite skills default to `/note`.** `/start-issue`, `/start-side-quest`, and `/tackle-pr-comment` create a `/note` by default. They fall back to `/scratchpad` only when the user opts in explicitly (`--scratchpad` flag or equivalent natural-language trigger). The opt-in path is reserved for workflows that want `/tackle-scratchpad-block` to drive execution against a JSON step block. Otherwise, the LLM self-organizes in-session.
 
 Evaluate from top to bottom. The first matching row determines the destination.
 
-Each skill owns its own file format, naming conventions, and auto-numbering. Consult the referenced skill for specifics. For the numbered working-file skills: `/scratchpad`, `/question`, and `/commit-msg`. Directory organization (flat vs issue-scoped subdirectories) is handled by `~/.claude/skills/issue-context/target-path.sh`, which those skills call internally. `/note` uses timestamp-based filenames and detects branch context on its own; `/breadcrumb` writes a single file per issue directly. All ephemeral working files live under `.claude-work/`.
+Each skill owns its own file format, naming conventions, and auto-numbering. Consult the referenced skill for specifics. For the numbered working-file skills: `/scratchpad`, `/question`, and `/commit-msg`. `~/.claude/skills/issue-context/target-path.sh` handles directory organization (flat vs issue-scoped subdirectories). Those skills call it internally. `/note` uses timestamp-based filenames and detects branch context on its own. `/breadcrumb` writes a single file per issue directly. All ephemeral working files live under `.claude-work/`.
 
 ## Ephemeral Path Rule
 

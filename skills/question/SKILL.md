@@ -25,7 +25,7 @@ Run each candidate decision through the checklist below while planning. The four
 
 Fallback rule: when a question-worthy decision is skipped for a reason, record it in the plan's Assumptions Made section with that reason. Never drop it silently.
 
-Worked example: while planning the `/release-article` skill (issue #228), where the article draft lives before approval looked like a minor location default. Two defensible readings exist: drafts start in `.claude-work/` working documents with real files written only after approval, or the release workflow's own template names a `media/` file as the deliverable and its constraint targets modifying existing files, not creating the new draft. The answer changes which steps run and where the deliverable lands, it is user-facing (approval gates, deliverable location), and no precedent settles it. It failed the precedent test and passed the user-facing test, so it crossed the bar. The plan skipped it anyway, and the question was later confirmed worth asking.
+Worked example: while planning the `/release-article` skill (issue #228), where the article draft lives before approval looked like a minor location default. Two defensible readings exist. Drafts start in `.claude-work/` working documents with real files written only after approval. Or the release workflow's own template names a `media/` file as the deliverable, and its constraint targets modifying existing files, not creating the new draft. The answer changes which steps run and where the deliverable lands. It is user-facing (approval gates, deliverable location), and no precedent settles it. It failed the precedent test and passed the user-facing test, so it crossed the bar. The plan skipped it anyway. The question was later confirmed worth asking.
 
 ## When NOT to Use
 
@@ -57,7 +57,7 @@ Run these two commands as parallel tool calls. They are independent.
 ~/.claude/skills/ensure-gitignore/ensure-gitignore.sh
 ```
 
-Use the stdout of the first command as the full absolute file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is an absolute path ending in `/.claude-work/issues/<ID>/questions/NNNN-<slug>.txt`; otherwise an absolute path ending in `/.claude-work/questions/NNNN-<slug>.txt`.
+Use the stdout of the first command as the full absolute file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is an absolute path ending in `/.claude-work/issues/<ID>/questions/NNNN-<slug>.txt`. Otherwise it is an absolute path ending in `/.claude-work/questions/NNNN-<slug>.txt`.
 
 ## File Format
 

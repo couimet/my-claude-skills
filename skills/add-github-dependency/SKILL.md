@@ -15,7 +15,7 @@ Add a dependency relationship between GitHub issues using GitHub's native `addBl
 
 ## Step 1: Parse Arguments
 
-Split `$ARGUMENTS` on whitespace. The first token is the relationship type; the second is the target issue URL.
+Split `$ARGUMENTS` on whitespace. The first token is the relationship type. The second token is the target issue URL.
 
 Validate the relationship type:
 

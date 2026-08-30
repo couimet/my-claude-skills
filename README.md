@@ -76,6 +76,16 @@ To update:
 /plugin update my-claude-skills
 ```
 
+### Optional skill: asd-ste100 (concise output)
+
+Generated files run through the `/concise-output` pass, which invokes the external [asd-ste100](https://github.com/danyuchn/asd-ste100-skill) skill for Simplified Technical English style. Install it to get the full STE treatment:
+
+```bash
+npx skills add danyuchn/asd-ste100-skill --global
+```
+
+Without it, skills degrade gracefully to a built-in condensed rule set. No breakage, just a lighter pass.
+
 ## Quick Start
 
 Once installed, try these in any project:
@@ -402,9 +412,10 @@ I've used Claude Code on dozens of real issues and kept running into the same fr
 | `/changelog <desc>` | Create or update a CHANGELOG entry with tone guardrails, thematic grouping, and detail-leak detection — adapts to SemVer, CalVer, and mono-repo layouts |
 | `/cleanup-issue [number \| --sweep]` | Delete an issue's working directory (`.claude-work/issues/<ID>/`) after confirming with the user, or sweep obsolete folders whose PRs merged into main or whose issues closed with no open PR or local issue branch |
 | `/commit-msg <desc>` | Draft a commit message focused on WHY, not WHAT |
+| `/concise-output <text>` | Rewrite the given text in condensed Simplified Technical English style — on-demand pass in the console, no file written |
 | `/create-github-issue <title-or-path>` | Create a GitHub issue from a scratchpad draft or inline description |
 | `/finish-issue` | Verify work, collect breadcrumbs, check docs, and generate a PR description |
-| `/note <desc>` | Capture a quick note, finding, or result — lightweight `/scratchpad` alternative with no foundation skill dependencies |
+| `/note <desc>` | Capture a quick note, finding, or result — lightweight `/scratchpad` alternative |
 | `/question <topic>` | Surface design decisions as a structured Q&A file you edit in-place |
 | `/rebase-issue <target>` | Rebase an issue branch onto `<target>` (defaults to `origin/main`) after upstream PRs merge — handles conflicts, squashes to one commit, and confirms before push |
 | `/scratchpad <desc>` | Create a working document — plans, analysis, PR drafts, anything temporary |
@@ -420,13 +431,13 @@ These skills aren't invoked directly — Claude consults them when the context m
 | Skill | When It Activates |
 | --- | --- |
 | `auto-number` | When a skill needs the next file sequence number — runs a Bash script that scans a directory and returns the next `NNNN`, supporting prefix/suffix modes and configurable width |
-| `code-ref` | When generating file/line references — formats them as GitHub-style permalinks, clickable in editors with [RangeLink](https://github.com/couimet/rangeLink) installed (VS Code/Cursor don't recognize the suffix natively) |
+| `concise-output` | When a skill writes file content — invokes the external `/asd-ste100` skill (Simplified Technical English) when installed, applies a condensed built-in fallback otherwise. Also directly invocable: `/concise-output <text>` for console rewrites |
 | `ensure-gitignore` | When a foundation skill is about to create a working file — checks/appends the `.claude-work/` sentinel to `.gitignore` in one Bash call |
 | `file-placement` | When deciding where to put a new file — routes to the right directory |
-| `github-ref` | When skill-generated text contains issue or PR references — requires full GitHub URLs, never short-form `#NNN` or `PR #NNN` |
+| `issue-context` | When on an `issues/<N>` branch — scopes working files to issue subdirectories |
 | `label-discovery` | When `/create-github-issue` needs labels — fetches repo labels, classifies as defaults vs structured, and prompts the user |
 | `pre-write` | Before any skill writes file content — requires complete reasoning before writing the first word, preventing in-progress deliberation from appearing in generated files |
-| `issue-context` | When on an `issues/<N>` branch — scopes working files to issue subdirectories |
+| `prose-style` | When a skill writes file content — hard-wrap rule, code-reference syntax, GitHub-reference syntax, and the `/concise-output` conciseness pass |
 | `scratchpad-ref-format` | When `/tackle-scratchpad-block` parses its argument — defines the 4 invocation forms (`#S`, `#L`, space-separated, bare-path auto-select) |
 
 For architecture details, the two-tier design, and step-tracking schema, see [skills/README.md](skills/README.md).
