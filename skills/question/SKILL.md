@@ -1,8 +1,8 @@
 ---
 name: question
 version: 2026.08.29@f067475
-description: Create a questions file in .claude-work/questions/ for gathering user input on design decisions. Questions go to file (never terminal). The user edits answers in-file as the single source of truth.
-argument-hint: <topic>
+description: Create a questions file in .claude-work/questions/ for gathering user input on design decisions. Questions go to file (never terminal). The user edits answers in-file as the single source of truth. A bare call delegates the challenge of what to ask to /g2q; --format-only skips the challenge and only creates the file.
+argument-hint: <topic> [--format-only]
 allowed-tools: Read, Write, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
@@ -10,22 +10,14 @@ allowed-tools: Read, Write, Bash(*/skills/issue-context/target-path.sh *), Bash(
 
 Create a questions file in `.claude-work/` for gathering user input.
 
-**Input:** $ARGUMENTS (a short topic description for the filename)
+**Input:** $ARGUMENTS (a short topic description for the filename, optionally prefixed with `--format-only`)
 
 ## When to Use
 
-**Trigger predicate:** ask when the answer changes which steps run, their order, or the files they touch, and no precedent settles it; default to asking when the candidate fails the precedent test and passes the user-facing test, because asking costs the user one file edit and a short answer while a wrong assumption costs plan rework.
+Use `/question` when a design decision needs the user's input captured in a questions file. Two modes:
 
-Run each candidate decision through the checklist below while planning. The four bullets operationalize the trigger predicate rather than adding new gates.
-
-- Does the answer change which steps run, their order, or the files touched?
-- Is there a direct precedent (schema, template, existing file, prior issue) that settles it?
-- Is the decision user-facing (naming, defaults, approval gates, deliverable location)?
-- Would guessing wrong mean rework of the plan, not just a detail?
-
-Fallback rule: when a question-worthy decision is skipped for a reason, record it in the plan's Assumptions Made section with that reason. Never drop it silently.
-
-Worked example: while planning the `/release-article` skill (issue #228), where the article draft lives before approval looked like a minor location default. Two defensible readings exist. Drafts start in `.claude-work/` working documents with real files written only after approval. Or the release workflow's own template names a `media/` file as the deliverable, and its constraint targets modifying existing files, not creating the new draft. The answer changes which steps run and where the deliverable lands. It is user-facing (approval gates, deliverable location), and no precedent settles it. It failed the precedent test and passed the user-facing test, so it crossed the bar. The plan skipped it anyway. The question was later confirmed worth asking.
+- **`/question <topic>`** — the default. Delegates the challenge of what to ask to `/g2q`: it grills the topic, drafts the genuinely open questions, and reports back. This is the public entry point for a grilling-informed questions file.
+- **`/question --format-only <topic>`** — skips the challenge and only creates the file. Use this when the questions are already decided and you only need `/question`'s path resolution, auto-numbering, and gitignore check. `/g2q` uses this mode after it has grilled.
 
 ## When NOT to Use
 
@@ -33,13 +25,13 @@ Worked example: while planning the `/release-article` skill (issue #228), where 
 - Decisions where the codebase already establishes a clear, consistent pattern to follow
 - Information you can verify by reading code or documentation rather than asking
 
-These are the negative form of the checklist: a precedent settles them, or guessing wrong is a detail.
+These are the negative form of the trigger predicate in `/g2q`, which decides whether a candidate ambiguity is worth asking about.
 
 ## Output format rule (read before writing anything)
 
 See `/pre-write` for the think-before-writing rule: complete all reasoning before writing the first word.
 
-**Every paragraph in the questions file (Context, Options text, Recommendation reasoning, etc.) is ONE continuous line.** No line breaks at 72, 80, or any fixed column. Use line breaks only for structural separation: between questions, around the Options block, between fields. This overrides your default instinct to wrap long prose. See `/prose-style` for the full rationale.
+**Every paragraph in the questions file (Context, Options text, Recommendation reasoning, Plan impact, etc.) is ONE continuous line.** No line breaks at 72, 80, or any fixed column. Use line breaks only for structural separation: between questions, around the Options block, between fields. This overrides your default instinct to wrap long prose. See `/prose-style` for the full rationale.
 
 ## Core Principle
 
@@ -59,6 +51,8 @@ Run these two commands as parallel tool calls. They are independent.
 
 Use the stdout of the first command as the full absolute file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is an absolute path ending in `/.claude-work/issues/<ID>/questions/NNNN-<slug>.txt`. Otherwise it is an absolute path ending in `/.claude-work/questions/NNNN-<slug>.txt`.
 
+When `$ARGUMENTS` starts with `--format-only`, strip the flag before passing the description to `target-path.sh` so the filename slug derives from the topic only.
+
 ## File Format
 
 Files use `.txt` extension (not `.md`).
@@ -77,6 +71,8 @@ C) <option> - <tradeoff or implication>
 
 Recommendation: A - <brief reasoning>
 
+**Plan impact:** <which steps of the plan or flow change based on the answer>
+
 A001: [RECOMMENDED] A
 
 ---
@@ -92,6 +88,8 @@ B) <option> - <tradeoff or implication>
 
 Recommendation: B - <brief reasoning>
 
+**Plan impact:** <which steps of the plan or flow change based on the answer>
+
 A002: [RECOMMENDED] B
 
 ---
@@ -106,7 +104,8 @@ Every question MUST include all fields in this order:
 3. **Depends on** (optional): Reference earlier questions by ID when the answer affects this question (e.g., `Depends on: Q001`)
 4. **Options**: Labeled `A)`, `B)`, `C)` etc., each with a concise tradeoff. Minimum 2, maximum 5.
 5. **Recommendation**: Your recommended option letter with brief reasoning
-6. **Answer**: `ANNN: [RECOMMENDED] <letter>`, prefilled with your recommendation
+6. **Plan impact**: A `**Plan impact:**` line after the Recommendation explaining which steps of the plan or flow would change based on the answer
+7. **Answer**: `ANNN: [RECOMMENDED] <letter>`, prefilled with your recommendation
 
 ### Answer Acknowledgment
 
@@ -128,8 +127,6 @@ See `/prose-style` for hard-wrap and GitHub-reference rules.
 
 ## Process
 
-1. Create the file with questions formatted as above
-2. **Self-check for hard-wrapping.** Re-read the file. For each Context, Recommendation, and option description, verify the text is a single continuous line. If you find a mid-sentence line break in any of those fields, rewrite as one line. Always complete this check. Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
-3. Print ONLY the absolute filepath in terminal. Nothing else.
-4. Wait for the user to edit answers in the file
-5. The file is the single source of truth. Read it back to get answers
+1. **Delegation mode (no `--format-only`).** Delegate the challenge to `/g2q` with the same topic. `/g2q` grills the topic, drafts the questions following the file format above, creates the file via `/question --format-only <topic>`, and reports the path plus whether any questions were raised. Relay the report, printing ONLY the absolute filepath in terminal. Nothing else.
+2. **Format-only mode (`--format-only`).** Resolve the target path (Step 1, stripping the flag), create the file with a `# <Topic>` heading, and print ONLY the absolute filepath in terminal. Nothing else. The caller writes the drafted questions into the file.
+3. Wait for the user to edit answers in the file. The file is the single source of truth. Read it back to get answers.

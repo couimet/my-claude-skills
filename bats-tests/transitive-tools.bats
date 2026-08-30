@@ -30,7 +30,7 @@ load test_helper
 
 # Derive the manifest skill list from the script's INVOKES block so
 # the fixtures stay in sync when the manifest grows.
-MANIFEST_SKILLS="$(sed -n '/^INVOKES=(/,/^)/p' "$PROJECT_ROOT/scripts/check-transitive-tools.sh" | grep -oE '[a-z][a-z-]+' | sort -u | tr '
+MANIFEST_SKILLS="$(sed -n '/^INVOKES=(/,/^)/p' "$PROJECT_ROOT/scripts/check-transitive-tools.sh" | grep -oE '[a-z][a-z0-9-]+' | sort -u | tr '
 ' ' ')"
 
 # create_manifest_skills <root> <allowed-tools>

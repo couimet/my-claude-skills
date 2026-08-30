@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | `note` | `/note <desc>` | Creates `.claude-work/notes/YYYYMMDD-HHMMSS-slug.txt` — lightweight capture; default working-document type for composite skills |
 | `scratchpad` | `/scratchpad <desc>` | Creates `.claude-work/scratchpads/NNNN-description.txt` with auto-numbering and a JSON step block; opt-in when composite skills need formal step tracking via `/tackle-scratchpad-block` |
-| `question` | `/question <topic>` | Creates `.claude-work/questions/NNNN-topic.txt` for user Q&A |
+| `question` | `/question <topic> [--format-only]` | Creates `.claude-work/questions/NNNN-topic.txt` for user Q&A; a bare call delegates the challenge of what to ask to `/g2q`, while `--format-only` only creates the file |
 | `changelog` | `/changelog <desc>` | Creates or updates a CHANGELOG entry with tone guardrails, thematic grouping, and detail-leak detection |
 | `commit-msg` | `/commit-msg <desc>` | Creates `.claude-work/commit-msgs/NNNN-description.txt` |
 | `breadcrumb` | `/breadcrumb <note>` | Appends timestamped note to `.claude-work/issues/<ID>/breadcrumb.md` |
@@ -41,11 +41,12 @@ Non-invocable skills (`user-invocable: false`) don't appear in the `/` menu. The
 | `cleanup-issue` | `/cleanup-issue [number \| --sweep]` | (inline branch parsing) |
 | `create-github-issue` | `/create-github-issue <title-or-path>` | `/note` (writes), `/question`, `/label-discovery` |
 | `finish-issue` | `/finish-issue [optional: issue-number-or-url]` | `/note`, `/question`, breadcrumbs (reads); handles both `issues/*` and `side-quest/*` branches |
-| `start-issue` | `/start-issue <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/cleanup-issue` |
+| `g2q` | `/g2q <topic-or-path>` | `/question` (via `--format-only`, writes the questions file); `/question` delegates its challenge here; also consulted by cross-reference from `/start-issue` and `/tackle-pr-comment` |
+| `start-issue` | `/start-issue <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/g2q`, `/cleanup-issue` |
 | `start-side-quest` | `/start-side-quest <desc> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/commit-msg` (ref) |
 | `rebase-issue` | `/rebase-issue [target]` | `resolve-target.sh`, `apply-stacked-diff.sh`, `resolve-commit-msg.sh` |
 | `release-article` | `/release-article [version-or-url]` | `/note` (writes), `/create-github-issue` (handoff), `/prose-style` |
-| `tackle-pr-comment` | `/tackle-pr-comment <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/commit-msg` |
+| `tackle-pr-comment` | `/tackle-pr-comment <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/g2q`, `/commit-msg` |
 | `tackle-scratchpad-block` | `/tackle-scratchpad-block <path#lines>` | `/scratchpad-ref-format`, `/question`, `/commit-msg`, `/scratchpad` (reads) |
 
 ## Architecture

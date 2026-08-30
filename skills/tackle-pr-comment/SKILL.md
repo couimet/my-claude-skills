@@ -84,6 +84,11 @@ Before creating the scratchpad, assess if the feedback is clear enough to act on
 
 Before drafting, restate the rules that apply to this document: hard-wrap and reference rules from `/prose-style`, and the Output Anchors block below. Then re-read the comment thread, the linked code, and any files explored in Step 3. Decide ACCEPT or IGNORE on each feedback item with the actual code in mind. The analysis is the highest-leverage artifact this skill produces.
 
+**Grill the draft before creating the working document.** Draft the analysis and action-plan content in-session, then run `/g2q` on the draft, focused on the ACCEPT/IGNORE decisions and the action-plan step ordering. It grills the draft for genuinely open ambiguities (applying the trigger predicate at the top of `/g2q`, the single source of trigger truth), creates a questions file via `/question` when it finds any, and reports whether any were raised. The answer gates how the working document is created in 5a/5b:
+
+- If grilling raised questions, create the note/scratchpad only as a pending stub (see 5a/5b): it MUST start with the banner `Production of this plan awaits answers to the questions in <absolute questions file path>, which will affect the plan.` followed by the draft outline, and MUST NOT contain the finalized analysis and action plan. Then continue to Step 6.
+- If grilling raised nothing, create the full working document per 5a/5b, then continue to Step 6.
+
 Choose the working-document type based on whether formal step tracking is requested:
 
 - **Default (`/note`):** use this unless the user explicitly opted in. Produces a lightweight, freeform analysis + action plan.
@@ -102,7 +107,7 @@ Where:
 
 ### 5a. Default path: `/note`
 
-Use `/note` with the description above. The note contains (all prose, no JSON step block):
+Use `/note` with the description above. When the grilling gate raised questions, create the note only as a pending stub (banner + draft outline, no finalized plan). Otherwise the note contains (all prose, no JSON step block):
 
 ```markdown
 # PR https://github.com/{owner}/{repo}/pull/{PR_NUMBER} Comment Response
@@ -132,7 +137,7 @@ Numbered prose steps (no fenced JSON). Each step names the feedback items it add
 
 ### 5b. Opt-in path: `/scratchpad`
 
-Use `/scratchpad` with the description above. Same sections as 5a, except `## Action Plan` is replaced with `## Implementation Plan` containing a fenced JSON step block per the `/scratchpad` Step Tracking schema. For PR-comment work:
+Use `/scratchpad` with the description above. When the grilling gate raised questions, create the scratchpad only as a pending stub (banner + draft outline, no finalized plan and no JSON step block yet). Otherwise use the same sections as 5a, except `## Action Plan` is replaced with `## Implementation Plan` containing a fenced JSON step block per the `/scratchpad` Step Tracking schema. For PR-comment work:
 
 - Omit `finish_issue_on_complete` (it is `false` by default for ad-hoc scratchpads).
 - Add an `addresses` field to each step listing the feedback item letters it resolves (e.g. `"addresses": ["A", "C"]`).
@@ -147,15 +152,9 @@ Format: prose sections (Analysis with per-item Decision + Reason, Action Plan) p
 Scope: this comment thread's feedback only. Leave broader refactors and out-of-scope improvements out of the Action Plan.
 Tone: direct, decision-first (ACCEPT or IGNORE), reviewer-facing.
 
-**STOP HERE** - The template ends above. Always end the working document at this point. Commit messages are created separately in Step 8 (after user approval) using `/commit-msg`.
+**STOP HERE** - The template ends above. Always end the working document at this point, whether a full document or a pending stub. Commit messages are created separately in Step 8 (after user approval) using `/commit-msg`.
 
-## Step 6: Questions (If Needed)
-
-If there are decisions that need user input (not clarification from reviewer), use `/question` to create a questions file.
-
-Only create a questions file for decisions that would fundamentally change the implementation approach.
-
-## Step 7: Report and Stop
+## Step 6: Report and Stop
 
 Print:
 
@@ -163,9 +162,37 @@ Print:
 2. The absolute questions file path (if created)
 3. Brief summary of what you found
 
+Then print the "Next" line that matches the state reached in Step 5:
+
+**Grilling raised questions (pending stub created):**
+
+```text
+Next: answer the questions in <absolute questions file path>. Then I will fold the answers into the analysis and action plan and finalize it (Step 7).
+```
+
+**No questions raised (full working document written):**
+
+```text
+Next: review the working document, then ask me to proceed with implementation.
+```
+
 **IMPORTANT: Do NOT start implementing changes.**
 
-Wait for the user to review the working document and explicitly ask you to proceed with implementation.
+Wait for the user:
+
+- When the grilling gate raised questions, for the answers to the questions file, then run Step 7 to finalize the working document
+- Otherwise, for review of the working document and an explicit request to proceed with implementation
+
+## Step 7: Finalize the Plan After Answers
+
+Only reached when Step 5's grilling gate raised questions and the working document is a pending stub. Wait for the user to answer every question in the questions file (removing the `[RECOMMENDED]` marker, per the `/question` answer-acknowledgment convention). Then:
+
+1. Read the questions file and fold each answer into the analysis and action plan: rewrite the stub's draft outline into the full working document per 5a or 5b, resolving each ACCEPT/IGNORE decision and step-ordering ambiguity per its answer.
+2. Remove the pending-stub banner line.
+3. Rewrite the same working-document file; no pointer needs updating (PR-comment working documents are auxiliary and do not touch the active-plan pointer).
+4. Report the finalized working-document path and STOP, matching the no-questions-raised output in Step 6.
+
+The working document is drafted once and finalized once: no step before this one writes the finalized document when the gate raised questions.
 
 ## Step 8: Commit Message (After User Approves)
 
@@ -206,7 +233,7 @@ This allows the commit message to be drafted early (from the plan) rather than w
 
 ## Quality Checklist
 
-Before finishing initial analysis (Step 7):
+Before finishing initial analysis (Step 6):
 
 - [ ] Comment was fetched successfully with full thread context (if applicable)
 - [ ] Working document (note or scratchpad) contains link to source PR comment
@@ -215,6 +242,8 @@ Before finishing initial analysis (Step 7):
 - [ ] Plan has specific file/function names
 - [ ] Each step is actionable and concrete
 - [ ] Action plan includes NO new CHANGELOG entry (existing branch entry may be amended only)
+- [ ] Grilling ran on the draft analysis and action plan (Step 5) and gated the working document on the answers
+- [ ] When grilling raised questions, the working document is a pending stub with the awaiting-answers banner and the full analysis and action plan is deferred
 - [ ] User was informed if clarification from reviewer is needed
 
 After user approves (Step 8):
