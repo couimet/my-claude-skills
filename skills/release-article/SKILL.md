@@ -1,6 +1,6 @@
 ---
 name: release-article
-version: 2026.08.27@9a8f7e9
+version: 2026.08.29@f067475
 description: Gather release context (changelog, README, prior articles, promotion registry) and draft a dev.to article with promotion copy and cross-repo registration handoff
 argument-hint: <release-version-or-issue-url>
 allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git rev-parse *), Bash(mkdir -p *), Bash(date *), Bash(gh repo view *), Bash(gh issue view *), Bash(gh issue list *), Bash(gh label list *), Bash(gh issue create *), Bash(gh api repos/couimet/couimet.github.io/contents/_data/*), Bash(*/skills/create-github-issue/link-sub-issue.sh *), Bash(*/skills/create-github-issue/link-dependency.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
