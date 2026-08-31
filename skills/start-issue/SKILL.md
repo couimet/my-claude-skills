@@ -105,7 +105,7 @@ Before drafting the plan, re-read the issue body, any parent issue, and the file
 
 **Grill the draft before creating the working document.** Draft the plan content in-session, write the draft to a scratchpads file via `~/.claude/skills/issue-context/target-path.sh --type scratchpad --description "DRAFT <NUMBER> plan"`, then run `/g2q <absolute-draft-path>` on the draft. It grills the draft for genuinely open ambiguities (applying the trigger predicate at the top of `/g2q`, the single source of trigger truth), creates a questions file under `<base>/issues/<NUMBER>/questions/` when it finds any, and reports whether any were raised. The answer gates how the working document is created in 4a/4b:
 
-- If grilling raised questions, create the note/scratchpad only as a pending stub (see 4a/4b): it MUST start with the banner `Production of this plan awaits answers to the questions in <absolute questions file path>, which will affect the plan.` followed by the draft outline, and MUST NOT contain the finalized plan. Write the active-plan pointer (4c) and base-branch marker (4d) to the stub, then continue to Step 5.
+- If grilling raised questions, create the note/scratchpad only as a pending stub (see 4a/4b): it MUST start with the banner `Production of this plan awaits answers to the questions in <absolute questions file path>, which will affect the plan.`, followed by a `Draft: <absolute draft path>` line recording where the full unfinalized draft lives, followed by the draft outline, and MUST NOT contain the finalized plan. Write the active-plan pointer (4c) and base-branch marker (4d) to the stub, then continue to Step 5.
 - If grilling raised nothing, create the full plan note/scratchpad per 4a/4b, then continue to Step 5.
 
 Choose the working-document type based on whether formal step tracking is requested:
@@ -115,7 +115,7 @@ Choose the working-document type based on whether formal step tracking is reques
 
 ### 4a. Default path: `/note`
 
-Use `/note` with description `start-issue-plan`. When the grilling gate raised questions, create the note only as a pending stub (banner + draft outline, no finalized plan). Otherwise the note MUST contain these sections (all prose, no JSON step block):
+Use `/note` with description `start-issue-plan`. When the grilling gate raised questions, create the note only as a pending stub (banner + `Draft: <path>` line + draft outline, no finalized plan). Otherwise the note MUST contain these sections (all prose, no JSON step block):
 
 ```markdown
 # Issue #NUMBER: Title
@@ -139,7 +139,7 @@ Numbered prose steps (no fenced JSON). Each step should be commit-sized, specifi
 
 ### 4b. Opt-in path: `/scratchpad`
 
-Use `/scratchpad` with description `start-issue-plan`. When the grilling gate raised questions, create the scratchpad only as a pending stub (banner + draft outline, no finalized plan and no JSON step block yet). Otherwise the scratchpad uses the same prose sections as 4a, except the `## Plan` section is replaced with `## Implementation Plan` containing a fenced JSON step block. See the `/scratchpad` Step Tracking section for the full schema. For `/start-issue` specifically: set `finish_issue_on_complete: true` at the top level, and always set each step's `status: "pending"` when planning. `/tackle-scratchpad-block` manages status transitions during execution.
+Use `/scratchpad` with description `start-issue-plan`. When the grilling gate raised questions, create the scratchpad only as a pending stub (banner + `Draft: <path>` line + draft outline, no finalized plan and no JSON step block yet). Otherwise the scratchpad uses the same prose sections as 4a, except the `## Plan` section is replaced with `## Implementation Plan` containing a fenced JSON step block. See the `/scratchpad` Step Tracking section for the full schema. For `/start-issue` specifically: set `finish_issue_on_complete: true` at the top level, and always set each step's `status: "pending"` when planning. `/tackle-scratchpad-block` manages status transitions during execution.
 
 ### 4c. Write the active-plan pointer
 
@@ -232,7 +232,7 @@ This skill is for planning only. After reporting status:
 
 Only reached when Step 4's grilling gate raised questions and the working document is a pending stub. Wait for the user to answer every question in the questions file (removing the `[RECOMMENDED]` marker, per the `/question` answer-acknowledgment convention). Then:
 
-1. Read the questions file and fold each answer into the plan: rewrite the stub's draft outline into the full plan per 4a or 4b, resolving each ambiguity per its answer and recording any decisions that became assumptions under `## Assumptions Made`.
+1. Read the questions file and the draft at the path recorded in the stub, fold each answer into the draft, and rewrite the stub into the full plan per 4a or 4b, resolving each ambiguity per its answer and recording any decisions that became assumptions under `## Assumptions Made`.
 2. Remove the pending-stub banner line.
 3. Rewrite the same working-document file; the active-plan pointer (4c) already targets it and stays valid.
 4. Report the finalized plan path and STOP, matching the no-questions-raised output in Step 5.

@@ -77,6 +77,22 @@ load test_helper
   grep -q "Production of this plan awaits answers to the questions in" "$PROJECT_ROOT/skills/tackle-pr-comment/SKILL.md"
 }
 
+@test "start-issue skill: pending stub records the draft path" {
+  grep -q "Draft: <absolute draft path>" "$PROJECT_ROOT/skills/start-issue/SKILL.md"
+}
+
+@test "tackle-pr-comment skill: pending stub records the draft path" {
+  grep -q "Draft: <absolute draft path>" "$PROJECT_ROOT/skills/tackle-pr-comment/SKILL.md"
+}
+
+@test "start-issue skill: Step 6 reads the draft together with the questions file" {
+  grep -q "the draft at the path recorded in the stub" "$PROJECT_ROOT/skills/start-issue/SKILL.md"
+}
+
+@test "tackle-pr-comment skill: Step 7 reads the draft together with the questions file" {
+  grep -q "the draft at the path recorded in the stub" "$PROJECT_ROOT/skills/tackle-pr-comment/SKILL.md"
+}
+
 # =============================================================
 # /question <-> /g2q delegation contract
 # =============================================================

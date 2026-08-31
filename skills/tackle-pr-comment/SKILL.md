@@ -86,7 +86,7 @@ Before drafting, restate the rules that apply to this document: hard-wrap and re
 
 **Grill the draft before creating the working document.** Draft the analysis and action-plan content in-session, write the draft to a scratchpads file via `~/.claude/skills/issue-context/target-path.sh --type scratchpad --description "DRAFT pr-<PR_NUMBER> response"`, then run `/g2q <absolute-draft-path>` on the draft, focused on the ACCEPT/IGNORE decisions and the action-plan step ordering. It grills the draft for genuinely open ambiguities (applying the trigger predicate at the top of `/g2q`, the single source of trigger truth), creates a questions file via `/question` when it finds any, and reports whether any were raised. The answer gates how the working document is created in 5a/5b:
 
-- If grilling raised questions, create the note/scratchpad only as a pending stub (see 5a/5b): it MUST start with the banner `Production of this plan awaits answers to the questions in <absolute questions file path>, which will affect the plan.` followed by the draft outline, and MUST NOT contain the finalized analysis and action plan. Then continue to Step 6.
+- If grilling raised questions, create the note/scratchpad only as a pending stub (see 5a/5b): it MUST start with the banner `Production of this plan awaits answers to the questions in <absolute questions file path>, which will affect the plan.`, followed by a `Draft: <absolute draft path>` line recording where the full unfinalized draft lives, followed by the draft outline, and MUST NOT contain the finalized analysis and action plan. Then continue to Step 6.
 - If grilling raised nothing, create the full working document per 5a/5b, then continue to Step 6.
 
 Choose the working-document type based on whether formal step tracking is requested:
@@ -107,7 +107,7 @@ Where:
 
 ### 5a. Default path: `/note`
 
-Use `/note` with the description above. When the grilling gate raised questions, create the note only as a pending stub (banner + draft outline, no finalized plan). Otherwise the note contains (all prose, no JSON step block):
+Use `/note` with the description above. When the grilling gate raised questions, create the note only as a pending stub (banner + `Draft: <path>` line + draft outline, no finalized plan). Otherwise the note contains (all prose, no JSON step block):
 
 ```markdown
 # PR https://github.com/{owner}/{repo}/pull/{PR_NUMBER} Comment Response
@@ -137,7 +137,7 @@ Numbered prose steps (no fenced JSON). Each step names the feedback items it add
 
 ### 5b. Opt-in path: `/scratchpad`
 
-Use `/scratchpad` with the description above. When the grilling gate raised questions, create the scratchpad only as a pending stub (banner + draft outline, no finalized plan and no JSON step block yet). Otherwise use the same sections as 5a, except `## Action Plan` is replaced with `## Implementation Plan` containing a fenced JSON step block per the `/scratchpad` Step Tracking schema. For PR-comment work:
+Use `/scratchpad` with the description above. When the grilling gate raised questions, create the scratchpad only as a pending stub (banner + `Draft: <path>` line + draft outline, no finalized plan and no JSON step block yet). Otherwise use the same sections as 5a, except `## Action Plan` is replaced with `## Implementation Plan` containing a fenced JSON step block per the `/scratchpad` Step Tracking schema. For PR-comment work:
 
 - Omit `finish_issue_on_complete` (it is `false` by default for ad-hoc scratchpads).
 - Add an `addresses` field to each step listing the feedback item letters it resolves (e.g. `"addresses": ["A", "C"]`).
@@ -187,7 +187,7 @@ Wait for the user:
 
 Only reached when Step 5's grilling gate raised questions and the working document is a pending stub. Wait for the user to answer every question in the questions file (removing the `[RECOMMENDED]` marker, per the `/question` answer-acknowledgment convention). Then:
 
-1. Read the questions file and fold each answer into the analysis and action plan: rewrite the stub's draft outline into the full working document per 5a or 5b, resolving each ACCEPT/IGNORE decision and step-ordering ambiguity per its answer.
+1. Read the questions file and the draft at the path recorded in the stub, fold each answer into the draft, and rewrite the stub into the full working document per 5a or 5b, resolving each ACCEPT/IGNORE decision and step-ordering ambiguity per its answer.
 2. Remove the pending-stub banner line.
 3. Rewrite the same working-document file; no pointer needs updating (PR-comment working documents are auxiliary and do not touch the active-plan pointer).
 4. Report the finalized working-document path and STOP, matching the no-questions-raised output in Step 6.
