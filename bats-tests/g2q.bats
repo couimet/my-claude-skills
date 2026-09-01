@@ -128,12 +128,14 @@ load test_helper
 
 @test "g2q skill: creates the questions file only when questions were raised" {
   grep -q "Create the questions file only when questions were raised" "$PROJECT_ROOT/skills/g2q/SKILL.md"
+  grep -q "skip this step, create no file" "$PROJECT_ROOT/skills/g2q/SKILL.md"
 }
 
 @test "g2q skill: no-question report omits the questions-file path" {
-  grep -q "print no path when none were raised" "$PROJECT_ROOT/skills/g2q/SKILL.md"
+  grep -q "Print the absolute path to the questions file when questions were raised; print no path when none were raised" "$PROJECT_ROOT/skills/g2q/SKILL.md"
 }
 
 @test "question skill: delegation relay states no questions without a filepath" {
   grep -q "No questions raised" "$PROJECT_ROOT/skills/question/SKILL.md"
+  grep -q "Nothing else" "$PROJECT_ROOT/skills/question/SKILL.md"
 }
