@@ -59,3 +59,8 @@ done
 echo ""
 echo "Done: $installed new, $updated updated, $unchanged unchanged, $conflict conflict(s)"
 echo "Skills available as /skill-name in all Claude Code projects."
+echo ""
+echo "External skill dependencies (optional, installed separately):"
+echo "  /asd-ste100  → npx skills add danyuchn/asd-ste100-skill --global"
+echo "  /grilling    → npx skills add mattpocock/skills --global"
+echo "Both are optional; this suite falls back to built-ins when they are missing."

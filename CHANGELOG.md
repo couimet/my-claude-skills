@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.08.31
+
+### Changed
+
+- The README installation section and `install.sh` now list the external skill dependencies (`/asd-ste100` from danyuchn/asd-ste100-skill, `/grilling` from mattpocock/skills) with their `npx skills add` install commands for every install path — quick install, clone and symlink, and plugin marketplace — so users installing any way know what to install for full leverage. ([issues/237](https://github.com/couimet/my-claude-skills/issues/237))
+
 ## 2026.08.30
 
 ### Added
