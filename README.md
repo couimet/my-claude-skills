@@ -32,6 +32,8 @@ Update later with `npx skills update` (add `-g` to update only globally-installe
 
 One caveat: the CLI installs into the same `~/.claude/skills/` directory that `install.sh` manages, so pick one install path and stick with it — mixing both for the same skills can overwrite each other's copies.
 
+This installs only this repo's skills. A few of them optionally call external skills — see [External skill dependencies](#external-skill-dependencies) below to install those too.
+
 ### Clone and Symlink
 
 ```bash
@@ -42,6 +44,8 @@ git clone git@github.com:couimet/my-claude-skills.git ~/src/my-claude-skills
 This creates symlinks from `~/.claude/skills/` to the repo, making all skills globally available in every Claude Code project. Skills are the [standard Claude Code extension mechanism](https://code.claude.com/docs/en/skills) — each one is a markdown file with instructions that Claude follows when you invoke it. Best for contributors and anyone who wants a live checkout that updates with `git pull`.
 
 `install.sh` requires bash (macOS/Linux). On Windows, use the [quick install](#quick-install-npx-skills) or [marketplace](#marketplace-installation) paths instead.
+
+`install.sh` symlinks only this repo's own skills. A few of them optionally call external skills — see [External skill dependencies](#external-skill-dependencies) below to install those too.
 
 ### Updating
 
@@ -76,15 +80,25 @@ To update:
 /plugin update my-claude-skills
 ```
 
-### Optional skill: asd-ste100 (concise output)
+The plugin bundles only this repo's skills. A few of them optionally call external skills — install those separately (see [External skill dependencies](#external-skill-dependencies) below).
 
-Generated files run through the `/concise-output` pass, which invokes the external [asd-ste100](https://github.com/danyuchn/asd-ste100-skill) skill for Simplified Technical English style. Install it to get the full STE treatment:
+### External skill dependencies
+
+Two of the skills in this suite optionally call external skills from other repos. Both are optional: each degrades gracefully to a built-in fallback when the external skill is not installed, so nothing breaks without them. Install them to get the full treatment.
+
+**`/asd-ste100`** — [danyuchn/asd-ste100-skill](https://github.com/danyuchn/asd-ste100-skill), Simplified Technical English. The `/concise-output` pass (and through it `/prose-style`) invokes it for STE-flavored rewriting of generated prose; without it, a condensed built-in rule set applies:
 
 ```bash
 npx skills add danyuchn/asd-ste100-skill --global
 ```
 
-Without it, skills degrade gracefully to a built-in condensed rule set. No breakage, just a lighter pass.
+**`/grilling`** — [mattpocock/skills](https://github.com/mattpocock/skills), the grilling method. `/g2q` uses it as the method source for its challenge pass; without it, an inline description keeps `/g2q` working:
+
+```bash
+npx skills add mattpocock/skills --global
+```
+
+Installing the whole `mattpocock/skills` suite makes the rest of Matt Pocock's engineering skills available too, so you can use more of them later if you want.
 
 ## Quick Start
 
