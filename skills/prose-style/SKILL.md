@@ -1,6 +1,6 @@
 ---
 name: prose-style
-version: 2026.08.30@d15093b
+version: 2026.08.31@639b4b6
 user-invocable: false
 description: 'Prose, reference, and conciseness rules for any skill that writes to a file: the hard-wrap rule, code-reference syntax, GitHub-reference syntax, and the /concise-output pass. Auto-consulted when a skill produces file content.'
 allowed-tools: Bash(gh repo view *)
