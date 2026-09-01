@@ -10,6 +10,17 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.08.30
+
+### Added
+
+- New `g2q` skill wraps the grilling method and emits a `/question`-format questions file for a topic or working document, so grilling a plan no longer needs a hand-written prompt. ([issues/236](https://github.com/couimet/my-claude-skills/issues/236))
+
+### Changed
+
+- `/start-issue` and `/tackle-pr-comment` grill their drafted plan or analysis via `/g2q` before creating the working document, and gate plan production on the answers: when the pass raises questions, the note or scratchpad is created only as a pending stub carrying a banner that names the questions file by full path and a `Draft:` line that records where the full unfinalized draft lives, and the finalized plan is written after the answers arrive by folding them into that draft. ([issues/236](https://github.com/couimet/my-claude-skills/issues/236))
+- `/question` delegates the challenge of what to ask to `/g2q` on a bare `/question <topic>` call, so every standalone caller gains grilling, and gains a `--format-only` mode that skips the challenge and only creates the file (`/g2q` uses it after grilling, which breaks the otherwise circular `/question` <-> `/g2q` delegation). The trigger predicate moves with the challenge into `/g2q`, which becomes the single source of trigger truth. ([issues/236](https://github.com/couimet/my-claude-skills/issues/236))
+
 ## 2026.08.29
 
 ### Added

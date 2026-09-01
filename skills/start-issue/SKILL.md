@@ -103,6 +103,11 @@ Where `<NUMBER>` is the GitHub issue number (e.g., `issues/223`) and `<BASE_BRAN
 
 Before drafting the plan, re-read the issue body, any parent issue, and the files surfaced in Step 3. Think through actual file and function names, step ordering, and dependencies before writing. The plan is the highest-leverage artifact this skill produces. Treat it as such. See `/pre-write` for the think-before-writing rule. If any aspect of the plan is unclear after this review, use `/question` before writing.
 
+**Grill the draft before creating the working document.** Draft the plan content in-session, write the draft to a scratchpads file via `~/.claude/skills/issue-context/target-path.sh --type scratchpad --description "DRAFT <NUMBER> plan"`, then run `/g2q <absolute-draft-path>` on the draft. It grills the draft for genuinely open ambiguities (applying the trigger predicate at the top of `/g2q`, the single source of trigger truth), creates a questions file under `<base>/issues/<NUMBER>/questions/` when it finds any, and reports whether any were raised. The answer gates how the working document is created in 4a/4b:
+
+- If grilling raised questions, create the note/scratchpad only as a pending stub (see 4a/4b): it MUST start with the banner `Production of this plan awaits answers to the questions in <absolute questions file path>, which will affect the plan.`, followed by a `Draft: <absolute draft path>` line recording where the full unfinalized draft lives, followed by the draft outline, and MUST NOT contain the finalized plan. Write the active-plan pointer (4c) and base-branch marker (4d) to the stub, then continue to Step 5.
+- If grilling raised nothing, create the full plan note/scratchpad per 4a/4b, then continue to Step 5.
+
 Choose the working-document type based on whether formal step tracking is requested:
 
 - **Default (`/note`):** use this unless the user explicitly opted in. Produces a lightweight, freeform plan. Relies on you (the LLM) to self-organize execution in-session via TaskCreate/TaskUpdate.
@@ -110,7 +115,7 @@ Choose the working-document type based on whether formal step tracking is reques
 
 ### 4a. Default path: `/note`
 
-Use `/note` with description `start-issue-plan`. The note MUST contain these sections (all prose, no JSON step block):
+Use `/note` with description `start-issue-plan`. When the grilling gate raised questions, create the note only as a pending stub (banner + `Draft: <path>` line + draft outline, no finalized plan). Otherwise the note MUST contain these sections (all prose, no JSON step block):
 
 ```markdown
 # Issue #NUMBER: Title
@@ -134,7 +139,7 @@ Numbered prose steps (no fenced JSON). Each step should be commit-sized, specifi
 
 ### 4b. Opt-in path: `/scratchpad`
 
-Use `/scratchpad` with description `start-issue-plan`. The scratchpad uses the same prose sections as 4a, except the `## Plan` section is replaced with `## Implementation Plan` containing a fenced JSON step block. See the `/scratchpad` Step Tracking section for the full schema. For `/start-issue` specifically: set `finish_issue_on_complete: true` at the top level, and always set each step's `status: "pending"` when planning. `/tackle-scratchpad-block` manages status transitions during execution.
+Use `/scratchpad` with description `start-issue-plan`. When the grilling gate raised questions, create the scratchpad only as a pending stub (banner + `Draft: <path>` line + draft outline, no finalized plan and no JSON step block yet). Otherwise the scratchpad uses the same prose sections as 4a, except the `## Plan` section is replaced with `## Implementation Plan` containing a fenced JSON step block. See the `/scratchpad` Step Tracking section for the full schema. For `/start-issue` specifically: set `finish_issue_on_complete: true` at the top level, and always set each step's `status: "pending"` when planning. `/tackle-scratchpad-block` manages status transitions during execution.
 
 ### 4c. Write the active-plan pointer
 
@@ -148,7 +153,7 @@ After the working document is created (via either path), write the pointer file 
 .claude-work/issues/126/notes/20260424-143022-start-issue-plan.txt
 ```
 
-Overwrite any existing pointer. Only the most recent working document is "active".
+Overwrite any existing pointer. Only the most recent working document is "active". When the grilling gate created a pending stub, the pointer targets the stub and stays valid after finalization (Step 6), which rewrites the same file.
 
 ### 4d. Write the base-branch marker
 
@@ -186,22 +191,17 @@ Format: prose sections (Context, Assumptions Made, Plan) per the template above.
 Scope: planning only. Name files, functions, and test updates. Skip implementation prose.
 Tone: direct, concrete, file-and-function-named. No hedging, no generic conclusions.
 
-## Step 5: Create Questions File (Only If Necessary)
+## Step 5: Report Status and STOP
 
-Run every candidate decision through the trigger predicate and its checklist at the top of `/question`. It is the single source of trigger truth: do not restate the criteria here, or the two skills drift and disagree on the bar again.
+Print the branch name, the absolute working-document path, and any absolute questions file path. Then print the "Next" line that matches the state reached in Step 4:
 
-Worked example, fundamental vs minor:
+**Grilling raised questions (pending stub created):**
 
-- Fundamental, ask: where the article draft lives before approval (issue #228). Two defensible readings exist, the answer changes which steps run and where the deliverable lands, and no precedent settles it. It failed the precedent test and passed the user-facing test.
-- Minor, just decide: the filename of a draft inside an already-resolved location. The resolved naming convention is the precedent, and guessing wrong is a detail.
+```text
+Next: answer the questions in <absolute questions file path>. Then I will fold the answers into the plan and finalize it (Step 6).
+```
 
-If questions are needed, use `/question` to create a questions file. Add a `**Plan impact:**` line after the `Recommendation:` in each question to explain which steps would change based on the answer.
-
-## Step 6: Report Status and STOP
-
-Print the branch name, the absolute working-document path, and any absolute questions file path. Then print a "Next" line that matches the path taken in Step 4:
-
-**Default path (note):**
+**No questions raised, full plan written - default path (note):**
 
 ```text
 Next: review the plan, then ask me to proceed with the first step (e.g. "start S1" or just "go ahead").
@@ -210,7 +210,7 @@ Commit model: one commit at the end covering all changes. When done, call /finis
 do NOT call /commit-msg first. The PR description file doubles as the commit message body.
 ```
 
-**Opt-in path (scratchpad):**
+**No questions raised, full plan written - opt-in path (scratchpad):**
 
 ```text
 Next: use `/tackle-scratchpad-block` to execute steps one at a time.
@@ -224,8 +224,20 @@ If multiple pending, unblocked steps exist, specify which one:
 
 This skill is for planning only. After reporting status:
 
-- Wait for the user to review the implementation plan
+- When the grilling gate raised questions, wait for the user to answer the questions file, then run Step 6 to finalize the plan
+- Otherwise, wait for the user to review the implementation plan
 - Only begin implementation when the user explicitly asks (e.g., "proceed", "start implementing", "go ahead")
+
+## Step 6: Finalize the Plan After Answers
+
+Only reached when Step 4's grilling gate raised questions and the working document is a pending stub. Wait for the user to answer every question in the questions file (removing the `[RECOMMENDED]` marker, per the `/question` answer-acknowledgment convention). Then:
+
+1. Read the questions file and the draft at the path recorded in the stub, fold each answer into the draft, and rewrite the stub into the full plan per 4a or 4b, resolving each ambiguity per its answer and recording any decisions that became assumptions under `## Assumptions Made`.
+2. Remove the pending-stub banner line.
+3. Rewrite the same working-document file; the active-plan pointer (4c) already targets it and stays valid.
+4. Report the finalized plan path and STOP, matching the no-questions-raised output in Step 5.
+
+The plan is drafted once and finalized once: no step before this one writes the finalized plan when the gate raised questions.
 
 ## Quality Checklist
 
@@ -240,6 +252,8 @@ Before finishing, verify:
 - [ ] Test updates are mentioned for each step that changes behavior
 - [ ] Assumptions are documented with reasoning
 - [ ] Questions (if any) would genuinely change the plan if answered differently
+- [ ] Grilling ran on the draft plan (Step 4) and gated the working document on the answers
+- [ ] When grilling raised questions, the working document is a pending stub with the awaiting-answers banner and the full plan is deferred
 - [ ] Documentation and discoverability considered
 - [ ] Project status update attempted (Step 1b) — silent failure is OK, but the step must not be skipped
 - [ ] Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.

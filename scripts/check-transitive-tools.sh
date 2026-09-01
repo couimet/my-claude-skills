@@ -47,12 +47,14 @@ set -euo pipefail
 # system bash (3.2) predates associative arrays, so manifest_value() and
 # manifest_callers() provide the associative lookup.
 INVOKES=(
-  "start-issue=note scratchpad question cleanup-issue"
+  "start-issue=note scratchpad question g2q cleanup-issue"
   "start-side-quest=note scratchpad question"
   "finish-issue=note question"
-  "tackle-pr-comment=note scratchpad question commit-msg"
+  "tackle-pr-comment=note scratchpad question g2q commit-msg"
   "tackle-scratchpad-block=question commit-msg finish-issue"
   "create-github-issue=note label-discovery"
+  "g2q=question"
+  "question=g2q"
   "scratchpad=question"
   "label-discovery=question"
 )
@@ -226,7 +228,7 @@ invoked_references() {
   local repo_root="$1" range="$2" file="$3" skills_root="$4"
   local line remaining tok prior_nocasematch
   local verbs="use|using|invoke|invokes|call|calls|run|runs|follow|via|create|creates|through|with"
-  local re="($verbs)[[:space:]]+/([a-z][a-z-]+)"
+  local re="($verbs)[[:space:]]+/([a-z][a-z0-9-]+)"
 
   # Match verbs case-insensitively, as the original grep -qiE did. The
   # matching loop below runs in a pipeline subshell, which inherits this

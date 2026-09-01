@@ -26,7 +26,9 @@ Before reporting a file path back to the user, re-read the file you just wrote. 
 
 Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
 
-Then apply the conciseness pass from `/concise-output`. After the pass, re-run this self-check so the final file satisfies the hard-wrap and reference rules as well as the conciseness rules.
+Also scan for reference violations: each code reference is a bare workspace-relative permalink (src/parser.ts#L42), never backtick-wrapped and never a plain-text form like "lines 26-37"; each GitHub reference is a full URL, never #NNN, PR #NNN, or issue #NNN; and each generated file path you report to the user is absolute, never a relative .claude-work/... path. Rewrite any you find.
+
+Then apply the `/concise-output` pass from Rule 5. After the pass, re-run this self-check so the final file satisfies the hard-wrap and reference rules as well as the conciseness and STE rules.
 
 ## Rule 2: Code references (in file content)
 
@@ -67,6 +69,12 @@ Then append `/issues/{number}` or `/pull/{number}`.
 When reporting a generated file path to the user (e.g., "Created: ...", "File: ...", "Breadcrumb dropped in ..."), always use the full absolute path. Absolute paths are clickable in terminal and IDE (CMD+CLICK). Relative paths (`.claude-work/...`) are not — they break when the current working directory differs from the project root, as happens in git worktrees where `.claude-work/` is at the main checkout root.
 
 This applies to every skill that prints a file path: notes, scratchpads, questions, commit messages, PR descriptions, breadcrumbs.
+
+## Rule 5: Apply /concise-output in STE-flavored mode
+
+Run `/concise-output` on the file's prose content in STE-flavored mode: enforce its structural rules (active voice, ≤25-word sentences, no semicolons, one topic per paragraph, lists for sequences) and treat its lexical rules as advisory. `/concise-output` invokes `/asd-ste100` when available and applies its condensed fallback rules when it is not. STE-flavored fits prose deliverables — PR descriptions, changelogs, READMEs, explanatory prose. Reserve the strict mode for error messages, inter-agent instructions, and status text.
+
+Re-run the Rule 1 self-check after the pass.
 
 ## What this replaces
 
