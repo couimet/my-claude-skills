@@ -1,6 +1,6 @@
 ---
 name: concise-output
-version: 2026.08.31@639b4b6
+version: 2026.08.31@e820a6e
 description: 'Conciseness rules for generated files and console text. Invokes the external /asd-ste100 skill (Simplified Technical English) when available. Applies a condensed built-in fallback when it is not. Auto-consulted when a skill writes file content. Invoke directly to condense any text.'
 argument-hint: <text>
 user-invocable: true

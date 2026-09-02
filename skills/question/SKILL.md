@@ -1,6 +1,6 @@
 ---
 name: question
-version: 2026.08.31@639b4b6
+version: 2026.08.31@e820a6e
 description: Create a questions file in .claude-work/questions/ for gathering user input on design decisions. Questions go to file (never terminal). The user edits answers in-file as the single source of truth. A bare call delegates the challenge of what to ask to /g2q; --format-only skips the challenge and only creates the file.
 argument-hint: '[--format-only] <topic>'
 allowed-tools: Read, Write, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
