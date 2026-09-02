@@ -1,7 +1,7 @@
 ---
 name: question
 version: 2026.08.31@4326632
-description: Create a questions file in .claude-work/questions/ for gathering user input on design decisions. Questions go to file (never terminal). The user edits answers in-file as the single source of truth. A bare call delegates the challenge of what to ask to /g2q; --format-only skips the challenge and only creates the file.
+description: Create a questions file in .claude-work/questions/ for gathering user input on design decisions. Questions go to file (never terminal). The user edits answers in-file as the single source of truth. A bare call delegates the challenge of what to ask to /g2q; --format-only skips the challenge and only creates the file. /g2q emits its questions in dependency waves, each wave its own file, and a paused run is relayed as paused because questions remain held for a later wave.
 argument-hint: '[--format-only] <topic>'
 allowed-tools: Read, Write, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
@@ -123,12 +123,22 @@ When reading answers back, treat any answer still containing `[RECOMMENDED]` as 
 
 Use `Q001`, `Q002` etc. to reference questions and `A001`, `A002` to reference answers, both within the questions file and from other documents (scratchpads, commit messages, etc.).
 
+### Wave Emissions and the Held-Questions Section
+
+When a `/g2q` grilling pass runs in waves, each wave is its own numbered questions file, and a wave may carry extra lines after the last question block. The trailing section appears only when it has content.
+
+A wave that holds questions closes with a `Held:` heading followed by one line per held question naming the question and the answers it waits on. Held questions carry no number: a question is numbered when it is emitted in a later wave, so the sequence is recovered from the highest emitted number in the newest wave file, never from a reserved range.
+
+A wave whose just-answered predecessors made a still-open question moot carries `Retired: <question> - <answer responsible>` lines under the same heading, one per retired question, scoped to that wave. Prior wave files are never edited, so a retired question is explained in the wave that retires it, never silently dropped.
+
+The answer-acknowledgment convention applies per wave: the user removes `[RECOMMENDED]` on the newest wave file to answer it, and a paused run's caller resumes grilling for the next wave once those answers are in.
+
 ## Formatting
 
 See `/prose-style` for hard-wrap and GitHub-reference rules.
 
 ## Process
 
-1. **Delegation mode (no `--format-only`).** Delegate the challenge to `/g2q` with the same topic. Do NOT resolve the target path here (skip Step 1): `/g2q` resolves it exactly once via `/question --format-only` when questions are raised. `/g2q` grills the topic, drafts the questions following the file format above, creates the file via `/question --format-only <topic>` only when it raised questions, and reports the path plus whether any questions were raised. Relay the report: when questions were raised, print ONLY the absolute filepath in terminal. When none were raised, print `No questions raised.` Nothing else, and return here: no questions file exists, so the wait-for-answers step must not run.
+1. **Delegation mode (no `--format-only`).** Delegate the challenge to `/g2q` with the same topic. Do NOT resolve the target path here (skip Step 1): `/g2q` resolves it exactly once via `/question --format-only` when questions are raised. `/g2q` grills the topic, drafts the questions following the file format above, creates the file via `/question --format-only <topic>` only when it raised questions, and reports the path plus whether any questions were raised and whether the run is paused. Relay the report: when questions were raised and the run is complete, print ONLY the absolute filepath in terminal. When questions were raised and the run is paused (questions remain held for a later wave), print the absolute filepath and state that the run is paused, so the caller knows a later wave follows this wave's answers. When none were raised, print `No questions raised.` Nothing else, and return here: no questions file exists, so the wait-for-answers step must not run.
 2. **Format-only mode (`--format-only`).** Resolve the target path (Step 1, stripping the flag), create the file with a `# <Topic>` heading, print ONLY the absolute filepath in terminal, and return immediately. Nothing else: do NOT wait for answers, since the caller writes the drafted questions into the file.
 3. **Wait for answers (delegation mode only, and only when questions were raised).** The file is the single source of truth. Read it back to get answers.

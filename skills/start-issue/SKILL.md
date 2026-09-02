@@ -103,9 +103,9 @@ Where `<NUMBER>` is the GitHub issue number (e.g., `issues/223`) and `<BASE_BRAN
 
 Before drafting the plan, re-read the issue body, any parent issue, and the files surfaced in Step 3. Think through actual file and function names, step ordering, and dependencies before writing. The plan is the highest-leverage artifact this skill produces. Treat it as such. See `/pre-write` for the think-before-writing rule. If any aspect of the plan is unclear after this review, use `/question` before writing.
 
-**Grill the draft before creating the working document.** Draft the plan content in-session, write the draft to a scratchpads file via `~/.claude/skills/issue-context/target-path.sh --type scratchpad --description "DRAFT <NUMBER> plan"`, then run `/g2q <absolute-draft-path>` on the draft. It grills the draft for genuinely open ambiguities (applying the trigger predicate at the top of `/g2q`, the single source of trigger truth), creates a questions file under `<base>/issues/<NUMBER>/questions/` when it finds any, and reports whether any were raised. The answer gates how the working document is created in 4a/4b:
+**Grill the draft before creating the working document.** Draft the plan content in-session, write the draft to a scratchpads file via `~/.claude/skills/issue-context/target-path.sh --type scratchpad --description "DRAFT <NUMBER> plan"`, then run `/g2q <absolute-draft-path>` on the draft. It grills the draft for genuinely open ambiguities (applying the trigger predicate at the top of `/g2q`, the single source of trigger truth), creates a questions file under `<base>/issues/<NUMBER>/questions/` when it finds any, and reports whether any were raised and, when raised, whether the run is paused or complete. The report gates how the working document is created in 4a/4b:
 
-- If grilling raised questions, create the note/scratchpad only as a pending stub (see 4a/4b): it MUST start with the banner `Production of this plan awaits answers to the questions in <absolute questions file path>, which will affect the plan.`, followed by a `Draft: <absolute draft path>` line recording where the full unfinalized draft lives, followed by the draft outline, and MUST NOT contain the finalized plan. Write the active-plan pointer (4c) and base-branch marker (4d) to the stub, then continue to Step 5.
+- If grilling raised questions, create the note/scratchpad only as a pending stub (see 4a/4b): it MUST start with the banner `Production of this plan awaits answers to the questions in <absolute questions file path>, which will affect the plan.`, followed by a `Draft: <absolute draft path>` line recording where the full unfinalized draft lives, followed by the draft outline, and MUST NOT contain the finalized plan. Write the active-plan pointer (4c) and base-branch marker (4d) to the stub, then continue to Step 5. A paused report (the newest wave file ends with questions held for a later wave) still counts as raised: create the stub exactly this way, since answers are pending, and Step 6 re-grills the draft between answer waves before finalizing.
 - If grilling raised nothing, create the full plan note/scratchpad per 4a/4b, then continue to Step 5.
 
 Choose the working-document type based on whether formal step tracking is requested:
@@ -195,10 +195,16 @@ Tone: direct, concrete, file-and-function-named. No hedging, no generic conclusi
 
 Print the branch name, the absolute working-document path, and any absolute questions file path. Then print the "Next" line that matches the state reached in Step 4:
 
-**Grilling raised questions (pending stub created):**
+**Grilling raised questions and the run is complete (pending stub created):**
 
 ```text
 Next: answer the questions in <absolute questions file path>. Then I will fold the answers into the plan and finalize it (Step 6).
+```
+
+**Grilling raised questions and the run is paused (pending stub created, more waves may follow):**
+
+```text
+Next: answer the questions in <absolute questions file path>. More waves may follow: after you answer, I will re-grill the draft to emit the next wave, and I will only finalize the plan (Step 6) once a wave answers with nothing held.
 ```
 
 **No questions raised, full plan written - default path (note):**
@@ -230,14 +236,15 @@ This skill is for planning only. After reporting status:
 
 ## Step 6: Finalize the Plan After Answers
 
-Only reached when Step 4's grilling gate raised questions and the working document is a pending stub. Wait for the user to answer every question in the questions file (removing the `[RECOMMENDED]` marker, per the `/question` answer-acknowledgment convention). Then:
+Only reached when Step 4's grilling gate raised questions and the working document is a pending stub. Wait for the user to answer every question in the newest wave file (removing the `[RECOMMENDED]` marker, per the `/question` answer-acknowledgment convention). Then:
 
-1. Read the questions file and the draft at the path recorded in the stub, fold each answer into the draft, and rewrite the stub into the full plan per 4a or 4b, resolving each ambiguity per its answer and recording any decisions that became assumptions under `## Assumptions Made`.
-2. Remove the pending-stub banner line.
-3. Rewrite the same working-document file; the active-plan pointer (4c) already targets it and stays valid.
-4. Report the finalized plan path and STOP, matching the no-questions-raised output in Step 5.
+1. Read the newest wave's answers. If that wave still lists held questions, the run is paused: resume grilling by re-running `/g2q` on the draft at the path recorded in the stub, report the new wave file path, and wait for the user to answer it. The stub stays pending through the pause.
+2. Only when the newest wave file holds nothing do you fold every answer from every wave into the draft at the path recorded in the stub and rewrite the stub into the full plan per 4a or 4b, resolving each ambiguity per its answer and recording any decisions that became assumptions under `## Assumptions Made`.
+3. Remove the pending-stub banner line.
+4. Rewrite the same working-document file; the active-plan pointer (4c) already targets it and stays valid.
+5. Report the finalized plan path and STOP, matching the no-questions-raised output in Step 5.
 
-The plan is drafted once and finalized once: no step before this one writes the finalized plan when the gate raised questions.
+The plan is drafted once and finalized once, at the end of the wave sequence: no step before this one writes the finalized plan when the gate raised questions.
 
 ## Quality Checklist
 
