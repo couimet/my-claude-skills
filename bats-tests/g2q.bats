@@ -126,9 +126,10 @@ load test_helper
   grep -q "/question --format-only" "$PROJECT_ROOT/skills/g2q/SKILL.md"
 }
 
-@test "g2q skill: emits a wave file only when questions were raised" {
-  grep -q "create a file only when questions were raised" "$PROJECT_ROOT/skills/g2q/SKILL.md"
+@test "g2q skill: emits a wave file whenever the run's state changes" {
+  grep -q "create a file whenever the run's state changes" "$PROJECT_ROOT/skills/g2q/SKILL.md"
   grep -q "skip this step, create no file" "$PROJECT_ROOT/skills/g2q/SKILL.md"
+  grep -q "terminal wave" "$PROJECT_ROOT/skills/g2q/SKILL.md"
 }
 
 @test "g2q skill: report omits the questions-file path when no questions were raised" {
