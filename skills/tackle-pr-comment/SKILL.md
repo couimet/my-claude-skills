@@ -84,9 +84,9 @@ Before creating the scratchpad, assess if the feedback is clear enough to act on
 
 Before drafting, restate the rules that apply to this document: hard-wrap and reference rules from `/prose-style`, and the Output Anchors block below. Then re-read the comment thread, the linked code, and any files explored in Step 3. Decide ACCEPT or IGNORE on each feedback item with the actual code in mind. The analysis is the highest-leverage artifact this skill produces.
 
-**Grill the draft before creating the working document.** Draft the analysis and action-plan content in-session, write the draft to a scratchpads file via `~/.claude/skills/issue-context/target-path.sh --type scratchpad --description "DRAFT pr-<PR_NUMBER> response"`, then run `/g2q <absolute-draft-path>` on the draft, focused on the ACCEPT/IGNORE decisions and the action-plan step ordering. It grills the draft for genuinely open ambiguities (applying the trigger predicate at the top of `/g2q`, the single source of trigger truth), creates a questions file via `/question` when it finds any, and reports whether any were raised. The answer gates how the working document is created in 5a/5b:
+**Grill the draft before creating the working document.** Draft the analysis and action-plan content in-session, write the draft to a scratchpads file via `~/.claude/skills/issue-context/target-path.sh --type scratchpad --description "DRAFT pr-<PR_NUMBER> response"`, then run `/g2q <absolute-draft-path>` on the draft, focused on the ACCEPT/IGNORE decisions and the action-plan step ordering. It grills the draft for genuinely open ambiguities (applying the trigger predicate at the top of `/g2q`, the single source of trigger truth), creates a questions file via `/question` when it finds any, and reports whether any were raised and, when raised, whether the run is paused or complete. The report gates how the working document is created in 5a/5b:
 
-- If grilling raised questions, create the note/scratchpad only as a pending stub (see 5a/5b): it MUST start with the banner `Production of this plan awaits answers to the questions in <absolute questions file path>, which will affect the plan.`, followed by a `Draft: <absolute draft path>` line recording where the full unfinalized draft lives, followed by the draft outline, and MUST NOT contain the finalized analysis and action plan. Then continue to Step 6.
+- If grilling raised questions, create the note/scratchpad only as a pending stub (see 5a/5b): it MUST start with the banner `Production of this plan awaits answers to the questions in <absolute questions file path>, which will affect the plan.`, followed by a `Draft: <absolute draft path>` line recording where the full unfinalized draft lives, followed by the draft outline, and MUST NOT contain the finalized analysis and action plan. Then continue to Step 6. A paused report (the newest wave file ends with questions held for a later wave) still counts as raised: create the stub exactly this way, since answers are pending, and Step 7 re-grills the draft between answer waves before finalizing.
 - If grilling raised nothing, create the full working document per 5a/5b, then continue to Step 6.
 
 Choose the working-document type based on whether formal step tracking is requested:
@@ -164,10 +164,16 @@ Print:
 
 Then print the "Next" line that matches the state reached in Step 5:
 
-**Grilling raised questions (pending stub created):**
+**Grilling raised questions and the run is complete (pending stub created):**
 
 ```text
 Next: answer the questions in <absolute questions file path>. Then I will fold the answers into the analysis and action plan and finalize it (Step 7).
+```
+
+**Grilling raised questions and the run is paused (pending stub created, more waves may follow):**
+
+```text
+Next: answer the questions in <absolute questions file path>. More waves may follow: after you answer, I will re-grill the draft to emit the next wave, and I will only finalize the working document (Step 7) once a wave answers with nothing held.
 ```
 
 **No questions raised (full working document written):**
@@ -185,14 +191,15 @@ Wait for the user:
 
 ## Step 7: Finalize the Plan After Answers
 
-Only reached when Step 5's grilling gate raised questions and the working document is a pending stub. Wait for the user to answer every question in the questions file (removing the `[RECOMMENDED]` marker, per the `/question` answer-acknowledgment convention). Then:
+Only reached when Step 5's grilling gate raised questions and the working document is a pending stub. Wait for the user to answer every question in the newest wave file (removing the `[RECOMMENDED]` marker, per the `/question` answer-acknowledgment convention). Then:
 
-1. Read the questions file and the draft at the path recorded in the stub, fold each answer into the draft, and rewrite the stub into the full working document per 5a or 5b, resolving each ACCEPT/IGNORE decision and step-ordering ambiguity per its answer.
-2. Remove the pending-stub banner line.
-3. Rewrite the same working-document file; no pointer needs updating (PR-comment working documents are auxiliary and do not touch the active-plan pointer).
-4. Report the finalized working-document path and STOP, matching the no-questions-raised output in Step 6.
+1. Read the newest wave's answers. If that wave still lists held questions, the run is paused: resume grilling by re-running `/g2q` on the draft at the path recorded in the stub, report the new wave file path, and wait for the user to answer it. The stub stays pending through the pause.
+2. Only when the newest wave file holds nothing do you fold every answer from every wave into the draft at the path recorded in the stub and rewrite the stub into the full working document per 5a or 5b, resolving each ACCEPT/IGNORE decision and step-ordering ambiguity per its answer.
+3. Remove the pending-stub banner line.
+4. Rewrite the same working-document file; no pointer needs updating (PR-comment working documents are auxiliary and do not touch the active-plan pointer).
+5. Report the finalized working-document path and STOP, matching the no-questions-raised output in Step 6.
 
-The working document is drafted once and finalized once: no step before this one writes the finalized document when the gate raised questions.
+The working document is drafted once and finalized once, at the end of the wave sequence: no step before this one writes the finalized document when the gate raised questions.
 
 ## Step 8: Commit Message (After User Approves)
 

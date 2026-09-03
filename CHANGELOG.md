@@ -10,6 +10,13 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.09.02
+
+### Changed
+
+- `/g2q` emits its questions in dependency waves instead of all at once: each wave is its own numbered questions file that ends with a `Held:` list naming the questions still waiting on answers, and a resume re-grills the same draft in light of the newest wave's answers, retiring questions an answer made moot before emitting the next wave. `/question` documents the trailing held and retired lines and gains an explicit paused state in its report and relay, distinct from a complete run. ([issues/247](https://github.com/couimet/my-claude-skills/issues/247))
+- `/start-issue` and `/tackle-pr-comment` treat a paused grill as pending: the pending stub stays pending while the newest wave holds questions, and each finalize step re-runs `/g2q` on the draft between answer rounds, folding every answer from every wave into the working document only when a wave answers with nothing held. ([issues/247](https://github.com/couimet/my-claude-skills/issues/247))
+
 ## 2026.08.31
 
 ### Changed
