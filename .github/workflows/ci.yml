@@ -29,3 +29,53 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+
+  # INCUBATION COPY — remove this job once couimet/github-actions#126 adds
+  # shared kcov coverage inputs, then consume them from the shell-ci-checks
+  # workflow instead. See scripts/shell-coverage.sh for the matching copy.
+  coverage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install kcov (source build — not packaged for ubuntu-24.04)
+        run: |
+          # The v43 tag is mutable; pin the immutable commit behind it and
+          # verify the archive digest before building and installing.
+          kcov_commit=a39874f938ce13f7a65f253120d1ec946b349ffe
+          kcov_sha256=dac01569171979477b500924be264d2a1bc649dae6010536228cbb319344d516
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake pkg-config binutils-dev \
+            libssl-dev libcurl4-openssl-dev libelf-dev libdw-dev libiberty-dev zlib1g-dev
+          curl -fsSL -o /tmp/kcov.tar.gz \
+            "https://github.com/SimonKagstrom/kcov/archive/${kcov_commit}.tar.gz"
+          echo "${kcov_sha256}  /tmp/kcov.tar.gz" | sha256sum -c -
+          mkdir -p /tmp/kcov-src
+          tar -xzf /tmp/kcov.tar.gz -C /tmp/kcov-src --strip-components=1
+          cmake -S /tmp/kcov-src -B /tmp/kcov-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/kcov-build -j2
+          sudo cmake --install /tmp/kcov-build
+
+      # Same BATS version and helper libraries the shell-ci-checks workflow
+      # installs, so the instrumented run mirrors the plain test run.
+      - name: Install BATS
+        uses: bats-core/bats-action@77d6fb60505b4d0d1d73e48bd035b55074bbfb43 # 4.0.0
+        with:
+          bats-version: 1.14.0
+          support-install: 'true'
+          assert-install: 'true'
+
+      - name: Run BATS suite under kcov
+        run: bash scripts/shell-coverage.sh
+
+      - name: Upload coverage to Codecov
+        uses: couimet/github-actions/codecov-upload@main
+        with:
+          files: coverage/cobertura.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail-ci-if-error: ${{ github.event_name == 'push' }}

@@ -1,0 +1,24 @@
+# Codecov configuration for couimet/my-claude-skills.
+# See: https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  status:
+    project:
+      default:
+        # Coverage must never drop relative to the base commit: a zero
+        # threshold fails the check on any decrease. On main, a recent parent
+        # commit is used as the reference. If kcov's bash measurement noise
+        # causes spurious failures, raise this to a small buffer.
+        target: auto
+        threshold: 0%
+
+    patch:
+      default:
+        # Patch coverage check is informational only -- don't block PRs on it.
+        informational: true
+
+comment:
+  # Show coverage summary on every PR.
+  layout: 'reach, diff, flags, files, footer'
+  behavior: default
+  require_changes: false
