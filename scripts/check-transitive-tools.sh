@@ -52,11 +52,12 @@ INVOKES=(
   "finish-issue=note question"
   "tackle-pr-comment=note scratchpad question g2q commit-msg"
   "tackle-scratchpad-block=question commit-msg finish-issue"
-  "create-github-issue=note label-discovery"
+  "create-github-issue=note label-discovery issue-draft-reader"
+  "draft-issue=note g2q"
   "g2q=question"
   "question=g2q"
   "scratchpad=question"
-  "label-discovery=question"
+  "create-jira-issue=note issue-draft-reader"
 )
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

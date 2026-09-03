@@ -1,68 +1,44 @@
 ---
 name: create-github-issue
 version: 2026.09.02@026b73f
-description: Create a GitHub issue from a file draft or inline description, with smart label discovery and sub-issue linking
-argument-hint: <file-path-or-title>
+description: Create a GitHub issue from a standardized draft or an inline title, with label groups offered after creation and optional sub-issue and dependency linking
+argument-hint: <title-or-path>
 allowed-tools: Read, Write, Glob, Bash(git branch --show-current), Bash(mkdir -p *), Bash(date *), Bash(gh repo view *), Bash(gh label list *), Bash(gh issue create *), Bash(*/skills/create-github-issue/link-sub-issue.sh *), Bash(*/skills/create-github-issue/link-dependency.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Create GitHub Issue
 
-Create a GitHub issue with smart label discovery and optional sub-issue linking. Reads from any file (scratchpad, markdown, extensionless, including drag-dropped paths) or accepts an inline title.
+Create a GitHub issue with label groups offered after creation and optional sub-issue and dependency linking. Reads a standardized issue draft (authored by `/draft-issue`) or accepts an inline title for a defaults-only creation.
 
 **Input:** $ARGUMENTS (a file path, or a title for interactive creation)
 
-## Step 1: Parse Input
+## Step 1: Parse the Draft
 
-Determine the input mode from `$ARGUMENTS`:
+Follow `/issue-draft-reader`. It determines the input mode and returns the front-matter fields, the title, and the sanitized body. When the argument is a file that is not a standardized draft, the reader stops the flow and prints the route through `/draft-issue`, so no file reaching this step is unstandardized. Work with the returned fields, title, and body.
 
-- **File path**: if the argument points to an existing file (any path, any extension or none), treat it as a draft to extract from. This covers `.claude-work/scratchpads/*.txt`, markdown files, extensionless files, and drag-dropped paths from the terminal.
-- **Inline title**: otherwise, treat the entire argument as the issue title for interactive creation.
+In inline-title mode, prompt the user for an optional description. If the user gives one, treat it as the body. If not, create title-only with an empty body.
 
-## Step 2: Extract Issue Content
+## Step 2: Resolve the Target Repository
 
-### From File
+If the returned fields include `target-repo`, use it as the target repository. When no such field is present, infer owner/repo from the current git remote:
 
-Read the file and extract:
-
-- **Title**: the first `#`-level heading (strip the `#` prefix)
-- **Body**: everything after the title heading
-
-If the file contains a `## Parent` or `Parent: #NN` line, extract the parent issue number for sub-issue linking in Step 6.
-
-Scan the body for dependency relationships to other GitHub issues. The user may express these in natural language — "depends on X", "needs X first", "waiting on X", "blocked by X", "this blocks Y", "unblocks Z", etc. — not with any required phrasing. For each relationship you detect, determine the direction (blocked-by or is-blocking) and extract the full GitHub issue URL. These can reference issues in any repository, including the current one. There can be zero, one, or multiple such relationships.
-
-If the file contains a `**Target repo:** owner/repo` line (e.g., `**Target repo:** couimet/my-claude-skills`), extract it as the target repository override. When no target repo line is present, infer owner/repo from the current git remote (`gh repo view --json owner,name`).
-
-### From Inline Title
-
-Use the argument as the title. Prompt the user to provide a body, either inline or by pointing to an existing file.
-
-## Step 3: Sanitize Body
-
-Strip references to ephemeral local paths that don't exist on GitHub:
-
-- `.claude-work/` paths (scratchpads, notes, questions, commit-msgs, breadcrumbs)
-
-**Print the list of stripped references** so the user can verify nothing important was removed. Format as:
-
-```text
-Stripped ephemeral references:
-- .claude-work/issues/42/scratchpads/0001-plan.txt (line 12)
-- .claude-work/issues/42/questions/0001-scope.txt (line 28)
+```bash
+gh repo view --json owner,name
 ```
 
-If no ephemeral references were found, print:
+If the returned fields name a Jira target (`target-project` or `like`) but no `target-repo`, the draft targets Jira: STOP and tell the user to run `/create-jira-issue` with the same path.
 
-```text
-No ephemeral references found. Body is clean.
-```
+## Step 3: Extract Issue Relationships
 
-## Step 4: Discover Labels and Prompt for Selection
+Read the relationship fields the reader returned. Dependencies are explicit front-matter fields, so no natural-language scanning happens:
 
-Follow `/label-discovery` to fetch labels, classify them, and prompt the user. Pass `--repo owner/repo` when a target repo override was extracted in Step 2.
+- **Parent**: the `parent` field holds the full URL of the parent GitHub issue. Parse `OWNER`, `REPO`, and `NUMBER` from it for sub-issue linking in Step 6.
+- **Blocked-by dependencies**: each entry in the `blocked-by` list is the full GitHub issue URL this issue waits on.
+- **Is-blocking dependencies**: each entry in the `is-blocking` list is the full GitHub issue URL this issue unblocks.
 
-## Step 5: Create the Issue
+There can be zero, one, or many entries in each dependency list.
+
+## Step 4: Save the Sanitized Body
 
 Use `/note` with description `issue-body` to save the sanitized body to a timestamped file in the issue's notes folder (e.g., `.claude-work/issues/<ID>/notes/YYYYMMDD-HHMMSS-issue-body.txt`). This keeps the body traceable alongside other working files and avoids heredoc compound commands that don't match `allowed-tools` globs.
 
@@ -73,20 +49,24 @@ Before creating the issue, append a footer line to the body file identifying the
 Generated by /create-github-issue v<VERSION> • [my-claude-skills](https://github.com/couimet/my-claude-skills)
 ```
 
-Then create the issue with a simple one-liner (pass `--repo owner/repo` when a target repo override was extracted in Step 2. Omit it to use the current git remote):
+When the body is empty (inline-title creation with no description), write the body file with no footer.
+
+## Step 5: Create the Issue
+
+Create the issue with a simple one-liner (pass `--repo owner/repo` when a target repo override was resolved in Step 2. Omit it to use the current git remote). Do not pass `--label`. Label selection happens on the issue page after Step 8:
 
 ```bash
-gh issue create --title "<TITLE>" --label "<LABEL1>,<LABEL2>" --body-file <BODY_FILE_PATH>
-gh issue create --repo owner/repo --title "<TITLE>" --label "<LABEL1>,<LABEL2>" --body-file <BODY_FILE_PATH>
+gh issue create --title "<TITLE>" --body-file <BODY_FILE_PATH>
+gh issue create --repo owner/repo --title "<TITLE>" --body-file <BODY_FILE_PATH>
 ```
 
-Omit the `--label` flag entirely when no labels are selected. Capture the returned issue URL.
+Capture the returned issue URL.
 
 ## Step 6: Link as Sub-Issue (If Parent Specified)
 
-If a parent issue number was extracted in Step 2, link the new issue as a sub-issue using the `link-sub-issue.sh` script.
+If a parent URL was extracted in Step 3, link the new issue as a sub-issue using the `link-sub-issue.sh` script.
 
-Parse `OWNER`, `REPO`, and `CHILD_NUMBER` from the issue URL returned in Step 5 (`https://github.com/{OWNER}/{REPO}/issues/{CHILD_NUMBER}`). If a target repo override was extracted in Step 2, use that owner/repo instead.
+Parse `CHILD_NUMBER` from the issue URL returned in Step 5 (`https://github.com/{owner}/{repo}/issues/{CHILD_NUMBER}`). Use the `OWNER`, `REPO`, and `NUMBER` parsed from the parent URL in Step 3.
 
 Run the script once per child issue to link:
 
@@ -94,7 +74,7 @@ Run the script once per child issue to link:
 ~/.claude/skills/create-github-issue/link-sub-issue.sh --owner "$OWNER" --repo "$REPO" --parent "$PARENT_NUMBER" --child "$CHILD_NUMBER"
 ```
 
-The script handles all GraphQL calls internally, using `jq -n` to build payloads via temp files to avoid zsh history expansion stripping `!` from GraphQL type annotations (`String!`, `Int!`, `ID!`). It prints `linked #<child> → #<parent>` on success or an error message on failure (exit 1).
+The script handles all GraphQL calls internally, with `jq -n`, writing payloads to temp files. This keeps zsh history expansion from stripping `!` from GraphQL type annotations (`String!`, `Int!`, `ID!`). It prints `linked #<child> → #<parent>` on success or an error message on failure (exit 1).
 
 If the script fails, note it in the Step 8 report as:
 
@@ -106,11 +86,11 @@ If no parent was specified, skip this step.
 
 ## Step 7: Link Dependencies (If Blocked By / Is Blocking Specified)
 
-If `Blocked by` or `Is blocking` URLs were extracted in Step 2, link each dependency using the `link-dependency.sh` script.
+If the `blocked-by` or `is-blocking` lists from Step 3 are non-empty, link each dependency using the `link-dependency.sh` script.
 
-Parse `OWNER`, `REPO`, and `SUBJECT_NUMBER` from the issue URL returned in Step 5 (`https://github.com/{OWNER}/{REPO}/issues/{SUBJECT_NUMBER}`). If a target repo override was extracted in Step 2, use that owner/repo instead.
+Parse `OWNER`, `REPO`, and `SUBJECT_NUMBER` from the issue URL returned in Step 5 (`https://github.com/{OWNER}/{REPO}/issues/{SUBJECT_NUMBER}`).
 
-For each dependency URL detected in Step 2, parse `TARGET_OWNER`, `TARGET_REPO`, and `TARGET_NUMBER` from the URL, then run:
+For each dependency URL in the lists, parse `TARGET_OWNER`, `TARGET_REPO`, and `TARGET_NUMBER` from the URL, then run:
 
 ```bash
 ~/.claude/skills/create-github-issue/link-dependency.sh \
@@ -123,7 +103,7 @@ For each dependency URL detected in Step 2, parse `TARGET_OWNER`, `TARGET_REPO`,
   --relationship "$RELATIONSHIP"
 ```
 
-Where `$RELATIONSHIP` is `blocked-by` (when this issue depends on the other) or `is-blocking` (when this issue unblocks the other), as inferred from the natural language in the body. The script handles all GraphQL calls internally, using `jq -n` to build payloads via temp files to avoid zsh history expansion stripping `!` from GraphQL type annotations (`String!`, `Int!`, `ID!`). It maps the relationship to `addBlockedBy` argument order and prints `blocked #<subject> ← #<target>` or `blocking #<subject> → #<target>` on success.
+Where `$RELATIONSHIP` is `blocked-by` for each entry in the `blocked-by` list (this issue waits on the other) and `is-blocking` for each entry in the `is-blocking` list (this issue unblocks the other). The script handles all GraphQL calls internally, with `jq -n`, writing payloads to temp files. This keeps zsh history expansion from stripping `!` from GraphQL type annotations (`String!`, `Int!`, `ID!`). It maps the relationship to `addBlockedBy` argument order and prints `blocked #<subject> ← #<target>` or `blocking #<subject> → #<target>` on success.
 
 If the script fails, note it in the Step 8 report as:
 
@@ -133,21 +113,22 @@ Dependency linking: failed for <URL> (<error summary>). Link manually if needed.
 
 To add dependencies to an existing issue (rather than at creation time), use `/add-github-dependency <blocked-by|is-blocking> <issue-url>`.
 
-If no dependency URLs were extracted, skip this step.
+If both dependency lists are empty, skip this step.
 
-## Step 8: Report
+## Step 8: Report and Offer Labels
 
 Print a summary:
 
 ```text
 Created: <ISSUE_URL>
 Title: <TITLE>
-Labels: <LABEL1>, <LABEL2>
-Parent: https://github.com/{OWNER}/{REPO}/issues/{PARENT_NUMBER} (linked as sub-issue)  ← only if parent specified AND linking succeeded
+Parent: https://github.com/{OWNER}/{REPO}/issues/{NUMBER} (linked as sub-issue)  ← only if parent specified AND linking succeeded
 Sub-issue linking: failed (<error summary>). Link manually if needed.  ← only if parent specified AND linking failed
 Blocked by: <URL> (linked)  ← one per successful blocked-by dependency
 Is blocking: <URL> (linked)  ← one per successful is-blocking dependency
 Dependency linking: failed for <URL> (<error summary>). Link manually if needed.  ← one per failed dependency
 ```
+
+Then follow `/label-discovery` to fetch and classify the target repo's labels, passing `--repo owner/repo` when a target repo override was resolved in Step 2. After the classified groups print, invite the user to apply labels on the issue page, where GitHub's own autocomplete is better than any terminal prompt.
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.

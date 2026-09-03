@@ -377,17 +377,18 @@ Mid-issue, you'll often notice orthogonal improvements — a helper function tha
 
 When all steps are done, `/finish-issue` verifies the work, collects breadcrumbs, checks documentation needs, and generates a PR description. The description links back to the plan and summarizes what was done and why.
 
-### 6. `/create-github-issue` — file follow-ups without losing context
+### 6. `/draft-issue` + `/create-github-issue` — file follow-ups without losing context
 
-Implementation work surfaces issues: a helper that deserves its own PR, a follow-up improvement that's out of scope for the current branch, a bug noticed along the way. Mental notes get lost. `/create-github-issue` files them as real GitHub issues — from a scratchpad draft, a markdown file, or an inline title.
+Implementation work surfaces issues: a helper that deserves its own PR, a follow-up improvement that's out of scope for the current branch, a bug noticed along the way. Mental notes get lost. `/draft-issue` turns a follow-up note into a standardized draft, and `/create-github-issue` files it as a real GitHub issue.
 
-The skill handles the friction that makes developers put it off: it strips local `.claude-work/` paths from the body before sending (with an audit trail so you can verify nothing important was removed), discovers the repo's label conventions automatically, and optionally links the new issue as a sub-issue of a parent.
+A draft is a local note in a standard shape: a YAML-style front-matter block carries the machine fields (target repo, parent, dependency lists) over a markdown title and body. Creation reads those fields instead of scanning prose for meaning. It also strips local `.claude-work/` paths from the body before sending (with an audit trail so you can verify nothing important was removed), discovers the repo's label conventions automatically, and optionally links the new issue as a sub-issue of a parent.
 
 ```text
-/create-github-issue .claude-work/issues/10/scratchpads/follow-up-idea.txt
+/draft-issue "Follow up: cache the label query"
+/create-github-issue .claude-work/issues/10/notes/20260904-100000-draft-issue-follow-up-cache-the-label-query.txt
 ```
 
-Scratchpad drafted during implementation → real GitHub issue, labels applied, and (optionally) linked as a sub-issue — without leaving the terminal.
+Note drafted during implementation → standardized draft → real GitHub issue, labels applied, and (optionally) linked as a sub-issue — without leaving the terminal. Pass a bare title inline to `/create-github-issue` to file a defaults-only issue without drafting first.
 
 ### Following along
 
@@ -428,7 +429,9 @@ I've used Claude Code on dozens of real issues and kept running into the same fr
 | `/cleanup-issue [number \| --sweep]` | Delete an issue's working directory (`.claude-work/issues/<ID>/`) after confirming with the user, or sweep obsolete folders whose PRs merged into main or whose issues closed with no open PR or local issue branch |
 | `/commit-msg <desc>` | Draft a commit message focused on WHY, not WHAT |
 | `/concise-output <text>` | Rewrite the given text in condensed Simplified Technical English style — on-demand pass in the console, no file written |
-| `/create-github-issue <title-or-path>` | Create a GitHub issue from a scratchpad draft or inline description |
+| `/create-github-issue <title-or-path>` | Create a GitHub issue from a standardized issue draft or an inline title |
+| `/create-jira-issue <title-or-path>` | Create a Jira issue from a standardized issue draft or an inline title, mirroring a reference ticket when given, with pre-create review |
+| `/draft-issue <title-or-path>` | Author an issue draft in a standardized local format (YAML front matter over a title and body), grilled through `/g2q` for thoroughness, before filing it with `/create-github-issue` or `/create-jira-issue` |
 | `/finish-issue` | Verify work, collect breadcrumbs, check docs, and generate a PR description |
 | `/note <desc>` | Capture a quick note, finding, or result — lightweight `/scratchpad` alternative |
 | `/question <topic>` | Surface design decisions as a structured Q&A file you edit in-place |
@@ -450,7 +453,8 @@ These skills aren't invoked directly — Claude consults them when the context m
 | `ensure-gitignore` | When a foundation skill is about to create a working file — checks/appends the `.claude-work/` sentinel to `.gitignore` in one Bash call |
 | `file-placement` | When deciding where to put a new file — routes to the right directory |
 | `issue-context` | When on an `issues/<N>` branch — scopes working files to issue subdirectories |
-| `label-discovery` | When `/create-github-issue` needs labels — fetches repo labels, classifies as defaults vs structured, and prompts the user |
+| `issue-draft-reader` | When `/create-github-issue` or `/create-jira-issue` needs to read a draft — reads front-matter fields, the title, and the body from a standardized draft, and strips ephemeral local paths |
+| `label-discovery` | When `/create-github-issue` needs labels — fetches repo labels, classifies them as defaults vs structured, and prints them grouped by prefix |
 | `pre-write` | Before any skill writes file content — requires complete reasoning before writing the first word, preventing in-progress deliberation from appearing in generated files |
 | `prose-style` | When a skill writes file content — hard-wrap rule, code-reference syntax, GitHub-reference syntax, and the `/concise-output` conciseness pass |
 | `scratchpad-ref-format` | When `/tackle-scratchpad-block` parses its argument — defines the 4 invocation forms (`#S`, `#L`, space-separated, bare-path auto-select) |

@@ -2,13 +2,13 @@
 name: label-discovery
 version: 2026.09.02@026b73f
 user-invocable: false
-description: Fetches GitHub labels, classifies them as defaults vs structured, and prompts the user for selection. Auto-consulted by /create-github-issue.
-allowed-tools: Read, Write, Bash(gh label list *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
+description: 'Fetches GitHub labels, classifies them as defaults vs structured, and prints them grouped by prefix for the user to apply. Auto-consulted by /create-github-issue.'
+allowed-tools: Bash(gh label list *)
 ---
 
 # Label Discovery
 
-Fetch labels from a GitHub repository, classify them, and prompt the user for selection.
+Fetch labels from a GitHub repository, classify them, and print the groups so the user can apply them on the issue page. The skill stops at printing. It does not select labels and it never prompts for a choice.
 
 ## Fetch Labels
 
@@ -29,17 +29,15 @@ Classify into two groups:
 
 **Structured labels**: anything beyond the defaults. Their presence indicates intentional label conventions (e.g., `type:bug`, `priority:high`, `area:checkout`).
 
-## Prompt for Selection
+## Print the Groups
 
 ### If only default labels exist
 
-Ask the user which labels to apply (simple multi-select from the defaults). The user can also choose "none".
+Print that the repo uses only GitHub default labels and list them.
 
 ### If structured labels are detected
 
-Present them grouped by prefix (e.g., all `type:*` together, all `priority:*` together). Ask the user to select appropriate labels.
-
-Example prompt:
+Print them grouped by prefix (all `type:*` together, all `priority:*` together, all `area:*` together) with the remaining defaults under an Other heading:
 
 ```text
 This repo uses structured labels beyond GitHub defaults:
@@ -49,8 +47,8 @@ This repo uses structured labels beyond GitHub defaults:
   area: checkout, admin, api
 
   Other: good first issue, help wanted
-
-Which labels should this issue have?
 ```
 
-Use `/question` if the label choice requires extended discussion. Otherwise, use inline prompting.
+Then stop. The calling skill shows the issue URL alongside these groups and invites the user to apply labels on the issue page, where GitHub's own autocomplete selects them.
+
+Formatting: see `/prose-style` for hard-wrap and GitHub-reference rules.
