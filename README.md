@@ -8,6 +8,7 @@ This is a collection of portable [Claude Code skills](https://code.claude.com/do
 
 [![Follow-along](https://img.shields.io/badge/Follow--along-See%20it%20in%20action-blue)](https://ouimet.info/follow-alongs/my-claude-skills-issues-10.html)
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/couimet/my-claude-skills?label=CodeRabbit+Reviews)
+[![Codecov coverage](https://img.shields.io/codecov/c/github/couimet/my-claude-skills?label=Codecov+Coverage)](https://codecov.io/gh/couimet/my-claude-skills)
 
 ## Installation
 
@@ -486,10 +487,11 @@ Run the setup script once to install dev tools:
 ```bash
 make lint    # markdownlint + Prettier (YAML/JSON) + shellcheck
 make test    # run the bats test suite
+make coverage # optional: run the bats suite under kcov and write a coverage/ report
 make stamp   # stamp all SKILL.md files with the current version (CalVer@SHA)
 ```
 
-CI runs the same checks on every PR. After each merge to main, the stamp workflow automatically updates the `version:` field in every `skills/*/SKILL.md` frontmatter with the current CalVer release and commit SHA.
+CI runs the same checks on every PR, and a `coverage` job runs the bats suite under kcov and uploads the report to Codecov (see the badge above), which posts coverage comments and status checks on PRs. After each merge to main, the stamp workflow automatically updates the `version:` field in every `skills/*/SKILL.md` frontmatter with the current CalVer release and commit SHA.
 
 ## Versioning
 

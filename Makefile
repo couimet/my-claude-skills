@@ -1,4 +1,4 @@
-.PHONY: check lint lint-fix lint-md lint-md-fix fmt-check format lint-sh test install-prereqs stamp
+.PHONY: check lint lint-fix lint-md lint-md-fix fmt-check format lint-sh test coverage install-prereqs stamp
 
 include versions.mk
 
@@ -29,6 +29,12 @@ lint-sh: install-prereqs
 
 test: install-prereqs lint-sh
 	bats bats-tests/
+
+# Runs the BATS suite under kcov and writes a Cobertura report to coverage/.
+# Optional: not part of `check`. Requires kcov (not a standard prereq) --
+# the script prints an install hint when it is missing.
+coverage:
+	./scripts/shell-coverage.sh
 
 install-prereqs:
 	@ok=true; \

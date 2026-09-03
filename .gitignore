@@ -1,6 +1,9 @@
 # Claude skill working directories
 .claude-work/
 
+# Generated code coverage report (kcov, via `make coverage`)
+/coverage/
+
 # Generated demo site output (regenerate with: python demo/generate.py)
 demo/site/
 demo/__pycache__/

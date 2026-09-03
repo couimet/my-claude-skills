@@ -133,7 +133,7 @@ This project uses [Calendar Versioning](https://calver.org/): `YYYY.MM.DD`. When
 - `### Fixed` — bug fixes
 - `### Security` — security fixes
 
-**When to add an entry:** User-facing changes (new skill, changed behavior, bug fix, removed skill) always get entries. Pure internal changes (new tests, refactors, CI updates) with no user-facing effect do NOT get entries.
+**When to add an entry:** The audience is a user of the skills, not a contributor to this repo. An entry is warranted only when the change alters what an installed skill does: new skill, changed behavior, bug fix, removed skill. Repo tooling that does not touch the skills — CI workflows and jobs, coverage setup, badges, Makefile targets, build scripts, repo-level docs — gets no entry even when it adds something visible the repo ships, because nothing a skill user experiences changed. Measure user-facing-ness by the skills, never by the size or visibility of the repo diff. Pure internal changes (new tests, refactors) also get no entries.
 
 **PR-comment feedback never adds an entry:** Running `/tackle-pr-comment` must never result in a new CHANGELOG entry. The current branch's existing entry for the in-flight PR may be amended to stay accurate, but no new heading or entry is created — even if the branch has no entry at all.
 
