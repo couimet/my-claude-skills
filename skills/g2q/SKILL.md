@@ -1,6 +1,6 @@
 ---
 name: g2q
-version: 2026.09.02@7432192
+version: 2026.09.02@026b73f
 description: Grill a topic or working document and emit the genuinely open ambiguities as a /question-format questions file. /question delegates its challenge here; /start-issue and /tackle-pr-comment gate plan production on it. Emits questions in dependency waves, each wave its own numbered file, pausing when questions remain held for a later wave.
 argument-hint: <topic-or-path>
 user-invocable: true
