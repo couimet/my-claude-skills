@@ -43,8 +43,16 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install kcov
-        run: sudo apt-get update && sudo apt-get install -y kcov
+      - name: Install kcov (source build — not packaged for ubuntu-24.04)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake pkg-config binutils-dev \
+            libssl-dev libcurl4-openssl-dev libelf-dev libdw-dev libiberty-dev zlib1g-dev
+          curl -fsSL -o /tmp/kcov.tar.gz https://github.com/SimonKagstrom/kcov/archive/refs/tags/v43.tar.gz
+          tar -xzf /tmp/kcov.tar.gz -C /tmp
+          cmake -S /tmp/kcov-43 -B /tmp/kcov-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/kcov-build -j2
+          sudo cmake --install /tmp/kcov-build
 
       # Same BATS version and helper libraries the shell-ci-checks workflow
       # installs, so the instrumented run mirrors the plain test run.
