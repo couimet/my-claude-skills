@@ -45,12 +45,19 @@ jobs:
 
       - name: Install kcov (source build — not packaged for ubuntu-24.04)
         run: |
+          # The v43 tag is mutable; pin the immutable commit behind it and
+          # verify the archive digest before building and installing.
+          kcov_commit=a39874f938ce13f7a65f253120d1ec946b349ffe
+          kcov_sha256=dac01569171979477b500924be264d2a1bc649dae6010536228cbb319344d516
           sudo apt-get update
           sudo apt-get install -y build-essential cmake pkg-config binutils-dev \
             libssl-dev libcurl4-openssl-dev libelf-dev libdw-dev libiberty-dev zlib1g-dev
-          curl -fsSL -o /tmp/kcov.tar.gz https://github.com/SimonKagstrom/kcov/archive/refs/tags/v43.tar.gz
-          tar -xzf /tmp/kcov.tar.gz -C /tmp
-          cmake -S /tmp/kcov-43 -B /tmp/kcov-build -DCMAKE_BUILD_TYPE=Release
+          curl -fsSL -o /tmp/kcov.tar.gz \
+            "https://github.com/SimonKagstrom/kcov/archive/${kcov_commit}.tar.gz"
+          echo "${kcov_sha256}  /tmp/kcov.tar.gz" | sha256sum -c -
+          mkdir -p /tmp/kcov-src
+          tar -xzf /tmp/kcov.tar.gz -C /tmp/kcov-src --strip-components=1
+          cmake -S /tmp/kcov-src -B /tmp/kcov-build -DCMAKE_BUILD_TYPE=Release
           cmake --build /tmp/kcov-build -j2
           sudo cmake --install /tmp/kcov-build
 
@@ -71,4 +78,4 @@ jobs:
         with:
           files: coverage/cobertura.xml
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail-ci-if-error: 'false'
+          fail-ci-if-error: ${{ github.event_name == 'push' }}

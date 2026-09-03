@@ -69,6 +69,12 @@ if ! kcov --clean \
   exit 2
 fi
 
+# A previous run's consolidated copy at $outdir/cobertura.xml must not count as
+# a fresh report on a repeat run with the same outdir, or the discovery below
+# would trip its own "more than one" guard. Drop it so only the report trees
+# kcov just wrote are counted; it is regenerated from the nested report.
+rm -f "$outdir/cobertura.xml"
+
 # kcov writes one report tree per traced binary (<outdir>/bats.<hash>/).
 # Consolidate the produced Cobertura report to a single stable path so the
 # upload step does not need to know the hash.

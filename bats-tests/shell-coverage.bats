@@ -130,6 +130,22 @@ teardown() {
   [[ "$args" == *"$outdir bats bats-tests/"* ]]
 }
 
+@test "repeat run with same outdir succeeds and re-consolidates (regression)" {
+  # Regression: kcov --clean does not remove the canonical cobertura.xml a
+  # previous run copied to <outdir>/, so report discovery used to count it as a
+  # second report and exit 2 on the rerun. The canonical copy is dropped before
+  # the count, so the second run must pass and rewrite the report.
+  outdir="$TEST_TEMP_DIR/out"
+  run env PATH="$BIN:/usr/bin:/bin" KCOV_BEHAVIOR=write-one "$SCRIPT" "$outdir"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$outdir/cobertura.xml" ]
+  run env PATH="$BIN:/usr/bin:/bin" KCOV_BEHAVIOR=write-one "$SCRIPT" "$outdir"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$outdir/cobertura.xml" ]
+  [ -f "$outdir/cobertura.xml" ]
+  [[ "$(cat "$outdir/cobertura.xml")" == *"<coverage/>"* ]]
+}
+
 @test "outdir does not exist → created before the run, success" {
   # Regression: the kcov log redirect happens before kcov runs, so the outdir
   # must be created up front or kcov is never invoked on a fresh checkout.
