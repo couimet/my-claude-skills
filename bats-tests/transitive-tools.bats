@@ -28,9 +28,10 @@ load test_helper
 # (name + allowed-tools only) and vary only the pair under test.
 # =============================================================
 
-# Derive the manifest skill list from the script's INVOKES block so
-# the fixtures stay in sync when the manifest grows.
-MANIFEST_SKILLS="$(sed -n '/^INVOKES=(/,/^)/p' "$PROJECT_ROOT/scripts/check-transitive-tools.sh" | grep -oE '[a-z][a-z0-9-]+' | sort -u | tr '
+# Derive the manifest skill list from the script's INVOKES+=() lines so
+# the fixtures stay in sync when the manifest grows. Each entry is its own
+# INVOKES+=("caller=invoked ...") assignment.
+MANIFEST_SKILLS="$(grep -oE 'INVOKES\+=\(\"[^\"]*\"\)' "$PROJECT_ROOT/scripts/check-transitive-tools.sh" | grep -oE '[a-z][a-z0-9-]+' | sort -u | tr '
 ' ' ')"
 
 # create_manifest_skills <root> <allowed-tools>

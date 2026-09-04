@@ -61,12 +61,13 @@ Check whether `$ARGUMENTS` points to an existing file (any path, any extension o
 
 **Scaffold from a bare title:** set the title to `$ARGUMENTS`. Then invite the author to compose the body now. The grill in Step 3 needs content to challenge, so gather the issue's substance before writing: ask what the issue must communicate — the problem it solves, the expected behavior, and any acceptance criteria — and draft the body from the author's answer. Keep the body empty only when the author explicitly supplies nothing.
 
-**Import and wrap an existing file:** read the file first. If it already opens with a `---` front-matter block, it is already a standardized draft, so do not wrap it again: report the file as already standard and skip to the report step. Otherwise derive the title and body:
+**Import an existing file:** read the file first. A leading `---` front-matter block does not prove the draft was grilled. Every import must still clear the Step 3 grill. Derive the title and body:
 
-- If the file's first non-empty line is a `#` heading, that heading is the title and everything after it is the body.
+- If the file opens with a `---` front-matter block, step past it and take the first `#` heading after it as the title and everything after it as the body. Keep that front matter as the draft's machine fields. The grill judges prose, not fields, so keep those fields active through Step 5. Do not rebuild them as the commented template.
+- Otherwise, if the file's first non-empty line is a `#` heading, that heading is the title and everything after it is the body.
 - Otherwise the first non-empty line is the title and everything after it is the body.
 
-Insert the derived title and body under a fresh front-matter block in the standard shape. This keeps drag-dropped scratchpads, markdown files, and older unstandardized drafts usable as issues. Preserve the imported body verbatim; do not reflow or rewrite the author's prose.
+For a file without front matter, insert the derived title and body under a fresh front-matter block in the standard shape. This keeps drag-dropped scratchpads, markdown files, and older unstandardized drafts usable as issues. Preserve the imported body verbatim; do not reflow or rewrite the author's prose. Either way, continue to Step 3 and grill the imported content like any other draft.
 
 ## Step 3: Grill the Draft for Thoroughness
 

@@ -46,19 +46,23 @@ set -euo pipefail
 # The manifest is stored as "caller=invoked invoked ..." entries: macOS's
 # system bash (3.2) predates associative arrays, so manifest_value() and
 # manifest_callers() provide the associative lookup.
-INVOKES=(
-  "start-issue=note scratchpad question g2q cleanup-issue"
-  "start-side-quest=note scratchpad question"
-  "finish-issue=note question"
-  "tackle-pr-comment=note scratchpad question g2q commit-msg"
-  "tackle-scratchpad-block=question commit-msg finish-issue"
-  "create-github-issue=note label-discovery issue-draft-reader"
-  "draft-issue=note g2q"
-  "g2q=question"
-  "question=g2q"
-  "scratchpad=question"
-  "create-jira-issue=note issue-draft-reader"
-)
+# The manifest is declared as one INVOKES+=() assignment per entry so that
+# each line is a separately executed statement: kcov traces statement-by-
+# statement, and a single multi-line array literal attributes only the block
+# as a whole, so growing a multi-line literal would register as uncovered
+# added lines. Per-entry assignments keep every line attributed.
+INVOKES=()
+INVOKES+=("start-issue=note scratchpad question g2q cleanup-issue")
+INVOKES+=("start-side-quest=note scratchpad question")
+INVOKES+=("finish-issue=note question")
+INVOKES+=("tackle-pr-comment=note scratchpad question g2q commit-msg")
+INVOKES+=("tackle-scratchpad-block=question commit-msg finish-issue")
+INVOKES+=("create-github-issue=note label-discovery issue-draft-reader")
+INVOKES+=("draft-issue=note g2q")
+INVOKES+=("g2q=question")
+INVOKES+=("question=g2q")
+INVOKES+=("scratchpad=question")
+INVOKES+=("create-jira-issue=note issue-draft-reader")
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_SKILLS_ROOT="$(cd "$SCRIPT_DIR/../skills" && pwd)"

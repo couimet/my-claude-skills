@@ -3,7 +3,7 @@ name: create-github-issue
 version: 2026.09.02@026b73f
 description: Create a GitHub issue from a standardized draft or an inline title, with label groups offered after creation and optional sub-issue and dependency linking
 argument-hint: <title-or-path>
-allowed-tools: Read, Write, Glob, Bash(git branch --show-current), Bash(mkdir -p *), Bash(date *), Bash(gh repo view *), Bash(gh label list *), Bash(gh issue create *), Bash(*/skills/create-github-issue/link-sub-issue.sh *), Bash(*/skills/create-github-issue/link-dependency.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Write, Glob, Edit, AskUserQuestion, Bash(git branch --show-current), Bash(mkdir -p *), Bash(date *), Bash(gh repo view *), Bash(gh label list *), Bash(gh issue create *), Bash(*/skills/create-github-issue/link-sub-issue.sh *), Bash(*/skills/create-github-issue/link-dependency.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Create GitHub Issue
@@ -56,9 +56,11 @@ When the body is empty (inline-title creation with no description), write the bo
 Create the issue with a simple one-liner (pass `--repo owner/repo` when a target repo override was resolved in Step 2. Omit it to use the current git remote). Do not pass `--label`. Label selection happens on the issue page after Step 8:
 
 ```bash
-gh issue create --title "<TITLE>" --body-file <BODY_FILE_PATH>
-gh issue create --repo owner/repo --title "<TITLE>" --body-file <BODY_FILE_PATH>
+gh issue create --title '<TITLE>' --body-file <BODY_FILE_PATH>
+gh issue create --repo '<OWNER>/<REPO>' --title '<TITLE>' --body-file <BODY_FILE_PATH>
 ```
+
+Pass the title and the `--repo` value as single-quoted shell arguments so gh receives them verbatim. The title is user-authored draft content, so keep it literal. Inside double quotes, the shell would evaluate a `"`, a `$`, or a backtick that the title contains. Single quotes stop that evaluation. If the title contains an apostrophe, write it twice (`''`) so the value reaches gh intact.
 
 Capture the returned issue URL.
 
@@ -66,13 +68,15 @@ Capture the returned issue URL.
 
 If a parent URL was extracted in Step 3, link the new issue as a sub-issue using the `link-sub-issue.sh` script.
 
-Parse `CHILD_NUMBER` from the issue URL returned in Step 5 (`https://github.com/{owner}/{repo}/issues/{CHILD_NUMBER}`). Use the `OWNER`, `REPO`, and `NUMBER` parsed from the parent URL in Step 3.
+Parse `CHILD_OWNER`, `CHILD_REPO`, and `CHILD_NUMBER` from the issue URL returned in Step 5 (`https://github.com/{CHILD_OWNER}/{CHILD_REPO}/issues/{CHILD_NUMBER}`). This URL names the repository that actually received the issue. It is the `target-repo` when the draft set one, or the current remote otherwise. Use the `OWNER`, `REPO`, and `NUMBER` parsed from the parent URL in Step 3.
 
 Run the script once per child issue to link:
 
 ```bash
-~/.claude/skills/create-github-issue/link-sub-issue.sh --owner "$OWNER" --repo "$REPO" --parent "$PARENT_NUMBER" --child "$CHILD_NUMBER"
+~/.claude/skills/create-github-issue/link-sub-issue.sh --owner "$OWNER" --repo "$REPO" --parent "$PARENT_NUMBER" --child-owner "$CHILD_OWNER" --child-repo "$CHILD_REPO" --child "$CHILD_NUMBER"
 ```
+
+The script resolves the parent in `--owner`/`--repo` and the child in `--child-owner`/`--child-repo`. That lets a child in a different repository than the parent link correctly. Both child flags default to the parent owner and repo, so the same-repository case needs no extra values.
 
 The script handles all GraphQL calls internally, with `jq -n`, writing payloads to temp files. This keeps zsh history expansion from stripping `!` from GraphQL type annotations (`String!`, `Int!`, `ID!`). It prints `linked #<child> → #<parent>` on success or an error message on failure (exit 1).
 

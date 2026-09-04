@@ -26,18 +26,18 @@ Resolve `cloudId` without prompting whenever possible. Call `getAccessibleAtlass
 
 Resolve the project key from the fields and the branch, in order:
 
-- A `target-project` field overrides the branch inference. It is also the fallback for a detached head or a non-conforming branch name.
-- Otherwise, when the current branch matches `<KEY>-<slug>`, read the key from its first segment: `Bash(git branch --show-current)`.
+- A `target-project` field wins. It is also the fallback for a detached head or a non-conforming branch name.
 - Otherwise, read it from the `like` field's ticket's project.
+- Otherwise, when the current branch matches `<KEY>-<slug>`, read the key from its first segment: `Bash(git branch --show-current)`.
 - Otherwise, prompt the user for the project key.
 
-Resolve the issue type from an `issue-type` field, else from the `like` field's ticket, else default to `Task`, since Jira has no default issue type the way GitHub has a default issue kind. A `like` field implies both project and type, so treat it as authoritative over inference.
+Resolve the issue type from an `issue-type` field, else from the `like` field's ticket, else default to `Task`, since Jira has no default issue type the way GitHub has a default issue kind. A `like` field is an explicit author choice that implies both project and type. It is authoritative over branch inference. Only an explicit `target-project` or `issue-type` field outranks it.
 
 If the returned fields name a GitHub target (`target-repo`) but no `target-project` or `like`, the draft targets GitHub: STOP and tell the user to run `/create-github-issue` with the same path.
 
 ## Step 3: Resolve the Field Payload
 
-**When a `like` field exists, mirror the reference ticket.** Fetch its key with `getJiraIssue` requesting all fields and keep only its non-null fields. Call `getJiraIssueTypeMetaWithFields` with `requiredFieldsOnly: false` for the target project and issue type, which returns exactly the fields creatable there. Intersect the two sets: everything in both goes to the create call, with custom fields passed through `additional_fields`. This fills both the required fields and the optional-but-conventional fields that every real ticket sets, which discovery alone can never reveal. Never pass the whole response blob: it contains values that cannot be set at creation (the development panel populated by the GitHub integration, plus `votes`, `watches`, `worklog`, `progress`, `workratio`, `statuscategorychangedate`, `lastViewed`).
+**When a `like` field exists, mirror the reference ticket.** Fetch its key with `getJiraIssue` requesting all fields and keep only its non-null fields. Call `getJiraIssueTypeMetaWithFields` with `requiredFieldsOnly: false` for the target project and issue type, which returns exactly the fields creatable there. Intersect the two sets: everything in both goes to the create call, with custom fields passed through `additional_fields`. This fills both the required fields and the optional-but-conventional fields that every real ticket sets, which discovery alone can never reveal. Mirror the ticket's metadata only. Do not mirror its `summary` and `description`. Set summary from the draft title and description from the draft body. This ticket then carries the draft's own content instead of duplicating the reference ticket's. Never pass the whole response blob: it contains values that cannot be set at creation (the development panel populated by the GitHub integration, plus `votes`, `watches`, `worklog`, `progress`, `workratio`, `statuscategorychangedate`, `lastViewed`).
 
 **When no like field is given, assemble the payload from the draft.** Summary is the title, description is the body, and the issue type and project come from Step 2.
 
@@ -46,6 +46,8 @@ When an `assignee` field is present, or the like ticket names an assignee and no
 ## Step 4: Save the Payload and Confirm
 
 Use `/note` with description `issue-payload` to save the resolved payload to a timestamped file under `.claude-work` (summary, sanitized description with the Generated-by footer, target project and issue type, parent, and custom fields), then print the note path and confirm with the user before creating. Always confirm, not conditionally. Jira creation is harder to undo than GitHub's: deleting an issue leaves a permanent hole in the key sequence, and a ticket filed against the wrong project cannot be moved without admin rights on some sites. This review is the one moment a human sees exactly what will be submitted.
+
+The saved payload and the confirmation must also cover the Step 6 dependency links. For each `blocked-by` entry, list the target that will block this issue. For each `is-blocking` entry, list the target that this issue will block. Give each target with its resolved Jira key and link direction. The pre-create review must surface every tracker change the run will make. It must show the creation and the links that follow it alike. Nothing should happen after sign-off that the user has not seen.
 
 Before saving, append a footer line to the description identifying the skill that generated it, preceded by a blank line. Read the `version:` field from this SKILL.md's front matter to fill `<VERSION>`:
 
