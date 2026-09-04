@@ -57,7 +57,7 @@ In file mode, after the closing fence:
 - **Title**: the first `#`-level heading (strip the `#` prefix)
 - **Body**: everything after the title heading
 
-If no `#` heading exists below the fence, use the first non-empty line of the body as the title and the rest of the body as the body. In inline-title mode the calling skill supplies the title and body, so this step is a no-op.
+If no `#` heading exists below the closing fence, the file is not a standardized draft even though it has front matter: STOP and print the same conversion message as Step 2, because a `#` title heading is part of the standard and the title must never be guessed from body content. In inline-title mode the calling skill supplies the title and body, so this step is a no-op.
 
 ## Step 4: Sanitize the Body
 

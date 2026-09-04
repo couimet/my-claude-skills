@@ -388,7 +388,7 @@ A draft is a local note in a standard shape: a YAML-style front-matter block car
 /create-github-issue .claude-work/issues/10/notes/20260904-100000-draft-issue-follow-up-cache-the-label-query.txt
 ```
 
-Note drafted during implementation → standardized draft → real GitHub issue, labels applied, and (optionally) linked as a sub-issue — without leaving the terminal. Pass a bare title inline to `/create-github-issue` to file a defaults-only issue without drafting first.
+Note drafted during implementation → standardized draft → real GitHub issue, with classified label groups shown for you to apply on the issue page, and (optionally) linked as a sub-issue — without leaving the terminal. Pass a bare title inline to `/create-github-issue` to file a defaults-only issue without drafting first.
 
 ### Following along
 
