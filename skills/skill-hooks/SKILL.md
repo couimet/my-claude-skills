@@ -1,6 +1,6 @@
 ---
 name: skill-hooks
-version: 2026.09.02@026b73f
+version: 2026.09.03@a8dc4ea
 description: Explains the skill extension hook mechanism — how projects can customize global skills like /start-issue and /finish-issue with project-local additions
 user-invocable: false
 allowed-tools:
