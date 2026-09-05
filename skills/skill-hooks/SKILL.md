@@ -12,17 +12,18 @@ Explains the hook mechanism that lets projects extend global skills with project
 
 ## How It Works
 
-Some skills in this collection (like `/start-issue`, `/finish-issue`, and `/start-side-quest`) include hook points — prose references to a companion skill that a project can optionally define. When the parent skill runs, Claude Code resolves the hook reference across all skill directories. If the project has the hook skill, its requirements are incorporated. If not, the vanilla skill runs unchanged.
+Some skills in this collection (like `/start-issue`, `/finish-issue`, `/start-side-quest`, and `/create-github-issue`) include hook points — prose references to a companion skill that a project can optionally define. When the parent skill runs, Claude Code resolves the hook reference across all skill directories. If the project has the hook skill, its requirements are incorporated. If not, the vanilla skill runs unchanged.
 
 ## Convention
 
 A project creates a foundation skill in `.claude/skills/` with the name `{parent-skill}-hook`:
 
-| Parent skill        | Hook skill name         | What it can add                                            |
-| ------------------- | ----------------------- | ---------------------------------------------------------- |
-| `/start-issue`      | `start-issue-hook`      | Additional plan steps, context-gathering, validation gates |
-| `/finish-issue`     | `finish-issue-hook`     | Additional verification steps, PR description sections     |
-| `/start-side-quest` | `start-side-quest-hook` | Additional plan steps, context-gathering, validation gates |
+| Parent skill           | Hook skill name            | What it can add                                                       |
+| ---------------------- | -------------------------- | --------------------------------------------------------------------- |
+| `/start-issue`         | `start-issue-hook`         | Additional plan steps, context-gathering, validation gates            |
+| `/finish-issue`        | `finish-issue-hook`        | Additional verification steps, PR description sections                |
+| `/start-side-quest`    | `start-side-quest-hook`    | Additional plan steps, context-gathering, validation gates            |
+| `/create-github-issue` | `create-github-issue-hook` | Mandatory label requirements, label catalogs, label-application steps |
 
 Hook skills are foundation skills (`user-invocable: false`). They are consulted by their parent skill, never invoked directly by the user.
 
