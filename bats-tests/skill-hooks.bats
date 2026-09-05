@@ -80,6 +80,28 @@ load test_helper
 }
 
 # =============================================================
+# create-github-issue hook reference
+# =============================================================
+
+@test "create-github-issue skill: references /create-github-issue-hook" {
+  grep -q "/create-github-issue-hook" "$PROJECT_ROOT/skills/create-github-issue/SKILL.md"
+}
+
+@test "create-github-issue skill: hook reference appears within Step 8 (Report and Offer Labels)" {
+  STEP8_LINE=$(grep -n "^## Step 8: Report and Offer Labels" "$PROJECT_ROOT/skills/create-github-issue/SKILL.md" | cut -d: -f1)
+  HOOK_LINE=$(grep -n "/create-github-issue-hook" "$PROJECT_ROOT/skills/create-github-issue/SKILL.md" | cut -d: -f1)
+  LABEL_OFFER_LINE=$(grep -n "^Then follow .*label-discovery" "$PROJECT_ROOT/skills/create-github-issue/SKILL.md" | cut -d: -f1)
+
+  [ "$HOOK_LINE" -gt "$STEP8_LINE" ]
+  [ "$HOOK_LINE" -lt "$LABEL_OFFER_LINE" ]
+}
+
+@test "create-github-issue skill: has exactly one /create-github-issue-hook reference" {
+  COUNT=$(grep -c "/create-github-issue-hook" "$PROJECT_ROOT/skills/create-github-issue/SKILL.md")
+  [ "$COUNT" -eq 1 ]
+}
+
+# =============================================================
 # Cross-reference consistency
 # =============================================================
 
@@ -89,4 +111,8 @@ load test_helper
 
 @test "skill-hooks foundation skill is referenced from start-side-quest" {
   grep -q "/skill-hooks" "$PROJECT_ROOT/skills/start-side-quest/SKILL.md"
+}
+
+@test "skill-hooks foundation skill is referenced from create-github-issue" {
+  grep -q "/skill-hooks" "$PROJECT_ROOT/skills/create-github-issue/SKILL.md"
 }

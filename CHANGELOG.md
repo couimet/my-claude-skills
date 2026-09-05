@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.09.04.1
+
+### Added
+
+- `/create-github-issue` now resolves an optional project-local `/create-github-issue-hook` at its label step. When a project defines the hook, its label requirements (mandatory labels, label catalogs, label-application steps) run before the generic `/label-discovery` offer, which then covers the remaining labels. Projects without the hook get the unchanged vanilla label offer. ([issues/255](https://github.com/couimet/my-claude-skills/issues/255))
+
 ## 2026.09.04
 
 ### Changed

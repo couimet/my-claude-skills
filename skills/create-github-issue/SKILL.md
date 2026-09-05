@@ -135,6 +135,8 @@ Is blocking: <URL> (linked)  ← one per successful is-blocking dependency
 Dependency linking: failed for <URL> (<error summary>). Link manually if needed.  ← one per failed dependency
 ```
 
+**Check for project-local hooks**: if the project has a `/create-github-issue-hook` skill (foundation skill at `.claude/skills/create-github-issue-hook/SKILL.md`), it is loaded as additional context automatically. Read it and follow its label requirements (mandatory labels, label catalogs, label-application steps) before running the generic label offer for labels the hook does not cover. If no such skill exists, continue with the vanilla offer. See `/skill-hooks` for the full extension mechanism.
+
 Then follow `/label-discovery` to fetch and classify the target repo's labels, passing `--repo owner/repo` when a target repo override was resolved in Step 2. After the classified groups print, invite the user to apply labels on the issue page, where GitHub's own autocomplete is better than any terminal prompt.
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.

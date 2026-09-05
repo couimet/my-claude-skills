@@ -507,7 +507,7 @@ To customize:
 
 ### Project-Local Extension Hooks
 
-Some skills (`/start-issue`, `/finish-issue`, `/start-side-quest`) support project-local hook skills — foundation skills that a project can define in its own `.claude/skills/` directory to add requirements without forking the global skill. For example, a project that maintains QA test cases can add a hook that injects a TC cross-reference step into every issue plan.
+Some skills (`/start-issue`, `/finish-issue`, `/start-side-quest`, `/create-github-issue`) support project-local hook skills — foundation skills that a project can define in its own `.claude/skills/` directory to add requirements without forking the global skill. For example, a project that maintains QA test cases can add a hook that injects a TC cross-reference step into every issue plan.
 
 The naming convention is `{parent-skill}-hook` (e.g., `start-issue-hook`). Hook skills are add-requirements-only — they contribute constraints and content, but the parent skill owns all behavioral decisions. See [ADR 001](docs/ADR/001-skill-extension-hooks.md) for the full design rationale, tradeoffs, and rejected alternatives.
 
