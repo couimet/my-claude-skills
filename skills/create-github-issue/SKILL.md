@@ -3,7 +3,7 @@ name: create-github-issue
 version: 2026.09.03@a8dc4ea
 description: Create a GitHub issue from a standardized draft or an inline title, with label groups offered after creation and optional sub-issue and dependency linking
 argument-hint: <title-or-path>
-allowed-tools: Read, Write, Glob, Edit, AskUserQuestion, Bash(git branch --show-current), Bash(mkdir -p *), Bash(date *), Bash(gh repo view *), Bash(gh label list *), Bash(gh issue create *), Bash(*/skills/create-github-issue/link-sub-issue.sh *), Bash(*/skills/create-github-issue/link-dependency.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Write, Glob, Edit, AskUserQuestion, Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(mkdir -p *), Bash(date *), Bash(gh repo view *), Bash(gh label list *), Bash(gh issue create *), Bash(*/skills/create-github-issue/link-sub-issue.sh *), Bash(*/skills/create-github-issue/link-dependency.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Create GitHub Issue

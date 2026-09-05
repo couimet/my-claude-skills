@@ -2,8 +2,8 @@
 name: issue-context
 version: 2026.09.03@a8dc4ea
 user-invocable: false
-description: Contract for target-path.sh and claude-work-root.sh, the shell scripts that resolve .claude-work/ file paths from the current git branch. Referenced by name from /scratchpad, /question, /commit-msg; not auto-consulted.
-allowed-tools: Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
+description: Contract for the issue-context shell scripts that resolve .claude-work/ file paths from the current git branch and from the configurable work-item settings. Referenced by name from /scratchpad, /question, /commit-msg; not auto-consulted.
+allowed-tools: Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *)
 ---
 
 # Issue Context
@@ -34,6 +34,40 @@ Returns the absolute path to the `.claude-work/` root directory, taking git work
 The script outputs an absolute path on stdout (e.g., `/Users/x/project/.claude-work`). The directory is NOT created by this script. Callers handle that.
 
 Skills that need the `.claude-work/` root but don't use `target-path.sh` (like `/note` and `/breadcrumb`) call this script directly to get the base directory. They append their subdirectory and filename.
+
+## Settings: issue-settings.sh
+
+The work-item path convention is configurable through `~/.my-claude-skills/settings.json`, whose path is overridable with `MY_CLAUDE_SKILLS_CONFIG` (which must hold a full path to the file). `issue-settings.sh` locates and parses that file and exposes the result as `SETTINGS_*` globals; scripts source it rather than execute it. Any failure — missing file, malformed JSON, invalid regex in a pattern entry — writes a warning to stderr and resolves to the built-in defaults, never refusing to resolve. Keys and defaults:
+
+- `segment` — directory name under the `.claude-work/` root that holds work-item folders; default `issues`. An explicit empty string omits the directory.
+- `branchPatterns` — ordered EREs matched against branch names; first match wins and capture group one is the identifier. Defaults to the five-row list in the settings file: `^issues/([0-9]+)[-_]`, `^issues/([0-9]+)$`, `^issues/([A-Za-z][A-Za-z0-9]*-[0-9]+)`, `^issues/(.+)$`, `^([A-Za-z][A-Za-z0-9]*-[0-9]+)`.
+- `branchTemplate` — branch name built from an identifier; default `issues/{id}`.
+- `urlPatterns` — ordered EREs matched against tracker URLs; first match wins and capture group one is the identifier. Defaults to `/issues/([0-9]+)`, `/browse/([A-Z][A-Z0-9]+-[0-9]+)`.
+- `version` — settings schema version; default `1`.
+
+## Script: resolve-issue-id.sh
+
+```bash
+~/.claude/skills/issue-context/resolve-issue-id.sh <URL-or-identifier>
+```
+
+Resolves a single argument to a canonical work-item identifier. A value with a URL shape (it contains a scheme like `https://`) is matched against `urlPatterns` in order; the first pattern that matches supplies the identifier as its first capture group. A value without a URL shape is a bare identifier and is printed verbatim after a safety check: it must be usable as one path segment and one branch segment (non-empty, no leading/trailing dot or slash, no whitespace). A URL-shaped value matching no pattern, an unsafe identifier, or the wrong argument count prints an error to stderr and exits 1 — refusing is safer than inventing an identifier. Output is a single line on stdout.
+
+## Script: branch-issue-id.sh
+
+```bash
+~/.claude/skills/issue-context/branch-issue-id.sh
+```
+
+The single owner of branch-to-identifier matching. It reads the current branch via `git branch --show-current`, matches it against `branchPatterns` in order, and prints capture group one of the first matching pattern on stdout. A branch matching no pattern — or no branch at all (detached HEAD, non-repository) — exits 1 and prints nothing: callers branch on the exit status and own their own user-facing messaging, and path-resolving callers rely on the silence to keep flat placement clean.
+
+## Script: get-issue-folder-path.sh
+
+```bash
+~/.claude/skills/issue-context/get-issue-folder-path.sh [--id <identifier>]
+```
+
+Prints the `.claude-work/` folder that holds a work item's files: `<claude-work-root>[/<segment>]/<identifier>`. With `--id` the identifier is validated through `resolve-issue-id.sh`. Without `--id` the identifier is inferred through `branch-issue-id.sh`; a branch matching no pattern prints just the root (flat placement). The folder is NOT created. Errors print to stderr and exit 1.
 
 ## Breadcrumbs
 

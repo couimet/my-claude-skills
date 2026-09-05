@@ -1,9 +1,9 @@
 ---
 name: cleanup-issue
 version: 2026.09.03@a8dc4ea
-description: Delete an issue's working directory (.claude-work/issues/<ID>/) after confirming with the user via interactive prompt
+description: Delete an issue's working directory under .claude-work/ after confirming with the user via interactive prompt
 argument-hint: [optional: issue-number | --sweep]
-allowed-tools: Read, Glob, AskUserQuestion, Bash(git branch --show-current), Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Glob, AskUserQuestion, Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Cleanup Issue
@@ -14,47 +14,50 @@ Remove an issue's working directory after the work is done. Uses `AskUserQuestio
 
 ## Step 1: Determine Issue ID
 
-If `$ARGUMENTS` is provided and is a number, use it as the issue ID.
+If `$ARGUMENTS` is provided, use it as the issue ID. It may be numeric (`42`), a tracker key (`PROJ-123`), or a slug; `remove-issue-dir.sh` validates it before deleting.
 
-Otherwise, detect from the current branch:
+Otherwise, resolve the identifier from the current branch via `branch-issue-id.sh`:
 
 ```bash
-git branch --show-current
+~/.claude/skills/issue-context/branch-issue-id.sh
 ```
 
-Extract the issue ID from the `issues/<ID>` pattern (numeric prefix before the first `-`/`_` when present, otherwise the full segment after `issues/`). If the branch doesn't match `issues/*`, and no argument was provided, STOP:
+- **Exit 0** — the printed identifier (e.g., on `issues/42` it prints `42`) is the issue ID.
+- **Exit 1** — no identifier was resolved, and no argument was provided. STOP:
 
-- Print: "No issue context found. Provide an issue number: `/cleanup-issue 42`"
+- Print: "No issue context found. Provide an issue ID: `/cleanup-issue 42`"
 
 ### Validate the ID
 
-The `remove-issue-dir.sh` script enforces ID validation internally (regex `^[A-Za-z0-9][A-Za-z0-9._-]*$`, rejects `.` and `..`). The ID extracted above is passed verbatim to the script in Step 4. If invalid, the script exits with a clear error and performs no deletion. No separate prose validation step is needed.
+The `remove-issue-dir.sh` script enforces ID validation internally (regex `^[A-Za-z0-9][A-Za-z0-9._-]*$`, rejects `.` and `..`). The ID resolved above is passed verbatim to the script in Step 4. If invalid, the script exits with a clear error and performs no deletion. No separate prose validation step is needed.
 
 ## Step 2: Check for Issue Directory
 
-First, resolve the `.claude-work/` root directory:
+First, resolve the `.claude-work/` root directory (the removal call in Step 4 and sweep mode take it as their `<base>`):
 
 ```bash
 ~/.claude/skills/issue-context/claude-work-root.sh
 ```
 
-Use the stdout as `<base>` for all `.claude-work/` paths below. This script automatically detects git worktrees and returns the shared location.
+Use the stdout as `<base>`. This script automatically detects git worktrees and returns the shared location.
 
-Check if the issue directory exists:
+Then resolve the issue's working directory from the ID (this honors the configured `segment` and branch-template layout, defaulting to `<base>/issues/<ID>`):
 
-```text
-<base>/issues/<ID>/
+```bash
+~/.claude/skills/issue-context/get-issue-folder-path.sh --id <ID>
 ```
+
+Use its stdout as `<folder>`.
 
 Use Glob to list contents:
 
 ```text
-Glob(pattern="**/*", path="<base>/issues/<ID>")
+Glob(pattern="**/*", path="<folder>")
 ```
 
 **If directory doesn't exist or is empty:**
 
-- Print: "No working directory found for issue #`<ID>` at `<base>/issues/<ID>/`."
+- Print: "No working directory found for issue #`<ID>` at `<folder>`."
 - Skip to Step 5
 
 ## Step 3: Confirm Deletion
@@ -63,9 +66,9 @@ Use `AskUserQuestion` to prompt for confirmation. Include the full directory pat
 
 ```text
 AskUserQuestion(
-  question: "Delete working directory for issue #<ID>?\n\n<base>/issues/<ID>/ contains:\n<file list from Step 2>\n\nThis is irreversible.",
+  question: "Delete working directory for issue #<ID>?\n\n<folder> contains:\n<file list from Step 2>\n\nThis is irreversible.",
   options: [
-    { label: "Delete", description: "Remove <base>/issues/<ID>/ and all contents" },
+    { label: "Delete", description: "Remove <folder> and all contents" },
     { label: "Keep", description: "Leave everything untouched" }
   ]
 )
@@ -74,11 +77,11 @@ AskUserQuestion(
 ## Step 4: Act on Answer
 
 - **Delete** → proceed to deletion
-- **Keep** → print "Keeping `<base>/issues/<ID>/` untouched." and STOP
+- **Keep** → print "Keeping `<folder>` untouched." and STOP
 
 ### Delete
 
-Only reached if the user selected Delete in Step 3. The `remove-issue-dir.sh` script validates the ID, verifies the base path, checks that the resolved physical path stays under `<base>/issues/`, and performs the removal. No raw `rm -rf` is used.
+Only reached if the user selected Delete in Step 3. The `remove-issue-dir.sh` script validates the ID, verifies the base path, checks that the resolved physical path stays under the configured segment directory (under `<base>` itself when the segment is empty), and performs the removal. No raw `rm -rf` is used.
 
 ```bash
 ~/.claude/skills/cleanup-issue/remove-issue-dir.sh <base> <ID>
@@ -138,7 +141,7 @@ DELETABLE<TAB><absolute path><TAB><reason>
 It also prints one line per skipped folder:
 
 ```text
-Skipped: <name> (non-numeric ID, not checked)
+Skipped: <name> (not a valid work-item identifier, not checked)
 ```
 
 Display all DELETABLE lines (path plus reason) and all Skipped lines to the user. If the script exits 1 with an F001 or F002 error, show the error message and STOP.

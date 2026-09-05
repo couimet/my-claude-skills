@@ -4,7 +4,7 @@ version: 2026.09.03@a8dc4ea
 description: Rebase the current issue branch onto origin/main (or a specified target) after upstream PRs merge. Handles conflict resolution, squashes to a single commit, and runs autonomously
 argument-hint: <target>
 user-invocable: true
-allowed-tools: Read, Write, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git log *), Bash(git diff *), Bash(git rebase *), Bash(git reset *), Bash(git commit *), Bash(git add *), Bash(git checkout *), Bash(git merge-base *), Bash(git rev-parse *), Bash(git status *), Bash(gh pr list *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/rebase-issue/resolve-target.sh *), Bash(*/skills/rebase-issue/apply-stacked-diff.sh *), Bash(*/skills/rebase-issue/resolve-commit-msg.sh *)
+allowed-tools: Read, Write, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git log *), Bash(git diff *), Bash(git rebase *), Bash(git reset *), Bash(git commit *), Bash(git add *), Bash(git checkout *), Bash(git merge-base *), Bash(git rev-parse *), Bash(git status *), Bash(gh pr list *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/rebase-issue/resolve-target.sh *), Bash(*/skills/rebase-issue/apply-stacked-diff.sh *), Bash(*/skills/rebase-issue/resolve-commit-msg.sh *)
 ---
 
 # Rebase Issue
@@ -17,11 +17,17 @@ If no argument provided, defaults to `origin/main`.
 
 ## Step 1: Validate Branch
 
+Resolve the identifier from the current branch via `branch-issue-id.sh`, and capture the raw branch name for error reporting:
+
+```bash
+~/.claude/skills/issue-context/branch-issue-id.sh
+```
+
 ```bash
 git branch --show-current
 ```
 
-The branch must match `issues/<NUMBER>`. If it does not, STOP:
+The branch must match a configured `branchPatterns` entry (an `issues/*` work branch). If the gate exits 0, its printed identifier is `<NUMBER>` for the remaining steps. If it exits 1 (no identifier resolved), STOP:
 
 ```text
 Not on an issue branch. `/rebase-issue` requires an `issues/*` branch.

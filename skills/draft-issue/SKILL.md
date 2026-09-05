@@ -3,7 +3,7 @@ name: draft-issue
 version: 2026.09.03@a8dc4ea
 description: Author an issue draft in the standardized local format, a YAML-style front-matter block over a markdown title and body, grill the content through `/g2q` for thoroughness, then file it with `/create-github-issue` or `/create-jira-issue`
 argument-hint: <title-or-file-path>
-allowed-tools: Read, Write, Glob, AskUserQuestion, Bash(git branch --show-current), Bash(mkdir -p *), Bash(date *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
+allowed-tools: Read, Write, Glob, AskUserQuestion, Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
 
 # Draft Issue

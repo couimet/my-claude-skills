@@ -36,3 +36,20 @@ INSTALL_SH="$PROJECT_ROOT/install.sh"
 @test "install-deps: README gives the grilling install command" {
   grep -q "npx skills add mattpocock/skills --global" "$README"
 }
+
+# =============================================================
+# Runtime command dependencies
+# The work-item path resolver (issue-context scripts) shells out to jq at
+# runtime. That is a command dependency, not a skill dependency, so it is
+# declared in its own group rather than under the external-skills heading.
+# Both docs must name the same install command exactly once, mirroring how the
+# skill dependencies above are asserted.
+# =============================================================
+
+@test "install-deps: install.sh lists the jq command dependency exactly once" {
+  [ "$(grep -c 'brew install jq' "$INSTALL_SH")" -eq 1 ]
+}
+
+@test "install-deps: README lists the jq command dependency exactly once" {
+  [ "$(grep -c 'brew install jq' "$README")" -eq 1 ]
+}

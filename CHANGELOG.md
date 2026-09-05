@@ -10,6 +10,15 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.09.04
+
+### Changed
+
+- The issue-workflow skills no longer hardcode the `issues/` path convention. The work-item path is now configurable through `~/.my-claude-skills/settings.json` (overridable with `MY_CLAUDE_SKILLS_CONFIG`, which holds a full path): `segment` names the folder between the working-directory root and the identifier (an empty value omits it), `branchPatterns` match a branch or PR head in order with capture group one as the identifier, `branchTemplate` builds a branch name from an identifier, and `urlPatterns` pull an identifier from a tracker URL. The defaults reproduce the previous behavior, and every key falls back to its default on a missing or malformed file, so not configuring anything changes nothing. ([issues/248](https://github.com/couimet/my-claude-skills/issues/248))
+- `/start-issue` now accepts an issue number or a tracker URL and builds its branch from the configured `branchTemplate`, and key-shaped branches like `PROJ-123-add-config` now place their working files under `.claude-work/issues/PROJ-123/` instead of scattering them at the working-directory root. ([issues/248](https://github.com/couimet/my-claude-skills/issues/248))
+- `/cleanup-issue --sweep` orphan detection now covers every identifier `branchPatterns` admits — numeric, key-shaped like `PROJ-123`, or a slug like `rfc-auth` — so a work directory whose branch was renamed or deleted is offered for cleanup instead of being skipped as non-numeric. ([issues/248](https://github.com/couimet/my-claude-skills/issues/248))
+- `install.sh` and the README installation section declare `jq` as the first runtime command dependency — the scripts that read the new settings file shell out to it — listed apart from the optional external-skill dependencies. `setup.sh` now installs `shellcheck`, which the contributor prerequisite check already required. ([issues/248](https://github.com/couimet/my-claude-skills/issues/248))
+
 ## 2026.09.03
 
 ### Added

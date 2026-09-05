@@ -4,7 +4,7 @@ version: 2026.09.03@a8dc4ea
 description: Add a dependency relationship between GitHub issues using the native addBlockedBy mutation
 argument-hint: <blocked-by|is-blocking> <issue-url>
 user-invocable: true
-allowed-tools: Read, Bash(*/skills/create-github-issue/link-dependency.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(gh repo view *)
+allowed-tools: Read, Bash(*/skills/create-github-issue/link-dependency.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(gh repo view *)
 ---
 
 # Add GitHub Dependency
@@ -45,13 +45,13 @@ add-github-dependency: could not parse issue URL '<url>'. Expected format: https
 
 ## Step 2: Resolve Subject Issue
 
-Resolve the current branch's issue number as the subject via `target-path.sh`:
+Resolve the current branch's identifier as the subject via `branch-issue-id.sh`:
 
 ```bash
-~/.claude/skills/issue-context/target-path.sh
+~/.claude/skills/issue-context/branch-issue-id.sh
 ```
 
-Parse the subject issue number from the branch name (e.g., `issues/182` → `182`). If the current branch is not an `issues/*` branch, print an error and exit:
+On exit 0, the printed identifier is the subject issue number (e.g., on `issues/182` it prints `182`). If it exits 1, the current branch is not a work branch; print an error and exit:
 
 ```text
 add-github-dependency: current branch is not an issues/* branch. Switch to the issue branch for the subject issue first.

@@ -18,6 +18,15 @@ setup() {
   git config user.email "test@example.com"
   git config user.name "Test"
   git commit --allow-empty -q -m "initial commit"
+  # Pin settings to an empty object so the loader uses the built-in defaults
+  # (segment "issues") regardless of the developer's real settings file.
+  export MY_CLAUDE_SKILLS_CONFIG="$TEST_TEMP_DIR/settings.json"
+  printf '{}\n' > "$MY_CLAUDE_SKILLS_CONFIG"
+}
+
+# Overwrite the pinned settings file with a custom segment ("" = flat layout).
+set_segment() {
+  printf '{"segment":"%s"}\n' "$1" > "$MY_CLAUDE_SKILLS_CONFIG"
 }
 
 teardown() {
@@ -295,18 +304,78 @@ count_deletable() {
 }
 
 # ============================================================================
-# Non-numeric folders
+# Key-shaped and slug identifiers (branchPatterns, not literal issues/*)
 # ============================================================================
 
-@test "non-numeric folder → Skipped line, no DELETABLE, exit 0" {
-  mkdir -p "$BASE/issues/foo"
+@test "merged PR on key-shaped head → key folder is DELETABLE, not skipped" {
+  mkdir -p "$BASE/issues/PROJ-123"
+  export GH_PR_ROWS=$'PROJ-123-fix\tmain\tMERGED\t77'
   mock_gh
 
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Skipped: foo (non-numeric ID, not checked)"* ]]
+  local expected
+  expected="$(printf 'DELETABLE\t%s/issues/PROJ-123\t%s' "$BASE" "merged PR into main (PR #77)")"
+  [[ "$output" == *"$expected"* ]]
+  [[ "$output" != *"Skipped"* ]]
+}
+
+@test "open PR on slug head blocks deletion of slug folder" {
+  mkdir -p "$BASE/issues/rfc-auth"
+  export GH_PR_ROWS=$'issues/rfc-auth\tmain\tOPEN\t9'
+  mock_gh
+
+  run "$SCRIPT" "$BASE"
+
+  [ "$status" -eq 0 ]
   [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" != *"Skipped"* ]]
+}
+
+@test "hidden entry under issues/ → Skipped line, no DELETABLE, exit 0" {
+  mkdir -p "$BASE/issues/.hidden"
+  mock_gh
+
+  run "$SCRIPT" "$BASE"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Skipped: .hidden (not a valid work-item identifier, not checked)"* ]]
+  [[ "$output" != *"DELETABLE"* ]]
+}
+
+# ============================================================================
+# Configurable segment
+# ============================================================================
+
+@test "non-default segment → classifies folders under <base>/<segment>" {
+  mkdir -p "$BASE/work/42"
+  set_segment "work"
+  export GH_PR_ROWS=$'issues/42\tmain\tMERGED\t42'
+  mock_gh
+
+  run "$SCRIPT" "$BASE"
+
+  [ "$status" -eq 0 ]
+  local expected
+  expected="$(printf 'DELETABLE\t%s/work/42\t%s' "$BASE" "merged PR into main (PR #42)")"
+  [[ "$output" == *"$expected"* ]]
+}
+
+@test "empty segment → classifies folders under <base>, never the category dirs" {
+  mkdir -p "$BASE/42" "$BASE/notes" "$BASE/questions"
+  set_segment ""
+  export GH_PR_ROWS=$'issues/42\tmain\tMERGED\t42'
+  mock_gh
+
+  run "$SCRIPT" "$BASE"
+
+  [ "$status" -eq 0 ]
+  local expected
+  expected="$(printf 'DELETABLE\t%s/42\t%s' "$BASE" "merged PR into main (PR #42)")"
+  [[ "$output" == *"$expected"* ]]
+  [[ "$output" != *"/notes"* ]]
+  [[ "$output" != *"/questions"* ]]
 }
 
 # ============================================================================

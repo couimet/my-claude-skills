@@ -108,44 +108,22 @@ if ! [[ "$ext" =~ ^[A-Za-z0-9]+$ ]]; then
   exit 1
 fi
 
-# --- Detect branch and extract issue ID ---
-branch="$(git branch --show-current 2>/dev/null || true)"
-if [ -z "$branch" ]; then
-  echo "target-path $ERR_BRANCH_DETECT error: could not detect current git branch" >&2
-  exit 1
-fi
-
-issue_id=""
-if [[ "$branch" == issues/* ]]; then
-  segment="${branch#issues/}"
-  # If the prefix before the first - or _ is purely numeric, use that; otherwise use the full segment.
-  if [[ "$segment" =~ ^([0-9]+)[-_] ]]; then
-    issue_id="${BASH_REMATCH[1]}"
-  elif [[ "$segment" =~ ^[0-9]+$ ]]; then
-    issue_id="$segment"
-  else
-    issue_id="$segment"
-  fi
-fi
-
 # --- Resolve script directory early (needed for sibling scripts) ---
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# --- Resolve .claude-work root (worktree-aware) ---
-# In the primary checkout this is <repo-root>/.claude-work; in a linked
-# worktree it is the main checkout's .claude-work, so all worktrees share
-# a single copy.
-claude_work_root="$("${script_dir}/claude-work-root.sh")" || {
+# --- Resolve the work-item folder (branch detection delegated to the gate) ---
+# get-issue-folder-path.sh infers the identifier from the current branch and
+# prints <claude-work-root>[/<segment>]/<identifier>, or just the root on a
+# branch matching no branchPatterns entry (flat placement). It errors only
+# when the .claude-work root cannot be resolved, which was the branch the
+# old claude-work-root.sh call guarded.
+folder_root="$("${script_dir}/get-issue-folder-path.sh")" || {
   echo "target-path $ERR_BRANCH_DETECT error: claude-work-root.sh failed" >&2
   exit 1
 }
 
 # --- Determine target directory ---
-if [ -n "$issue_id" ]; then
-  target_dir="${claude_work_root}/issues/${issue_id}/${type_arg}"
-else
-  target_dir="${claude_work_root}/${type_arg}"
-fi
+target_dir="${folder_root}/${type_arg}"
 
 # --- Slugify description ---
 # lowercase, replace non-alphanumeric with hyphens, collapse consecutive

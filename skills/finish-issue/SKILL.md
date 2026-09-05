@@ -3,7 +3,7 @@ name: finish-issue
 version: 2026.09.03@a8dc4ea
 description: Wrap up issue or side-quest work on the current issues/* or side-quest/* branch. Runs verification, checks documentation needs, and generates a PR description
 argument-hint: [optional: issue-number-or-url]
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git status), Bash(git log *), Bash(git diff *), Bash(make lint-fix *), Bash(make test *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git status), Bash(git log *), Bash(git diff *), Bash(make lint-fix *), Bash(make test *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Finish Issue
@@ -16,20 +16,28 @@ If no argument provided, detect context from the current branch name.
 
 ## Step 1: Determine Branch Mode
 
+If an argument was provided and is a number, use it as the issue number (issue mode) and skip branch detection.
+
+Otherwise resolve the identifier from the current branch. Run the gate alongside `git branch --show-current` (the raw branch name is needed for side-quest detection and error reporting):
+
+```bash
+~/.claude/skills/issue-context/branch-issue-id.sh
+```
+
 ```bash
 git branch --show-current
 ```
 
-Parse the branch name to set **mode** and **identifier**:
+Set **mode** and **identifier** from the results:
 
-| Branch pattern | Mode | Identifier |
+| Gate result | Mode | Identifier |
 | --- | --- | --- |
-| `issues/<NUMBER>` | `issue` | The issue number (e.g., `42`) |
-| `side-quest/<slug>` | `side-quest` | The full slug (e.g., `cleanup-test-mocks`) |
+| Exit 0 — printed value | `issue` | The printed identifier (e.g., on `issues/42` it prints `42`) |
+| Exit 1 — and the branch starts with `side-quest/` | `side-quest` | The full slug after `side-quest/` (e.g., `cleanup-test-mocks`) |
 
-If an argument was provided and is a number, use it as the issue number (issue mode).
+The gate prints nothing on exit 1: a `side-quest/*` branch does not match the configured `branchPatterns`. Fall back to the `git branch --show-current` output and check for the `side-quest/` prefix.
 
-**If the branch matches neither pattern and no argument was provided**, STOP:
+**If the gate exits 1, the branch is not a `side-quest/*` branch, and no argument was provided**, STOP:
 
 ```text
 Not on a work branch. `/finish-issue` requires an `issues/*` or `side-quest/*` branch.
