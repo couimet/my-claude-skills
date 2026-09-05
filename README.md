@@ -101,6 +101,39 @@ npx skills add mattpocock/skills --global
 
 Installing the whole `mattpocock/skills` suite makes the rest of Matt Pocock's engineering skills available too, so you can use more of them later if you want.
 
+### Runtime command dependencies
+
+Separate from the optional external skills above, some skills shell out to command-line tools at runtime. The work-item path resolver parses its settings file with `jq`, so install it to use a non-default configuration (the resolver falls back to its built-in defaults when `jq` is absent):
+
+```bash
+brew install jq
+```
+
+### Work-item path configuration
+
+The issue-workflow skills keep each issue's working files under `.claude-work/issues/<ID>/`. That layout is configurable through `~/.my-claude-skills/settings.json`, whose location is overridable with `MY_CLAUDE_SKILLS_CONFIG` (which must hold a full path). The default document is:
+
+```json
+{
+  "version": 1,
+  "segment": "issues",
+  "branchPatterns": [
+    "^issues/([0-9]+)[-_]",
+    "^issues/([0-9]+)$",
+    "^issues/([A-Za-z][A-Za-z0-9]*-[0-9]+)",
+    "^issues/(.+)$",
+    "^([A-Za-z][A-Za-z0-9]*-[0-9]+)"
+  ],
+  "branchTemplate": "issues/{id}",
+  "urlPatterns": [
+    "/issues/([0-9]+)",
+    "/browse/([A-Z][A-Z0-9]+-[0-9]+)"
+  ]
+}
+```
+
+`segment` names the directory between the working-directory root and the identifier (`issues` by default; an empty value puts work files directly under the root). `branchPatterns` match a branch or PR head in order — first match wins, capture group one is the identifier — and `urlPatterns` extract an identifier from a tracker URL the same way. `branchTemplate` builds a branch name from an identifier, which a regex cannot do in reverse, so reading and writing use separate keys. Omitting the file entirely (or any individual key) changes nothing: every key falls back to its default.
+
 ## Quick Start
 
 Once installed, try these in any project:

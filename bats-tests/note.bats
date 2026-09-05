@@ -68,8 +68,8 @@ SKILL="$PROJECT_ROOT/skills/note/SKILL.md"
   grep -q 'date +%Y%m%d-%H%M%S' "$SKILL"
 }
 
-@test "note skill: mentions git branch detection" {
-  grep -q "git branch --show-current" "$SKILL"
+@test "note skill: detects the work-item identifier via branch-issue-id.sh" {
+  grep -q "issue-context/branch-issue-id.sh" "$SKILL"
 }
 
 @test "note skill: routes to <base>/issues/<ID>/notes/ on issue branches" {

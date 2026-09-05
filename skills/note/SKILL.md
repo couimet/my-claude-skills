@@ -3,7 +3,7 @@ name: note
 version: 2026.09.03@a8dc4ea
 description: Capture a note, finding, or result in a timestamped file under .claude-work/. Lightweight alternative to /scratchpad
 argument-hint: <description>
-allowed-tools: Read, Write, Glob, Bash(git branch --show-current), Bash(mkdir -p *), Bash(date *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Write, Glob, Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Note
@@ -21,7 +21,7 @@ Run these three commands as parallel tool calls. They are independent:
 ```
 
 ```bash
-git branch --show-current
+~/.claude/skills/issue-context/branch-issue-id.sh
 ```
 
 ```bash
@@ -30,9 +30,9 @@ date +%Y%m%d-%H%M%S
 
 Use the stdout of `claude-work-root.sh` as the base path (e.g., `/Users/x/project/.claude-work`). This script automatically detects git worktrees and returns the shared `.claude-work/` location.
 
-If the branch starts with `issues/`, extract the issue number (characters after `issues/` up to the first `-` or `_`, only if those characters are purely numeric; otherwise use the full string after `issues/`):
+`branch-issue-id.sh` prints the work-item identifier when the current branch matches a configured `branchPatterns` entry (e.g., on `issues/42` it prints `42`) and exits 1 with no output otherwise:
 
-- **On an issue branch:** `<base>/issues/<ID>/notes/`
+- **On a work branch (exit 0 with an identifier):** `<base>/issues/<ID>/notes/`
 - **Otherwise:** `<base>/notes/`
 
 Create the directory if it doesn't exist:

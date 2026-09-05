@@ -3,7 +3,7 @@ name: start-issue
 version: 2026.09.03@a8dc4ea
 description: Start working on a GitHub issue - analyze, explore codebase, and create detailed implementation plan
 argument-hint: <github-issue-url> [--scratchpad]
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/start-issue/update-project-status.sh *)
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/start-issue/update-project-status.sh *)
 ---
 
 # Start Issue
@@ -17,14 +17,14 @@ Analyze a GitHub issue, explore the codebase, and create a detailed implementati
 Run both commands as parallel tool calls:
 
 ```bash
-git branch --show-current
+~/.claude/skills/issue-context/branch-issue-id.sh
 ```
 
 ```bash
 ~/.claude/skills/issue-context/claude-work-root.sh
 ```
 
-Use the stdout of `claude-work-root.sh` as `<base>` for all `.claude-work/` paths in this skill. Detect whether the current branch is `issues/<ID>`. If so, extract the ID (numeric prefix before the first `-`/`_`, or the full segment after `issues/`) and use `Glob(pattern="*", path="<base>/issues/<ID>")` to check whether the issue's working directory has contents. If the directory exists and has files, invoke `/cleanup-issue` to offer cleanup of that specific directory. Other issue directories are left untouched. The user may return to them later.
+Use the stdout of `claude-work-root.sh` as `<base>` for all `.claude-work/` paths in this skill. The gate `branch-issue-id.sh` prints the current branch's work-item identifier when the branch matches a configured `branchPatterns` entry (e.g., on `issues/248` it prints `248`) and exits 1 with no output otherwise. If it exits 0, resolve that identifier's working directory with `get-issue-folder-path.sh --id <ID>` (this honors a non-default `segment`), then use `Glob(pattern="*", path="<folder>")` to check whether the issue's working directory has contents. If the directory exists and has files, invoke `/cleanup-issue` to offer cleanup of that specific directory. Other issue directories are left untouched. The user may return to them later. If the gate exits 1, there is no issue context on the current branch; proceed directly to Step 1.
 
 If issue directories have piled up, check for obsolete folders. Run the finder with the `<base>` resolved above:
 
@@ -79,13 +79,31 @@ Continue regardless of the script's exit code. Project status updates are additi
 
 ## Step 2: Create Feature Branch
 
-Create a feature branch from the selected base branch (`origin/main` by default, or another base branch if instructed):
+First resolve the work-item identifier from the argument (an issue URL or a bare number):
 
 ```bash
-git fetch origin && git checkout -b issues/<NUMBER> <BASE_BRANCH>
+~/.claude/skills/issue-context/resolve-issue-id.sh <URL-or-number>
 ```
 
-Where `<NUMBER>` is the GitHub issue number (e.g., `issues/223`) and `<BASE_BRANCH>` is typically `origin/main`. Record the actual base branch used in the scratchpad's `Base branch:` field. It may differ in stacked-PR workflows.
+The script matches a URL against the configured `urlPatterns` and prints the identifier (a GitHub `/issues/248` URL prints `248`); a bare number passes through its safety check. Record its stdout as `<ID>`.
+
+Resolve the issue folder this identifier maps to, for all `.claude-work/` paths in the remaining steps:
+
+```bash
+~/.claude/skills/issue-context/get-issue-folder-path.sh --id <ID>
+```
+
+Its stdout is `<folder>` (e.g., `<base>/issues/248` under the default `segment`), derived from the configured `segment`.
+
+The feature branch name is the configured `branchTemplate` with `{id}` replaced by `<ID>`. The default template is `issues/{id}`. To honor a non-default template, Read the settings file at `~/.my-claude-skills/settings.json` (or the path `MY_CLAUDE_SKILLS_CONFIG` names) and substitute `<ID>` into its `branchTemplate` value when present; otherwise substitute into the default.
+
+Create the feature branch from the selected base branch (`origin/main` by default, or another base branch if instructed):
+
+```bash
+git fetch origin && git checkout -b <branch> <BASE_BRANCH>
+```
+
+Where `<branch>` is the rendered template value (e.g., `issues/248`) and `<BASE_BRANCH>` is typically `origin/main`. Record the actual base branch used in the scratchpad's `Base branch:` field. It may differ in stacked-PR workflows.
 
 ## Step 3: Gather Full Context
 
@@ -103,7 +121,7 @@ Where `<NUMBER>` is the GitHub issue number (e.g., `issues/223`) and `<BASE_BRAN
 
 Before drafting the plan, re-read the issue body, any parent issue, and the files surfaced in Step 3. Think through actual file and function names, step ordering, and dependencies before writing. The plan is the highest-leverage artifact this skill produces. Treat it as such. See `/pre-write` for the think-before-writing rule. If any aspect of the plan is unclear after this review, use `/question` before writing.
 
-**Grill the draft before creating the working document.** Draft the plan content in-session, write the draft to a scratchpads file via `~/.claude/skills/issue-context/target-path.sh --type scratchpad --description "DRAFT <NUMBER> plan"`, then run `/g2q <absolute-draft-path>` on the draft. It grills the draft for genuinely open ambiguities (applying the trigger predicate at the top of `/g2q`, the single source of trigger truth), creates a questions file under `<base>/issues/<NUMBER>/questions/` when it finds any, and reports whether any were raised and, when raised, whether the run is paused or complete. The report gates how the working document is created in 4a/4b:
+**Grill the draft before creating the working document.** Draft the plan content in-session, write the draft to a scratchpads file via `~/.claude/skills/issue-context/target-path.sh --type scratchpad --description "DRAFT <NUMBER> plan"`, then run `/g2q <absolute-draft-path>` on the draft. It grills the draft for genuinely open ambiguities (applying the trigger predicate at the top of `/g2q`, the single source of trigger truth), creates a questions file under the issue's `<folder>/questions/` directory (from Step 2) when it finds any, and reports whether any were raised and, when raised, whether the run is paused or complete. The report gates how the working document is created in 4a/4b:
 
 - If grilling raised questions, create the note/scratchpad only as a pending stub (see 4a/4b): it MUST start with the banner `Production of this plan awaits answers to the questions in <absolute questions file path>, which will affect the plan.`, followed by a `Draft: <absolute draft path>` line recording where the full unfinalized draft lives, followed by the draft outline, and MUST NOT contain the finalized plan. Write the active-plan pointer (4c) and base-branch marker (4d) to the stub, then continue to Step 5. A paused report (the newest wave file ends with questions held for a later wave) still counts as raised: create the stub exactly this way, since answers are pending, and Step 6 re-grills the draft between answer waves before finalizing.
 - If grilling raised nothing, create the full plan note/scratchpad per 4a/4b, then continue to Step 5.
@@ -145,7 +163,7 @@ Use `/scratchpad` with description `start-issue-plan`. When the grilling gate ra
 
 After the working document is created (via either path), write the pointer file so `/finish-issue` and `/tackle-scratchpad-block` can resolve the primary plan without guessing:
 
-**Path:** `<base>/issues/<NUMBER>/active-plan` (where `<base>` is from Step 0)
+**Path:** `<folder>/active-plan` (where `<folder>` is from Step 2)
 
 **Contents:** the project-root-relative path to the working document (a single line, no trailing newline required), for example:
 
@@ -157,15 +175,9 @@ Overwrite any existing pointer. Only the most recent working document is "active
 
 ### 4d. Write the base-branch marker
 
-Record the base branch so `/rebase-issue` can later determine whether to use stacked diff-apply or normal rebase. Like the active-plan pointer in Step 4c, this marker uses an absolute path resolved via `claude-work-root.sh`.
+Record the base branch so `/rebase-issue` can later determine whether to use stacked diff-apply or normal rebase. Like the active-plan pointer in Step 4c, this marker lives in the issue folder resolved in Step 2.
 
-First, run `claude-work-root.sh` to get the absolute `<base>`:
-
-```bash
-~/.claude/skills/issue-context/claude-work-root.sh
-```
-
-**Path:** `<base>/issues/<NUMBER>/base-branch` (absolute path)
+**Path:** `<folder>/base-branch` (absolute path)
 
 **Contents:** the base branch ref recorded in the plan's `Base branch:` field (a single line, no trailing newline). Examples:
 
@@ -250,10 +262,10 @@ The plan is drafted once and finalized once, at the end of the wave sequence: no
 
 Before finishing, verify:
 
-- [ ] Feature branch `issues/<NUMBER>` was created
+- [ ] Feature branch built from the configured `branchTemplate` (default `issues/{id}`) was created
 - [ ] Working document created via `/note` (default) or `/scratchpad` (opt-in), not both
-- [ ] `<base>/issues/<NUMBER>/active-plan` pointer written with the project-root-relative path to the working document
-- [ ] `<base>/issues/<NUMBER>/base-branch` marker written with the recorded `Base branch:` ref
+- [ ] `<folder>/active-plan` pointer written with the project-root-relative path to the working document
+- [ ] `<folder>/base-branch` marker written with the recorded `Base branch:` ref
 - [ ] Plan has specific file/function names (not "update the code")
 - [ ] Each step is small enough to be one commit
 - [ ] Test updates are mentioned for each step that changes behavior

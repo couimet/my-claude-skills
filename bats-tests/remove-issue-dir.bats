@@ -13,6 +13,10 @@ setup() {
   # Create a realistic .claude-work/issues/ directory tree.
   mkdir -p "$TEST_TEMP_DIR/.claude-work/issues"
   BASE="$TEST_TEMP_DIR/.claude-work"
+  # Pin settings to an empty object so the loader uses the built-in defaults
+  # (segment "issues") regardless of the developer's real settings file.
+  export MY_CLAUDE_SKILLS_CONFIG="$TEST_TEMP_DIR/settings.json"
+  printf '{}\n' > "$MY_CLAUDE_SKILLS_CONFIG"
 }
 
 teardown() {
@@ -158,6 +162,50 @@ teardown() {
   # Create a symlink outside the .claude-work tree that points back in.
   mkdir -p "$TEST_TEMP_DIR/outside"
   ln -s "$TEST_TEMP_DIR/outside" "$BASE/issues/escape-hatch"
+
+  run "$SCRIPT" "$BASE" "escape-hatch"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"R001"* ]]
+}
+
+# ============================================================================
+# Configurable segment
+# ============================================================================
+
+@test "non-default segment → removes under <base>/<segment>" {
+  mkdir -p "$BASE/work/42"
+  printf '{"segment":"work"}\n' > "$MY_CLAUDE_SKILLS_CONFIG"
+
+  run "$SCRIPT" "$BASE" "42"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$BASE/work/42" ]
+  [ ! -d "$BASE/work/42" ]
+}
+
+@test "empty segment → removes directly under <base>" {
+  mkdir -p "$BASE/42"
+  printf '{"segment":""}\n' > "$MY_CLAUDE_SKILLS_CONFIG"
+
+  run "$SCRIPT" "$BASE" "42"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$BASE/42" ]
+  [ ! -d "$BASE/42" ]
+}
+
+@test "empty segment → refuses a reserved category name as ID" {
+  mkdir -p "$BASE/notes"
+  printf '{"segment":""}\n' > "$MY_CLAUDE_SKILLS_CONFIG"
+
+  run "$SCRIPT" "$BASE" "notes"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"R001"* ]]
+  [ -d "$BASE/notes" ]
+}
+
+@test "empty segment → refuses ID escaping via physical path" {
+  mkdir -p "$TEST_TEMP_DIR/outside"
+  ln -s "$TEST_TEMP_DIR/outside" "$BASE/escape-hatch"
+  printf '{"segment":""}\n' > "$MY_CLAUDE_SKILLS_CONFIG"
 
   run "$SCRIPT" "$BASE" "escape-hatch"
   [ "$status" -eq 1 ]

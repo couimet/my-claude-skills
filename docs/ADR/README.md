@@ -25,3 +25,4 @@ We follow the format from [adr.github.io](https://adr.github.io/):
 | --- | --- | --- |
 | [0001](./001-skill-extension-hooks.md) | Skill Extension Hooks — Project-Local Customization | Accepted |
 | [0002](./002-skill-distribution-via-skills-cli.md) | Skill Distribution via the Skills CLI | Accepted |
+| [0003](./003-configurable-work-item-path.md) | Configurable Work-Item Path Convention | Accepted |
