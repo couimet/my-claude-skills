@@ -21,7 +21,8 @@ Non-invocable skills (`user-invocable: false`) don't appear in the `/` menu. The
 | Skill | Purpose |
 | --- | --- |
 | `/file-placement` | Decision tree for where to put different file types. Claude auto-consults when deciding output locations. |
-| `/label-discovery` | Fetches GitHub labels, classifies them as defaults vs structured, and prompts the user for selection. Auto-consulted by `/create-github-issue`. |
+| `/issue-draft-reader` | Reads a standardized issue draft into front-matter fields, a title, and a body, and strips ephemeral local-path references. It stops an unstandardized file and routes it through `/draft-issue`. Auto-consulted by `/create-github-issue` and `/create-jira-issue`. |
+| `/label-discovery` | Fetches GitHub labels, classifies them as defaults vs structured, and prints them grouped by prefix for the user to apply. Auto-consulted by `/create-github-issue`. |
 | `/pre-write` | Think-before-writing rule for content-generating skills. Requires complete reasoning before writing the first word — no mid-stream self-corrections in generated files. Auto-consulted before any skill writes file content. |
 | `/prose-style` | Canonical prose and reference formatting rules — hard-wrap rule, code-reference syntax, GitHub-reference syntax, plus the `/concise-output` conciseness pass. Auto-consulted whenever a skill produces file content. |
 | `/scratchpad-ref-format` | Defines the 4 invocation forms for referencing scratchpad steps (`#S`, `#L`, space-separated, bare-path auto-select). Auto-consulted by `/tackle-scratchpad-block` when parsing its argument. |
@@ -39,7 +40,9 @@ Non-invocable skills (`user-invocable: false`) don't appear in the `/` menu. The
 | Skill | Invocation | Foundation Dependencies |
 | --- | --- | --- |
 | `cleanup-issue` | `/cleanup-issue [number \| --sweep]` | (inline branch parsing) |
-| `create-github-issue` | `/create-github-issue <title-or-path>` | `/note` (writes), `/question`, `/label-discovery` |
+| `create-github-issue` | `/create-github-issue <title-or-path>` | `/note` (writes), `/label-discovery`, `/issue-draft-reader` |
+| `create-jira-issue` | `/create-jira-issue <title-or-path>` | `/note` (writes), `/issue-draft-reader` |
+| `draft-issue` | `/draft-issue <title-or-path>` | `/note` (writes), `/g2q` (grills the draft) |
 | `finish-issue` | `/finish-issue [optional: issue-number-or-url]` | `/note`, `/question`, breadcrumbs (reads); handles both `issues/*` and `side-quest/*` branches |
 | `g2q` | `/g2q <topic-or-path>` | `/question` (via `--format-only`, writes the questions file); `/question` delegates its challenge here; also consulted by cross-reference from `/start-issue` and `/tackle-pr-comment` |
 | `start-issue` | `/start-issue <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/g2q`, `/cleanup-issue` |

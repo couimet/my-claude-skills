@@ -10,6 +10,21 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.09.03
+
+### Added
+
+- New `/create-jira-issue` skill creates a Jira issue through the Atlassian MCP server, sharing a parsing and sanitizing spine with `/create-github-issue` and mirroring a reference ticket's fields when the draft names one in a `like` field. It saves the resolved payload to a `/note` and confirms before creating. ([issues/246](https://github.com/couimet/my-claude-skills/issues/246))
+- New `issue-draft-reader` foundation sub-skill owns the reading both issue-creation skills share: input-mode detection, front-matter field lookup, title and body extraction, and stripping ephemeral local-path references. It stops an unstandardized file and routes it through `/draft-issue`. ([issues/246](https://github.com/couimet/my-claude-skills/issues/246))
+- New `/draft-issue` skill authors issue drafts in a standardized local format: a YAML-style front-matter block carries the machine fields (target repo or project, issue type, assignee, like ticket, parent, and dependency lists) over a markdown title and body. It scaffolds a draft from a bare title or imports and wraps an existing file, grills the composed draft through `/g2q` until no questions are raised so the content is thorough before it is written, writes the draft as a `/note`, and is the required path any file takes before a creation skill accepts it. ([issues/246](https://github.com/couimet/my-claude-skills/issues/246))
+
+### Changed
+
+- `/create-github-issue` and `/create-jira-issue` now accept a standardized draft or an inline title only. Each reads the draft through `issue-draft-reader`, strips the front-matter header before filing, and reads parent and dependency relationships from explicit `blocked-by` and `is-blocking` fields instead of a natural-language scan. An inline title creates with resolved defaults only. ([issues/246](https://github.com/couimet/my-claude-skills/issues/246))
+- `/release-article` writes its cross-repo registration handoff as a standardized draft with a `target-repo` field, so `/create-github-issue` consumes it directly. ([issues/246](https://github.com/couimet/my-claude-skills/issues/246))
+- `/create-github-issue` creates without applying labels and prints the repo's classified label groups next to the issue URL so the user applies them on the issue page. ([issues/246](https://github.com/couimet/my-claude-skills/issues/246))
+- `/label-discovery` now stops at classifying and printing label groups. It no longer prompts the user to select labels. ([issues/246](https://github.com/couimet/my-claude-skills/issues/246))
+
 ## 2026.09.02
 
 ### Changed
