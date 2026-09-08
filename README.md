@@ -132,7 +132,7 @@ The issue-workflow skills keep each issue's working files under `.claude-work/is
 }
 ```
 
-`segment` names the directory between the working-directory root and the identifier (`issues` by default; an empty value puts work files directly under the root). `branchPatterns` match a branch or PR head in order — first match wins, capture group one is the identifier — and `urlPatterns` extract an identifier from a tracker URL the same way. `branchTemplate` builds a branch name from an identifier, which a regex cannot do in reverse, so reading and writing use separate keys. Omitting the file entirely (or any individual key) changes nothing: every key falls back to its default.
+`segment` names the directory between the working-directory root and the identifier (`issues` by default; an empty value puts work files directly under the root). `branchPatterns` match a branch or PR head in order — first match wins, capture group one is the identifier — and `urlPatterns` extract an identifier from a tracker URL the same way. `branchTemplate` builds a branch name from an identifier, which a regex cannot do in reverse, so reading and writing use separate keys. The two are a paired set: a branch built from the template is parsed back under `branchPatterns`, so the configured patterns must re-parse what the template renders to the same identifier or branch creation is rejected. Work-item readers follow the writers: `/rebase-issue` resolves the pointer, notes, and base-branch marker from the same settings-aware work-item folder. Omitting the file entirely (or any individual key) changes nothing: every key falls back to its default.
 
 ## Quick Start
 

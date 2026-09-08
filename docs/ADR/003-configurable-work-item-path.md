@@ -17,7 +17,7 @@ The convention was also written down twice. `/start-issue` created branches from
 | Key | Default | Purpose |
 | --- | --- | --- |
 | `branchPatterns` | ordered list below | Regexes matched against a branch or a PR head. First match wins. Capture group one is the identifier. |
-| `branchTemplate` | `issues/{id}` | Builds a branch name from an identifier. A regex cannot be inverted, so reading and writing use separate keys. |
+| `branchTemplate` | `issues/{id}` | Builds a branch name from an identifier. A regex cannot be inverted, so reading and writing use separate keys. Paired with `branchPatterns`: a rendered branch must parse back under the configured patterns to the identifier it was built from, or branch creation is rejected. |
 | `urlPatterns` | ordered list below | Regexes matched against a tracker URL. First match wins. Capture group one is the identifier. |
 | `segment` | `issues` | Directory between the working-directory root and the identifier. Empty omits it. |
 
@@ -39,6 +39,7 @@ URL patterns match on path shape, not hostname, so self-hosted and enterprise in
 - One ordered pattern list serves every repository: patterns that cannot match a repository's branches are skipped, so no per-repository keying is needed.
 - Defaults preserve today's behavior for anyone who never configures. The key-shaped entries extend recognition to key identifiers and bare key branches without disturbing the numeric, slug, and `issues/` rows.
 - Skills prose stays linear. The shared scripts own the logic, so consumers inherit the mechanism by delegating, with no branching to maintain across the suite.
+- Readers follow the writers. Work-item readers such as `/rebase-issue` resolve the `last-finish-issue` pointer, the notes directory, and the base-branch marker from the same settings-aware work-item folder the writers use, so a non-default `segment` applies to every file in the chain rather than only the ones the path resolver writes.
 - The config loader is `jq`'s first declared home as a runtime command dependency in the installer and README, closing a gap that had already run through five consumers.
 
 ### Negative

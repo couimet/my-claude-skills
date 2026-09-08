@@ -150,14 +150,14 @@ Confirm only the expected unique stacked changes are present, then proceed to St
 
 ## Step 11: Read Commit Message
 
-Run the commit message resolution script, which tries three sources in order:
+The pointer and notes live in the work-item folder `<folder> = <base>[/<segment>]/<ID>`, resolved the same way `/finish-issue` writes them (via `get-issue-folder-path.sh`, honoring a configured `segment`). Run the commit message resolution script, which tries three sources in order:
 
-1. **`last-finish-issue` pointer** — reads the PR description path from `<base>/issues/<NUMBER>/last-finish-issue` and returns its contents
-2. **Find PR description in notes/** — searches for the most recent `*finish-issue-<NUMBER>*` file in `<base>/issues/<NUMBER>/notes/`
+1. **`last-finish-issue` pointer** — reads the PR description path from `<folder>/last-finish-issue` and returns its contents
+2. **Find PR description in notes/** — searches for the most recent `*finish-issue-<ID>*` file in `<folder>/notes/`
 3. **git log fallback** — captures `git log --format=%B <target>..HEAD` (the original commits before the soft reset)
 
 ```bash
-~/.claude/skills/rebase-issue/resolve-commit-msg.sh <target> <NUMBER>
+~/.claude/skills/rebase-issue/resolve-commit-msg.sh <target> <ID>
 ```
 
 The script outputs the commit message to stdout on success (exit 0) or an error to stderr (exit 1) if all sources are empty.

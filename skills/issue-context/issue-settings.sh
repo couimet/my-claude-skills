@@ -83,6 +83,31 @@ _issue_settings_is_safe_component() {
   return 0
 }
 
+# branch_identifier <branch> — Print the work-item identifier <branch> resolves
+# to under the configured branchPatterns, or exit 1 silently when no pattern
+# yields a usable capture. The first pattern whose capture group one is
+# non-empty and usable as one path component wins; a branch that matches a
+# pattern but captures nothing usable falls through to later patterns. This is
+# the single matching routine shared by branch-issue-id.sh (which matches the
+# current branch) and render-branch-template.sh (which parses a branch it just
+# rendered back under the same patterns), so branch creation and branch
+# matching cannot drift apart. Uses return, not exit: this file is sourced.
+_issue_settings_branch_identifier() {
+  local branch="$1" pattern
+  for pattern in "${SETTINGS_BRANCH_PATTERNS[@]}"; do
+    if [[ "$branch" =~ $pattern ]]; then
+      if [ -n "${BASH_REMATCH[1]:-}" ] \
+          && _issue_settings_is_safe_component "${BASH_REMATCH[1]}"; then
+        printf '%s\n' "${BASH_REMATCH[1]}"
+        return 0
+      fi
+      # Matched but captured nothing usable (empty or unsafe); keep trying
+      # later patterns.
+    fi
+  done
+  return 1
+}
+
 # Resolve the config path.
 _issue_settings_file="${MY_CLAUDE_SKILLS_CONFIG:-${HOME:-}/.my-claude-skills/settings.json}"
 SETTINGS_FILE="$_issue_settings_file"

@@ -1,7 +1,10 @@
 #!/usr/bin/env bats
 #
 # Tests for skills/rebase-issue/resolve-target.sh — resolves the rebase
-# target ref and classifies the mode (normal or stacked).
+# target ref and classifies the mode (normal or stacked). The marker file is
+# read from the work-item folder resolved by get-issue-folder-path.sh, so every
+# test points MY_CLAUDE_SKILLS_CONFIG at a temp settings file and a developer's
+# real ~/.my-claude-skills/settings.json can never change the outcome.
 
 load test_helper
 
@@ -17,6 +20,10 @@ setup() {
   git config user.email "test@example.com"
   git config user.name "Test"
   git commit --allow-empty -q -m "initial commit"
+  # Default empty config — every key falls back to the built-in defaults.
+  CFG="$TEST_TEMP_DIR/settings.json"
+  printf '%s' '{}' > "$CFG"
+  export MY_CLAUDE_SKILLS_CONFIG="$CFG"
 }
 
 teardown() {
@@ -226,6 +233,29 @@ setup_remote_with_branch() {
   [ "$(cat "$marker_file")" = "origin/issues/233-layer-one" ]
 }
 
+@test "with segment 'work', gh pr list updates the marker under <root>/work/42/" {
+  local segment_cfg="$TEST_TEMP_DIR/segment-work.json"
+  printf '%s' '{"segment":"work"}' > "$segment_cfg"
+  export MY_CLAUDE_SKILLS_CONFIG="$segment_cfg"
+
+  setup_remote_with_branch "main"
+
+  gh() {
+    if [[ "$1" == "pr" && "$2" == "list" ]]; then
+      echo 'issues/233-layer-one'
+    fi
+  }
+  export -f gh
+
+  run "$SCRIPT" "42"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"TARGET=origin/issues/233-layer-one"* ]]
+
+  local marker_file="$TEST_TEMP_DIR/.claude-work/work/42/base-branch"
+  [ -f "$marker_file" ]
+  [ "$(cat "$marker_file")" = "origin/issues/233-layer-one" ]
+}
+
 @test "gh pr list returns base ref with origin/ prefix → no double prefix" {
   setup_remote_with_branch "main"
 
@@ -317,6 +347,22 @@ setup_remote_with_branch() {
 
 @test "marker has issues/ branch, remote ref exists → use base-branch, MODE=stacked" {
   local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
+  write_file "$marker_dir/base-branch" "issues/100"
+
+  setup_remote_with_branch "issues/100"
+
+  run "$SCRIPT" "42"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"TARGET=issues/100"* ]]
+  [[ "$output" == *"MODE=stacked"* ]]
+}
+
+@test "with segment 'work', marker under <root>/work/42/ is honored" {
+  local segment_cfg="$TEST_TEMP_DIR/segment-work.json"
+  printf '%s' '{"segment":"work"}' > "$segment_cfg"
+  export MY_CLAUDE_SKILLS_CONFIG="$segment_cfg"
+
+  local marker_dir="$TEST_TEMP_DIR/.claude-work/work/42"
   write_file "$marker_dir/base-branch" "issues/100"
 
   setup_remote_with_branch "issues/100"

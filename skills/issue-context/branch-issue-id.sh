@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 #
-# branch-issue-id.sh — The single owner of branch-to-identifier matching.
+# branch-issue-id.sh — Resolve the current branch's work-item identifier.
 #
-# Reads the current branch via `git branch --show-current` and matches it
-# against the configured branchPatterns in order. The first pattern that
-# matches supplies the identifier as its first capture group, which is printed
-# on stdout. A captured identifier must be usable as one path segment (a
-# branch such as `issues/foo/bar` could otherwise hand callers a value that
-# builds a path outside the work-item folder); an empty or unsafe capture is
-# treated as a non-match and the next pattern is tried. A branch matching no
-# pattern — or no branch at all (detached HEAD, non-repository) — exits 1 and
-# prints nothing: callers branch on the exit status and own their own
+# Reads the current branch via `git branch --show-current` and resolves it
+# through the shared matcher in issue-settings.sh, which applies the
+# configured branchPatterns in order and prints the first pattern's capture
+# group one when it is usable as one path segment. The matcher is shared with
+# render-branch-template.sh so a branch /start-issue renders and a branch this
+# gate recognizes always parse back to the same identifier. A branch matching
+# no pattern — or no branch at all (detached HEAD, non-repository) — exits 1
+# and prints nothing: callers branch on the exit status and own their own
 # user-facing messaging, and path-resolving callers rely on the silence to
 # keep flat placement clean.
 #
@@ -21,17 +20,7 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_self_dir/issue-settings.sh"
 
 branch="$(git branch --show-current 2>/dev/null)" || branch=""
-if [ -n "$branch" ]; then
-  for pattern in "${SETTINGS_BRANCH_PATTERNS[@]}"; do
-    if [[ "$branch" =~ $pattern ]]; then
-      if [ -n "${BASH_REMATCH[1]:-}" ] \
-          && _issue_settings_is_safe_component "${BASH_REMATCH[1]}"; then
-        printf '%s\n' "${BASH_REMATCH[1]}"
-        exit 0
-      fi
-      # Matched but captured nothing usable (empty or unsafe); keep trying
-      # later patterns.
-    fi
-  done
+if [ -n "$branch" ] && _issue_settings_branch_identifier "$branch"; then
+  exit 0
 fi
 exit 1

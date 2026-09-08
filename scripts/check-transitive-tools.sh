@@ -63,6 +63,7 @@ INVOKES+=("g2q=question")
 INVOKES+=("question=g2q")
 INVOKES+=("scratchpad=question")
 INVOKES+=("create-jira-issue=note issue-draft-reader")
+INVOKES+=("release-article=note")
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_SKILLS_ROOT="$(cd "$SCRIPT_DIR/../skills" && pwd)"

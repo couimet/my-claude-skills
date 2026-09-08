@@ -2,9 +2,11 @@
 #
 # Tests for skills/issue-context/render-branch-template.sh — prints a branch
 # name built from the configured branchTemplate, substituting {id} with the
-# identifier. Every test points MY_CLAUDE_SKILLS_CONFIG at a temp settings
-# file so a developer's real ~/.my-claude-skills/settings.json can never
-# change the outcome.
+# identifier, and rejects a rendered branch the configured branchPatterns do
+# not parse back to the same identifier (branchTemplate and branchPatterns
+# must be a paired configuration). Every test points MY_CLAUDE_SKILLS_CONFIG
+# at a temp settings file so a developer's real ~/.my-claude-skills/settings.json
+# can never change the outcome.
 
 load test_helper
 
@@ -53,20 +55,48 @@ render_with_config() {
 # Custom branchTemplate
 # ============================================================================
 
-@test "custom branchTemplate → {id} substituted into it" {
+@test "custom branchTemplate with a matching branchPatterns entry → {id} substituted into it" {
   local cfg="$TEST_TEMP_DIR/custom.json"
-  printf '%s' '{"branchTemplate":"feature/{id}"}' > "$cfg"
+  printf '%s' '{"branchTemplate":"feature/{id}","branchPatterns":["^feature/([0-9]+)$"]}' > "$cfg"
   render_with_config "$cfg" 42
   [ "$status" -eq 0 ]
   [ "$output" = "feature/42" ]
 }
 
-@test "custom branchTemplate replacing default is honored per config" {
+@test "custom branchTemplate paired with branchPatterns fully replaces the default" {
   local cfg="$TEST_TEMP_DIR/custom.json"
-  printf '%s' '{"branchTemplate":"feature/{id}"}' > "$cfg"
+  printf '%s' '{"branchTemplate":"feature/{id}","branchPatterns":["^feature/([0-9]+)$"]}' > "$cfg"
   # The default template no longer applies: the custom one fully replaces it.
   render_with_config "$cfg" 42
+  [ "$status" -eq 0 ]
   [ "$output" != "issues/42" ]
+}
+
+@test "template-only override under default patterns → rejected as unpaired" {
+  local cfg="$TEST_TEMP_DIR/unpaired.json"
+  printf '%s' '{"branchTemplate":"work/{id}"}' > "$cfg"
+  # A branch the default branchPatterns cannot re-parse would be created by
+  # /start-issue and then treated as a non-work branch by branch-issue-id.sh.
+  render_with_config "$cfg" 42
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"paired configuration"* ]]
+}
+
+@test "branch that re-parses to a different id → rejected as unpaired" {
+  # Under the default branchPatterns, issues/123-rfc resolves to 123 (the
+  # numeric row wins), not to 123-rfc, so the digit-leading slug cannot
+  # round-trip and must not render.
+  render_with_config "$CFG" 123-rfc
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"paired configuration"* ]]
+}
+
+@test "paired branchTemplate + branchPatterns renders and round-trips" {
+  local cfg="$TEST_TEMP_DIR/paired.json"
+  printf '%s' '{"branchTemplate":"work/{id}","branchPatterns":["^work/([0-9]+)$"]}' > "$cfg"
+  render_with_config "$cfg" 42
+  [ "$status" -eq 0 ]
+  [ "$output" = "work/42" ]
 }
 
 @test "template with no {id} placeholder → falls back to issues/{id}" {
