@@ -1,6 +1,6 @@
 ---
 name: ensure-gitignore
-version: 2026.09.03@a8dc4ea
+version: 2026.09.04@3523c9d
 user-invocable: false
 description: Ensures the project root .gitignore contains the Claude skill working directory sentinel. Shell script handles check-and-append in one Bash call. No file contents loaded into context.
 allowed-tools: Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
