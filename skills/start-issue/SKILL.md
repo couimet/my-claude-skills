@@ -123,7 +123,7 @@ Where `<branch>` is the rendered template value (e.g., `issues/248`) and `<BASE_
   - Existing patterns to follow
   - Test files that will need updates
 - **Check integration points**: review the project's entry points, configuration, documentation, and discoverability conventions for anything the change might affect
-- **Check for project-local hooks**: if the project has a `/start-issue-hook` skill (foundation skill at `.claude/skills/start-issue-hook/SKILL.md`), it is loaded as additional context automatically. Read it and incorporate whatever it specifies into the plan generated in Step 4. If no such skill exists, continue with the vanilla plan. See `/skill-hooks` for the full extension mechanism.
+- **Check for project-local hooks**: if the project has a `/start-issue-hook` skill (foundation skill in the project's `.claude/skills/` directory), it is loaded as additional context automatically. Read it and incorporate whatever it specifies into the plan generated in Step 4. If no such skill exists, continue with the vanilla plan. See `/skill-hooks` for the full extension mechanism.
 
 ## Step 4: Create Implementation Plan Working Document
 

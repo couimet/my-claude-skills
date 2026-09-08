@@ -25,6 +25,7 @@ This is purely a convention: a few lines of prose added to existing SKILL.md fil
 | `start-issue` | `start-issue-hook` | After context gathering, before plan generation |
 | `finish-issue` | `finish-issue-hook` | During verification |
 | `start-side-quest` | `start-side-quest-hook` | After branch creation, before plan generation |
+| `create-github-issue` | `create-github-issue-hook` | During Step 8 label offering, before the generic `/label-discovery` offer |
 
 ### Skills explicitly excluded
 
