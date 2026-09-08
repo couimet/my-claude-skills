@@ -30,6 +30,12 @@ brew install bats-core
 
 echo "✓ bats-core installed: $(bats --version)"
 
+# Install shellcheck
+echo "📦 Installing shellcheck..."
+brew install shellcheck
+
+echo "✓ shellcheck installed: $(shellcheck --version | grep '^version:')"
+
 echo ""
 echo "✅ Setup complete!"
 echo ""

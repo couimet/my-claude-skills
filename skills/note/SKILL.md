@@ -3,7 +3,7 @@ name: note
 version: 2026.09.03@a8dc4ea
 description: Capture a note, finding, or result in a timestamped file under .claude-work/. Lightweight alternative to /scratchpad
 argument-hint: <description>
-allowed-tools: Read, Write, Glob, Bash(git branch --show-current), Bash(mkdir -p *), Bash(date *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Write, Glob, Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(mkdir -p *), Bash(date *)
 ---
 
 # Note
@@ -14,31 +14,25 @@ Capture a note, finding, or result in a lightweight timestamped file. Use this i
 
 ## Step 1: Determine Target Directory and Timestamp
 
-Run these three commands as parallel tool calls. They are independent:
+Resolve the work-item folder with `get-issue-folder-path.sh`, which reads the current branch and honors the configured `segment` (it detects git worktrees and returns the shared `.claude-work/` location). Run it and `date` as parallel tool calls — they are independent:
 
 ```bash
-~/.claude/skills/issue-context/claude-work-root.sh
-```
-
-```bash
-git branch --show-current
+~/.claude/skills/issue-context/get-issue-folder-path.sh
 ```
 
 ```bash
 date +%Y%m%d-%H%M%S
 ```
 
-Use the stdout of `claude-work-root.sh` as the base path (e.g., `/Users/x/project/.claude-work`). This script automatically detects git worktrees and returns the shared `.claude-work/` location.
+Use the stdout of `get-issue-folder-path.sh` as `<folder>` and write notes to `<folder>/notes/`. The script prints a different `<folder>` per branch context:
 
-If the branch starts with `issues/`, extract the issue number (characters after `issues/` up to the first `-` or `_`, only if those characters are purely numeric; otherwise use the full string after `issues/`):
+- **On a work branch** (a configured `branchPatterns` entry matches, e.g. `issues/42`): the segment-aware folder `<base>/<segment>/<ID>`, so notes land at `<base>/<segment>/<ID>/notes/` (under the default segment, `<base>/issues/42/notes/`).
+- **Otherwise** (main, or any branch matching no pattern): the bare root `<base>`, so notes land at `<base>/notes/`.
 
-- **On an issue branch:** `<base>/issues/<ID>/notes/`
-- **Otherwise:** `<base>/notes/`
-
-Create the directory if it doesn't exist:
+Create the notes directory if it doesn't exist:
 
 ```bash
-mkdir -p <target-directory>
+mkdir -p <folder>/notes/
 ```
 
 ## Step 2: Generate Filename
@@ -75,7 +69,7 @@ Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to t
 Print only the absolute filepath:
 
 ```text
-<target-directory>/<filename>
+<folder>/notes/<filename>
 ```
 
 Do NOT print the file contents.

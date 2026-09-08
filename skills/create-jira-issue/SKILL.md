@@ -3,7 +3,7 @@ name: create-jira-issue
 version: 2026.09.03@a8dc4ea
 description: Create a Jira issue from a standardized draft or an inline title, mirroring a reference ticket when one is given, with pre-create review
 argument-hint: <file-path-or-title>
-allowed-tools: Read, Write, Glob, AskUserQuestion, Bash(git branch --show-current), Bash(mkdir -p *), Bash(date *), Bash(*/skills/issue-context/claude-work-root.sh *), mcp__atlassian__createJiraIssue, mcp__atlassian__getJiraIssue, mcp__atlassian__getJiraIssueTypeMetaWithFields, mcp__atlassian__getJiraProjectIssueTypesMetadata, mcp__atlassian__createIssueLink, mcp__atlassian__getIssueLinkTypes, mcp__atlassian__getAccessibleAtlassianResources, mcp__atlassian__lookupJiraAccountId, mcp__atlassian__getTransitionsForJiraIssue, mcp__atlassian__transitionJiraIssue
+allowed-tools: Read, Write, Glob, AskUserQuestion, Bash(mkdir -p *), Bash(date *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), mcp__atlassian__createJiraIssue, mcp__atlassian__getJiraIssue, mcp__atlassian__getJiraIssueTypeMetaWithFields, mcp__atlassian__getJiraProjectIssueTypesMetadata, mcp__atlassian__createIssueLink, mcp__atlassian__getIssueLinkTypes, mcp__atlassian__getAccessibleAtlassianResources, mcp__atlassian__lookupJiraAccountId, mcp__atlassian__getTransitionsForJiraIssue, mcp__atlassian__transitionJiraIssue
 ---
 
 # Create Jira Issue
@@ -28,7 +28,13 @@ Resolve the project key from the fields and the branch, in order:
 
 - A `target-project` field wins. It is also the fallback for a detached head or a non-conforming branch name.
 - Otherwise, read it from the `like` field's ticket's project.
-- Otherwise, when the current branch matches `<KEY>-<slug>`, read the key from its first segment: `Bash(git branch --show-current)`.
+- Otherwise, resolve the work-item identifier from the current branch with `branch-issue-id.sh`:
+
+  ```bash
+  ~/.claude/skills/issue-context/branch-issue-id.sh
+  ```
+
+  When it prints an identifier shaped like a Jira key (letters, hyphen, digits — e.g. `PROJ-123`), take the letter prefix as the project key. A numeric or slug identifier carries no project, so fall through to the prompt.
 - Otherwise, prompt the user for the project key.
 
 Resolve the issue type from an `issue-type` field, else from the `like` field's ticket, else default to `Task`, since Jira has no default issue type the way GitHub has a default issue kind. A `like` field is an explicit author choice that implies both project and type. It is authoritative over branch inference. Only an explicit `target-project` or `issue-type` field outranks it.
@@ -70,6 +76,6 @@ For each dependency relationship the draft declares against another Jira ticket,
 
 ## Step 7: Report
 
-Print the created ticket's browse URL and key. The GitHub-for-Jira integration populates the Development panel automatically when a branch is named `<KEY>-<slug>`, so no explicit PR-link step is needed.
+Print the created ticket's browse URL and key. The GitHub-for-Jira integration populates the Development panel automatically from a branch whose name contains the key (the branch created for the work carries it), so no explicit PR-link step is needed.
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.

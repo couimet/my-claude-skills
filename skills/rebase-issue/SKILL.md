@@ -4,7 +4,7 @@ version: 2026.09.03@a8dc4ea
 description: Rebase the current issue branch onto origin/main (or a specified target) after upstream PRs merge. Handles conflict resolution, squashes to a single commit, and runs autonomously
 argument-hint: <target>
 user-invocable: true
-allowed-tools: Read, Write, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git log *), Bash(git diff *), Bash(git rebase *), Bash(git reset *), Bash(git commit *), Bash(git add *), Bash(git checkout *), Bash(git merge-base *), Bash(git rev-parse *), Bash(git status *), Bash(gh pr list *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/rebase-issue/resolve-target.sh *), Bash(*/skills/rebase-issue/apply-stacked-diff.sh *), Bash(*/skills/rebase-issue/resolve-commit-msg.sh *)
+allowed-tools: Read, Write, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git log *), Bash(git diff *), Bash(git rebase *), Bash(git reset *), Bash(git commit *), Bash(git add *), Bash(git checkout *), Bash(git merge-base *), Bash(git rev-parse *), Bash(git status *), Bash(gh pr list *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/rebase-issue/resolve-target.sh *), Bash(*/skills/rebase-issue/apply-stacked-diff.sh *), Bash(*/skills/rebase-issue/resolve-commit-msg.sh *)
 ---
 
 # Rebase Issue
@@ -17,14 +17,20 @@ If no argument provided, defaults to `origin/main`.
 
 ## Step 1: Validate Branch
 
+Resolve the identifier from the current branch via `branch-issue-id.sh`, and capture the raw branch name for error reporting:
+
+```bash
+~/.claude/skills/issue-context/branch-issue-id.sh
+```
+
 ```bash
 git branch --show-current
 ```
 
-The branch must match `issues/<NUMBER>`. If it does not, STOP:
+The branch must match a configured work-item `branchPatterns` entry. If the gate exits 0, its printed identifier is `<ID>` for the remaining steps. If it exits 1 (no identifier resolved), STOP:
 
 ```text
-Not on an issue branch. `/rebase-issue` requires an `issues/*` branch.
+Not on a configured work-item branch. `/rebase-issue` requires a branch that matches a configured `branchPatterns` entry.
 Current branch: <branch>
 ```
 
@@ -144,14 +150,14 @@ Confirm only the expected unique stacked changes are present, then proceed to St
 
 ## Step 11: Read Commit Message
 
-Run the commit message resolution script, which tries three sources in order:
+The pointer and notes live in the work-item folder `<folder> = <base>[/<segment>]/<ID>`, resolved the same way `/finish-issue` writes them (via `get-issue-folder-path.sh`, honoring a configured `segment`). Run the commit message resolution script, which tries three sources in order:
 
-1. **`last-finish-issue` pointer** — reads the PR description path from `<base>/issues/<NUMBER>/last-finish-issue` and returns its contents
-2. **Find PR description in notes/** — searches for the most recent `*finish-issue-<NUMBER>*` file in `<base>/issues/<NUMBER>/notes/`
+1. **`last-finish-issue` pointer** — reads the PR description path from `<folder>/last-finish-issue` and returns its contents
+2. **Find PR description in notes/** — searches for the most recent `*finish-issue-<ID>*` file in `<folder>/notes/`
 3. **git log fallback** — captures `git log --format=%B <target>..HEAD` (the original commits before the soft reset)
 
 ```bash
-~/.claude/skills/rebase-issue/resolve-commit-msg.sh <target> <NUMBER>
+~/.claude/skills/rebase-issue/resolve-commit-msg.sh <target> <ID>
 ```
 
 The script outputs the commit message to stdout on success (exit 0) or an error to stderr (exit 1) if all sources are empty.
@@ -206,7 +212,7 @@ When `git rebase` encounters conflicts during Step 8, apply this strategy:
 
 Before finishing, verify:
 
-- [ ] Branch is an `issues/*` branch (Step 1)
+- [ ] Branch is a configured work-item branch (Step 1)
 - [ ] Target resolved correctly (from argument or defaulted to `origin/main`)
 - [ ] Conflicts handled with the defined strategy (upstream infrastructure wins; our logic ported on top)
 - [ ] Rebase completed cleanly (or conflicts resolved)

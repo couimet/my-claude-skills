@@ -3,6 +3,8 @@
 # resolve-commit-msg.sh — Resolve the commit message for a rebased issue
 # branch by trying three sources in order: the last-finish-issue pointer,
 # a PR description file in notes/, and the git log (pre-squash commits).
+# The pointer and notes live in the issue's .claude-work/ folder, resolved
+# through get-issue-folder-path.sh so a configured segment is honored.
 #
 # Usage: resolve-commit-msg.sh <target> <issue-number>
 #
@@ -18,13 +20,13 @@
 #
 # Error codes:
 #   C001 — wrong number of arguments
-#   C003 — claude-work-root.sh failed
+#   C003 — work-item folder resolution failed
 #   C004 — all sources are empty
 
 set -euo pipefail
 
 readonly ERR_ARGS="C001"
-readonly ERR_CLAUDE_ROOT="C003"
+readonly ERR_FOLDER="C003"
 readonly ERR_EMPTY="C004"
 
 usage() {
@@ -56,17 +58,22 @@ fi
 # --- Resolve script directory and dependencies ---
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-claude_work_root_script="${script_dir}/../issue-context/claude-work-root.sh"
+folder_script="${script_dir}/../issue-context/get-issue-folder-path.sh"
 
-if [ ! -x "$claude_work_root_script" ]; then
-  echo "resolve-commit-msg $ERR_CLAUDE_ROOT error: claude-work-root.sh not found or not executable at $claude_work_root_script" >&2
+if [ ! -x "$folder_script" ]; then
+  echo "resolve-commit-msg $ERR_FOLDER error: get-issue-folder-path.sh not found or not executable at $folder_script" >&2
   exit 1
 fi
 
-# --- Resolve the .claude-work/ root ---
+# --- Resolve the issue's .claude-work/ folder ---
 
-claude_work_root="$("$claude_work_root_script")" || {
-  echo "resolve-commit-msg $ERR_CLAUDE_ROOT error: claude-work-root.sh failed" >&2
+# The pointer and notes live in the issue's folder, resolved through
+# get-issue-folder-path.sh (the same resolver finish-issue and note write to),
+# so a configured segment is honored: under a non-default segment they sit at
+# <root>/<segment>/<id>/ instead of hard-coded under issues/. The folder is not
+# created here — the writers (finish-issue, rebase) create it.
+issue_folder="$("$folder_script" --id "$issue_number")" || {
+  echo "resolve-commit-msg $ERR_FOLDER error: could not resolve work-item folder for '$issue_number' (get-issue-folder-path.sh failed)" >&2
   exit 1
 }
 
@@ -79,7 +86,7 @@ file_has_content() {
 
 # --- Source 1: last-finish-issue pointer ---
 
-pointer_file="${claude_work_root}/issues/${issue_number}/last-finish-issue"
+pointer_file="${issue_folder}/last-finish-issue"
 
 if file_has_content "$pointer_file"; then
   # The pointer contains an absolute path to the PR description.
@@ -92,7 +99,7 @@ fi
 
 # --- Source 2: find PR description in notes/ directory ---
 
-notes_dir="${claude_work_root}/issues/${issue_number}/notes"
+notes_dir="${issue_folder}/notes"
 
 if [ -d "$notes_dir" ]; then
   newest_note="$(find "$notes_dir" -maxdepth 1 -type f -name "*finish-issue-${issue_number}*" 2>/dev/null | sort | tail -n1)"

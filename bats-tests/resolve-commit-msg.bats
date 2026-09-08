@@ -1,7 +1,11 @@
 #!/usr/bin/env bats
 #
 # Tests for skills/rebase-issue/resolve-commit-msg.sh — resolves the commit
-# message for a rebased issue branch via three-tier fallback chain.
+# message for a rebased issue branch via three-tier fallback chain. The pointer
+# and notes are read from the work-item folder resolved by
+# get-issue-folder-path.sh, so every test points MY_CLAUDE_SKILLS_CONFIG at a
+# temp settings file and a developer's real ~/.my-claude-skills/settings.json
+# can never change the outcome.
 
 load test_helper
 
@@ -17,6 +21,10 @@ setup() {
   git config user.email "test@example.com"
   git config user.name "Test"
   git commit --allow-empty -q -m "initial commit"
+  # Default empty config — every key falls back to the built-in defaults.
+  CFG="$TEST_TEMP_DIR/settings.json"
+  printf '%s' '{}' > "$CFG"
+  export MY_CLAUDE_SKILLS_CONFIG="$CFG"
 }
 
 teardown() {
@@ -312,6 +320,61 @@ Second paragraph of the commit message."
   run "$SCRIPT" "nonexistent-ref" "42"
   [ "$status" -eq 1 ]
   [[ "$output" == *"C004"* ]]
+}
+
+# ============================================================================
+# Segment-aware folder resolution
+# ============================================================================
+
+@test "with segment 'work', pointer under <root>/work/42/ beats git-log fallback" {
+  local segment_cfg="$TEST_TEMP_DIR/segment-work.json"
+  printf '%s' '{"segment":"work"}' > "$segment_cfg"
+  export MY_CLAUDE_SKILLS_CONFIG="$segment_cfg"
+
+  # git log would produce content, but the PR description must win.
+  git checkout -q -b issues/42
+  git commit --allow-empty -q -m "git log fallback content"
+
+  local issue_dir="$TEST_TEMP_DIR/.claude-work/work/42"
+  local pr_desc="$issue_dir/notes/20260701-120000-finish-issue-42.txt"
+  write_file "$pr_desc" "PR description content here"
+  write_file "$issue_dir/last-finish-issue" "$pr_desc"
+
+  run "$SCRIPT" "main" "42"
+  [ "$status" -eq 0 ]
+  [ "$output" = "PR description content here" ]
+}
+
+@test "with segment 'work', note under <root>/work/42/ is found" {
+  local segment_cfg="$TEST_TEMP_DIR/segment-work.json"
+  printf '%s' '{"segment":"work"}' > "$segment_cfg"
+  export MY_CLAUDE_SKILLS_CONFIG="$segment_cfg"
+
+  local issue_dir="$TEST_TEMP_DIR/.claude-work/work/42"
+  local note="$issue_dir/notes/20260702-090000-finish-issue-42.txt"
+  write_file "$note" "segment work note content"
+
+  run "$SCRIPT" "origin/main" "42"
+  [ "$status" -eq 0 ]
+  [ "$output" = "segment work note content" ]
+}
+
+@test "with empty segment, note under <root>/42/ beats git-log fallback" {
+  local segment_cfg="$TEST_TEMP_DIR/segment-empty.json"
+  printf '%s' '{"segment":""}' > "$segment_cfg"
+  export MY_CLAUDE_SKILLS_CONFIG="$segment_cfg"
+
+  # git log would produce content, but the note must win.
+  git checkout -q -b issues/42
+  git commit --allow-empty -q -m "git log fallback content"
+
+  local issue_dir="$TEST_TEMP_DIR/.claude-work/42"
+  local note="$issue_dir/notes/20260701-120000-finish-issue-42.txt"
+  write_file "$note" "flat note content"
+
+  run "$SCRIPT" "main" "42"
+  [ "$status" -eq 0 ]
+  [ "$output" = "flat note content" ]
 }
 
 @test "not in a git repository → exits 1" {

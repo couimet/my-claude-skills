@@ -22,14 +22,14 @@
 # Error codes:
 #   T001 — wrong number of arguments
 #   T002 — invalid issue number
-#   T003 — claude-work-root.sh failed
+#   T003 — work-item folder resolution failed
 #   T004 — base-branch marker ref no longer exists on remote
 
 set -euo pipefail
 
 readonly ERR_ARGS="T001"
 readonly ERR_INVALID_ISSUE="T002"
-readonly ERR_CLAUDE_ROOT="T003"
+readonly ERR_FOLDER="T003"
 readonly ERR_STALE_MARKER="T004"
 
 usage() {
@@ -61,17 +61,21 @@ fi
 # --- Resolve script directory and dependencies ---
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-claude_work_root_script="${script_dir}/../issue-context/claude-work-root.sh"
+folder_script="${script_dir}/../issue-context/get-issue-folder-path.sh"
 
-if [ ! -x "$claude_work_root_script" ]; then
-  echo "resolve-target $ERR_CLAUDE_ROOT error: claude-work-root.sh not found or not executable at $claude_work_root_script" >&2
+if [ ! -x "$folder_script" ]; then
+  echo "resolve-target $ERR_FOLDER error: get-issue-folder-path.sh not found or not executable at $folder_script" >&2
   exit 1
 fi
 
-# --- Resolve the .claude-work/ root ---
+# --- Resolve the issue's .claude-work/ folder ---
 
-claude_work_root="$("$claude_work_root_script")" || {
-  echo "resolve-target $ERR_CLAUDE_ROOT error: claude-work-root.sh failed" >&2
+# The base-branch marker lives in the issue's folder, resolved through
+# get-issue-folder-path.sh (the same resolver /start-issue writes the marker
+# to), so a configured segment is honored: under a non-default segment it sits
+# at <root>/<segment>/<id>/base-branch instead of hard-coded under issues/.
+issue_folder="$("$folder_script" --id "$issue_number")" || {
+  echo "resolve-target $ERR_FOLDER error: could not resolve work-item folder for '$issue_number' (get-issue-folder-path.sh failed)" >&2
   exit 1
 }
 
@@ -84,7 +88,7 @@ if [ -n "$explicit_target" ]; then
   target="$explicit_target"
 else
   # Auto-resolve from gh pr list (authoritative) or base-branch marker.
-  marker_file="${claude_work_root}/issues/${issue_number}/base-branch"
+  marker_file="${issue_folder}/base-branch"
 
   # First, try gh pr list as the authoritative source. The GitHub PR owns the
   # stacking relationship. gh may not be available (tests), so guard with command -v.

@@ -3,7 +3,7 @@ name: breadcrumb
 version: 2026.09.03@a8dc4ea
 description: Drop a timestamped note for the current issue - collected by /finish-issue for PR descriptions
 argument-hint: <note text>
-allowed-tools: Read, Write, Bash(git branch --show-current), Bash(date *), Bash(mkdir -p *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Write, Bash(git branch --show-current), Bash(date *), Bash(mkdir -p *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *)
 ---
 
 # Breadcrumb
@@ -14,29 +14,33 @@ Drop a timestamped note while working on an issue. When you run `/finish-issue`,
 
 ## Step 1: Detect Branch Context
 
-Run both commands as parallel tool calls. They are independent:
+Run `branch-issue-id.sh` to resolve the issue identifier:
+
+```bash
+~/.claude/skills/issue-context/branch-issue-id.sh
+```
+
+- **Exit 0** — the current branch matches a configured `branchPatterns` entry (a work branch): the printed identifier is the issue breadcrumb identifier. Resolve the issue folder with `get-issue-folder-path.sh` and record its stdout as the issue `<folder>`:
+
+```bash
+~/.claude/skills/issue-context/get-issue-folder-path.sh --id <ID>
+```
+
+- **Exit 1** — the branch is not an issue branch. Check for a side-quest branch by running `git branch --show-current`:
 
 ```bash
 git branch --show-current
 ```
 
+If the branch starts with `side-quest/`, the identifier is the full slug after `side-quest/` (e.g., `side-quest/cleanup-test-mocks` → `cleanup-test-mocks`). If it matches neither pattern, print: "Not on a work branch. Breadcrumbs require an `issues/*` or `side-quest/*` branch." and STOP.
+
+For a side-quest branch, run `claude-work-root.sh` to resolve the base path:
+
 ```bash
 ~/.claude/skills/issue-context/claude-work-root.sh
 ```
 
-Extract the breadcrumb identifier based on branch pattern:
-
-| Branch pattern | Identifier                                                                | Example                                                |
-| -------------- | ------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `issues/*`     | Issue ID (numeric prefix before `-`/`_`, or full segment after `issues/`) | `issues/332` → `332`                                   |
-| `side-quest/*` | Full slug after `side-quest/`                                             | `side-quest/cleanup-test-mocks` → `cleanup-test-mocks` |
-
-**If branch matches neither pattern:**
-
-- Print: "Not on a work branch. Breadcrumbs require an `issues/*` or `side-quest/*` branch."
-- STOP
-
-Use the stdout of `claude-work-root.sh` as the base path (e.g., `/Users/x/project/.claude-work`). This script automatically detects git worktrees and returns the shared `.claude-work/` location.
+Use the stdout of `claude-work-root.sh` as the base path (e.g., `/Users/x/project/.claude-work`). This script automatically detects git worktrees and returns the shared `.claude-work/` location. Side-quest breadcrumbs sit flat at `<base>/breadcrumb-<slug>.md`.
 
 ## Step 2: Validate Input
 
@@ -49,7 +53,7 @@ Use the stdout of `claude-work-root.sh` as the base path (e.g., `/Users/x/projec
 
 **File location depends on branch pattern:**
 
-- Issues: `<base>/issues/<ID>/breadcrumb.md`
+- Issues: `<folder>/breadcrumb.md`, where `<folder>` is the stdout from `get-issue-folder-path.sh` in Step 1 (it honors the configured `segment`)
 - Side-quests: `<base>/breadcrumb-<slug>.md`
 
 Where `<base>` is the stdout from `claude-work-root.sh`, `<ID>` or `<slug>` is the value extracted in Step 1.
@@ -75,9 +79,9 @@ date "+%Y-%m-%d %H:%M:%S"
 
 ## Step 4: Confirm
 
-Print a brief confirmation with the file path (the full absolute path from `<base>`):
+Print a brief confirmation with the file path (the full absolute path):
 
-- Issues: `Breadcrumb dropped in <base>/issues/<ID>/breadcrumb.md`
+- Issues: `Breadcrumb dropped in <folder>/breadcrumb.md`
 - Side-quests: `Breadcrumb dropped in <base>/breadcrumb-<slug>.md`
 
 Confirm by printing the path as shown above. Length: one line. Do NOT print the full file contents.
