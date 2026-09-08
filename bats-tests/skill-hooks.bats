@@ -58,7 +58,7 @@ load test_helper
 }
 
 @test "finish-issue skill: has exactly one /finish-issue-hook reference" {
-  COUNT=$(grep -c "/finish-issue-hook" "$PROJECT_ROOT/skills/finish-issue/SKILL.md")
+  COUNT=$(grep -oF "/finish-issue-hook" "$PROJECT_ROOT/skills/finish-issue/SKILL.md" | wc -l)
   [ "$COUNT" -eq 1 ]
 }
 
@@ -97,7 +97,7 @@ load test_helper
 }
 
 @test "create-github-issue skill: has exactly one /create-github-issue-hook reference" {
-  COUNT=$(grep -c "/create-github-issue-hook" "$PROJECT_ROOT/skills/create-github-issue/SKILL.md")
+  COUNT=$(grep -oF "/create-github-issue-hook" "$PROJECT_ROOT/skills/create-github-issue/SKILL.md" | wc -l)
   [ "$COUNT" -eq 1 ]
 }
 
