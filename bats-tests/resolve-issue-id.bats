@@ -97,6 +97,33 @@ resolve_with_config() {
   [[ "$output" == *"not usable"* ]]
 }
 
+@test "bare identifier with an internal slash errors" {
+  resolve_with_config "$CFG" "foo/bar/baz"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not usable"* ]]
+}
+
+@test "bare dotdot traversal errors" {
+  resolve_with_config "$CFG" "foo/../../outside"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not usable"* ]]
+}
+
+@test "bare dotdot alone errors" {
+  resolve_with_config "$CFG" ".."
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not usable"* ]]
+}
+
+@test "URL capture containing a slash is refused, not printed" {
+  local cfg="$TEST_TEMP_DIR/capture.json"
+  printf '%s' '{"urlPatterns":["/items/(.+)"]}' > "$cfg"
+  # Capture group one is "foo/bar", which is not a single path component.
+  resolve_with_config "$cfg" "https://tracker.example.com/items/foo/bar"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no url pattern matched"* ]]
+}
+
 @test "missing argument prints usage and errors" {
   resolve_with_config "$CFG"
   [ "$status" -eq 1 ]

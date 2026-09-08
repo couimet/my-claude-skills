@@ -60,6 +60,29 @@ _issue_settings_is_valid_regex() {
   [ "$rc" -ne 2 ]
 }
 
+# is_safe_component <value> — 0 when <value> can be one path component and one
+# branch segment: non-empty, not "." or "..", contains no "/" (no internal
+# components), no whitespace, and no leading or trailing dot. The segment and
+# every resolved identifier pass through this predicate before they are
+# interpolated into a .claude-work/ path.
+_issue_settings_is_safe_component() {
+  local value="$1"
+  [ -n "$value" ] || return 1
+  case "$value" in
+    . | ..) return 1 ;;
+  esac
+  case "$value" in
+    */*) return 1 ;;
+  esac
+  case "$value" in
+    *[[:space:]]*) return 1 ;;
+  esac
+  case "$value" in
+    .* | *.) return 1 ;;
+  esac
+  return 0
+}
+
 # Resolve the config path.
 _issue_settings_file="${MY_CLAUDE_SKILLS_CONFIG:-${HOME:-}/.my-claude-skills/settings.json}"
 SETTINGS_FILE="$_issue_settings_file"
@@ -73,25 +96,32 @@ _issue_settings_read_scalar() {
     'if has($k) and (.[$k] | type == "string") then .[$k] else $d end'
 }
 
-# Load an array key. Invalid regex entries or a non-array value fall back to
-# the defaults for that key, per the failure policy.
+# Load an array key. A non-array value, a member that is not a JSON string
+# (numbers, booleans, and null would otherwise be coerced to "42", "true",
+# "null" by jq -r and pass the regex check as one wrong pattern), or an invalid
+# regex entry fall back to the defaults for that key, per the failure policy.
 _issue_settings_read_patterns() {
   local json="$1" key="$2" default_fn="$3"
-  local candidate=() entry
+  local candidate=() entry all_strings
   if printf '%s' "$json" | jq -e --arg k "$key" '(has($k) and (.[$k] | type == "array"))' >/dev/null 2>&1; then
-    while IFS= read -r entry; do
-      candidate+=("$entry")
-    done < <(printf '%s' "$json" | jq -r --arg k "$key" '.[$k][]')
-    for entry in "${candidate[@]}"; do
-      if ! _issue_settings_is_valid_regex "$entry"; then
-        echo "issue-settings: warning: invalid regex in ${key}: '$entry'; using default ${key}" >&2
-        candidate=()
-        break
+    all_strings="$(printf '%s' "$json" | jq -r --arg k "$key" 'all(.[$k][]; type == "string")')"
+    if [ "$all_strings" != "true" ]; then
+      echo "issue-settings: warning: ${key} contains a non-string entry; using default ${key}" >&2
+    else
+      while IFS= read -r entry; do
+        candidate+=("$entry")
+      done < <(printf '%s' "$json" | jq -r --arg k "$key" '.[$k][]')
+      for entry in "${candidate[@]}"; do
+        if ! _issue_settings_is_valid_regex "$entry"; then
+          echo "issue-settings: warning: invalid regex in ${key}: '$entry'; using default ${key}" >&2
+          candidate=()
+          break
+        fi
+      done
+      if [ "${#candidate[@]}" -gt 0 ]; then
+        printf '%s\n' "${candidate[@]}"
+        return 0
       fi
-    done
-    if [ "${#candidate[@]}" -gt 0 ]; then
-      printf '%s\n' "${candidate[@]}"
-      return 0
     fi
   fi
   # Fall through to the built-in default list.
@@ -130,6 +160,13 @@ if [ -f "$_issue_settings_file" ] && [ -r "$_issue_settings_file" ]; then
       SETTINGS_VERSION="$(_issue_settings_read_scalar "$_issue_settings_json" version 1)"
       # shellcheck disable=SC2034
       SETTINGS_SEGMENT="$(_issue_settings_read_scalar "$_issue_settings_json" segment issues)"
+      # An empty segment is honored (omits the directory); any other value must
+      # be one safe path component or the folder resolver could escape
+      # .claude-work/, so fall back to the default on an unsafe segment.
+      if [ -n "$SETTINGS_SEGMENT" ] && ! _issue_settings_is_safe_component "$SETTINGS_SEGMENT"; then
+        echo "issue-settings: warning: invalid segment '$SETTINGS_SEGMENT'; using default segment 'issues'" >&2
+        SETTINGS_SEGMENT="issues"
+      fi
       # shellcheck disable=SC2034
       SETTINGS_BRANCH_TEMPLATE="$(_issue_settings_read_scalar "$_issue_settings_json" branchTemplate 'issues/{id}')"
       SETTINGS_BRANCH_PATTERNS=()

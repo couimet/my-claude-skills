@@ -105,6 +105,37 @@ run_in_isolated_home() {
   [ "$output" = "$DEFAULT_OUTPUT" ]
 }
 
+@test "unsafe segment with slash traversal → falls back to default with warning" {
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  local err="$TEST_TEMP_DIR/err"
+  printf '%s' '{"segment":"work/../x"}' > "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$DUMP" _ "$SCRIPT" "$err"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$DEFAULT_OUTPUT" ]
+  grep -q "invalid segment 'work/../x'" "$err"
+  grep -q "using default segment 'issues'" "$err"
+}
+
+@test "unsafe dotdot segment → falls back to default with warning" {
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  local err="$TEST_TEMP_DIR/err"
+  printf '%s' '{"segment":".."}' > "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$DUMP" _ "$SCRIPT" "$err"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$DEFAULT_OUTPUT" ]
+  grep -q "invalid segment '..'" "$err"
+}
+
+@test "unsafe segment with leading dot → falls back to default with warning" {
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  local err="$TEST_TEMP_DIR/err"
+  printf '%s' '{"segment":".hidden"}' > "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$DUMP" _ "$SCRIPT" "$err"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$DEFAULT_OUTPUT" ]
+  grep -q "invalid segment '.hidden'" "$err"
+}
+
 # ============================================================================
 # Malformed config and warnings
 # ============================================================================
@@ -139,6 +170,30 @@ run_in_isolated_home() {
   [ "$output" = "v=$DEFAULT_VERSION|s=$DEFAULT_SEGMENT|t=$DEFAULT_TEMPLATE|b=${DEFAULT_BRANCH_PATTERNS[*]}|u=/custom/([0-9]+)" ]
   grep -q "invalid regex" "$err"
   grep -q "branchPatterns" "$err"
+}
+
+@test "non-string member in a pattern array → warning, that key falls back, other keys honored" {
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  local err="$TEST_TEMP_DIR/err"
+  # A numeric member would otherwise be coerced to "42" by jq -r and pass the
+  # regex check as one wrong pattern; it must fall the whole key back instead.
+  printf '%s' '{"branchPatterns":["^issues/([0-9]+)$",42],"segment":"work"}' > "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$DUMP" _ "$SCRIPT" "$err"
+  [ "$status" -eq 0 ]
+  [ "$output" = "v=$DEFAULT_VERSION|s=work|t=$DEFAULT_TEMPLATE|b=${DEFAULT_BRANCH_PATTERNS[*]}|u=${DEFAULT_URL_PATTERNS[*]}" ]
+  grep -q "non-string entry" "$err"
+  grep -q "branchPatterns" "$err"
+}
+
+@test "boolean member in a pattern array → warning, that key falls back" {
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  local err="$TEST_TEMP_DIR/err"
+  printf '%s' '{"urlPatterns":["/issues/([0-9]+)",true]}' > "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$DUMP" _ "$SCRIPT" "$err"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$DEFAULT_OUTPUT" ]
+  grep -q "non-string entry" "$err"
+  grep -q "urlPatterns" "$err"
 }
 
 # ============================================================================

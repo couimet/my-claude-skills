@@ -130,3 +130,26 @@ folder_with_config() {
   [[ "$output" == *"warning"* ]]
   [[ "$output" == *"$TEST_TEMP_DIR/.claude-work/issues/42" ]]
 }
+
+# ============================================================================
+# Unsafe segment cannot escape the root
+# ============================================================================
+
+@test "segment containing a slash falls back to default and cannot escape" {
+  local cfg="$TEST_TEMP_DIR/slash-seg.json"
+  printf '%s' '{"segment":"work/../x"}' > "$cfg"
+  folder_with_config "$cfg" --id 42
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"warning"* ]]
+  [[ "$output" == *"$TEST_TEMP_DIR/.claude-work/issues/42" ]]
+  [[ "$output" != *"/work/../x/"* ]]
+}
+
+@test "dotdot segment falls back to default and cannot escape" {
+  local cfg="$TEST_TEMP_DIR/dotdot-seg.json"
+  printf '%s' '{"segment":".."}' > "$cfg"
+  folder_with_config "$cfg" --id 42
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"warning"* ]]
+  [[ "$output" == *"$TEST_TEMP_DIR/.claude-work/issues/42" ]]
+}

@@ -27,10 +27,10 @@ Resolve the identifier from the current branch via `branch-issue-id.sh`, and cap
 git branch --show-current
 ```
 
-The branch must match a configured `branchPatterns` entry (an `issues/*` work branch). If the gate exits 0, its printed identifier is `<NUMBER>` for the remaining steps. If it exits 1 (no identifier resolved), STOP:
+The branch must match a configured work-item `branchPatterns` entry. If the gate exits 0, its printed identifier is `<ID>` for the remaining steps. If it exits 1 (no identifier resolved), STOP:
 
 ```text
-Not on an issue branch. `/rebase-issue` requires an `issues/*` branch.
+Not on a configured work-item branch. `/rebase-issue` requires a branch that matches a configured `branchPatterns` entry.
 Current branch: <branch>
 ```
 
@@ -212,7 +212,7 @@ When `git rebase` encounters conflicts during Step 8, apply this strategy:
 
 Before finishing, verify:
 
-- [ ] Branch is an `issues/*` branch (Step 1)
+- [ ] Branch is a configured work-item branch (Step 1)
 - [ ] Target resolved correctly (from argument or defaulted to `origin/main`)
 - [ ] Conflicts handled with the defined strategy (upstream infrastructure wins; our logic ported on top)
 - [ ] Rebase completed cleanly (or conflicts resolved)

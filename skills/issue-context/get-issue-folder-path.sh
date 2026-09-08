@@ -32,8 +32,19 @@ _root() {
 _print_folder_for_id() {
   local identifier="$1"
   local folder
+  # Belt-and-suspenders: callers already validate identifiers and the settings
+  # loader validates the segment, but refuse to build an escaping folder path
+  # even if a future call path skips one of those checks.
+  if ! _issue_settings_is_safe_component "$identifier"; then
+    echo "get-issue-folder-path: error: '$identifier' is not usable as a work-item identifier" >&2
+    return 1
+  fi
   folder="$(_root)" || return 1
   if [ -n "$SETTINGS_SEGMENT" ]; then
+    if ! _issue_settings_is_safe_component "$SETTINGS_SEGMENT"; then
+      echo "get-issue-folder-path: error: settings segment '$SETTINGS_SEGMENT' is not usable as a path component" >&2
+      return 1
+    fi
     folder="$folder/$SETTINGS_SEGMENT"
   fi
   printf '%s\n' "$folder/$identifier"

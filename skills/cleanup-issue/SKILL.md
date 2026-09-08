@@ -2,7 +2,7 @@
 name: cleanup-issue
 version: 2026.09.03@a8dc4ea
 description: Delete an issue's working directory under .claude-work/ after confirming with the user via interactive prompt
-argument-hint: [optional: issue-number | --sweep]
+argument-hint: [optional: issue-id (number, key, or slug) | --sweep]
 allowed-tools: Read, Glob, AskUserQuestion, Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
@@ -10,7 +10,7 @@ allowed-tools: Read, Glob, AskUserQuestion, Bash(*/skills/cleanup-issue/find-obs
 
 Remove an issue's working directory after the work is done. Uses `AskUserQuestion` to confirm before deleting anything.
 
-**Input:** $ARGUMENTS (optional issue number, or `--sweep`. If omitted, detects from branch)
+**Input:** $ARGUMENTS (optional issue id — a number, tracker key, or slug — or `--sweep`. If omitted, detects from branch)
 
 ## Step 1: Determine Issue ID
 
@@ -41,7 +41,7 @@ First, resolve the `.claude-work/` root directory (the removal call in Step 4 an
 
 Use the stdout as `<base>`. This script automatically detects git worktrees and returns the shared location.
 
-Then resolve the issue's working directory from the ID (this honors the configured `segment` and branch-template layout, defaulting to `<base>/issues/<ID>`):
+Then resolve the issue's working directory from the ID. The resolver builds `<base>/<segment>/<identifier>` from the configured `segment` (defaulting to `<base>/issues/<ID>`; an empty segment omits the directory):
 
 ```bash
 ~/.claude/skills/issue-context/get-issue-folder-path.sh --id <ID>

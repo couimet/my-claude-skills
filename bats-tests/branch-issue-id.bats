@@ -119,3 +119,17 @@ run_on_branch() {
   [ "$status" -eq 1 ]
   [ -z "$output" ]
 }
+
+@test "capture containing a slash is treated as a non-match" {
+  local cfg="$TEST_TEMP_DIR/custom.json"
+  # Capture group one is "foo/bar/baz", which is not a single path component;
+  # the branch is refused and, with no later pattern, the gate exits 1. This is
+  # the only unsafe capture a real git branch can produce: git-check-ref-format
+  # already rejects refs whose components are ".", "..", start or end with a
+  # dot, or contain whitespace, so those classes are unreachable here and the
+  # shared predicate guards them only as defense-in-depth.
+  printf '%s' '{"branchPatterns":["^work/(.+)"]}' > "$cfg"
+  run_on_branch "work/foo/bar/baz" "$cfg"
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+}

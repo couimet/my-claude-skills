@@ -3,7 +3,7 @@ name: issue-context
 version: 2026.09.03@a8dc4ea
 user-invocable: false
 description: Contract for the issue-context shell scripts that resolve .claude-work/ file paths from the current git branch and from the configurable work-item settings. Referenced by name from /scratchpad, /question, /commit-msg; not auto-consulted.
-allowed-tools: Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *)
+allowed-tools: Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/render-branch-template.sh *)
 ---
 
 # Issue Context
@@ -18,9 +18,9 @@ All deterministic logic for "where should this file go?" lives in the scripts. S
 ~/.claude/skills/issue-context/target-path.sh --type <scratchpads|questions|commit-msgs|notes> --description "<text>" [--ext txt]
 ```
 
-The script reads the current branch and extracts the issue ID (numeric prefix of the segment after `issues/` when applicable, full segment otherwise, empty on non-issue branches). It slugifies the description, runs `auto-number.sh` internally, creates the target directory, and prints the absolute file path on stdout.
+The script resolves the work-item folder through `get-issue-folder-path.sh`, which infers the identifier from the current branch and honors the configured `segment`. It slugifies the description, runs `auto-number.sh` internally, creates the target directory, and prints the absolute file path on stdout.
 
-- On `issues/<ID>` branches: absolute path ending in `.claude-work/issues/<ID>/<type>/NNNN-<slug>.<ext>`
+- On a branch matching a configured `branchPatterns` entry (a work branch): absolute path ending in `.claude-work[/<segment>]/<identifier>/<type>/NNNN-<slug>.<ext>`
 - Everywhere else: absolute path ending in `.claude-work/<type>/NNNN-<slug>.<ext>`
 
 ## Script: claude-work-root.sh
@@ -51,7 +51,7 @@ The work-item path convention is configurable through `~/.my-claude-skills/setti
 ~/.claude/skills/issue-context/resolve-issue-id.sh <URL-or-identifier>
 ```
 
-Resolves a single argument to a canonical work-item identifier. A value with a URL shape (it contains a scheme like `https://`) is matched against `urlPatterns` in order; the first pattern that matches supplies the identifier as its first capture group. A value without a URL shape is a bare identifier and is printed verbatim after a safety check: it must be usable as one path segment and one branch segment (non-empty, no leading/trailing dot or slash, no whitespace). A URL-shaped value matching no pattern, an unsafe identifier, or the wrong argument count prints an error to stderr and exits 1 — refusing is safer than inventing an identifier. Output is a single line on stdout.
+Resolves a single argument to a canonical work-item identifier. A value with a URL shape (it contains a scheme like `https://`) is matched against `urlPatterns` in order; the first pattern that matches supplies the identifier as its first capture group. A value without a URL shape is a bare identifier and is printed verbatim after a safety check. Every identifier — bare or captured from a URL pattern — must be usable as one path segment and one branch segment, which rejects empty values, `.` and `..`, anything containing an internal `/`, leading/trailing dots or slashes, and any whitespace. A URL-shaped value matching no pattern, an unsafe identifier, or the wrong argument count prints an error to stderr and exits 1 — refusing is safer than inventing an identifier. Output is a single line on stdout.
 
 ## Script: branch-issue-id.sh
 
@@ -59,7 +59,7 @@ Resolves a single argument to a canonical work-item identifier. A value with a U
 ~/.claude/skills/issue-context/branch-issue-id.sh
 ```
 
-The single owner of branch-to-identifier matching. It reads the current branch via `git branch --show-current`, matches it against `branchPatterns` in order, and prints capture group one of the first matching pattern on stdout. A branch matching no pattern — or no branch at all (detached HEAD, non-repository) — exits 1 and prints nothing: callers branch on the exit status and own their own user-facing messaging, and path-resolving callers rely on the silence to keep flat placement clean.
+The single owner of branch-to-identifier matching. It reads the current branch via `git branch --show-current`, matches it against `branchPatterns` in order, and prints capture group one of the first matching pattern on stdout. A captured identifier must be usable as one path segment — a branch like `issues/foo/bar` could otherwise hand callers a value that builds a path outside the work-item folder — so an empty or unsafe capture is treated as a non-match and the next pattern is tried. A branch matching no pattern — or no branch at all (detached HEAD, non-repository) — exits 1 and prints nothing: callers branch on the exit status and own their own user-facing messaging, and path-resolving callers rely on the silence to keep flat placement clean.
 
 ## Script: get-issue-folder-path.sh
 
@@ -69,9 +69,17 @@ The single owner of branch-to-identifier matching. It reads the current branch v
 
 Prints the `.claude-work/` folder that holds a work item's files: `<claude-work-root>[/<segment>]/<identifier>`. With `--id` the identifier is validated through `resolve-issue-id.sh`. Without `--id` the identifier is inferred through `branch-issue-id.sh`; a branch matching no pattern prints just the root (flat placement). The folder is NOT created. Errors print to stderr and exit 1.
 
+## Script: render-branch-template.sh
+
+```bash
+~/.claude/skills/issue-context/render-branch-template.sh <identifier>
+```
+
+Prints the configured `branchTemplate` with its `{id}` placeholder replaced by the given identifier. Falls back to the default `issues/{id}` (substituted) when the template is empty or contains no `{id}` placeholder, so branch creation and `branch-issue-id.sh`'s branch matching share one config path and degrade to the default together. An unsafe identifier prints an error to stderr and exits 1.
+
 ## Breadcrumbs
 
-`/breadcrumb` writes to a single file per issue (not a numbered sequence), so it does not use `target-path.sh`. It calls `claude-work-root.sh` to get the base directory, then writes to `<base>/issues/<ID>/breadcrumb.md` or `<base>/breadcrumb-<slug>.md`.
+`/breadcrumb` writes to a single file per issue (not a numbered sequence), so it does not use `target-path.sh`. On a work branch it resolves the issue folder through `get-issue-folder-path.sh --id <ID>` and writes to `<folder>/breadcrumb.md`; on a side-quest branch it writes to `<base>/breadcrumb-<slug>.md`.
 
 ## History
 

@@ -344,6 +344,21 @@ count_deletable() {
   [[ "$output" != *"DELETABLE"* ]]
 }
 
+@test "entry with an invalid character under issues/ → Skipped, not DELETABLE" {
+  # foo@bar is not a plausible identifier (remove-issue-dir.sh would reject
+  # it), so even a matching merged-PR fixture must never classify it DELETABLE:
+  # the sweep must not offer a folder for removal that removal would refuse.
+  mkdir -p "$BASE/issues/foo@bar"
+  export GH_PR_ROWS=$'issues/foo@bar\tmain\tMERGED\t77'
+  mock_gh
+
+  run "$SCRIPT" "$BASE"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Skipped: foo@bar (not a valid work-item identifier, not checked)"* ]]
+  [[ "$output" != *"DELETABLE"* ]]
+}
+
 # ============================================================================
 # Configurable segment
 # ============================================================================

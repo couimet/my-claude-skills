@@ -37,7 +37,7 @@ SKILL="$PROJECT_ROOT/skills/note/SKILL.md"
 # =============================================================
 
 @test "note skill: references issue-context scripts for path resolution" {
-  grep -q "issue-context/claude-work-root.sh" "$SKILL"
+  grep -q "issue-context/get-issue-folder-path.sh" "$SKILL"
 }
 
 @test "note skill: does not cross-reference /auto-number" {
@@ -68,8 +68,10 @@ SKILL="$PROJECT_ROOT/skills/note/SKILL.md"
   grep -q 'date +%Y%m%d-%H%M%S' "$SKILL"
 }
 
-@test "note skill: detects the work-item identifier via branch-issue-id.sh" {
-  grep -q "issue-context/branch-issue-id.sh" "$SKILL"
+@test "note skill: delegates work-item folder resolution to get-issue-folder-path.sh" {
+  grep -q "issue-context/get-issue-folder-path.sh" "$SKILL"
+  ! grep -q "issue-context/branch-issue-id.sh" "$SKILL"
+  ! grep -q "issue-context/claude-work-root.sh" "$SKILL"
 }
 
 @test "note skill: routes to <base>/issues/<ID>/notes/ on issue branches" {

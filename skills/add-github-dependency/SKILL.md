@@ -51,10 +51,16 @@ Resolve the current branch's identifier as the subject via `branch-issue-id.sh`:
 ~/.claude/skills/issue-context/branch-issue-id.sh
 ```
 
-On exit 0, the printed identifier is the subject issue number (e.g., on `issues/182` it prints `182`). If it exits 1, the current branch is not a work branch; print an error and exit:
+On exit 0, the printed identifier is the subject (e.g., on `issues/182` it prints `182`). A GitHub dependency's subject is an issue, so its number must be purely numeric. If the identifier is not numeric (`^[0-9]+$`), print an error and exit:
 
 ```text
-add-github-dependency: current branch is not an issues/* branch. Switch to the issue branch for the subject issue first.
+add-github-dependency: resolved identifier '<id>' is not a numeric issue number. GitHub dependencies link issues by number; switch to an issue branch whose identifier is numeric.
+```
+
+If the script exits 1, the current branch is not a work branch; print an error and exit:
+
+```text
+add-github-dependency: current branch is not a work branch. Switch to the issue branch for the subject issue first.
 ```
 
 Determine the subject's owner and repo from the current git remote:

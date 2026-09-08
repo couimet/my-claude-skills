@@ -3,7 +3,7 @@ name: start-issue
 version: 2026.09.03@a8dc4ea
 description: Start working on a GitHub issue - analyze, explore codebase, and create detailed implementation plan
 argument-hint: <github-issue-url> [--scratchpad]
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/start-issue/update-project-status.sh *)
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/render-branch-template.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/start-issue/update-project-status.sh *)
 ---
 
 # Start Issue
@@ -43,14 +43,16 @@ If the user picks Prune now, delete each listed folder with `remove-issue-dir.sh
 
 ## Step 1: Fetch Issue Details and Assign
 
-Run both commands as parallel tool calls in the same response. They are independent (one reads, one writes) and both use the input URL directly:
+Parse `$ARGUMENTS` first: it holds the issue URL optionally followed by `--scratchpad`. If `$ARGUMENTS` contains `--scratchpad`, set the scratchpad-opt-in flag (it selects the 4a/4b path in Step 4) and strip the token so the remaining value is the issue argument, `<issue-url>`. Never pass `--scratchpad` to `gh`.
+
+Run both commands as parallel tool calls in the same response. They are independent (one reads, one writes) and both use `<issue-url>` directly:
 
 ```bash
-gh issue view $ARGUMENTS --json title,body,number,state,labels,assignees,comments
+gh issue view <issue-url> --json title,body,number,state,labels,assignees,comments
 ```
 
 ```bash
-gh issue edit $ARGUMENTS --add-assignee @me
+gh issue edit <issue-url> --add-assignee @me
 ```
 
 The assign is additive: existing assignees are preserved, not replaced. The command is idempotent (silently succeeds if you are already assigned).
@@ -79,10 +81,10 @@ Continue regardless of the script's exit code. Project status updates are additi
 
 ## Step 2: Create Feature Branch
 
-First resolve the work-item identifier from the argument (an issue URL or a bare number):
+First resolve the work-item identifier from `<issue-url>` (from Step 1):
 
 ```bash
-~/.claude/skills/issue-context/resolve-issue-id.sh <URL-or-number>
+~/.claude/skills/issue-context/resolve-issue-id.sh <issue-url>
 ```
 
 The script matches a URL against the configured `urlPatterns` and prints the identifier (a GitHub `/issues/248` URL prints `248`); a bare number passes through its safety check. Record its stdout as `<ID>`.
@@ -95,7 +97,13 @@ Resolve the issue folder this identifier maps to, for all `.claude-work/` paths 
 
 Its stdout is `<folder>` (e.g., `<base>/issues/248` under the default `segment`), derived from the configured `segment`.
 
-The feature branch name is the configured `branchTemplate` with `{id}` replaced by `<ID>`. The default template is `issues/{id}`. To honor a non-default template, Read the settings file at `~/.my-claude-skills/settings.json` (or the path `MY_CLAUDE_SKILLS_CONFIG` names) and substitute `<ID>` into its `branchTemplate` value when present; otherwise substitute into the default.
+Render the feature branch name from the configured `branchTemplate` with the helper, which substitutes `{id}` with `<ID>` and degrades to the default `issues/{id}` when the settings template is missing or unsubstitutable:
+
+```bash
+~/.claude/skills/issue-context/render-branch-template.sh <ID>
+```
+
+Use its stdout as `<branch>`.
 
 Create the feature branch from the selected base branch (`origin/main` by default, or another base branch if instructed):
 
@@ -129,7 +137,7 @@ Before drafting the plan, re-read the issue body, any parent issue, and the file
 Choose the working-document type based on whether formal step tracking is requested:
 
 - **Default (`/note`):** use this unless the user explicitly opted in. Produces a lightweight, freeform plan. Relies on you (the LLM) to self-organize execution in-session via TaskCreate/TaskUpdate.
-- **Opt-in (`/scratchpad`):** triggered when `$ARGUMENTS` contains `--scratchpad`, or when the user's invoking message contains a natural-language opt-in phrase ("use a scratchpad", "with step tracking", "formal plan", "track steps"). Produces a scratchpad with a JSON step block so `/tackle-scratchpad-block` can drive execution.
+- **Opt-in (`/scratchpad`):** triggered when the scratchpad-opt-in flag was set in Step 1 (`$ARGUMENTS` contained `--scratchpad`), or when the user's invoking message contains a natural-language opt-in phrase ("use a scratchpad", "with step tracking", "formal plan", "track steps"). Produces a scratchpad with a JSON step block so `/tackle-scratchpad-block` can drive execution.
 
 ### 4a. Default path: `/note`
 

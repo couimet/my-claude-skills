@@ -88,13 +88,14 @@ is_category_dir() {
 }
 
 # is_plausible_identifier <name> — a folder name that could be a work-item
-# identifier: non-empty, not a hidden entry, no whitespace.
+# identifier. It must be exactly what remove-issue-dir.sh accepts, so a sweep
+# never reports a folder as DELETABLE that removal would then reject: an
+# alphanumeric first character, then only alphanumerics, dots, underscores,
+# and hyphens. This rejects hidden entries, whitespace, and any other
+# character (e.g. '@'), all subsumed by the one regex.
 is_plausible_identifier() {
   local name="$1"
-  [ -n "$name" ] || return 1
-  [[ "$name" == .* ]] && return 1
-  [[ "$name" == *[[:space:]]* ]] && return 1
-  return 0
+  [[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
 }
 
 # branch_matches_folder <branch> <name> — 0 when a configured branchPatterns

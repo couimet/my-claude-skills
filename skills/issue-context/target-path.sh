@@ -14,10 +14,11 @@
 #
 # Output (single line on stdout):
 #   The full path of the next numbered file for the current branch context,
-#   with the directory already created.
+#   with the directory already created. The work-item folder is resolved
+#   through get-issue-folder-path.sh, so it follows the configured segment.
 #
-#   On an `issues/<ID>` branch:
-#     .claude-work/issues/<ID>/<type>/NNNN-<slug>.<ext>
+#   On a branch matching a configured branchPatterns entry (a work branch):
+#     .claude-work[/<segment>]/<identifier>/<type>/NNNN-<slug>.<ext>
 #   Otherwise:
 #     .claude-work/<type>/NNNN-<slug>.<ext>
 #

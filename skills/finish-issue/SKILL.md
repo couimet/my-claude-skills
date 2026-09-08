@@ -3,7 +3,7 @@ name: finish-issue
 version: 2026.09.03@a8dc4ea
 description: Wrap up issue or side-quest work on the current issues/* or side-quest/* branch. Runs verification, checks documentation needs, and generates a PR description
 argument-hint: [optional: issue-number-or-url]
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git status), Bash(git log *), Bash(git diff *), Bash(make lint-fix *), Bash(make test *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git status), Bash(git log *), Bash(git diff *), Bash(make lint-fix *), Bash(make test *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Finish Issue
@@ -16,7 +16,16 @@ If no argument provided, detect context from the current branch name.
 
 ## Step 1: Determine Branch Mode
 
-If an argument was provided and is a number, use it as the issue number (issue mode) and skip branch detection.
+If an argument was provided:
+
+- **It is a number** — use it as the issue identifier (issue mode) and skip branch detection.
+- **It is a URL** (it contains a scheme like `https://`) — resolve it to the issue identifier with `resolve-issue-id.sh`:
+
+```bash
+~/.claude/skills/issue-context/resolve-issue-id.sh <ARGUMENTS>
+```
+
+Use its stdout as the identifier (issue mode) and skip branch detection. If it exits 1 (no configured `urlPattern` matched the URL), print its error and STOP.
 
 Otherwise resolve the identifier from the current branch. Run the gate alongside `git branch --show-current` (the raw branch name is needed for side-quest detection and error reporting):
 
@@ -46,17 +55,25 @@ Current branch: <branch>
 
 ## Step 1b: Resolve Active Plan
 
-First, resolve the `.claude-work/` root directory:
+Resolve the working location, which differs by mode:
+
+- **Issue mode** — resolve the issue folder with `get-issue-folder-path.sh` and record its stdout as `<folder>` (it honors the configured `segment`):
+
+```bash
+~/.claude/skills/issue-context/get-issue-folder-path.sh --id <ID>
+```
+
+- **Side-quest mode** — resolve the `.claude-work/` root and record its stdout as `<base>`:
 
 ```bash
 ~/.claude/skills/issue-context/claude-work-root.sh
 ```
 
-Use the stdout as `<base>` for all `.claude-work/` paths below. This script automatically detects git worktrees and returns the shared location.
+Both scripts automatically detect git worktrees and return the shared location.
 
 Read the active-plan pointer written by `/start-issue` or `/start-side-quest` to locate the primary working document:
 
-- **Issue mode:** read `<base>/issues/<ID>/active-plan`
+- **Issue mode:** read `<folder>/active-plan`
 - **Side-quest mode:** read `<base>/active-plan-<slug>`
 
 The pointer contents is a single project-root-relative path. Record it as the **resolved plan path**. This is the single source of truth for the primary plan.
@@ -145,9 +162,9 @@ Note whether a template was found and its path. This is used in Step 5. If none 
 
 **Issue mode (path differences):**
 
-- Breadcrumbs: `<base>/issues/<ID>/breadcrumb.md`
-- Auxiliary notes: `Glob(pattern="**/*", path="<base>/issues/<ID>/notes")` (excluding the resolved plan if it's a note)
-- Auxiliary scratchpads: `Glob(pattern="**/*", path="<base>/issues/<ID>/scratchpads")` (excluding the resolved plan if it's a scratchpad)
+- Breadcrumbs: `<folder>/breadcrumb.md`
+- Auxiliary notes: `Glob(pattern="**/*", path="<folder>/notes")` (excluding the resolved plan if it's a note)
+- Auxiliary scratchpads: `Glob(pattern="**/*", path="<folder>/scratchpads")` (excluding the resolved plan if it's a scratchpad)
 
 **Side-quest mode (path differences):**
 
@@ -228,7 +245,7 @@ Before writing the PR description, skim the text for AI-writing tells: em dashes
 
 ### Step 5b: Write last-finish-issue Pointer (Issue Mode Only)
 
-In issue mode, record the PR description path so `/rebase-issue` can find it later. The `/note` call in Step 5 returns an absolute path. Write that absolute path directly to `<base>/issues/<ID>/last-finish-issue` (where `<base>` is from Step 1b). Overwrite any existing pointer. Only the most recent `/finish-issue` invocation matters.
+In issue mode, record the PR description path so `/rebase-issue` can find it later. The `/note` call in Step 5 returns an absolute path. Write that absolute path directly to `<folder>/last-finish-issue` (where `<folder>` is from Step 1b). Overwrite any existing pointer. Only the most recent `/finish-issue` invocation matters.
 
 **Side-quest mode:** skip this step. There is no issue number, and `/rebase-issue` only targets issue branches.
 
