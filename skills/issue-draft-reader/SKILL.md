@@ -16,16 +16,16 @@ A draft is standard when its content opens with a YAML-style `---` front-matter 
 
 The standard field set, shared by both creation skills:
 
-| Field | Meaning | Reference form |
-| --- | --- | --- |
-| `target-repo` | Target repository for `/create-github-issue` | `owner/repo` |
-| `target-project` | Jira project key for `/create-jira-issue` | `KEY` |
-| `issue-type` | Jira issue type | free text |
-| `assignee` | Jira assignee | account id, email, or name |
-| `like` | Jira ticket to mirror fields from | `KEY-123` |
-| `parent` | Parent issue or ticket | full GitHub issue URL, or Jira key |
-| `blocked-by` | Dependencies this issue waits on | list of URLs or keys |
-| `is-blocking` | Dependencies this issue unblocks | list of URLs or keys |
+| Field            | Meaning                                      | Reference form                     |
+| ---------------- | -------------------------------------------- | ---------------------------------- |
+| `target-repo`    | Target repository for `/create-github-issue` | `owner/repo`                       |
+| `target-project` | Jira project key for `/create-jira-issue`    | `KEY`                              |
+| `issue-type`     | Jira issue type                              | free text                          |
+| `assignee`       | Jira assignee                                | account id, email, or name         |
+| `like`           | Jira ticket to mirror fields from            | `KEY-123`                          |
+| `parent`         | Parent issue or ticket                       | full GitHub issue URL, or Jira key |
+| `blocked-by`     | Dependencies this issue waits on             | list of URLs or keys               |
+| `is-blocking`    | Dependencies this issue unblocks             | list of URLs or keys               |
 
 A creation skill acts on the keys it understands and ignores the rest, so a draft can carry fields for both trackers. The front-matter block is never filed: creation strips it and files the body.
 

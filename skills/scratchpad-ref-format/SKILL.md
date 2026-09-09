@@ -12,12 +12,12 @@ When invoking `/tackle-scratchpad-block`, the argument selects which step to exe
 
 ## Forms
 
-| Form | Syntax | Example |
-| --- | --- | --- |
-| Step-ID (preferred) | `path#S00N` | `.claude-work/issues/42/scratchpads/0001-plan.txt#S003` |
-| Line-range | `path#L10-L20` | `.claude-work/issues/42/scratchpads/0001-plan.txt#L25-L67` |
-| Space-separated | `path S00N` | `.claude-work/issues/42/scratchpads/0001-plan.txt S003` |
-| Bare path (auto-select) | `path` | `.claude-work/issues/42/scratchpads/0001-plan.txt` |
+| Form                    | Syntax         | Example                                                    |
+| ----------------------- | -------------- | ---------------------------------------------------------- |
+| Step-ID (preferred)     | `path#S00N`    | `.claude-work/issues/42/scratchpads/0001-plan.txt#S003`    |
+| Line-range              | `path#L10-L20` | `.claude-work/issues/42/scratchpads/0001-plan.txt#L25-L67` |
+| Space-separated         | `path S00N`    | `.claude-work/issues/42/scratchpads/0001-plan.txt S003`    |
+| Bare path (auto-select) | `path`         | `.claude-work/issues/42/scratchpads/0001-plan.txt`         |
 
 ## Parsing Rules
 

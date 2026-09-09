@@ -1,0 +1,8 @@
+{
+  "name": "my-claude-skills",
+  "private": true,
+  "devDependencies": {
+    "@couimet/markdownlint-config": "^0.1.0",
+    "markdownlint-cli2": "^0.23.2"
+  }
+}

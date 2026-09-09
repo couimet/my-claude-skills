@@ -23,7 +23,7 @@ FIELDS="target-repo target-project issue-type assignee like parent blocked-by is
 # row in its Front-Matter Fields table.
 assert_reader_table_field() {
   local field="$1"
-  grep -q "^| \`$field\` |" "$READER"
+  grep -qE "^\\| \`$field\` +\\|" "$READER"
 }
 
 # assert_draft_template_field <field> — the draft-issue scaffold carries the

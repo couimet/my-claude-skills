@@ -25,7 +25,7 @@ SKILL="$PROJECT_ROOT/skills/file-placement/SKILL.md"
 # =============================================================
 
 @test "file-placement skill: decision tree has Question/Destination/Skill headers" {
-  grep -q "| Question | Destination | Skill |" "$SKILL"
+  grep -qE '\| Question +\| Destination +\| Skill +\|' "$SKILL"
 }
 
 # =============================================================

@@ -1,7 +1,6 @@
 {
   "config": {
-    "MD013": false,
-    "MD033": false,
+    "extends": "@couimet/markdownlint-config",
   },
-  "ignores": ["demo/**", ".history/**", ".claude-work/**"],
+  "ignores": ["demo/**", ".history/**", ".claude-work/**", "**/node_modules/**"],
 }

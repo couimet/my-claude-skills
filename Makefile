@@ -10,10 +10,12 @@ lint: install-prereqs lint-md fmt-check lint-sh
 lint-fix: install-prereqs lint-md-fix format
 
 lint-md:
-	npx --yes markdownlint-cli2@$(MARKDOWNLINT_VERSION) "**/*.md"
+	@[ -d node_modules/@couimet/markdownlint-config ] || { echo 'Missing npm dependencies: run `npm install` first.'; exit 1; }
+	./node_modules/.bin/markdownlint-cli2 "**/*.md"
 
 lint-md-fix:
-	npx --yes markdownlint-cli2@$(MARKDOWNLINT_VERSION) --fix "**/*.md"
+	@[ -d node_modules/@couimet/markdownlint-config ] || { echo 'Missing npm dependencies: run `npm install` first.'; exit 1; }
+	./node_modules/.bin/markdownlint-cli2 --fix "**/*.md"
 
 fmt-check:
 	npx --yes prettier@$(PRETTIER_VERSION) --check .

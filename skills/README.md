@@ -2,15 +2,15 @@
 
 ## Foundation Skills (standalone workflow primitives)
 
-| Skill | Invocation | What It Does |
-| --- | --- | --- |
-| `note` | `/note <desc>` | Creates `.claude-work/notes/YYYYMMDD-HHMMSS-slug.txt` — lightweight capture; default working-document type for composite skills |
-| `scratchpad` | `/scratchpad <desc>` | Creates `.claude-work/scratchpads/NNNN-description.txt` with auto-numbering and a JSON step block; opt-in when composite skills need formal step tracking via `/tackle-scratchpad-block` |
-| `question` | `/question [--format-only] <topic>` | Creates `.claude-work/questions/NNNN-topic.txt` for user Q&A; a bare call delegates the challenge of what to ask to `/g2q`, while `--format-only` only creates the file |
-| `changelog` | `/changelog <desc>` | Creates or updates a CHANGELOG entry with tone guardrails, thematic grouping, and detail-leak detection |
-| `commit-msg` | `/commit-msg <desc>` | Creates `.claude-work/commit-msgs/NNNN-description.txt` |
-| `breadcrumb` | `/breadcrumb <note>` | Appends timestamped note to `.claude-work/issues/<ID>/breadcrumb.md` |
-| `concise-output` | `/concise-output <text>` | Rewrites the given text with the STE-flavored conciseness pass and prints the result. No file is written. Also auto-consulted through `/prose-style` when a skill writes file content. |
+| Skill            | Invocation                          | What It Does                                                                                                                                                                             |
+| ---------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `note`           | `/note <desc>`                      | Creates `.claude-work/notes/YYYYMMDD-HHMMSS-slug.txt` — lightweight capture; default working-document type for composite skills                                                          |
+| `scratchpad`     | `/scratchpad <desc>`                | Creates `.claude-work/scratchpads/NNNN-description.txt` with auto-numbering and a JSON step block; opt-in when composite skills need formal step tracking via `/tackle-scratchpad-block` |
+| `question`       | `/question [--format-only] <topic>` | Creates `.claude-work/questions/NNNN-topic.txt` for user Q&A; a bare call delegates the challenge of what to ask to `/g2q`, while `--format-only` only creates the file                  |
+| `changelog`      | `/changelog <desc>`                 | Creates or updates a CHANGELOG entry with tone guardrails, thematic grouping, and detail-leak detection                                                                                  |
+| `commit-msg`     | `/commit-msg <desc>`                | Creates `.claude-work/commit-msgs/NNNN-description.txt`                                                                                                                                  |
+| `breadcrumb`     | `/breadcrumb <note>`                | Appends timestamped note to `.claude-work/issues/<ID>/breadcrumb.md`                                                                                                                     |
+| `concise-output` | `/concise-output <text>`            | Rewrites the given text with the STE-flavored conciseness pass and prints the result. No file is written. Also auto-consulted through `/prose-style` when a skill writes file content.   |
 
 ## Non-Invocable Skills
 
@@ -18,39 +18,39 @@ Non-invocable skills (`user-invocable: false`) don't appear in the `/` menu. The
 
 ### Auto-consulted skills (description matches task → body loads as context)
 
-| Skill | Purpose |
-| --- | --- |
-| `/file-placement` | Decision tree for where to put different file types. Claude auto-consults when deciding output locations. |
-| `/issue-draft-reader` | Reads a standardized issue draft into front-matter fields, a title, and a body, and strips ephemeral local-path references. It stops an unstandardized file and routes it through `/draft-issue`. Auto-consulted by `/create-github-issue` and `/create-jira-issue`. |
-| `/label-discovery` | Fetches GitHub labels, classifies them as defaults vs structured, and prints them grouped by prefix for the user to apply. Auto-consulted by `/create-github-issue`. |
-| `/pre-write` | Think-before-writing rule for content-generating skills. Requires complete reasoning before writing the first word — no mid-stream self-corrections in generated files. Auto-consulted before any skill writes file content. |
-| `/prose-style` | Canonical prose and reference formatting rules — hard-wrap rule, code-reference syntax, GitHub-reference syntax, plus the `/concise-output` conciseness pass. Auto-consulted whenever a skill produces file content. |
-| `/scratchpad-ref-format` | Defines the 4 invocation forms for referencing scratchpad steps (`#S`, `#L`, space-separated, bare-path auto-select). Auto-consulted by `/tackle-scratchpad-block` when parsing its argument. |
+| Skill                    | Purpose                                                                                                                                                                                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/file-placement`        | Decision tree for where to put different file types. Claude auto-consults when deciding output locations.                                                                                                                                                            |
+| `/issue-draft-reader`    | Reads a standardized issue draft into front-matter fields, a title, and a body, and strips ephemeral local-path references. It stops an unstandardized file and routes it through `/draft-issue`. Auto-consulted by `/create-github-issue` and `/create-jira-issue`. |
+| `/label-discovery`       | Fetches GitHub labels, classifies them as defaults vs structured, and prints them grouped by prefix for the user to apply. Auto-consulted by `/create-github-issue`.                                                                                                 |
+| `/pre-write`             | Think-before-writing rule for content-generating skills. Requires complete reasoning before writing the first word — no mid-stream self-corrections in generated files. Auto-consulted before any skill writes file content.                                         |
+| `/prose-style`           | Canonical prose and reference formatting rules — hard-wrap rule, code-reference syntax, GitHub-reference syntax, plus the `/concise-output` conciseness pass. Auto-consulted whenever a skill produces file content.                                                 |
+| `/scratchpad-ref-format` | Defines the 4 invocation forms for referencing scratchpad steps (`#S`, `#L`, space-separated, bare-path auto-select). Auto-consulted by `/tackle-scratchpad-block` when parsing its argument.                                                                        |
 
 ### Script-backed / reference-only skills (invoked via Bash or referenced by explicit contract)
 
-| Skill | Purpose |
-| --- | --- |
-| `/auto-number` | Reusable file sequence numbering with prefix (`NNNN-name`) and suffix (`name-NNNN`) modes. Called by `target-path.sh` and directly by skills that need the next number in a directory. |
+| Skill               | Purpose                                                                                                                                                                                                                |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/auto-number`      | Reusable file sequence numbering with prefix (`NNNN-name`) and suffix (`name-NNNN`) modes. Called by `target-path.sh` and directly by skills that need the next number in a directory.                                 |
 | `/ensure-gitignore` | Checks that `.gitignore` contains the Claude working directory sentinel and appends it if missing. One Bash call — no file contents loaded into context. Called directly by `/question`, `/scratchpad`, `/commit-msg`. |
-| `/issue-context` | Thin pointer skill for `target-path.sh` — the shell script that resolves `.claude-work/` file paths from the current git branch. Not auto-consulted; referenced by contract. |
+| `/issue-context`    | Thin pointer skill for `target-path.sh` — the shell script that resolves `.claude-work/` file paths from the current git branch. Not auto-consulted; referenced by contract.                                           |
 
 ## Composite Skills (higher-level workflows)
 
-| Skill | Invocation | Foundation Dependencies |
-| --- | --- | --- |
-| `cleanup-issue` | `/cleanup-issue [number \| --sweep]` | (inline branch parsing) |
-| `create-github-issue` | `/create-github-issue <title-or-path>` | `/note` (writes), `/label-discovery`, `/issue-draft-reader` |
-| `create-jira-issue` | `/create-jira-issue <title-or-path>` | `/note` (writes), `/issue-draft-reader` |
-| `draft-issue` | `/draft-issue <title-or-path>` | `/note` (writes), `/g2q` (grills the draft) |
-| `finish-issue` | `/finish-issue [optional: issue-number-or-url]` | `/note`, `/question`, breadcrumbs (reads); handles both `issues/*` and `side-quest/*` branches |
-| `g2q` | `/g2q <topic-or-path>` | `/question` (via `--format-only`, writes the questions file); `/question` delegates its challenge here; also consulted by cross-reference from `/start-issue` and `/tackle-pr-comment` |
-| `start-issue` | `/start-issue <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/g2q`, `/cleanup-issue` |
-| `start-side-quest` | `/start-side-quest <desc> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/commit-msg` (ref) |
-| `rebase-issue` | `/rebase-issue [target]` | `resolve-target.sh`, `apply-stacked-diff.sh`, `resolve-commit-msg.sh` |
-| `release-article` | `/release-article [version-or-url]` | `/note` (writes), `/create-github-issue` (handoff), `/prose-style` |
-| `tackle-pr-comment` | `/tackle-pr-comment <url> [--scratchpad]` | `/note` (default), `/scratchpad` (opt-in), `/question`, `/g2q`, `/commit-msg` |
-| `tackle-scratchpad-block` | `/tackle-scratchpad-block <path#lines>` | `/scratchpad-ref-format`, `/question`, `/commit-msg`, `/scratchpad` (reads) |
+| Skill                     | Invocation                                      | Foundation Dependencies                                                                                                                                                                |
+| ------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cleanup-issue`           | `/cleanup-issue [number \| --sweep]`            | (inline branch parsing)                                                                                                                                                                |
+| `create-github-issue`     | `/create-github-issue <title-or-path>`          | `/note` (writes), `/label-discovery`, `/issue-draft-reader`                                                                                                                            |
+| `create-jira-issue`       | `/create-jira-issue <title-or-path>`            | `/note` (writes), `/issue-draft-reader`                                                                                                                                                |
+| `draft-issue`             | `/draft-issue <title-or-path>`                  | `/note` (writes), `/g2q` (grills the draft)                                                                                                                                            |
+| `finish-issue`            | `/finish-issue [optional: issue-number-or-url]` | `/note`, `/question`, breadcrumbs (reads); handles both `issues/*` and `side-quest/*` branches                                                                                         |
+| `g2q`                     | `/g2q <topic-or-path>`                          | `/question` (via `--format-only`, writes the questions file); `/question` delegates its challenge here; also consulted by cross-reference from `/start-issue` and `/tackle-pr-comment` |
+| `start-issue`             | `/start-issue <url> [--scratchpad]`             | `/note` (default), `/scratchpad` (opt-in), `/question`, `/g2q`, `/cleanup-issue`                                                                                                       |
+| `start-side-quest`        | `/start-side-quest <desc> [--scratchpad]`       | `/note` (default), `/scratchpad` (opt-in), `/question`, `/commit-msg` (ref)                                                                                                            |
+| `rebase-issue`            | `/rebase-issue [target]`                        | `resolve-target.sh`, `apply-stacked-diff.sh`, `resolve-commit-msg.sh`                                                                                                                  |
+| `release-article`         | `/release-article [version-or-url]`             | `/note` (writes), `/create-github-issue` (handoff), `/prose-style`                                                                                                                     |
+| `tackle-pr-comment`       | `/tackle-pr-comment <url> [--scratchpad]`       | `/note` (default), `/scratchpad` (opt-in), `/question`, `/g2q`, `/commit-msg`                                                                                                          |
+| `tackle-scratchpad-block` | `/tackle-scratchpad-block <path#lines>`         | `/scratchpad-ref-format`, `/question`, `/commit-msg`, `/scratchpad` (reads)                                                                                                            |
 
 ## Architecture
 

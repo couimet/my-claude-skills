@@ -39,9 +39,9 @@ git branch --show-current
 
 Set **mode** and **identifier** from the results:
 
-| Gate result | Mode | Identifier |
-| --- | --- | --- |
-| Exit 0 — printed value | `issue` | The printed identifier (e.g., on `issues/42` it prints `42`) |
+| Gate result                                       | Mode         | Identifier                                                     |
+| ------------------------------------------------- | ------------ | -------------------------------------------------------------- |
+| Exit 0 — printed value                            | `issue`      | The printed identifier (e.g., on `issues/42` it prints `42`)   |
 | Exit 1 — and the branch starts with `side-quest/` | `side-quest` | The full slug after `side-quest/` (e.g., `cleanup-test-mocks`) |
 
 The gate prints nothing on exit 1: a `side-quest/*` branch does not match the configured `branchPatterns`. Fall back to the `git branch --show-current` output and check for the `side-quest/` prefix.
