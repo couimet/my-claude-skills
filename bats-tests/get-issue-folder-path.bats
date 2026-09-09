@@ -153,3 +153,38 @@ folder_with_config() {
   [[ "$output" == *"warning"* ]]
   [[ "$output" == *"$TEST_TEMP_DIR/.claude-work/issues/42" ]]
 }
+
+# ============================================================================
+# identifierCase folding
+# ============================================================================
+
+@test "--id proj-1234 → folder carries the folded identifier" {
+  folder_with_config "$CFG" --id proj-1234
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/PROJ-1234" ]
+}
+
+@test "lowercase branch and --id resolve to one folder" {
+  # The defect issues/262 is about: one ticket, two entry points, two folders.
+  git checkout -q -b issues/proj-1234
+  folder_with_config "$CFG"
+  local from_branch="$output"
+  folder_with_config "$CFG" --id PROJ-1234
+  [ "$status" -eq 0 ]
+  [ "$output" = "$from_branch" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/PROJ-1234" ]
+}
+
+@test "--id proj-1234 under preserve → folder keeps the given case" {
+  local cfg="$TEST_TEMP_DIR/preserve.json"
+  printf '%s' '{"identifierCase":"preserve"}' > "$cfg"
+  folder_with_config "$cfg" --id proj-1234
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/proj-1234" ]
+}
+
+@test "--id for a numeric work item is unaffected by folding" {
+  folder_with_config "$CFG" --id 262
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/262" ]
+}

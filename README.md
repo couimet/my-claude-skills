@@ -127,12 +127,17 @@ The issue-workflow skills keep each issue's working files under `.claude-work/is
   "branchTemplate": "issues/{id}",
   "urlPatterns": [
     "/issues/([0-9]+)",
-    "/browse/([A-Z][A-Z0-9]+-[0-9]+)"
-  ]
+    "/browse/([A-Za-z][A-Za-z0-9]+-[0-9]+)"
+  ],
+  "identifierCase": "upper"
 }
 ```
 
-`segment` names the directory between the working-directory root and the identifier (`issues` by default; an empty value puts work files directly under the root). `branchPatterns` match a branch or PR head in order — first match wins, capture group one is the identifier — and `urlPatterns` extract an identifier from a tracker URL the same way. `branchTemplate` builds a branch name from an identifier, which a regex cannot do in reverse, so reading and writing use separate keys. The two are a paired set: a branch built from the template is parsed back under `branchPatterns`, so the configured patterns must re-parse what the template renders to the same identifier or branch creation is rejected. Work-item readers follow the writers: `/rebase-issue` resolves the pointer, notes, and base-branch marker from the same settings-aware work-item folder. Omitting the file entirely (or any individual key) changes nothing: every key falls back to its default.
+`segment` names the directory between the working-directory root and the identifier (`issues` by default; an empty value puts work files directly under the root). `branchPatterns` match a branch or PR head in order — first match wins, capture group one is the identifier — and `urlPatterns` extract an identifier from a tracker URL the same way. `branchTemplate` builds a branch name from an identifier, which a regex cannot do in reverse, so reading and writing use separate keys. The two are a paired set: a branch built from the template is parsed back under `branchPatterns`, so the configured patterns must re-parse what the template renders to the same identifier or branch creation is rejected. Work-item readers follow the writers: `/rebase-issue` resolves the pointer, notes, and base-branch marker from the same settings-aware work-item folder.
+
+`identifierCase` decides the case a resolved identifier is folded to: `upper` (the default), `lower`, or `preserve`. Folding is what keeps one work item on one folder. Without it a Jira ticket reached through a branch, a bare key, and a tracker URL can resolve to three spellings and, on a case-sensitive filesystem, three separate working directories that no skill can find its way back to. Only identifiers shaped like a tracker key (a letter, then alphanumerics, then a hyphen and digits) are folded, so numeric GitHub identifiers and free-form branch slugs such as `issues/my-feature` pass through untouched. A slug that happens to take that shape, `release-2` for instance, is folded too; set `identifierCase` to `preserve` if that matters to you.
+
+Omitting `identifierCase` changes behavior, unlike every other key here: an absent key means `upper`, so identifiers are folded by default. That is deliberate. The defect the key addresses is that resolution used to be case-preserving, so a `preserve` default would leave it in place for everyone who never reads a changelog.
 
 ## Quick Start
 

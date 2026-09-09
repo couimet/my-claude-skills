@@ -133,3 +133,47 @@ run_on_branch() {
   [ "$status" -eq 1 ]
   [ -z "$output" ]
 }
+
+# ============================================================================
+# identifierCase folding
+# ============================================================================
+
+@test "issues/proj-1234 → folded to uppercase by default" {
+  run_on_branch "issues/proj-1234"
+  [ "$status" -eq 0 ]
+  [ "$output" = "PROJ-1234" ]
+}
+
+@test "bare proj-1234 branch → folded to uppercase by default" {
+  run_on_branch "proj-1234-add-config"
+  [ "$status" -eq 0 ]
+  [ "$output" = "PROJ-1234" ]
+}
+
+@test "issues/PROJ-1234 under lower → folded to lowercase" {
+  local cfg="$TEST_TEMP_DIR/lower.json"
+  printf '%s' '{"identifierCase":"lower"}' > "$cfg"
+  run_on_branch "issues/PROJ-1234" "$cfg"
+  [ "$status" -eq 0 ]
+  [ "$output" = "proj-1234" ]
+}
+
+@test "issues/proj-1234 under preserve → left alone" {
+  local cfg="$TEST_TEMP_DIR/preserve.json"
+  printf '%s' '{"identifierCase":"preserve"}' > "$cfg"
+  run_on_branch "issues/proj-1234" "$cfg"
+  [ "$status" -eq 0 ]
+  [ "$output" = "proj-1234" ]
+}
+
+@test "issues/my-feature → slug not folded" {
+  run_on_branch "issues/my-feature"
+  [ "$status" -eq 0 ]
+  [ "$output" = "my-feature" ]
+}
+
+@test "issues/42 → numeric id not folded" {
+  run_on_branch "issues/42"
+  [ "$status" -eq 0 ]
+  [ "$output" = "42" ]
+}
