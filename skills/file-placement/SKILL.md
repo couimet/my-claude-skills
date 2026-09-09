@@ -1,6 +1,6 @@
 ---
 name: file-placement
-version: 2026.09.04.1@c82ef67
+version: 2026.09.08@cb4cf1b
 user-invocable: false
 description: Determines where to place files based on their purpose. Auto-consulted when Claude needs to create a new file and is deciding between .claude-work/ subdirectories or docs/.
 ---
