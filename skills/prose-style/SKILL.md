@@ -34,10 +34,10 @@ Then apply the `/concise-output` pass from Rule 5. After the pass, re-run this s
 
 Use GitHub-style permalink syntax so references become clickable in RangeLink and similar tools. This rule applies to code references written inside generated files (scratchpads, questions, commit messages, PR descriptions). It does NOT apply to terminal output reporting generated file paths — see Rule 4 for that.
 
-| Reference type | Syntax | Example |
-| --- | --- | --- |
-| Single line | `path/to/file.ts#L10` | src/parser.ts#L42 |
-| Line range | `path/to/file.ts#L10-L20` | src/parser.ts#L42-L58 |
+| Reference type | Syntax                         | Example                    |
+| -------------- | ------------------------------ | -------------------------- |
+| Single line    | `path/to/file.ts#L10`          | src/parser.ts#L42          |
+| Line range     | `path/to/file.ts#L10-L20`      | src/parser.ts#L42-L58      |
 | Char precision | `path/to/file.ts#L10C5-L20C15` | src/parser.ts#L42C3-L42C28 |
 
 - Workspace-relative paths only (never absolute).
@@ -48,10 +48,10 @@ Use GitHub-style permalink syntax so references become clickable in RangeLink an
 
 Never use `#NNN`, `PR #NNN`, or `issue #NNN` in any skill-generated output. Short forms are ambiguous across repositories.
 
-| Reference type | Full URL format |
-| --- | --- |
-| Issue | `https://github.com/{owner}/{repo}/issues/{number}` |
-| Pull request | `https://github.com/{owner}/{repo}/pull/{number}` |
+| Reference type | Full URL format                                     |
+| -------------- | --------------------------------------------------- |
+| Issue          | `https://github.com/{owner}/{repo}/issues/{number}` |
+| Pull request   | `https://github.com/{owner}/{repo}/pull/{number}`   |
 
 Construction:
 

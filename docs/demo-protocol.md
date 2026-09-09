@@ -63,13 +63,13 @@ Every artifact in the demo folder follows this pattern:
 
 ### Fields
 
-| Field | Description | Example |
-| ----- | ----------- | ------- |
-| `NNNN` | Global chronological sequence number across all artifact types | `0042` |
-| `category` | The working-file category the artifact came from | `scratchpad`, `commit-msg`, `question`, `readme`, `gitignore` |
-| `original-filename` | The source file's name without path or extension | `0004-readme-enrichment-plan` |
-| `VVVV` | Version number for this specific source file | `v0001`, `v0002` |
-| `ext` | File extension matching the source | `.txt`, `.md` |
+| Field               | Description                                                    | Example                                                       |
+| ------------------- | -------------------------------------------------------------- | ------------------------------------------------------------- |
+| `NNNN`              | Global chronological sequence number across all artifact types | `0042`                                                        |
+| `category`          | The working-file category the artifact came from               | `scratchpad`, `commit-msg`, `question`, `readme`, `gitignore` |
+| `original-filename` | The source file's name without path or extension               | `0004-readme-enrichment-plan`                                 |
+| `VVVV`              | Version number for this specific source file                   | `v0001`, `v0002`                                              |
+| `ext`               | File extension matching the source                             | `.txt`, `.md`                                                 |
 
 ### Rules
 
@@ -80,13 +80,13 @@ Every artifact in the demo folder follows this pattern:
 
 ### Category Reference
 
-| Category | Source location | When to snapshot |
-| -------- | --------------- | ---------------- |
-| `scratchpad` | `.scratchpads/` | After creating or updating a scratchpad |
-| `commit-msg` | `.commit-msgs/` | After creating a commit message file |
-| `question` | `.claude-questions/` | After creating or receiving answers to questions |
-| `readme` | `README.md` | After modifying the README |
-| `gitignore` | `.gitignore` | After modifying .gitignore |
+| Category     | Source location      | When to snapshot                                 |
+| ------------ | -------------------- | ------------------------------------------------ |
+| `scratchpad` | `.scratchpads/`      | After creating or updating a scratchpad          |
+| `commit-msg` | `.commit-msgs/`      | After creating a commit message file             |
+| `question`   | `.claude-questions/` | After creating or receiving answers to questions |
+| `readme`     | `README.md`          | After modifying the README                       |
+| `gitignore`  | `.gitignore`         | After modifying .gitignore                       |
 
 Add new categories as needed. The category should match the working-file type, not the skill that produced it.
 

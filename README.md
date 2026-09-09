@@ -459,43 +459,43 @@ I've used Claude Code on dozens of real issues and kept running into the same fr
 
 ### What You Type
 
-| Command | What It Does |
-| --- | --- |
-| `/add-github-dependency <blocked-by\|is-blocking> <issue-url>` | Add a dependency relationship between two GitHub issues using the native `addBlockedBy` mutation — works cross-repo |
-| `/breadcrumb <note>` | Drop a timestamped note collected by `/finish-issue` for the PR description |
-| `/changelog <desc>` | Create or update a CHANGELOG entry with tone guardrails, thematic grouping, and detail-leak detection — adapts to SemVer, CalVer, and mono-repo layouts |
-| `/cleanup-issue [number \| --sweep]` | Delete an issue's working directory (`.claude-work/issues/<ID>/`) after confirming with the user, or sweep obsolete folders whose PRs merged into main or whose issues closed with no open PR or local issue branch |
-| `/commit-msg <desc>` | Draft a commit message focused on WHY, not WHAT |
-| `/concise-output <text>` | Rewrite the given text in condensed Simplified Technical English style — on-demand pass in the console, no file written |
-| `/create-github-issue <title-or-path>` | Create a GitHub issue from a standardized issue draft or an inline title |
-| `/create-jira-issue <title-or-path>` | Create a Jira issue from a standardized issue draft or an inline title, mirroring a reference ticket when given, with pre-create review |
-| `/draft-issue <title-or-path>` | Author an issue draft in a standardized local format (YAML front matter over a title and body), grilled through `/g2q` for thoroughness, before filing it with `/create-github-issue` or `/create-jira-issue` |
-| `/finish-issue` | Verify work, collect breadcrumbs, check docs, and generate a PR description |
-| `/note <desc>` | Capture a quick note, finding, or result — lightweight `/scratchpad` alternative |
-| `/question <topic>` | Surface design decisions as a structured Q&A file you edit in-place |
-| `/rebase-issue <target>` | Rebase an issue branch onto `<target>` (defaults to `origin/main`) after upstream PRs merge — handles conflicts, squashes to one commit, and confirms before push |
-| `/scratchpad <desc>` | Create a working document — plans, analysis, PR drafts, anything temporary |
-| `/start-issue <url>` | Analyze a GitHub issue, create a branch, and produce an implementation plan |
-| `/start-side-quest <desc>` | Branch off for an orthogonal improvement without polluting the current issue |
-| `/tackle-pr-comment <url>` | Analyze PR feedback and create a plan to address it |
-| `/tackle-scratchpad-block <path#lines>` | Execute a specific step from a plan — the core implementation loop |
+| Command                                                        | What It Does                                                                                                                                                                                                        |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/add-github-dependency <blocked-by\|is-blocking> <issue-url>` | Add a dependency relationship between two GitHub issues using the native `addBlockedBy` mutation — works cross-repo                                                                                                 |
+| `/breadcrumb <note>`                                           | Drop a timestamped note collected by `/finish-issue` for the PR description                                                                                                                                         |
+| `/changelog <desc>`                                            | Create or update a CHANGELOG entry with tone guardrails, thematic grouping, and detail-leak detection — adapts to SemVer, CalVer, and mono-repo layouts                                                             |
+| `/cleanup-issue [number \| --sweep]`                           | Delete an issue's working directory (`.claude-work/issues/<ID>/`) after confirming with the user, or sweep obsolete folders whose PRs merged into main or whose issues closed with no open PR or local issue branch |
+| `/commit-msg <desc>`                                           | Draft a commit message focused on WHY, not WHAT                                                                                                                                                                     |
+| `/concise-output <text>`                                       | Rewrite the given text in condensed Simplified Technical English style — on-demand pass in the console, no file written                                                                                             |
+| `/create-github-issue <title-or-path>`                         | Create a GitHub issue from a standardized issue draft or an inline title                                                                                                                                            |
+| `/create-jira-issue <title-or-path>`                           | Create a Jira issue from a standardized issue draft or an inline title, mirroring a reference ticket when given, with pre-create review                                                                             |
+| `/draft-issue <title-or-path>`                                 | Author an issue draft in a standardized local format (YAML front matter over a title and body), grilled through `/g2q` for thoroughness, before filing it with `/create-github-issue` or `/create-jira-issue`       |
+| `/finish-issue`                                                | Verify work, collect breadcrumbs, check docs, and generate a PR description                                                                                                                                         |
+| `/note <desc>`                                                 | Capture a quick note, finding, or result — lightweight `/scratchpad` alternative                                                                                                                                    |
+| `/question <topic>`                                            | Surface design decisions as a structured Q&A file you edit in-place                                                                                                                                                 |
+| `/rebase-issue <target>`                                       | Rebase an issue branch onto `<target>` (defaults to `origin/main`) after upstream PRs merge — handles conflicts, squashes to one commit, and confirms before push                                                   |
+| `/scratchpad <desc>`                                           | Create a working document — plans, analysis, PR drafts, anything temporary                                                                                                                                          |
+| `/start-issue <url>`                                           | Analyze a GitHub issue, create a branch, and produce an implementation plan                                                                                                                                         |
+| `/start-side-quest <desc>`                                     | Branch off for an orthogonal improvement without polluting the current issue                                                                                                                                        |
+| `/tackle-pr-comment <url>`                                     | Analyze PR feedback and create a plan to address it                                                                                                                                                                 |
+| `/tackle-scratchpad-block <path#lines>`                        | Execute a specific step from a plan — the core implementation loop                                                                                                                                                  |
 
 ### What Works Automatically
 
 These skills aren't invoked directly — Claude consults them when the context matches.
 
-| Skill | When It Activates |
-| --- | --- |
-| `auto-number` | When a skill needs the next file sequence number — runs a Bash script that scans a directory and returns the next `NNNN`, supporting prefix/suffix modes and configurable width |
-| `concise-output` | When a skill writes file content — invokes the external `/asd-ste100` skill (Simplified Technical English) when installed, applies a condensed built-in fallback otherwise. Also directly invocable: `/concise-output <text>` for console rewrites |
-| `ensure-gitignore` | When a foundation skill is about to create a working file — checks/appends the `.claude-work/` sentinel to `.gitignore` in one Bash call |
-| `file-placement` | When deciding where to put a new file — routes to the right directory |
-| `issue-context` | When on an `issues/<N>` branch — scopes working files to issue subdirectories |
-| `issue-draft-reader` | When `/create-github-issue` or `/create-jira-issue` needs to read a draft — reads front-matter fields, the title, and the body from a standardized draft, and strips ephemeral local paths |
-| `label-discovery` | When `/create-github-issue` needs labels — fetches repo labels, classifies them as defaults vs structured, and prints them grouped by prefix |
-| `pre-write` | Before any skill writes file content — requires complete reasoning before writing the first word, preventing in-progress deliberation from appearing in generated files |
-| `prose-style` | When a skill writes file content — hard-wrap rule, code-reference syntax, GitHub-reference syntax, and the `/concise-output` conciseness pass |
-| `scratchpad-ref-format` | When `/tackle-scratchpad-block` parses its argument — defines the 4 invocation forms (`#S`, `#L`, space-separated, bare-path auto-select) |
+| Skill                   | When It Activates                                                                                                                                                                                                                                  |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auto-number`           | When a skill needs the next file sequence number — runs a Bash script that scans a directory and returns the next `NNNN`, supporting prefix/suffix modes and configurable width                                                                    |
+| `concise-output`        | When a skill writes file content — invokes the external `/asd-ste100` skill (Simplified Technical English) when installed, applies a condensed built-in fallback otherwise. Also directly invocable: `/concise-output <text>` for console rewrites |
+| `ensure-gitignore`      | When a foundation skill is about to create a working file — checks/appends the `.claude-work/` sentinel to `.gitignore` in one Bash call                                                                                                           |
+| `file-placement`        | When deciding where to put a new file — routes to the right directory                                                                                                                                                                              |
+| `issue-context`         | When on an `issues/<N>` branch — scopes working files to issue subdirectories                                                                                                                                                                      |
+| `issue-draft-reader`    | When `/create-github-issue` or `/create-jira-issue` needs to read a draft — reads front-matter fields, the title, and the body from a standardized draft, and strips ephemeral local paths                                                         |
+| `label-discovery`       | When `/create-github-issue` needs labels — fetches repo labels, classifies them as defaults vs structured, and prints them grouped by prefix                                                                                                       |
+| `pre-write`             | Before any skill writes file content — requires complete reasoning before writing the first word, preventing in-progress deliberation from appearing in generated files                                                                            |
+| `prose-style`           | When a skill writes file content — hard-wrap rule, code-reference syntax, GitHub-reference syntax, and the `/concise-output` conciseness pass                                                                                                      |
+| `scratchpad-ref-format` | When `/tackle-scratchpad-block` parses its argument — defines the 4 invocation forms (`#S`, `#L`, space-separated, bare-path auto-select)                                                                                                          |
 
 For architecture details, the two-tier design, and step-tracking schema, see [skills/README.md](skills/README.md).
 
@@ -524,6 +524,12 @@ Run the setup script once to install dev tools:
 
 ```bash
 ./setup.sh
+```
+
+Then install the npm dependencies `make lint` needs (the `@couimet/markdownlint-config` package that `.markdownlint-cli2.jsonc` extends):
+
+```bash
+npm install
 ```
 
 ```bash

@@ -15,13 +15,13 @@ The convention was also written down twice. `/start-issue` created branches from
 
 **Make the work-item path convention configurable through `~/.my-claude-skills/settings.json`, read by the shell scripts.** The path is overridable with `MY_CLAUDE_SKILLS_CONFIG`, which must hold a full path. Five keys ship, each with a built-in default:
 
-| Key | Default | Purpose |
-| --- | --- | --- |
-| `branchPatterns` | ordered list below | Regexes matched against a branch or a PR head. First match wins. Capture group one is the identifier. |
-| `branchTemplate` | `issues/{id}` | Builds a branch name from an identifier. A regex cannot be inverted, so reading and writing use separate keys. Paired with `branchPatterns`: a rendered branch must parse back under the configured patterns to the identifier it was built from, or branch creation is rejected. |
-| `urlPatterns` | ordered list below | Regexes matched against a tracker URL. First match wins. Capture group one is the identifier. |
-| `segment` | `issues` | Directory between the working-directory root and the identifier. Empty omits it. |
-| `identifierCase` | `upper` | Case a tracker-key-shaped identifier is folded to. `upper`, `lower`, or `preserve`. |
+| Key              | Default            | Purpose                                                                                                                                                                                                                                                                           |
+| ---------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `branchPatterns` | ordered list below | Regexes matched against a branch or a PR head. First match wins. Capture group one is the identifier.                                                                                                                                                                             |
+| `branchTemplate` | `issues/{id}`      | Builds a branch name from an identifier. A regex cannot be inverted, so reading and writing use separate keys. Paired with `branchPatterns`: a rendered branch must parse back under the configured patterns to the identifier it was built from, or branch creation is rejected. |
+| `urlPatterns`    | ordered list below | Regexes matched against a tracker URL. First match wins. Capture group one is the identifier.                                                                                                                                                                                     |
+| `segment`        | `issues`           | Directory between the working-directory root and the identifier. Empty omits it.                                                                                                                                                                                                  |
+| `identifierCase` | `upper`            | Case a tracker-key-shaped identifier is folded to. `upper`, `lower`, or `preserve`.                                                                                                                                                                                               |
 
 Default `branchPatterns`: `^issues/([0-9]+)[-_]`, `^issues/([0-9]+)$`, `^issues/([A-Za-z][A-Za-z0-9]*-[0-9]+)`, `^issues/(.+)$`, `^([A-Za-z][A-Za-z0-9]*-[0-9]+)`. The list gains a key-shaped entry ahead of the `issues/` catch-all, and a top-level key-shaped entry that gives bare `PROJ-123-*` branches a folder instead of flat placement. Default `urlPatterns`: `/issues/([0-9]+)`, `/browse/([A-Za-z][A-Za-z0-9]+-[0-9]+)`.
 
