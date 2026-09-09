@@ -1,6 +1,6 @@
 ---
 name: issue-context
-version: 2026.09.04.1@5b11ed4
+version: 2026.09.04.1@c82ef67
 user-invocable: false
 description: Contract for the issue-context shell scripts that resolve .claude-work/ file paths from the current git branch and from the configurable work-item settings. Referenced by name from /scratchpad, /question, /commit-msg; not auto-consulted.
 allowed-tools: Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/render-branch-template.sh *)
