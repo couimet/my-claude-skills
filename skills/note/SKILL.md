@@ -1,6 +1,6 @@
 ---
 name: note
-version: 2026.09.08@cb4cf1b
+version: 2026.09.08@212eab1
 description: Capture a note, finding, or result in a timestamped file under .claude-work/. Lightweight alternative to /scratchpad
 argument-hint: <description>
 allowed-tools: Read, Write, Glob, Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(mkdir -p *), Bash(date *)
