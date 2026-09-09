@@ -2,7 +2,10 @@
 #
 # Tests for skills/issue-context/target-path.sh — resolves the full target
 # path for a numbered working file by combining branch detection, issue-ID
-# extraction, slug derivation, and auto-numbering.
+# extraction, slug derivation, and auto-numbering. Every test runs in a fresh
+# git repo with MY_CLAUDE_SKILLS_CONFIG pointed at a temp settings file so a
+# developer's real ~/.my-claude-skills/settings.json can never change the
+# outcome.
 
 load test_helper
 
@@ -19,6 +22,10 @@ setup() {
   git config user.email "test@example.com"
   git config user.name "Test"
   git commit --allow-empty -q -m "init"
+  # Pin settings to an empty object so the loader uses the built-in defaults
+  # (segment "issues") regardless of the developer's real settings file.
+  export MY_CLAUDE_SKILLS_CONFIG="$TEST_TEMP_DIR/settings.json"
+  printf '{}\n' > "$MY_CLAUDE_SKILLS_CONFIG"
 }
 
 teardown() {
@@ -249,4 +256,26 @@ teardown() {
   [ "$output" = "$TEST_TEMP_DIR/.claude-work/notes/0001-from-subdir.txt" ]
   [ -d "$TEST_TEMP_DIR/.claude-work/notes" ]
   [ ! -d "$TEST_TEMP_DIR/subdir/.claude-work" ]
+}
+
+# ============================================================================
+# Configured segment: the work-item folder honors a non-default segment
+# ============================================================================
+
+@test "non-default segment config → folder under the configured segment" {
+  local cfg="$TEST_TEMP_DIR/nondefault.json"
+  printf '%s' '{"segment":"work"}' > "$cfg"
+  git checkout -q -b issues/42
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" "$SCRIPT" --type scratchpads --description "Tracked elsewhere"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/work/42/scratchpads/0001-tracked-elsewhere.txt" ]
+}
+
+@test "empty segment config → no segment directory under the identifier" {
+  local cfg="$TEST_TEMP_DIR/empty-segment.json"
+  printf '%s' '{"segment":""}' > "$cfg"
+  git checkout -q -b issues/42
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" "$SCRIPT" --type questions --description "Flat layout"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/42/questions/0001-flat-layout.txt" ]
 }
