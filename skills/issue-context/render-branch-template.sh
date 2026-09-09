@@ -16,9 +16,14 @@
 # full identifier) is rejected with an error before any branch is created.
 # When the configured template is unset or contains no `{id}` placeholder the
 # built-in default `issues/{id}` is substituted instead, mirroring how branch
-# matching falls back to the default branchPatterns. The identifier must be
-# usable as a single path component (it is interpolated verbatim into the
-# branch name); an unsafe identifier prints an error to stderr and exits 1.
+# matching falls back to the default branchPatterns. The identifier is folded
+# through the shared normalizer before it is interpolated, because the matcher
+# that re-parses the rendered branch folds too: rendering a raw `proj-1234`
+# unfolded would produce a branch that parses back to `PROJ-1234` and trip the
+# round-trip check with a paired-configuration error that misnames the cause.
+# The identifier must be usable as a single path component (it is interpolated
+# verbatim into the branch name); an unsafe identifier prints an error to
+# stderr and exits 1.
 #
 # Settings come from issue-settings.sh (see MY_CLAUDE_SKILLS_CONFIG).
 
@@ -27,11 +32,12 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_self_dir/issue-settings.sh"
 
 _main() {
-  local identifier="$1"
+  local identifier
   local template rendered
 
+  identifier="$(_issue_settings_normalize_identifier "$1")"
   if ! _issue_settings_is_safe_component "$identifier"; then
-    echo "render-branch-template: error: '$identifier' is not usable as a work-item identifier" >&2
+    echo "render-branch-template: error: '$1' is not usable as a work-item identifier" >&2
     return 1
   fi
 

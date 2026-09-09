@@ -98,18 +98,19 @@ is_plausible_identifier() {
   [[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
 }
 
-# branch_matches_folder <branch> <name> — 0 when a configured branchPatterns
-# entry matches <branch> with capture group one equal to <name>.
+# branch_matches_folder <branch> <name> — 0 when <branch> resolves to <name>
+# through the shared matcher in issue-settings.sh. The resolution has to come
+# from that one matcher rather than a local pattern loop: the matcher folds a
+# tracker-key identifier to the configured identifierCase, and a sweep that
+# compared raw captures instead would be the one boundary still matching a
+# stale lowercase folder that every other consumer resolves as uppercase.
+# Sharing the matcher also narrows this predicate from "some pattern captures
+# exactly <name>" to "the first pattern with a usable capture yields <name>",
+# which is the same identifier every other consumer already resolves.
 branch_matches_folder() {
-  local branch="$1" name="$2" pattern
-  for pattern in "${SETTINGS_BRANCH_PATTERNS[@]}"; do
-    if [[ "$branch" =~ $pattern ]]; then
-      if [ -n "${BASH_REMATCH[1]:-}" ] && [ "${BASH_REMATCH[1]}" = "$name" ]; then
-        return 0
-      fi
-    fi
-  done
-  return 1
+  local branch="$1" name="$2" identifier
+  identifier="$(_issue_settings_branch_identifier "$branch")" || return 1
+  [ "$identifier" = "$name" ]
 }
 
 # --- Gather state (any failed query stops classification) ---

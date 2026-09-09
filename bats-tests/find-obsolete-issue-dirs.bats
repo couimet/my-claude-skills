@@ -521,3 +521,62 @@ count_deletable() {
   [ "${fields[1]}" = "$BASE/issues/42" ]
   [ "${fields[2]}" = "merged PR into main (PR #42)" ]
 }
+
+# ============================================================================
+# Shared matcher and identifierCase
+# ============================================================================
+
+@test "lowercase head resolves to the folded folder, not the stale lowercase one" {
+  # The sweep resolves a branch through the same matcher every other consumer
+  # uses, so a lowercase PR head names the folded folder. A folder left behind
+  # under the pre-fold spelling no longer corresponds to any branch.
+  mkdir -p "$BASE/issues/PROJ-123" "$BASE/issues/proj-123"
+  export GH_PR_ROWS=$'issues/proj-123\tmain\tMERGED\t77'
+  mock_gh
+
+  run "$SCRIPT" "$BASE"
+
+  [ "$status" -eq 0 ]
+  local folded
+  folded="$(printf 'DELETABLE\t%s/issues/PROJ-123\t%s' "$BASE" "merged PR into main (PR #77)")"
+  [[ "$output" == *"$folded"* ]]
+  [[ "$output" != *"$BASE/issues/proj-123"$'\t'"merged PR"* ]]
+}
+
+@test "open PR on a lowercase head still blocks the folded folder" {
+  mkdir -p "$BASE/issues/PROJ-123"
+  export GH_PR_ROWS=$'issues/proj-123\tmain\tOPEN\t9'
+  mock_gh
+
+  run "$SCRIPT" "$BASE"
+
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"DELETABLE"* ]]
+}
+
+@test "under preserve the sweep matches the unfolded folder" {
+  printf '%s\n' '{"identifierCase":"preserve"}' > "$MY_CLAUDE_SKILLS_CONFIG"
+  mkdir -p "$BASE/issues/proj-123"
+  export GH_PR_ROWS=$'issues/proj-123\tmain\tMERGED\t77'
+  mock_gh
+
+  run "$SCRIPT" "$BASE"
+
+  [ "$status" -eq 0 ]
+  local expected
+  expected="$(printf 'DELETABLE\t%s/issues/proj-123\t%s' "$BASE" "merged PR into main (PR #77)")"
+  [[ "$output" == *"$expected"* ]]
+}
+
+@test "numeric folders are unaffected by the shared matcher" {
+  mkdir -p "$BASE/issues/42"
+  export GH_PR_ROWS=$'issues/42\tmain\tMERGED\t77'
+  mock_gh
+
+  run "$SCRIPT" "$BASE"
+
+  [ "$status" -eq 0 ]
+  local expected
+  expected="$(printf 'DELETABLE\t%s/issues/42\t%s' "$BASE" "merged PR into main (PR #77)")"
+  [[ "$output" == *"$expected"* ]]
+}

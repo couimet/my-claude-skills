@@ -8,14 +8,20 @@
 # A value carrying a tracker-URL shape (it contains a scheme, e.g. https://)
 # is matched against the configured urlPatterns in order; the first pattern
 # that matches supplies the identifier as its first capture group. A value
-# without a URL shape is a bare identifier and is printed verbatim after the
-# safety check. Every identifier — bare or captured from a URL pattern — must
-# be usable as one path segment and one branch segment, which rejects empty
-# values, ".", "..", anything containing an internal "/", leading/trailing
-# dots or slashes, and any whitespace. A URL-shaped value that matches no
-# pattern or whose capture fails the safety check, an identifier that fails
-# the safety check, or the wrong argument count prints an error to stderr and
-# exits 1 — refusing is safer than inventing an identifier.
+# without a URL shape is a bare identifier. Both paths fold the value through
+# the shared normalizer in issue-settings.sh before printing it, so a
+# tracker-key-shaped identifier resolves to the configured identifierCase
+# whichever path it arrived by; numeric identifiers and free-form slugs are
+# not key-shaped and pass through unchanged. Folding on both paths rather than
+# only the bare one is the point: a lowercase tracker URL and the same key
+# typed bare must not resolve to two different folders. Every identifier —
+# bare or captured from a URL pattern — must be usable as one path segment and
+# one branch segment, which rejects empty values, ".", "..", anything
+# containing an internal "/", leading/trailing dots or slashes, and any
+# whitespace. A URL-shaped value that matches no pattern or whose capture
+# fails the safety check, an identifier that fails the safety check, or the
+# wrong argument count prints an error to stderr and exits 1 — refusing is
+# safer than inventing an identifier.
 #
 # Settings come from issue-settings.sh (see MY_CLAUDE_SKILLS_CONFIG).
 
@@ -40,7 +46,7 @@ _main() {
   if _is_url_shaped "$arg"; then
     for pattern in "${SETTINGS_URL_PATTERNS[@]}"; do
       if [[ "$arg" =~ $pattern ]]; then
-        id="${BASH_REMATCH[1]:-}"
+        id="$(_issue_settings_normalize_identifier "${BASH_REMATCH[1]:-}")"
         if [ -n "$id" ] && _identifier_is_safe "$id"; then
           printf '%s\n' "$id"
           return 0
@@ -52,8 +58,9 @@ _main() {
     echo "resolve-issue-id: error: no url pattern matched '$arg'" >&2
     return 1
   fi
-  if _identifier_is_safe "$arg"; then
-    printf '%s\n' "$arg"
+  id="$(_issue_settings_normalize_identifier "$arg")"
+  if _identifier_is_safe "$id"; then
+    printf '%s\n' "$id"
     return 0
   fi
   echo "resolve-issue-id: error: '$arg' is not usable as a work-item identifier" >&2

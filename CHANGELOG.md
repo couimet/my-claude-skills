@@ -10,6 +10,20 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.09.08
+
+### Fixed
+
+- Work-item identifiers now resolve to one spelling regardless of how you reach the work item. A Jira-style ticket used to keep its case from a branch name and a bare identifier but was refused outright in a lowercase tracker URL, so one ticket could produce two `.claude-work/` folders and two sets of pointer files. Identifiers shaped like a tracker key are folded to uppercase by default, and a lowercase `/browse/` URL now resolves instead of erroring. ([issues/262](https://github.com/couimet/my-claude-skills/issues/262))
+
+### Added
+
+- `identifierCase` in `~/.my-claude-skills/settings.json` sets the case identifiers are folded to: `upper` (the default), `lower`, or `preserve`. Only tracker-key-shaped identifiers are folded, so numeric GitHub identifiers and free-form branch slugs like `issues/my-feature` are untouched. A slug that happens to take the key shape, `release-2` for instance, is folded too; `preserve` turns folding off. Unlike the other settings keys, leaving this one out changes behavior rather than preserving it, because case-preserving resolution is the defect it closes. ([issues/262](https://github.com/couimet/my-claude-skills/issues/262))
+
+### Changed
+
+- `/cleanup-issue --sweep` matches branches to folders through the same resolver every other skill uses, instead of its own copy of the matching rules. A work-item folder created under an older, differently-cased spelling now shows up in the sweep rather than being quietly treated as current. ([issues/262](https://github.com/couimet/my-claude-skills/issues/262))
+
 ## 2026.09.04.1
 
 ### Added

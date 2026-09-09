@@ -146,3 +146,50 @@ render_with_config() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage"* ]]
 }
+
+# ============================================================================
+# identifierCase folding
+# ============================================================================
+
+@test "raw lowercase key → rendered branch carries the folded identifier" {
+  # The matcher that re-parses the rendered branch folds, so rendering the raw
+  # value would produce issues/proj-1234, parse it back as PROJ-1234, and trip
+  # the paired-configuration check with an error that misnames the cause.
+  render_with_config "$CFG" proj-1234
+  [ "$status" -eq 0 ]
+  [ "$output" = "issues/PROJ-1234" ]
+}
+
+@test "already-folded key → same branch as the raw value" {
+  render_with_config "$CFG" PROJ-1234
+  [ "$status" -eq 0 ]
+  [ "$output" = "issues/PROJ-1234" ]
+}
+
+@test "key under lower → rendered branch is lowercase" {
+  local cfg="$TEST_TEMP_DIR/lower.json"
+  printf '%s' '{"identifierCase":"lower"}' > "$cfg"
+  render_with_config "$cfg" PROJ-1234
+  [ "$status" -eq 0 ]
+  [ "$output" = "issues/proj-1234" ]
+}
+
+@test "key under preserve → rendered branch keeps the given case" {
+  local cfg="$TEST_TEMP_DIR/preserve.json"
+  printf '%s' '{"identifierCase":"preserve"}' > "$cfg"
+  render_with_config "$cfg" proj-1234
+  [ "$status" -eq 0 ]
+  [ "$output" = "issues/proj-1234" ]
+}
+
+@test "free-form slug is rendered unfolded" {
+  render_with_config "$CFG" my-feature
+  [ "$status" -eq 0 ]
+  [ "$output" = "issues/my-feature" ]
+}
+
+@test "unsafe identifier is still rejected and reported as given" {
+  render_with_config "$CFG" "../evil"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"'../evil' is not usable as a work-item identifier"* ]]
+}

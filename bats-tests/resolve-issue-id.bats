@@ -129,3 +129,64 @@ resolve_with_config() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"usage"* ]]
 }
+
+# ============================================================================
+# identifierCase folding
+# ============================================================================
+
+@test "bare lowercase key → folded to uppercase by default" {
+  resolve_with_config "$CFG" "proj-1234"
+  [ "$status" -eq 0 ]
+  [ "$output" = "PROJ-1234" ]
+}
+
+@test "lowercase Jira browse URL → resolves and folds to uppercase" {
+  # Before this, the uppercase-only default urlPattern refused the URL outright
+  # while the same key typed bare resolved: the asymmetry issues/262 opens on.
+  resolve_with_config "$CFG" "https://jira.example.com/browse/proj-1234"
+  [ "$status" -eq 0 ]
+  [ "$output" = "PROJ-1234" ]
+}
+
+@test "URL and bare identifier for one ticket resolve to the same value" {
+  resolve_with_config "$CFG" "https://jira.example.com/browse/proj-1234"
+  local from_url="$output"
+  resolve_with_config "$CFG" "PROJ-1234"
+  [ "$output" = "$from_url" ]
+}
+
+@test "bare key under lower → folded to lowercase" {
+  local cfg="$TEST_TEMP_DIR/lower.json"
+  printf '%s' '{"identifierCase":"lower"}' > "$cfg"
+  resolve_with_config "$cfg" "PROJ-1234"
+  [ "$status" -eq 0 ]
+  [ "$output" = "proj-1234" ]
+}
+
+@test "URL capture under lower → folded to lowercase" {
+  local cfg="$TEST_TEMP_DIR/lower.json"
+  printf '%s' '{"identifierCase":"lower"}' > "$cfg"
+  resolve_with_config "$cfg" "https://jira.example.com/browse/PROJ-1234"
+  [ "$status" -eq 0 ]
+  [ "$output" = "proj-1234" ]
+}
+
+@test "bare key under preserve → left alone" {
+  local cfg="$TEST_TEMP_DIR/preserve.json"
+  printf '%s' '{"identifierCase":"preserve"}' > "$cfg"
+  resolve_with_config "$cfg" "proj-1234"
+  [ "$status" -eq 0 ]
+  [ "$output" = "proj-1234" ]
+}
+
+@test "GitHub numeric id is never folded" {
+  resolve_with_config "$CFG" "https://github.com/couimet/my-claude-skills/issues/262"
+  [ "$status" -eq 0 ]
+  [ "$output" = "262" ]
+}
+
+@test "bare free-form slug is never folded" {
+  resolve_with_config "$CFG" "my-feature"
+  [ "$status" -eq 0 ]
+  [ "$output" = "my-feature" ]
+}
