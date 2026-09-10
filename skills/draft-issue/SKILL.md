@@ -84,7 +84,7 @@ Ask whether the author wants to set any machine fields now, using `AskUserQuesti
 
 ## Step 5: Write the Draft
 
-The note content is the composed draft: the front matter (active fields when the author set them, otherwise the commented field-reference block), a blank line, the `# <title>` heading, a blank line, then the grilled body (empty for a bare-title scaffold the author left empty, the folded and imported content otherwise). Never copy the example body text from this skill into a draft. Follow `/note` with description set to the title to persist the draft. `/note` writes the timestamped file, resolves the notes directory from the current branch and the shared `.claude-work/` root, and prints the absolute path. Do not print the file contents.
+The note content is the composed draft: the front matter (active fields when the author set them, otherwise the commented field-reference block), a blank line, the `# <title>` heading, a blank line, then the grilled body (empty for a bare-title scaffold the author left empty, the folded and imported content otherwise). Never copy the example body text from this skill into a draft. Follow `/note` with description set to the title to persist the draft. `/note` writes the file, resolves the notes directory from the current branch and the shared `.claude-work/` root, and prints the absolute path. Do not print the file contents.
 
 ## Step 6: Report
 

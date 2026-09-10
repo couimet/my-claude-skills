@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# target-path.sh — Resolve the full target path for a numbered working file,
+# target-path.sh — Resolve the full target path for a timestamped working file,
 # combining branch detection, issue-ID extraction, slug derivation, and
-# auto-numbering into one deterministic call.
+# timestamp stamping into one deterministic call.
 #
 # Usage: target-path.sh --type <type> --description <text> [--ext <ext>]
 #
@@ -13,14 +13,17 @@
 #                  txt, md, json). Default: txt
 #
 # Output (single line on stdout):
-#   The full path of the next numbered file for the current branch context,
+#   The full path of the next working file for the current branch context,
 #   with the directory already created. The work-item folder is resolved
 #   through get-issue-folder-path.sh, so it follows the configured segment.
 #
 #   On a branch matching a configured branchPatterns entry (a work branch):
-#     .claude-work[/<segment>]/<identifier>/<type>/NNNN-<slug>.<ext>
+#     .claude-work[/<segment>]/<identifier>/<type>/YYYYMMDD-HHMMSS-<slug>.<ext>
 #   Otherwise:
-#     .claude-work/<type>/NNNN-<slug>.<ext>
+#     .claude-work/<type>/YYYYMMDD-HHMMSS-<slug>.<ext>
+#
+#   When that exact path already exists (two calls in the same second with the
+#   same slug), a -2, -3, ... disambiguator is appended before the extension.
 #
 # Exit codes:
 #   0  — success
@@ -102,8 +105,8 @@ fi
 # --- Validate ext ---
 # Whitelist only bare alphanumeric extensions (txt, md, json, yaml, etc.).
 # Reject dots, slashes, whitespace, glob characters, and shell metacharacters
-# so the value can't be used to escape the target directory or inject via the
-# glob pattern we pass to auto-number.sh.
+# so the value can't be used to escape the target directory or to smuggle a
+# pattern into the emitted filename.
 if ! [[ "$ext" =~ ^[A-Za-z0-9]+$ ]]; then
   echo "target-path $ERR_INVALID_EXT error: invalid --ext '$ext' (expected alphanumeric characters only)" >&2
   exit 1
@@ -137,15 +140,25 @@ if [ -z "$slug" ]; then
   slug="file"
 fi
 
-# --- Get next sequence number via auto-number ---
-auto_number_script="${script_dir}/../auto-number/auto-number.sh"
+# --- Create the target directory ---
+mkdir -p "$target_dir"
 
-if [ ! -x "$auto_number_script" ]; then
-  echo "target-path $ERR_MISSING_ARG error: auto-number.sh not found or not executable at $auto_number_script" >&2
-  exit 1
-fi
+# --- Stamp the filename ---
+# Local time, deliberately. `date -u` would name tomorrow's date for anything
+# created after 17:00 in a UTC-7 zone, which is one of the defects this
+# replaces, and /breadcrumb already stamps local time.
+stamp="$(date +%Y%m%d-%H%M%S)"
 
-next_num="$("$auto_number_script" "$target_dir" --glob "*.${ext}" --width 4 --mkdir)"
+# A stamp can collide where a directory scan could not. Two calls in the same
+# second with the same slug resolve to one path. The second write would then
+# replace the first file. Append a -2, -3, ... disambiguator instead. The stamp
+# stays truthful, and only the colliding name carries the extra token.
+candidate="${target_dir}/${stamp}-${slug}.${ext}"
+suffix=2
+while [ -e "$candidate" ]; do
+  candidate="${target_dir}/${stamp}-${slug}-${suffix}.${ext}"
+  suffix=$((suffix + 1))
+done
 
 # --- Emit full path ---
-printf '%s/%s-%s.%s\n' "$target_dir" "$next_num" "$slug" "$ext"
+printf '%s\n' "$candidate"

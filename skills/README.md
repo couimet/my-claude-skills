@@ -2,15 +2,15 @@
 
 ## Foundation Skills (standalone workflow primitives)
 
-| Skill            | Invocation                          | What It Does                                                                                                                                                                             |
-| ---------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `note`           | `/note <desc>`                      | Creates `.claude-work/notes/YYYYMMDD-HHMMSS-slug.txt` — lightweight capture; default working-document type for composite skills                                                          |
-| `scratchpad`     | `/scratchpad <desc>`                | Creates `.claude-work/scratchpads/NNNN-description.txt` with auto-numbering and a JSON step block; opt-in when composite skills need formal step tracking via `/tackle-scratchpad-block` |
-| `question`       | `/question [--format-only] <topic>` | Creates `.claude-work/questions/NNNN-topic.txt` for user Q&A; a bare call delegates the challenge of what to ask to `/g2q`, while `--format-only` only creates the file                  |
-| `changelog`      | `/changelog <desc>`                 | Creates or updates a CHANGELOG entry with tone guardrails, thematic grouping, and detail-leak detection                                                                                  |
-| `commit-msg`     | `/commit-msg <desc>`                | Creates `.claude-work/commit-msgs/NNNN-description.txt`                                                                                                                                  |
-| `breadcrumb`     | `/breadcrumb <note>`                | Appends timestamped note to `.claude-work/issues/<ID>/breadcrumb.md`                                                                                                                     |
-| `concise-output` | `/concise-output <text>`            | Rewrites the given text with the STE-flavored conciseness pass and prints the result. No file is written. Also auto-consulted through `/prose-style` when a skill writes file content.   |
+| Skill            | Invocation                          | What It Does                                                                                                                                                                           |
+| ---------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `note`           | `/note <desc>`                      | Creates `.claude-work/notes/YYYYMMDD-HHMMSS-slug.txt` — lightweight capture; default working-document type for composite skills                                                        |
+| `scratchpad`     | `/scratchpad <desc>`                | Creates `.claude-work/scratchpads/YYYYMMDD-HHMMSS-description.txt` with a JSON step block; opt-in when composite skills need formal step tracking via `/tackle-scratchpad-block`       |
+| `question`       | `/question [--format-only] <topic>` | Creates `.claude-work/questions/YYYYMMDD-HHMMSS-topic.txt` for user Q&A; a bare call delegates the challenge of what to ask to `/g2q`, while `--format-only` only creates the file     |
+| `changelog`      | `/changelog <desc>`                 | Creates or updates a CHANGELOG entry with tone guardrails, thematic grouping, and detail-leak detection                                                                                |
+| `commit-msg`     | `/commit-msg <desc>`                | Creates `.claude-work/commit-msgs/YYYYMMDD-HHMMSS-description.txt`                                                                                                                     |
+| `breadcrumb`     | `/breadcrumb <note>`                | Appends timestamped note to `.claude-work/issues/<ID>/breadcrumb.md`                                                                                                                   |
+| `concise-output` | `/concise-output <text>`            | Rewrites the given text with the STE-flavored conciseness pass and prints the result. No file is written. Also auto-consulted through `/prose-style` when a skill writes file content. |
 
 ## Non-Invocable Skills
 
@@ -31,7 +31,6 @@ Non-invocable skills (`user-invocable: false`) don't appear in the `/` menu. The
 
 | Skill               | Purpose                                                                                                                                                                                                                |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/auto-number`      | Reusable file sequence numbering with prefix (`NNNN-name`) and suffix (`name-NNNN`) modes. Called by `target-path.sh` and directly by skills that need the next number in a directory.                                 |
 | `/ensure-gitignore` | Checks that `.gitignore` contains the Claude working directory sentinel and appends it if missing. One Bash call — no file contents loaded into context. Called directly by `/question`, `/scratchpad`, `/commit-msg`. |
 | `/issue-context`    | Thin pointer skill for `target-path.sh` — the shell script that resolves `.claude-work/` file paths from the current git branch. Not auto-consulted; referenced by contract.                                           |
 
@@ -62,7 +61,7 @@ Non-invocable skills (`user-invocable: false`) don't appear in the `/` menu. The
 
 **Script-backed skills:** When a skill's logic is purely deterministic (no judgment calls, no context-dependent decisions), a Bash script is more token-efficient than inline markdown instructions. Most skills describe an algorithm in Markdown and let Claude reason through it each invocation. That works well for complex decisions but wastes tokens on deterministic logic. A script executes in one Bash call and returns a single line of stdout — Claude spends zero tokens on the algorithm itself.
 
-Three scripts follow this pattern. `auto-number` handles "scan directory, find max number, add 1, zero-pad" — purely mechanical, runs on every `/scratchpad`, `/commit-msg`, and `/question` invocation. `ensure-gitignore` handles its read-check-append operation before creating any file. `target-path.sh` (in `skills/issue-context/`) combines branch detection, issue-ID extraction, slug normalization, and auto-numbering into one call and is the sole path-resolver for `/scratchpad`, `/question`, and `/commit-msg`. All three return a single line of output and let Claude focus on decisions only it can make.
+Two scripts follow this pattern. `ensure-gitignore` handles its read-check-append operation before creating any file. `target-path.sh` (in `skills/issue-context/`) combines branch detection, issue-ID extraction, slug normalization, and timestamp stamping into one call and is the sole path-resolver for `/note`, `/scratchpad`, `/question`, and `/commit-msg`. Both return a single line of output and let Claude focus on decisions only it can make.
 
 ## Step Tracking
 

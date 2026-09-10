@@ -33,6 +33,19 @@ for skill_dir in "$REPO_DIR"/*/; do
     continue
   fi
 
+  # The -e test below does not see a dangling symlink. Control would fall
+  # through to `ln -s`, which fails with "File exists". set -e turns that
+  # failure into a full abort. A link left from a previous checkout path is
+  # this case. The prune after the loop cannot reach such a link, because its
+  # stored target is not under the current REPO_DIR. Reclaim the link here.
+  if [ -L "$target" ] && [ ! -e "$target" ]; then
+    rm "$target"
+    ln -s "$source" "$target"
+    updated=$((updated + 1))
+    echo "  ✓ $name (relinked; previous link was dangling)"
+    continue
+  fi
+
   if [ -e "$target" ]; then
     if [ -L "$target" ]; then
       rm "$target"
@@ -56,8 +69,27 @@ for skill_dir in "$REPO_DIR"/*/; do
   echo "  ✓ $name"
 done
 
+# Prune links this installer created for skills the repo no longer ships.
+# readlink still reports the stored target after that target is deleted, which
+# is what makes a broken link attributable: only a link pointing under
+# REPO_DIR was created from this checkout. A broken link pointing anywhere
+# else belongs to something this installer does not manage, so it is left
+# alone even though it is equally broken.
+pruned=0
+for target in "$SKILLS_DIR"/*; do
+  [ -L "$target" ] || continue
+  [ ! -e "$target" ] || continue
+  case "$(readlink "$target")" in
+    "$REPO_DIR"/*) ;;
+    *) continue ;;
+  esac
+  rm "$target"
+  pruned=$((pruned + 1))
+  echo "  ✗ $(basename "$target") (pruned; no longer in the repo)"
+done
+
 echo ""
-echo "Done: $installed new, $updated updated, $unchanged unchanged, $conflict conflict(s)"
+echo "Done: $installed new, $updated updated, $unchanged unchanged, $pruned pruned, $conflict conflict(s)"
 echo "Skills available as /skill-name in all Claude Code projects."
 echo ""
 echo "External skill dependencies (optional, installed separately):"
