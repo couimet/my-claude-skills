@@ -14,7 +14,7 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 ### Changed
 
-- Every working file is now named `YYYYMMDD-HHMMSS-<slug>`, so you can read when a scratchpad, question, commit message, or note was created straight off its name. Previously only `/note` did this and the other four used a `NNNN-` counter, which meant one directory could hold both conventions. Two files created in the same second with the same description get a `-2` suffix rather than the second one replacing the first. ([issues/261](https://github.com/couimet/my-claude-skills/issues/261))
+- Every working file is now named `YYYYMMDD-HHMMSS-NNN-<slug>`, so you can read when a scratchpad, question, commit message, or note was created straight off its name. Previously only `/note` did this and the other four used a `NNNN-` counter, which meant one directory could hold both conventions. The `NNN` counts the files created within one second, starting at `001`, so sorting a directory by name always lists it oldest first, and two files created in the same second never collide no matter what they are called. ([issues/261](https://github.com/couimet/my-claude-skills/issues/261))
 
 ### Removed
 

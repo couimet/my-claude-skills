@@ -23,8 +23,8 @@ The script resolves the work-item folder through `get-issue-folder-path.sh`. Tha
 **Four properties callers can rely on.** These four are the contract. Every other detail of the returned path belongs to the script and can change without notice. The filename format is one such detail.
 
 1. **Absolute.** You can print the path for the user. You can use it from any working directory.
-2. **Directory exists.** The caller writes the file. The caller does not create the directory.
-3. **Unique.** A write to this path never replaces an existing file. Do not check the directory first. Do not edit an earlier file instead of creating a new one.
+2. **Directory exists and the path is reserved.** The script creates the directory and reserves the path, so the file is already there and empty when you get it. Write over that reservation. Do not create the directory, and do not read an empty file at a returned path as a working file: it is a reservation whose caller has not written yet.
+3. **Unique.** A write to this path never replaces an existing file, and two calls never hand out the same path, even when they run at the same moment. Do not check the directory first. Do not edit an earlier file instead of creating a new one.
 4. **Lexicographic order equals creation order.** A byte-order sort of a directory lists the files from oldest to newest. To find the newest file that matches a pattern, take the maximum. Any caller that resolves "the most recent" file relies on this.
 
 Placement follows the branch context. On a branch that matches a configured `branchPatterns` entry, the file goes under the work-item folder. On every other branch, the file goes to the `.claude-work/` root, under its type directory.
@@ -32,7 +32,7 @@ Placement follows the branch context. On a branch that matches a configured `bra
 The next line is an example, not a specification. Read the filename format from `target-path.sh`. Do not read it from prose:
 
 ```text
-/Users/x/project/.claude-work/issues/42/questions/20260909-101500-scope-question.txt
+/Users/x/project/.claude-work/issues/42/questions/20260909-101500-001-scope-question.txt
 ```
 
 ## Script: claude-work-root.sh

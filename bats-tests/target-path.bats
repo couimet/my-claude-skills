@@ -71,28 +71,28 @@ teardown() {
   git checkout -q -b issues/42
   run_target_path --type scratchpads --description "Plan the refactor"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-plan-the-refactor.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-001-plan-the-refactor.txt" ]
 }
 
 @test "issues/120-extract-numeric-prefix → extracts 120" {
   git checkout -q -b issues/120-audit-cleanup
   run_target_path --type questions --description "Scope question"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/120/questions/$STAMP-scope-question.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/120/questions/$STAMP-001-scope-question.txt" ]
 }
 
 @test "issues/120_with_underscore → extracts 120" {
   git checkout -q -b issues/120_audit
   run_target_path --type scratchpads --description "Test"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/120/scratchpads/$STAMP-test.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/120/scratchpads/$STAMP-001-test.txt" ]
 }
 
 @test "issues/rfc-auth → non-numeric prefix uses full segment" {
   git checkout -q -b issues/rfc-auth
   run_target_path --type commit-msgs --description "Draft message"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/rfc-auth/commit-msgs/$STAMP-draft-message.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/rfc-auth/commit-msgs/$STAMP-001-draft-message.txt" ]
 }
 
 # ============================================================================
@@ -105,58 +105,105 @@ teardown() {
   git checkout -q -B main
   run_target_path --type scratchpads --description "Hello world"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/scratchpads/$STAMP-hello-world.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/scratchpads/$STAMP-001-hello-world.txt" ]
 }
 
 @test "side-quest/foo branch → flat-root placement" {
   git checkout -q -b side-quest/foo
   run_target_path --type questions --description "Side quest question"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/questions/$STAMP-side-quest-question.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/questions/$STAMP-001-side-quest-question.txt" ]
 }
 
 # ============================================================================
-# Same-second collisions: the stamp gets a -2, -3 disambiguator, never an
-# overwrite. The stubbed clock is what makes this reachable — two real calls
-# would almost always land in different seconds.
+# Same-second ordering. The ordinal between the stamp and the slug is what
+# makes a byte-order sort of the directory equal creation order, and it is also
+# what resolves a collision. The stubbed clock is what makes this reachable —
+# two real calls would almost always land in different seconds.
 # ============================================================================
 
-@test "same second, same slug → -2 disambiguator instead of overwrite" {
+@test "same second, same slug → next ordinal instead of overwrite" {
   git checkout -q -b issues/42
   run_target_path --type scratchpads --description "Plan"
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-plan.txt" ]
-  # The caller writes the file it was handed; the next call must not reuse it.
-  touch "$output"
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-001-plan.txt" ]
   run_target_path --type scratchpads --description "Plan"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-plan-2.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-002-plan.txt" ]
 }
 
-@test "same second, same slug, twice over → -3 after -2 is taken" {
+@test "same second, same slug, twice over → 003 after 002 is taken" {
   git checkout -q -b issues/42
   run_target_path --type scratchpads --description "Plan"
-  touch "$output"
   run_target_path --type scratchpads --description "Plan"
-  touch "$output"
   run_target_path --type scratchpads --description "Plan"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-plan-3.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-003-plan.txt" ]
 }
 
-@test "same second, different slug → no disambiguator needed" {
+@test "same second, different slug → ordinal still advances" {
   git checkout -q -b issues/42
   run_target_path --type scratchpads --description "First"
-  touch "$output"
   run_target_path --type scratchpads --description "Second"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-second.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-002-second.txt" ]
+}
+
+@test "same second, different slugs → byte order equals creation order" {
+  git checkout -q -b issues/42
+  # z before a: the slug alone would sort these backwards.
+  run_target_path --type scratchpads --description "zebra"
+  local first="$output"
+  run_target_path --type scratchpads --description "apple"
+  local second="$output"
+  [ "$status" -eq 0 ]
+  # A plain sort of the directory must list them in the order they were made.
+  run bash -c "ls '$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads' | sort"
+  [ "${lines[0]}" = "$(basename "$first")" ]
+  [ "${lines[1]}" = "$(basename "$second")" ]
 }
 
 # ============================================================================
-# Regression, issues/261 Defect 1: the emitted name is a function of the clock
-# alone. The retired auto-number.sh read the leading digit run of a sibling as
-# its high-water mark, so one date-named file permanently converted a
-# directory's sequence to 8-digit pseudo-dates. No sibling is read any more.
+# The path is reserved, not merely tested. The reservation is what closes the
+# window in which two callers could be handed the same name, and it is what
+# makes the ordinal scan above authoritative.
+# ============================================================================
+
+@test "returned path exists and is empty, ready for the caller to write" {
+  git checkout -q -b issues/42
+  run_target_path --type scratchpads --description "Reserved"
+  [ "$status" -eq 0 ]
+  [ -f "$output" ]
+  [ ! -s "$output" ]
+}
+
+@test "dangling symlink at the candidate path is skipped, not written through" {
+  git checkout -q -b issues/42
+  mkdir -p ".claude-work/issues/42/scratchpads"
+  # -e is false for this, so a plain existence test would hand the path back
+  # and the caller's write would follow the link out of the directory.
+  ln -s "$TEST_TEMP_DIR/outside-the-work-dir.txt" \
+    ".claude-work/issues/42/scratchpads/$STAMP-001-trap.txt"
+  run_target_path --type scratchpads --description "Trap"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-002-trap.txt" ]
+  [ ! -e "$TEST_TEMP_DIR/outside-the-work-dir.txt" ]
+}
+
+@test "exhausted ordinals for one second error with T103" {
+  git checkout -q -b issues/42
+  mkdir -p ".claude-work/issues/42/scratchpads"
+  touch ".claude-work/issues/42/scratchpads/$STAMP-999-taken.txt"
+  run_target_path --type scratchpads --description "One too many"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"T103"* ]]
+}
+
+# ============================================================================
+# Regression, issues/261 Defect 1: the retired auto-number.sh read the leading
+# digit run of a sibling as its high-water mark, so one date-named file
+# permanently converted a directory's sequence to 8-digit pseudo-dates. The
+# ordinal scan reads only names carrying this second's stamp and a three-digit
+# field, so neither of these siblings is read at all.
 # ============================================================================
 
 @test "date-prefixed sibling does not influence the emitted name" {
@@ -166,7 +213,7 @@ teardown() {
   touch ".claude-work/issues/42/scratchpads/20260902-131841-third.txt"
   run_target_path --type scratchpads --description "Unaffected"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-unaffected.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-001-unaffected.txt" ]
 }
 
 @test "NNNN-prefixed leftovers from the retired scheme are ignored" {
@@ -176,7 +223,7 @@ teardown() {
   touch ".claude-work/issues/42/scratchpads/0002-second.txt"
   run_target_path --type scratchpads --description "Third"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-third.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-001-third.txt" ]
 }
 
 # ============================================================================
@@ -187,14 +234,14 @@ teardown() {
   git checkout -q -b issues/42
   run_target_path --type scratchpads --description "Some   MIXED--Case & punctuation!"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-some-mixed-case-punctuation.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-001-some-mixed-case-punctuation.txt" ]
 }
 
 @test "slug trims leading and trailing hyphens" {
   git checkout -q -b issues/42
   run_target_path --type scratchpads --description "  hello world  "
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-hello-world.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/scratchpads/$STAMP-001-hello-world.txt" ]
 }
 
 # ============================================================================
@@ -205,14 +252,14 @@ teardown() {
   git checkout -q -B main
   run_target_path --type scratchpads --description "Config" --ext json
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/scratchpads/$STAMP-config.json" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/scratchpads/$STAMP-001-config.json" ]
 }
 
 @test "--ext md still works alongside json" {
   git checkout -q -B main
   run_target_path --type scratchpads --description "Doc" --ext md
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/scratchpads/$STAMP-doc.md" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/scratchpads/$STAMP-001-doc.md" ]
 }
 
 # ============================================================================
@@ -287,14 +334,14 @@ teardown() {
   git checkout -q -b issues/42
   run_target_path --type notes --description "Plan the work"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/notes/$STAMP-plan-the-work.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42/notes/$STAMP-001-plan-the-work.txt" ]
 }
 
 @test "notes type on main branch → flat-root notes path" {
   git checkout -q -B main
   run_target_path --type notes --description "Quick finding"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/notes/$STAMP-quick-finding.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/notes/$STAMP-001-quick-finding.txt" ]
 }
 
 @test "invalid --type errors with T100" {
@@ -320,7 +367,7 @@ teardown() {
   cd "$TEST_TEMP_DIR/wt-linked"
   run_target_path --type notes --description "from worktree"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/99/notes/$STAMP-from-worktree.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/99/notes/$STAMP-001-from-worktree.txt" ]
   # Worktree directory should NOT have its own .claude-work
   [ ! -d "$TEST_TEMP_DIR/wt-linked/.claude-work" ]
 }
@@ -334,7 +381,7 @@ teardown() {
   cd subdir
   run_target_path --type notes --description "from subdir"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/notes/$STAMP-from-subdir.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/notes/$STAMP-001-from-subdir.txt" ]
   [ -d "$TEST_TEMP_DIR/.claude-work/notes" ]
   [ ! -d "$TEST_TEMP_DIR/subdir/.claude-work" ]
 }
@@ -349,7 +396,7 @@ teardown() {
   git checkout -q -b issues/42
   run env PATH="$STUB_BIN:$PATH" MY_CLAUDE_SKILLS_CONFIG="$cfg" "$SCRIPT" --type scratchpads --description "Tracked elsewhere"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/work/42/scratchpads/$STAMP-tracked-elsewhere.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/work/42/scratchpads/$STAMP-001-tracked-elsewhere.txt" ]
 }
 
 @test "empty segment config → no segment directory under the identifier" {
@@ -358,5 +405,5 @@ teardown() {
   git checkout -q -b issues/42
   run env PATH="$STUB_BIN:$PATH" MY_CLAUDE_SKILLS_CONFIG="$cfg" "$SCRIPT" --type questions --description "Flat layout"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work/42/questions/$STAMP-flat-layout.txt" ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/42/questions/$STAMP-001-flat-layout.txt" ]
 }

@@ -103,9 +103,9 @@ All ephemeral working files live under `.claude-work/` (git-ignored). Never comm
 ```text
 .claude-work/
   issues/<ID>/
-    scratchpads/   ← implementation plans (YYYYMMDD-HHMMSS-description.txt)
-    questions/     ← design decision files (YYYYMMDD-HHMMSS-description.txt)
-    commit-msgs/   ← commit message drafts (YYYYMMDD-HHMMSS-description.txt)
+    scratchpads/   ← implementation plans (timestamped; target-path.sh names them)
+    questions/     ← design decision files (same)
+    commit-msgs/   ← commit message drafts (same)
     breadcrumb.md  ← running notes collected by /finish-issue
   scratchpads/     ← flat placement when not on an issues/* branch
   questions/

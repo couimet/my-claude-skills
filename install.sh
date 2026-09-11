@@ -39,10 +39,14 @@ for skill_dir in "$REPO_DIR"/*/; do
   # this case. The prune after the loop cannot reach such a link, because its
   # stored target is not under the current REPO_DIR. Reclaim the link here.
   if [ -L "$target" ] && [ ! -e "$target" ]; then
+    # Name the discarded target. Ownership of a dangling link is not knowable
+    # from the link alone, so this reclaims a name something else may have
+    # created; saying what was there is what makes that recoverable.
+    previous="$(readlink "$target")"
     rm "$target"
     ln -s "$source" "$target"
     updated=$((updated + 1))
-    echo "  ✓ $name (relinked; previous link was dangling)"
+    echo "  ✓ $name (relinked; previous link pointed at $previous)"
     continue
   fi
 
@@ -79,10 +83,17 @@ pruned=0
 for target in "$SKILLS_DIR"/*; do
   [ -L "$target" ] || continue
   [ ! -e "$target" ] || continue
-  case "$(readlink "$target")" in
-    "$REPO_DIR"/*) ;;
-    *) continue ;;
-  esac
+  link_target="$(readlink "$target")"
+  if [[ "$link_target" != "$REPO_DIR"/* ]]; then
+    continue
+  fi
+  # The prefix match above is lexical, so a target that escapes through `..`
+  # still carries the prefix while resolving outside the checkout. It cannot
+  # be canonicalized, because a target that still existed would not be a
+  # broken link, so reject the escape instead of resolving it.
+  if [[ "$link_target" == *"/../"* || "$link_target" == *"/.." ]]; then
+    continue
+  fi
   rm "$target"
   pruned=$((pruned + 1))
   echo "  ✗ $(basename "$target") (pruned; no longer in the repo)"

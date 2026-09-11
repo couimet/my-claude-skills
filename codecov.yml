@@ -11,6 +11,11 @@ coverage:
         # causes spurious failures, raise this to a small buffer.
         target: auto
         threshold: 0%
+        # Pass the project status when a change only removes code. Deleting a
+        # well-covered file lowers the percentage without leaving anything
+        # untested, and the 0% threshold above would fail that. This does not
+        # apply to a change that also adds code.
+        removed_code_behavior: removals_only
 
     patch:
       default:

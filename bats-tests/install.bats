@@ -72,6 +72,9 @@ run_install() {
   [ -e "$FAKE_HOME/.claude/skills/alpha" ]
   [ "$(readlink "$FAKE_HOME/.claude/skills/alpha")" = "$FAKE_REPO/skills/alpha" ]
   [[ "$output" == *"relinked"* ]]
+  # Ownership of a dangling link is unknowable, so the reclaim names what it
+  # discarded and the user can put it back.
+  [[ "$output" == *"/nonexistent/old-checkout/skills/alpha"* ]]
 }
 
 @test "dangling link does not abort before later skills are linked" {
@@ -104,6 +107,17 @@ run_install() {
   [[ "$output" == *"0 pruned"* ]]
 }
 
+@test "broken link whose target escapes through .. is left alone" {
+  # Lexically under REPO_DIR, but it resolves outside the checkout. A target
+  # that still existed would not be a broken link, so it cannot be resolved;
+  # the escape is rejected instead.
+  ln -s "$FAKE_REPO/skills/../../outside/skills/escaped" "$FAKE_HOME/.claude/skills/escaped"
+  run_install
+  [ "$status" -eq 0 ]
+  [ -L "$FAKE_HOME/.claude/skills/escaped" ]
+  [[ "$output" == *"0 pruned"* ]]
+}
+
 @test "live link into this checkout is never pruned" {
   run_install
   run_install
@@ -121,4 +135,44 @@ run_install() {
   [ -d "$FAKE_HOME/.claude/skills/handwritten" ]
   [ -f "$FAKE_HOME/.claude/skills/handwritten/SKILL.md" ]
   [[ "$output" == *"0 pruned"* ]]
+}
+
+# ============================================================================
+# An occupied target for a skill the repo DOES ship. The existing conflict
+# test uses a name the fake repo does not ship, so the install loop never
+# iterates over it and this block is never reached.
+# ============================================================================
+
+@test "live link pointing elsewhere is replaced and counted as updated" {
+  mkdir -p "$TEST_TEMP_DIR/elsewhere/alpha"
+  ln -s "$TEST_TEMP_DIR/elsewhere/alpha" "$FAKE_HOME/.claude/skills/alpha"
+  run_install
+  [ "$status" -eq 0 ]
+  [ "$(readlink "$FAKE_HOME/.claude/skills/alpha")" = "$FAKE_REPO/skills/alpha" ]
+  [[ "$output" == *"1 updated"* ]]
+}
+
+@test "regular file occupying a shipped skill name is left alone and flagged" {
+  printf 'hand written\n' > "$FAKE_HOME/.claude/skills/alpha"
+  run_install
+  [ "$status" -eq 0 ]
+  [ -f "$FAKE_HOME/.claude/skills/alpha" ]
+  [ ! -L "$FAKE_HOME/.claude/skills/alpha" ]
+  [[ "$output" == *"WARNING"* ]]
+  [[ "$output" == *"regular file"* ]]
+  [[ "$output" == *"1 conflict"* ]]
+  # The conflict must not stop the rest of the run.
+  [ -L "$FAKE_HOME/.claude/skills/beta" ]
+}
+
+@test "real directory occupying a shipped skill name is left alone and flagged" {
+  mkdir -p "$FAKE_HOME/.claude/skills/alpha"
+  printf -- '---\nname: mine\n---\n' > "$FAKE_HOME/.claude/skills/alpha/SKILL.md"
+  run_install
+  [ "$status" -eq 0 ]
+  [ -d "$FAKE_HOME/.claude/skills/alpha" ]
+  [ -f "$FAKE_HOME/.claude/skills/alpha/SKILL.md" ]
+  [[ "$output" == *"real directory"* ]]
+  [[ "$output" == *"1 conflict"* ]]
+  [ -L "$FAKE_HOME/.claude/skills/beta" ]
 }
