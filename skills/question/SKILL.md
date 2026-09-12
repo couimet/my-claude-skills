@@ -17,7 +17,7 @@ Create a questions file in `.claude-work/` for gathering user input.
 Use `/question` when a design decision needs the user's input captured in a questions file. Two modes:
 
 - **`/question <topic>`** — the default. Delegates the challenge of what to ask to `/g2q`: it grills the topic, drafts the genuinely open questions, and reports back. This is the public entry point for a grilling-informed questions file.
-- **`/question --format-only <topic>`** — skips the challenge and only creates the file. Use this when the questions are already decided and you only need `/question`'s path resolution, auto-numbering, and gitignore check. `/g2q` uses this mode after it has grilled.
+- **`/question --format-only <topic>`** — skips the challenge and only creates the file. Use this when the questions are already decided and you only need `/question`'s path resolution, file naming, and gitignore check. `/g2q` uses this mode after it has grilled.
 
 ## When NOT to Use
 
@@ -51,7 +51,7 @@ Run these two commands as parallel tool calls. They are independent.
 ~/.claude/skills/ensure-gitignore/ensure-gitignore.sh
 ```
 
-Use the stdout of the first command as the full absolute file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is an absolute path ending in `/.claude-work/issues/<ID>/questions/NNNN-<slug>.txt`. Otherwise it is an absolute path ending in `/.claude-work/questions/NNNN-<slug>.txt`.
+Use the stdout of the first command as the full absolute file path. The path is unique and its directory exists, so write the file directly to it. See `/issue-context` for the full contract.
 
 When `$ARGUMENTS` starts with `--format-only`, strip the flag before passing the description to `target-path.sh` so the filename slug derives from the topic only.
 
@@ -125,7 +125,7 @@ Use `Q001`, `Q002` etc. to reference questions and `A001`, `A002` to reference a
 
 ### Wave Emissions and the Held-Questions Section
 
-When a `/g2q` grilling pass runs in waves, each wave is its own numbered questions file, and a wave may carry extra lines after the last question block. The trailing section appears only when it has content.
+When a `/g2q` grilling pass runs in waves, each wave is its own questions file, and a wave may carry extra lines after the last question block. The trailing section appears only when it has content.
 
 A wave that holds questions closes with a `Held:` heading followed by one line per held question naming the question and the answers it waits on. Held questions carry no number: a question is numbered when it is emitted in a later wave, so the sequence is recovered from the highest emitted number in the newest wave file, never from a reserved range.
 

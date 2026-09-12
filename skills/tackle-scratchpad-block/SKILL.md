@@ -12,7 +12,7 @@ Execute a specific block of implementation steps from a scratchpad file, then cr
 
 **Note on `Bash(*)` permission:** This skill intentionally uses unrestricted Bash access because it executes arbitrary implementation steps and test suites from user-authored scratchpad content. Other skills use allowlisted commands for their specific workflows. Users should review scratchpad content before invoking this skill.
 
-**Input:** $ARGUMENTS (a code reference to scratchpad lines, e.g. `/Users/x/project/.claude-work/issues/70/scratchpads/0001-plan.txt#L25-L67` or `path/to/plan.txt#S003`)
+**Input:** $ARGUMENTS (a code reference to scratchpad lines, e.g. `/Users/x/project/.claude-work/issues/70/scratchpads/<plan-file>.txt#L25-L67` or `path/to/plan.txt#S003`)
 
 ## Step 0: Resolve Active Plan and Sanity-Check
 

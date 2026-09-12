@@ -10,6 +10,22 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.09.10
+
+### Changed
+
+- Every working file is now named `YYYYMMDD-HHMMSS-NNN-<slug>`, so you can read when a scratchpad, question, commit message, or note was created straight off its name. Previously only `/note` did this and the other four used a `NNNN-` counter, which meant one directory could hold both conventions. The `NNN` counts the files created within one second, starting at `001`, so sorting a directory by name always lists it oldest first, and two files created in the same second never collide no matter what they are called. ([issues/261](https://github.com/couimet/my-claude-skills/issues/261))
+
+### Removed
+
+- The `/auto-number` skill. Nothing calls it any more now that filenames carry a timestamp instead of a counter. Re-running `install.sh` clears the leftover `~/.claude/skills/auto-number` link. ([issues/261](https://github.com/couimet/my-claude-skills/issues/261))
+
+### Fixed
+
+- A working file whose name started with a date no longer breaks numbering for every file created beside it. The old counter read that date as the sequence number, so the next file in that directory got an 8-digit number that looked like a date, was not one, and drifted by one per file. The only escape was renaming the file by hand. ([issues/261](https://github.com/couimet/my-claude-skills/issues/261))
+- Notes can no longer be stamped with the wrong day. `/note` used to ask Claude to produce the timestamp itself, which is how notes created in the evening were named with the next day's date and sorted into the wrong order. The filename comes from a script now. ([issues/261](https://github.com/couimet/my-claude-skills/issues/261))
+- `install.sh` no longer aborts partway through when `~/.claude/skills/` holds a broken link, which happens after you move or rename your checkout. It relinks the skill and continues, so the skills after it in the run still get installed. Broken links pointing outside your checkout are left alone. ([issues/261](https://github.com/couimet/my-claude-skills/issues/261))
+
 ## 2026.09.08
 
 ### Fixed

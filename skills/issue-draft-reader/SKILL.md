@@ -65,18 +65,6 @@ Strip references to ephemeral local paths that don't exist on the remote tracker
 
 - `.claude-work/` paths (scratchpads, notes, questions, commit-msgs, breadcrumbs)
 
-Print the list of stripped references so the user can verify nothing important was removed:
-
-```text
-Stripped ephemeral references:
-- .claude-work/issues/42/scratchpads/0001-plan.txt (line 12)
-- .claude-work/issues/42/questions/0001-scope.txt (line 28)
-```
-
-If no ephemeral references were found, print:
-
-```text
-No ephemeral references found. Body is clean.
-```
+When you strip a reference, print it as `- <path> (line N)` under a `Stripped ephemeral references:` heading. This step deletes text the user wrote. The user must see what you removed. When you strip nothing, print nothing.
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.

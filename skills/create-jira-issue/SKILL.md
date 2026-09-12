@@ -3,7 +3,7 @@ name: create-jira-issue
 version: 2026.09.08@212eab1
 description: Create a Jira issue from a standardized draft or an inline title, mirroring a reference ticket when one is given, with pre-create review
 argument-hint: <file-path-or-title>
-allowed-tools: Read, Write, Glob, AskUserQuestion, Bash(mkdir -p *), Bash(date *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), mcp__atlassian__createJiraIssue, mcp__atlassian__getJiraIssue, mcp__atlassian__getJiraIssueTypeMetaWithFields, mcp__atlassian__getJiraProjectIssueTypesMetadata, mcp__atlassian__createIssueLink, mcp__atlassian__getIssueLinkTypes, mcp__atlassian__getAccessibleAtlassianResources, mcp__atlassian__lookupJiraAccountId, mcp__atlassian__getTransitionsForJiraIssue, mcp__atlassian__transitionJiraIssue
+allowed-tools: Read, Write, Glob, AskUserQuestion, Bash(mkdir -p *), Bash(date *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), mcp__atlassian__createJiraIssue, mcp__atlassian__getJiraIssue, mcp__atlassian__getJiraIssueTypeMetaWithFields, mcp__atlassian__getJiraProjectIssueTypesMetadata, mcp__atlassian__createIssueLink, mcp__atlassian__getIssueLinkTypes, mcp__atlassian__getAccessibleAtlassianResources, mcp__atlassian__lookupJiraAccountId, mcp__atlassian__getTransitionsForJiraIssue, mcp__atlassian__transitionJiraIssue
 ---
 
 # Create Jira Issue
@@ -51,7 +51,7 @@ When an `assignee` field is present, or the like ticket names an assignee and no
 
 ## Step 4: Save the Payload and Confirm
 
-Use `/note` with description `issue-payload` to save the resolved payload to a timestamped file under `.claude-work` (summary, sanitized description with the Generated-by footer, target project and issue type, parent, and custom fields), then print the note path and confirm with the user before creating. Always confirm, not conditionally. Jira creation is harder to undo than GitHub's: deleting an issue leaves a permanent hole in the key sequence, and a ticket filed against the wrong project cannot be moved without admin rights on some sites. This review is the one moment a human sees exactly what will be submitted.
+Use `/note` with description `issue-payload` to save the resolved payload to a new file under `.claude-work` (summary, sanitized description with the Generated-by footer, target project and issue type, parent, and custom fields), then print the note path and confirm with the user before creating. Always confirm, not conditionally. Jira creation is harder to undo than GitHub's: deleting an issue leaves a permanent hole in the key sequence, and a ticket filed against the wrong project cannot be moved without admin rights on some sites. This review is the one moment a human sees exactly what will be submitted.
 
 The saved payload and the confirmation must also cover the Step 6 dependency links. For each `blocked-by` entry, list the target that will block this issue. For each `is-blocking` entry, list the target that this issue will block. Give each target with its resolved Jira key and link direction. The pre-create review must surface every tracker change the run will make. It must show the creation and the links that follow it alike. Nothing should happen after sign-off that the user has not seen.
 

@@ -3,7 +3,7 @@ name: start-issue
 version: 2026.09.08@212eab1
 description: Start working on a GitHub issue - analyze, explore codebase, and create detailed implementation plan
 argument-hint: <github-issue-url> [--scratchpad]
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/render-branch-template.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/start-issue/update-project-status.sh *)
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/render-branch-template.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/start-issue/update-project-status.sh *)
 ---
 
 # Start Issue
@@ -176,7 +176,7 @@ After the working document is created (via either path), write the pointer file 
 **Contents:** the project-root-relative path to the working document (a single line, no trailing newline required), for example:
 
 ```text
-.claude-work/issues/126/notes/20260424-143022-start-issue-plan.txt
+.claude-work/issues/126/notes/<the-filename-/note-returned>.txt
 ```
 
 Overwrite any existing pointer. Only the most recent working document is "active". When the grilling gate created a pending stub, the pointer targets the stub and stays valid after finalization (Step 6), which rewrites the same file.
