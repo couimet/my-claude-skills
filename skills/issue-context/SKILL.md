@@ -24,7 +24,7 @@ The script resolves the work-item folder through `get-issue-folder-path.sh`. Tha
 
 1. **Absolute.** You can print the path for the user. You can use it from any working directory.
 2. **Directory exists and the path is reserved.** The script creates the directory and reserves the path, so the file is already there and empty when you get it. Write over that reservation. Do not create the directory, and do not read an empty file at a returned path as a working file: it is a reservation whose caller has not written yet.
-3. **Unique.** A write to this path never replaces an existing file, and two calls never hand out the same path, even when they run at the same moment. Do not check the directory first. Do not edit an earlier file instead of creating a new one.
+3. **Unique.** The script never hands out a path that is already taken, and two calls never hand out the same path, even when they run at the same moment. The only file your write replaces is the empty reservation property 2 describes. Do not check the directory first. Do not edit an earlier file instead of creating a new one.
 4. **Lexicographic order equals creation order.** A byte-order sort of a directory lists the files from oldest to newest. To find the newest file that matches a pattern, take the maximum. Any caller that resolves "the most recent" file relies on this.
 
 Placement follows the branch context. On a branch that matches a configured `branchPatterns` entry, the file goes under the work-item folder. On every other branch, the file goes to the `.claude-work/` root, under its type directory.

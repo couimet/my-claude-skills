@@ -52,8 +52,8 @@ Moving the naming decision into one script did not, on its own, stop skills from
 **A skill that calls a script states the properties it relies on and never the script's output format.** Applied to `target-path.sh`, four properties are the contract and everything else may change without notice:
 
 1. **Absolute.** Safe to print for the user and safe to use from any working directory.
-2. **Directory exists.** The caller writes the file. The caller does not create the directory.
-3. **Unique.** A write to this path never replaces an existing file, so a caller never checks first.
+2. **Directory exists and the path is reserved.** The helper creates the directory and reserves the path as an empty file, so the caller writes over its own reservation rather than creating the file.
+3. **Unique.** The helper never hands out a path that is already taken, so the only file a caller's write replaces is its own reservation. Two calls never receive the same path, so a caller never checks first.
 4. **Lexicographic order equals creation order.** "The newest file matching X" is a maximum rather than a stat call.
 
 The fourth was load-bearing before it was written down. `/rebase-issue` resolves the most recent PR description from filenames, and `/g2q` resolves the newest wave file the same way. Both worked under `NNNN-` because the counter ascended. Both work under a timestamp because the stamp ascends. Neither should have to know which. Stating the property converts an assumption two skills were already making into a guarantee a test can hold.
