@@ -134,12 +134,18 @@ CONSUMERS="note scratchpad question commit-msg file-placement create-github-issu
 @test "boundary: the contract doc names no other skill" {
   local contract="$PROJECT_ROOT/skills/issue-context/SKILL.md"
   local offenders="" name
+  # Strip the contract's own script paths before scanning. Every
+  # skills/issue-context/<x>.sh occurrence is a self-reference, so the leading
+  # /<x> the scan would otherwise see is not a skill mention. This matters once
+  # a script's basename matches a skill name: set-work-folder.sh lives in
+  # issue-context and /set-work-folder is the skill that wraps it, and without
+  # this the contract could not name its own script.
   while read -r name; do
-    # Self-references are the script paths (~/.claude/skills/issue-context/...).
     [ "$name" = "issue-context" ] && continue
     [ -d "$PROJECT_ROOT/skills/$name" ] || continue
     offenders="$offenders $name"
-  done < <(grep -oE '/[a-z][a-z0-9-]+' "$contract" | sed 's|^/||' | sort -u)
+  done < <(sed -E 's|skills/issue-context/[a-z0-9-]+\.sh||g' "$contract" \
+    | grep -oE '/[a-z][a-z0-9-]+' | sed 's|^/||' | sort -u)
   [ -z "$offenders" ] || {
     echo "The script contract names these skills:$offenders"
     echo "Describe the caller by role instead. The contract does not know who calls it."

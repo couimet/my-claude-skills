@@ -9,6 +9,11 @@
 # the stub every assertion would have to be a regex, and the same-second
 # collision case could not be forced at all.
 
+# `run --separate-stderr` is a flagged run, which bats guarantees only from
+# 1.5.0 onward. Declaring the floor turns the BW02 warning into a checked
+# requirement; CI pins bats 1.14.0 (.github/workflows/ci.yml).
+bats_require_minimum_version 1.5.0
+
 load test_helper
 
 SCRIPT="$PROJECT_ROOT/skills/issue-context/target-path.sh"
@@ -35,8 +40,14 @@ STUB
 
 # Run the script with the stub ahead of the inherited PATH. Prepending rather
 # than replacing matters: the script also needs git, jq, sed, tr, and mkdir.
+#
+# --separate-stderr keeps $output to the script's single stdout line. The
+# resolver this script delegates to reports the folder it chose on stderr on
+# every run (issues/267), and target-path.sh passes that stderr straight
+# through, so without the flag every path assertion below would be asserting
+# on the report as well as the path.
 run_target_path() {
-  run env PATH="$STUB_BIN:$PATH" "$SCRIPT" "$@"
+  run --separate-stderr env PATH="$STUB_BIN:$PATH" "$SCRIPT" "$@"
 }
 
 # Run the script inside a fresh git repo so branch detection is deterministic.
@@ -195,7 +206,7 @@ teardown() {
   touch ".claude-work/issues/42/scratchpads/$STAMP-999-taken.txt"
   run_target_path --type scratchpads --description "One too many"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T103"* ]]
+  [[ "$stderr" == *"T103"* ]]
 }
 
 # ============================================================================
@@ -269,37 +280,37 @@ teardown() {
 @test "--ext with dots (..) errors with T102" {
   run_target_path --type scratchpads --description "x" --ext ".."
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T102"* ]]
+  [[ "$stderr" == *"T102"* ]]
 }
 
 @test "--ext with path separator errors with T102" {
   run_target_path --type scratchpads --description "x" --ext "foo/bar"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T102"* ]]
+  [[ "$stderr" == *"T102"* ]]
 }
 
 @test "--ext with whitespace errors with T102" {
   run_target_path --type scratchpads --description "x" --ext "foo bar"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T102"* ]]
+  [[ "$stderr" == *"T102"* ]]
 }
 
 @test "--ext with glob character errors with T102" {
   run_target_path --type scratchpads --description "x" --ext "*"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T102"* ]]
+  [[ "$stderr" == *"T102"* ]]
 }
 
 @test "--ext with shell metacharacter errors with T102" {
   run_target_path --type scratchpads --description "x" --ext '$(whoami)'
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T102"* ]]
+  [[ "$stderr" == *"T102"* ]]
 }
 
 @test "--ext with hyphen (not alphanumeric) errors with T102" {
   run_target_path --type scratchpads --description "x" --ext "tar-gz"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T102"* ]]
+  [[ "$stderr" == *"T102"* ]]
 }
 
 # ============================================================================
@@ -321,13 +332,13 @@ teardown() {
 @test "missing --type errors with T001" {
   run_target_path --description "test"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T001"* ]]
+  [[ "$stderr" == *"T001"* ]]
 }
 
 @test "missing --description errors with T001" {
   run_target_path --type scratchpads
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T001"* ]]
+  [[ "$stderr" == *"T001"* ]]
 }
 
 @test "notes type on issue branch → issue-scoped notes path" {
@@ -347,13 +358,13 @@ teardown() {
 @test "invalid --type errors with T100" {
   run_target_path --type bogus --description "test"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T100"* ]]
+  [[ "$stderr" == *"T100"* ]]
 }
 
 @test "unknown flag errors with T002" {
   run_target_path --type scratchpads --description "test" --nonsense
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T002"* ]]
+  [[ "$stderr" == *"T002"* ]]
 }
 
 # ============================================================================
@@ -394,7 +405,7 @@ teardown() {
   local cfg="$TEST_TEMP_DIR/nondefault.json"
   printf '%s' '{"segment":"work"}' > "$cfg"
   git checkout -q -b issues/42
-  run env PATH="$STUB_BIN:$PATH" MY_CLAUDE_SKILLS_CONFIG="$cfg" "$SCRIPT" --type scratchpads --description "Tracked elsewhere"
+  run --separate-stderr env PATH="$STUB_BIN:$PATH" MY_CLAUDE_SKILLS_CONFIG="$cfg" "$SCRIPT" --type scratchpads --description "Tracked elsewhere"
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR/.claude-work/work/42/scratchpads/$STAMP-001-tracked-elsewhere.txt" ]
 }
@@ -403,7 +414,7 @@ teardown() {
   local cfg="$TEST_TEMP_DIR/empty-segment.json"
   printf '%s' '{"segment":""}' > "$cfg"
   git checkout -q -b issues/42
-  run env PATH="$STUB_BIN:$PATH" MY_CLAUDE_SKILLS_CONFIG="$cfg" "$SCRIPT" --type questions --description "Flat layout"
+  run --separate-stderr env PATH="$STUB_BIN:$PATH" MY_CLAUDE_SKILLS_CONFIG="$cfg" "$SCRIPT" --type questions --description "Flat layout"
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR/.claude-work/42/questions/$STAMP-001-flat-layout.txt" ]
 }

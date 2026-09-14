@@ -10,6 +10,18 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.09.14
+
+### Added
+
+- `/set-work-folder <folder>` points this session's working files at a folder you choose, instead of letting the current git branch decide where they go. Notes, questions, scratchpads, and commit-message drafts all follow it. This is for repositories organised by topic rather than by branch, where the branch name says nothing about what you are working on and the files end up scattered. `/set-work-folder --clear` restores branch-derived placement. ([issues/267](https://github.com/couimet/my-claude-skills/issues/267))
+
+### Changed
+
+- Setting a folder applies to the whole session, including subagents. An agent launched from your session shares its identity, so a folder it sets moves your files too, and yours moves its. The stored setting records which agent wrote it, so an unexpected change can be traced. ([issues/267](https://github.com/couimet/my-claude-skills/issues/267))
+- Every path resolution now says on stderr which folder it chose, and says when a folder you set was found and not used. A folder that has been deleted, or one belonging to a different repository than the one you are working in, is ignored rather than obeyed, and placement falls back to the branch. Without that line, an ignored setting looked exactly like never having set one. ([issues/267](https://github.com/couimet/my-claude-skills/issues/267))
+- Naming a work item explicitly still resolves that work item's folder, whatever folder the session is pointed at. This is what keeps `/cleanup-issue 42` addressed at issue 42's directory rather than at your topic folder. ([issues/267](https://github.com/couimet/my-claude-skills/issues/267))
+
 ## 2026.09.10
 
 ### Changed

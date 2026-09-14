@@ -118,6 +118,9 @@ fi
 # --- Resolve script directory early (needed for sibling scripts) ---
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# shellcheck disable=SC1091 # sourced sibling; lint-sh runs shellcheck without -x
+source "$script_dir/slugify.sh"
+
 # --- Resolve the work-item folder (branch detection delegated to the gate) ---
 # get-issue-folder-path.sh infers the identifier from the current branch and
 # prints <claude-work-root>[/<segment>]/<identifier>, or just the root on a
@@ -133,15 +136,10 @@ folder_root="$("${script_dir}/get-issue-folder-path.sh")" || {
 target_dir="${folder_root}/${type_arg}"
 
 # --- Slugify description ---
-# lowercase, replace non-alphanumeric with hyphens, collapse consecutive
-# hyphens, trim leading/trailing hyphens
-slug="$(printf '%s' "$description" \
-  | tr '[:upper:]' '[:lower:]' \
-  | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
-
-if [ -z "$slug" ]; then
-  slug="file"
-fi
+# The rules live in slugify.sh so set-work-folder.sh names a session file the
+# same way this names a working file. No bound is passed: these filenames have
+# always been unbounded and the extraction does not change them.
+slug="$(_issue_context_slugify "$description")"
 
 # --- Create the target directory ---
 mkdir -p "$target_dir"

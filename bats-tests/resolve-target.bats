@@ -6,6 +6,11 @@
 # test points MY_CLAUDE_SKILLS_CONFIG at a temp settings file and a developer's
 # real ~/.my-claude-skills/settings.json can never change the outcome.
 
+# `run --separate-stderr` is a flagged run, which bats guarantees only from
+# 1.5.0 onward. Declaring the floor turns the BW02 warning into a checked
+# requirement; CI pins bats 1.14.0 (.github/workflows/ci.yml).
+bats_require_minimum_version 1.5.0
+
 load test_helper
 
 SCRIPT="$PROJECT_ROOT/skills/rebase-issue/resolve-target.sh"
@@ -61,36 +66,36 @@ setup_remote_with_branch() {
 # ============================================================================
 
 @test "no arguments → error T001" {
-  run "$SCRIPT"
+  run --separate-stderr "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T001"* ]]
-  [[ "$output" == *"expected 1-2 arguments, got 0"* ]]
+  [[ "$stderr" == *"T001"* ]]
+  [[ "$stderr" == *"expected 1-2 arguments, got 0"* ]]
 }
 
 @test "three arguments → error T001" {
-  run "$SCRIPT" "42" "origin/main" "extra"
+  run --separate-stderr "$SCRIPT" "42" "origin/main" "extra"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T001"* ]]
+  [[ "$stderr" == *"T001"* ]]
 }
 
 @test "empty issue number → error T002" {
-  run "$SCRIPT" "" "origin/main"
+  run --separate-stderr "$SCRIPT" "" "origin/main"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T002"* ]]
-  [[ "$output" == *"invalid issue number"* ]]
+  [[ "$stderr" == *"T002"* ]]
+  [[ "$stderr" == *"invalid issue number"* ]]
 }
 
 @test "issue number with slash → error T002" {
-  run "$SCRIPT" "42/evil" "origin/main"
+  run --separate-stderr "$SCRIPT" "42/evil" "origin/main"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T002"* ]]
-  [[ "$output" == *"invalid issue number"* ]]
+  [[ "$stderr" == *"T002"* ]]
+  [[ "$stderr" == *"invalid issue number"* ]]
 }
 
 @test "usage text printed on argument error" {
-  run "$SCRIPT"
+  run --separate-stderr "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"Usage:"* ]]
+  [[ "$stderr" == *"Usage:"* ]]
 }
 
 @test "claude-work-root.sh not found → error T003" {
@@ -99,14 +104,14 @@ setup_remote_with_branch() {
   # Temporarily move the script aside so resolve-target.sh cannot find it.
   mv "$claude_root_script" "${claude_root_script}.bak"
 
-  run "$SCRIPT" "42" "origin/main"
+  run --separate-stderr "$SCRIPT" "42" "origin/main"
   local actual_status="$status"
 
   # Restore immediately so other tests are not affected.
   mv "${claude_root_script}.bak" "$claude_root_script"
 
   [ "$actual_status" -eq 1 ]
-  [[ "$output" == *"T003"* ]]
+  [[ "$stderr" == *"T003"* ]]
 }
 
 # ============================================================================
@@ -114,19 +119,19 @@ setup_remote_with_branch() {
 # ============================================================================
 
 @test "explicit target is used verbatim" {
-  run "$SCRIPT" "42" "origin/main"
+  run --separate-stderr "$SCRIPT" "42" "origin/main"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=origin/main"* ]]
 }
 
 @test "explicit target with issues/ prefix is preserved" {
-  run "$SCRIPT" "42" "issues/200"
+  run --separate-stderr "$SCRIPT" "42" "issues/200"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=issues/200"* ]]
 }
 
 @test "explicit target with short ref is preserved" {
-  run "$SCRIPT" "42" "main"
+  run --separate-stderr "$SCRIPT" "42" "main"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=main"* ]]
 }
@@ -135,7 +140,7 @@ setup_remote_with_branch() {
   local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
   write_file "$marker_dir/base-branch" "issues/100"
 
-  run "$SCRIPT" "42" "origin/main"
+  run --separate-stderr "$SCRIPT" "42" "origin/main"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=origin/main"* ]]
 }
@@ -147,7 +152,7 @@ setup_remote_with_branch() {
   # Set up remote so the marker value is accepted.
   setup_remote_with_branch "issues/100"
 
-  run "$SCRIPT" "42" ""
+  run --separate-stderr "$SCRIPT" "42" ""
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=issues/100"* ]]
 }
@@ -157,54 +162,54 @@ setup_remote_with_branch() {
 # ============================================================================
 
 @test "explicit issues/200 → MODE=stacked" {
-  run "$SCRIPT" "42" "issues/200"
+  run --separate-stderr "$SCRIPT" "42" "issues/200"
   [ "$status" -eq 0 ]
   [[ "$output" == *"MODE=stacked"* ]]
 }
 
 @test "explicit issues/123-some-feature → MODE=stacked" {
-  run "$SCRIPT" "42" "issues/123-some-feature"
+  run --separate-stderr "$SCRIPT" "42" "issues/123-some-feature"
   [ "$status" -eq 0 ]
   [[ "$output" == *"MODE=stacked"* ]]
 }
 
 @test "explicit origin/main → MODE=normal" {
-  run "$SCRIPT" "42" "origin/main"
+  run --separate-stderr "$SCRIPT" "42" "origin/main"
   [ "$status" -eq 0 ]
   [[ "$output" == *"MODE=normal"* ]]
 }
 
 @test "explicit main → MODE=normal" {
-  run "$SCRIPT" "42" "main"
+  run --separate-stderr "$SCRIPT" "42" "main"
   [ "$status" -eq 0 ]
   [[ "$output" == *"MODE=normal"* ]]
 }
 
 @test "issues/foo (non-numeric) → MODE=stacked" {
-  run "$SCRIPT" "42" "issues/foo"
+  run --separate-stderr "$SCRIPT" "42" "issues/foo"
   [ "$status" -eq 0 ]
   [[ "$output" == *"MODE=stacked"* ]]
 }
 
 @test "feature/issues/200 → MODE=stacked (any non-main/master target is stacked)" {
-  run "$SCRIPT" "42" "feature/issues/200"
+  run --separate-stderr "$SCRIPT" "42" "feature/issues/200"
   [ "$status" -eq 0 ]
   [[ "$output" == *"MODE=stacked"* ]]
 }
 @test "origin/issues/200 → MODE=stacked" {
-  run "$SCRIPT" "42" "origin/issues/200"
+  run --separate-stderr "$SCRIPT" "42" "origin/issues/200"
   [ "$status" -eq 0 ]
   [[ "$output" == *"MODE=stacked"* ]]
 }
 
 @test "origin/issues/123-some-feature → MODE=stacked" {
-  run "$SCRIPT" "42" "origin/issues/123-some-feature"
+  run --separate-stderr "$SCRIPT" "42" "origin/issues/123-some-feature"
   [ "$status" -eq 0 ]
   [[ "$output" == *"MODE=stacked"* ]]
 }
 
 @test "origin/issues/side-quest (non-numeric) → MODE=stacked" {
-  run "$SCRIPT" "42" "origin/issues/side-quest"
+  run --separate-stderr "$SCRIPT" "42" "origin/issues/side-quest"
   [ "$status" -eq 0 ]
   [[ "$output" == *"MODE=stacked"* ]]
 }
@@ -223,7 +228,7 @@ setup_remote_with_branch() {
   }
   export -f gh
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=origin/issues/233-layer-one"* ]]
   [[ "$output" == *"MODE=stacked"* ]]
@@ -247,7 +252,7 @@ setup_remote_with_branch() {
   }
   export -f gh
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=origin/issues/233-layer-one"* ]]
 
@@ -266,7 +271,7 @@ setup_remote_with_branch() {
   }
   export -f gh
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=origin/issues/233-layer-one"* ]]
   [[ "$output" != *"origin/origin/"* ]]
@@ -283,7 +288,7 @@ setup_remote_with_branch() {
   }
   export -f gh
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=issues/100"* ]]
   [[ "$output" == *"MODE=stacked"* ]]
@@ -300,7 +305,7 @@ setup_remote_with_branch() {
   }
   export -f gh
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=issues/100"* ]]
   [[ "$output" == *"MODE=stacked"* ]]
@@ -312,7 +317,7 @@ setup_remote_with_branch() {
 
   setup_remote_with_branch "issues/100"
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=issues/100"* ]]
   [[ "$output" == *"MODE=stacked"* ]]
@@ -323,14 +328,14 @@ setup_remote_with_branch() {
 # ============================================================================
 
 @test "no marker and no explicit target → fallback to origin/main with MODE=normal" {
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=origin/main"* ]]
   [[ "$output" == *"MODE=normal"* ]]
 }
 
 @test "marker file missing → fallback to origin/main" {
-  run "$SCRIPT" "99"
+  run --separate-stderr "$SCRIPT" "99"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=origin/main"* ]]
   [[ "$output" == *"MODE=normal"* ]]
@@ -340,7 +345,7 @@ setup_remote_with_branch() {
   local marker_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
   write_file "$marker_dir/base-branch" ""
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=origin/main"* ]]
 }
@@ -351,7 +356,7 @@ setup_remote_with_branch() {
 
   setup_remote_with_branch "issues/100"
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=issues/100"* ]]
   [[ "$output" == *"MODE=stacked"* ]]
@@ -367,7 +372,7 @@ setup_remote_with_branch() {
 
   setup_remote_with_branch "issues/100"
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=issues/100"* ]]
   [[ "$output" == *"MODE=stacked"* ]]
@@ -379,7 +384,7 @@ setup_remote_with_branch() {
 
   setup_remote_with_branch "issues/100"
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=origin/issues/100"* ]]
   [[ "$output" == *"MODE=stacked"* ]]
@@ -391,10 +396,10 @@ setup_remote_with_branch() {
 
   # No remote configured — git ls-remote origin will fail.
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T004"* ]]
-  [[ "$output" == *"no longer exists on remote"* ]]
+  [[ "$stderr" == *"T004"* ]]
+  [[ "$stderr" == *"no longer exists on remote"* ]]
 }
 
 @test "marker has issues/ branch, remote exists but ref absent → error T004" {
@@ -405,10 +410,10 @@ setup_remote_with_branch() {
   # but returns nothing for issues/999.
   setup_remote_with_branch "issues/100"
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T004"* ]]
-  [[ "$output" == *"no longer exists on remote"* ]]
+  [[ "$stderr" == *"T004"* ]]
+  [[ "$stderr" == *"no longer exists on remote"* ]]
 }
 
 @test "marker has origin/main base → MODE=normal (not an issues/ ref)" {
@@ -418,7 +423,7 @@ setup_remote_with_branch() {
   # origin/main always exists in remote (pushed via setup_remote_with_branch).
   setup_remote_with_branch "main"
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=origin/main"* ]]
   [[ "$output" == *"MODE=normal"* ]]
@@ -432,7 +437,7 @@ setup_remote_with_branch() {
   git branch my-feature main
   setup_remote_with_branch "my-feature"
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=origin/my-feature"* ]]
   [[ "$output" == *"MODE=stacked"* ]]
@@ -445,10 +450,10 @@ setup_remote_with_branch() {
   # origin exists but does NOT have a branch named "nonexistent".
   setup_remote_with_branch "main"
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T004"* ]]
-  [[ "$output" == *"no longer exists on remote"* ]]
+  [[ "$stderr" == *"T004"* ]]
+  [[ "$stderr" == *"no longer exists on remote"* ]]
 }
 
 @test "marker ref matches a tag but not a branch → error T004" {
@@ -463,10 +468,10 @@ setup_remote_with_branch() {
   git tag "issues/100" main
   git push -q origin "refs/tags/issues/100" 2>/dev/null
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"T004"* ]]
-  [[ "$output" == *"no longer exists on remote"* ]]
+  [[ "$stderr" == *"T004"* ]]
+  [[ "$stderr" == *"no longer exists on remote"* ]]
 }
 
 # ============================================================================
@@ -474,7 +479,7 @@ setup_remote_with_branch() {
 # ============================================================================
 
 @test "output contains exactly two lines: TARGET= and MODE=" {
-  run "$SCRIPT" "42" "origin/main"
+  run --separate-stderr "$SCRIPT" "42" "origin/main"
   [ "$status" -eq 0 ]
 
   # Count lines of output (excluding stderr merged by run).
@@ -484,7 +489,7 @@ setup_remote_with_branch() {
 }
 
 @test "TARGET line appears before MODE line" {
-  run "$SCRIPT" "42" "issues/200"
+  run --separate-stderr "$SCRIPT" "42" "issues/200"
   [ "$status" -eq 0 ]
 
   local first_line
@@ -497,7 +502,7 @@ setup_remote_with_branch() {
 # ============================================================================
 
 @test "non-numeric issue identifier works" {
-  run "$SCRIPT" "rfc-auth" "origin/main"
+  run --separate-stderr "$SCRIPT" "rfc-auth" "origin/main"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=origin/main"* ]]
   [[ "$output" == *"MODE=normal"* ]]
@@ -509,7 +514,7 @@ setup_remote_with_branch() {
 
   setup_remote_with_branch "issues/100"
 
-  run "$SCRIPT" "42"
+  run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"TARGET=issues/100"* ]]
   [[ "$output" == *"MODE=stacked"* ]]
