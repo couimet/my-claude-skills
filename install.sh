@@ -75,23 +75,23 @@ done
 
 # Prune links this installer created for skills the repo no longer ships.
 # readlink still reports the stored target after that target is deleted, which
-# is what makes a broken link attributable: only a link pointing under
-# REPO_DIR was created from this checkout. A broken link pointing anywhere
-# else belongs to something this installer does not manage, so it is left
-# alone even though it is equally broken.
+# is what makes a broken link attributable. Attribution is by shape, not by
+# resolution: the `ln -s` above is only ever reached with a source globbed from
+# REPO_DIR/*/, so every link this installer writes stores exactly
+# REPO_DIR/<one component>. Requiring that exact shape is therefore the whole
+# ownership test. It rejects a target that reaches outside through a symlink
+# component, and one that escapes through `..`, without resolving either.
+# Resolution is not available here in any case: a target that still resolved
+# would not be a broken link, and neither realpath nor readlink -f is reliable
+# in base macOS. A broken link of any other shape belongs to something this
+# installer does not manage, so it is left alone even though it is equally
+# broken.
 pruned=0
 for target in "$SKILLS_DIR"/*; do
   [ -L "$target" ] || continue
   [ ! -e "$target" ] || continue
   link_target="$(readlink "$target")"
-  if [[ "$link_target" != "$REPO_DIR"/* ]]; then
-    continue
-  fi
-  # The prefix match above is lexical, so a target that escapes through `..`
-  # still carries the prefix while resolving outside the checkout. It cannot
-  # be canonicalized, because a target that still existed would not be a
-  # broken link, so reject the escape instead of resolving it.
-  if [[ "$link_target" == *"/../"* || "$link_target" == *"/.." ]]; then
+  if [ "${link_target%/*}" != "$REPO_DIR" ]; then
     continue
   fi
   rm "$target"

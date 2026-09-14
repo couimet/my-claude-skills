@@ -7,8 +7,9 @@
 #
 # Two behaviors are covered, both added by issues/261:
 #   - a dangling link for a skill that still exists is reclaimed, not fatal
-#   - a dangling link for a skill the repo dropped is pruned, but only when it
-#     points into this checkout
+#   - a dangling link for a skill the repo dropped is pruned, but only when its
+#     stored target has the exact shape install.sh writes, REPO_DIR/<one
+#     component>, which is what makes it attributable to this checkout
 
 load test_helper
 
@@ -108,13 +109,26 @@ run_install() {
 }
 
 @test "broken link whose target escapes through .. is left alone" {
-  # Lexically under REPO_DIR, but it resolves outside the checkout. A target
-  # that still existed would not be a broken link, so it cannot be resolved;
-  # the escape is rejected instead.
+  # Lexically under REPO_DIR, but it resolves outside the checkout. install.sh
+  # only ever writes REPO_DIR/<one component>, so this shape was not created by
+  # it and is not attributable to this checkout, whatever it resolves to.
   ln -s "$FAKE_REPO/skills/../../outside/skills/escaped" "$FAKE_HOME/.claude/skills/escaped"
   run_install
   [ "$status" -eq 0 ]
   [ -L "$FAKE_HOME/.claude/skills/escaped" ]
+  [[ "$output" == *"0 pruned"* ]]
+}
+
+@test "broken link reaching outside through a symlink component is left alone" {
+  # A lexical REPO_DIR/* prefix test passed this: the prefix is present and no
+  # `..` appears, yet `outbound` redirects the whole path out of the checkout.
+  # Requiring REPO_DIR/<one component> rejects it without resolving anything.
+  mkdir -p "$TEST_TEMP_DIR/outside"
+  ln -s "$TEST_TEMP_DIR/outside" "$FAKE_REPO/skills/outbound"
+  ln -s "$FAKE_REPO/skills/outbound/removed" "$FAKE_HOME/.claude/skills/removed"
+  run_install
+  [ "$status" -eq 0 ]
+  [ -L "$FAKE_HOME/.claude/skills/removed" ]
   [[ "$output" == *"0 pruned"* ]]
 }
 
