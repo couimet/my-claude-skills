@@ -86,6 +86,16 @@ EOF
   [ "$output" = "$TEST_TEMP_DIR/elsewhere/sessions" ]
 }
 
+@test "a settings path with no directory part puts sessions beside it" {
+  # The bare-filename arm of _issue_context_sessions_dir. A relative config
+  # path names no directory, so the sessions directory is relative too.
+  run env MY_CLAUDE_SKILLS_CONFIG="settings.json" bash -c \
+    'source "$1" 2>/dev/null; source "$2"; _issue_context_sessions_dir' \
+    _ "$SETTINGS" "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" = "./sessions" ]
+}
+
 # ============================================================================
 # The ordinary no-override case
 # ============================================================================

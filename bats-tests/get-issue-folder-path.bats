@@ -367,6 +367,72 @@ write_session_file() {
   [[ "$stderr" == *"more than one session file"* ]]
 }
 
+@test "override: jq absent is ignored and reported, not fatal" {
+  # The reader cannot parse the document without jq. Resolving must still
+  # produce a path, because refusing would block a call that has nothing to do
+  # with the override.
+  mkdir -p "$TEST_TEMP_DIR/my-topic"
+  write_session_file "$TEST_TEMP_DIR/my-topic"
+  git checkout -q -b issues/42
+  local nojq_path
+  nojq_path="$(_stub_path_without "$TEST_TEMP_DIR/nojq-bin" jq)"
+  run --separate-stderr env PATH="$nojq_path" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
+    "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
+  [ "${#lines[@]}" -eq 1 ]
+  [[ "$stderr" == *"override ignored"* ]]
+  [[ "$stderr" == *"jq not found"* ]]
+}
+
+@test "override: a folder that cannot be entered is ignored and reported" {
+  # Mode 000 leaves the directory testable with -d, because that reads the
+  # parent, and unenterable by cd, which is the gap between the existence
+  # check and canonicalisation.
+  mkdir -p "$TEST_TEMP_DIR/locked-topic"
+  write_session_file "$TEST_TEMP_DIR/locked-topic"
+  git checkout -q -b issues/42
+  chmod 000 "$TEST_TEMP_DIR/locked-topic"
+  folder_with_session "$CFG" "$SESSION_ID"
+  local st="$status" out="$output" err="$stderr"
+  chmod 755 "$TEST_TEMP_DIR/locked-topic"
+  [ "$st" -eq 0 ]
+  [ "$out" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
+  [[ "$err" == *"override ignored"* ]]
+  [[ "$err" == *"could not be resolved"* ]]
+}
+
+@test "override: outside a git repository it is ignored and reported" {
+  # Containment cannot be judged with no repository to judge against, so the
+  # override is refused rather than trusted. Nothing else can resolve either,
+  # so the run ends in an error; the override message is the assertion.
+  local outside
+  outside="$(mktemp -d)"
+  outside="$(cd "$outside" && pwd -P)"
+  mkdir -p "$outside/sessions" "$outside/my-topic"
+  printf '{"version":1,"folder":"%s","session_id":"%s"}' \
+    "$outside/my-topic" "$SESSION_ID" > "$outside/sessions/${SESSION_ID}.json"
+  cd "$outside"
+  run --separate-stderr env \
+    MY_CLAUDE_SKILLS_CONFIG="$outside/settings.json" \
+    CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
+    "$SCRIPT"
+  local err="$stderr"
+  cd "$TEST_TEMP_DIR"
+  rm -rf "$outside"
+  [[ "$err" == *"override ignored"* ]]
+  [[ "$err" == *"not inside a git repository"* ]]
+}
+
+@test "a bad argument count prints usage and errors" {
+  folder_with_config "$CFG" --id
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"usage: get-issue-folder-path.sh"* ]]
+}
+
 @test "override: the sessions directory follows MY_CLAUDE_SKILLS_CONFIG" {
   # A config elsewhere means a sessions directory elsewhere, so a file beside
   # the default config must not be found.

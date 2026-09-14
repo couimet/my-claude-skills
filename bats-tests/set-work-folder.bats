@@ -384,6 +384,120 @@ session_file_count() {
 }
 
 # ============================================================================
+# Every error branch reports its code
+#
+# kcov measures lines rather than branches, so `cmd || die "$ERR"` counts as
+# covered the moment cmd runs, whether or not die ever fires. These reach the
+# die side of each guard, which coverage cannot distinguish but behaviour can.
+# ============================================================================
+
+@test "a folder that exists but cannot be entered is refused" {
+  # Mode 000 is testable with -d, which reads the parent, and unenterable by
+  # cd: the gap between the existence check and canonicalisation.
+  local locked="$TEST_TEMP_DIR/locked"
+  mkdir -p "$locked"
+  chmod 000 "$locked"
+  set_folder "$locked"
+  local st="$status" err="$stderr"
+  chmod 755 "$locked"
+  [ "$st" -ne 0 ]
+  [[ "$err" == *"S003"* ]]
+  [[ "$err" == *"could not be resolved"* ]]
+}
+
+@test "jq absent is refused rather than writing an unescaped file" {
+  local nojq_path
+  nojq_path="$(_stub_path_without "$TEST_TEMP_DIR/nojq-bin" jq)"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" PATH="$nojq_path" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
+    "$SCRIPT" "$TOPIC"
+  [ "$status" -ne 0 ]
+  [[ "$stderr" == *"S004"* ]]
+  [ "$(session_file_count)" -eq 0 ]
+}
+
+@test "a sessions directory that cannot be created is reported" {
+  local ro="$TEST_TEMP_DIR/readonly"
+  mkdir -p "$ro"
+  printf '%s' '{}' > "$ro/settings.json"
+  chmod a-w "$ro"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
+    MY_CLAUDE_SKILLS_CONFIG="$ro/settings.json" \
+    CLAUDE_CODE_SESSION_ID="$SESSION_ID" "$SCRIPT" "$TOPIC"
+  local st="$status" err="$stderr"
+  chmod u+w "$ro"
+  [ "$st" -ne 0 ]
+  [[ "$err" == *"$ERR_WRITE_CODE"* ]]
+  # Naming the directory, not just "could not create": the mktemp failure
+  # below carries a message this would otherwise match too.
+  [[ "$err" == *"could not create $ro/sessions"* ]]
+}
+
+@test "a temporary file that cannot be created is reported" {
+  # The sessions directory already exists, so mkdir -p succeeds and mktemp is
+  # the first thing the read-only bit stops.
+  mkdir -p "$SESSIONS_DIR"
+  chmod a-w "$SESSIONS_DIR"
+  set_folder "$TOPIC"
+  local st="$status" err="$stderr"
+  chmod u+w "$SESSIONS_DIR"
+  [ "$st" -ne 0 ]
+  [[ "$err" == *"$ERR_WRITE_CODE"* ]]
+  [[ "$err" == *"temporary file"* ]]
+}
+
+@test "a document that cannot be composed is reported" {
+  # A jq that fails only for -n: the settings loader still reads the config
+  # through the real binary, so the failure lands on the compose and nowhere
+  # earlier.
+  local stub="$TEST_TEMP_DIR/badjq"
+  mkdir -p "$stub"
+  {
+    printf '#!/usr/bin/env bash\n'
+    printf 'for a in "$@"; do [ "$a" = "-n" ] && exit 1; done\n'
+    printf 'exec %s "$@"\n' "$(command -v jq)"
+  } > "$stub/jq"
+  chmod +x "$stub/jq"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" PATH="$stub:$PATH" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
+    "$SCRIPT" "$TOPIC"
+  [ "$status" -ne 0 ]
+  [[ "$stderr" == *"$ERR_WRITE_CODE"* ]]
+  [[ "$stderr" == *"compose"* ]]
+  [ "$(session_file_count)" -eq 0 ]
+}
+
+@test "a rename that fails is reported and leaves no session file" {
+  local stub_path
+  stub_path="$(_stub_failing "$TEST_TEMP_DIR/badmv" mv)"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" PATH="$stub_path" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
+    "$SCRIPT" "$TOPIC"
+  [ "$status" -ne 0 ]
+  [[ "$stderr" == *"$ERR_WRITE_CODE"* ]]
+  [[ "$stderr" == *"could not write"* ]]
+  [ "$(session_file_count)" -eq 0 ]
+}
+
+@test "a cleanup that fails after the write is fatal, not silent" {
+  # The branch this PR added. The write succeeds and the older file survives,
+  # which is the duplicate the reader refuses, so the command must not report
+  # success over it.
+  set_folder "$TOPIC" "first name"
+  [ "$status" -eq 0 ]
+  local stub_path
+  stub_path="$(_stub_failing "$TEST_TEMP_DIR/badrm" rm)"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" PATH="$stub_path" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
+    "$SCRIPT" "$TOPIC" "second name"
+  [ "$status" -ne 0 ]
+  [[ "$stderr" == *"$ERR_WRITE_CODE"* ]]
+  [[ "$stderr" == *"could not remove an older session file"* ]]
+  # Both files are on disk: the write landed, the cleanup did not.
+  [ "$(session_file_count)" -eq 2 ]
+}
+
+# ============================================================================
 # The writer and the resolver agree
 # ============================================================================
 
