@@ -8,8 +8,12 @@
 
 # `run --separate-stderr` is a flagged run, which bats guarantees only from
 # 1.5.0 onward. Declaring the floor turns the BW02 warning into a checked
-# requirement; CI pins bats 1.14.0 (.github/workflows/ci.yml).
-bats_require_minimum_version 1.5.0
+# requirement; CI pins bats 1.14.0 (.github/workflows/ci.yml). The floor reads
+# 1.7.0 rather than 1.5.0 because bats_require_minimum_version is itself a
+# 1.7.0 command: asking for 1.5.0 names two versions, 1.5.x and 1.6.x, that
+# cannot resolve the line making the request, so the suite fails while loading
+# on exactly the versions the declaration claims to allow.
+bats_require_minimum_version 1.7.0
 
 load test_helper
 

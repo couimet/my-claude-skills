@@ -109,7 +109,14 @@ sessions_dir="$(_issue_context_sessions_dir)" \
 # One writer rule: a session keeps exactly one file. Without it, a call with no
 # name followed by a call with one would leave two files describing one
 # session, and the resolver refuses a duplicate match rather than guessing.
+#
+# remove_existing [keep] — remove every file this session owns except [keep],
+# and print how many went. Returns 1 the moment a removal fails, rather than
+# letting the count fall through to a printf that always succeeds: a caller
+# that mistook a failed removal for a clean one would report success over a
+# file that is still routing this session's working files.
 remove_existing() {
+  local keep="${1-}"
   local -a existing=()
   local f removed=0
   if _issue_context_session_file_matches existing; then
@@ -117,14 +124,19 @@ remove_existing() {
     # empty array as unset, and set -u then aborts the script on the ordinary
     # case of a session that has no file yet. macOS ships bash 3.2.
     for f in ${existing[@]+"${existing[@]}"}; do
-      rm -f "$f" && removed=$((removed + 1))
+      # The keep path is compared as a string, which holds because it and the
+      # glob that produced $f are both built on _issue_context_sessions_dir.
+      [ "$f" != "$keep" ] || continue
+      rm -f "$f" || return 1
+      removed=$((removed + 1))
     done
   fi
   printf '%s' "$removed"
 }
 
 if [ "$clear_mode" -eq 1 ]; then
-  removed="$(remove_existing)"
+  removed="$(remove_existing)" \
+    || die "$ERR_WRITE" "could not remove this session's file, so the folder override is still in effect"
   if [ "${removed:-0}" -gt 0 ]; then
     echo "set-work-folder: cleared this session's folder override" >&2
   else
@@ -217,17 +229,26 @@ jq -n \
      }
    }' > "$tmp" || die "$ERR_WRITE" "could not compose the session file"
 
-# Remove the old file before the rename, not after: between the two there must
-# never be a moment when both exist, or a concurrent resolver would see a
-# duplicate match and refuse an override that is perfectly valid.
-remove_existing >/dev/null
-
-# mv within one directory is atomic, so a resolver reading at the same instant
-# sees either no file or the complete one, never a half-written document.
+# The rename comes first and the cleanup after. mv within one directory is
+# atomic, so a resolver reading at the same instant sees either no file or the
+# complete one, never a half-written document, and a rewrite that lands on the
+# same name replaces the old document in a single step with no gap at all.
+# Removing first would open the opposite gap, a moment with no file, and the
+# resolver says nothing when it finds nothing: a working file would land in
+# the branch-derived folder with no sign that anything was wrong. Only a
+# changed slug still leaves two files for an instant, and the resolver reports
+# that as a duplicate rather than falling back in silence.
 # Subagents share their parent's session id, so two agents in one session can
 # reach this line at once.
 mv -f "$tmp" "$target" || die "$ERR_WRITE" "could not write $target"
 trap - EXIT
+
+# One writer rule, enforced after the write: $target is kept because it is the
+# file just installed, and every older name this session owns goes. Failing
+# here is fatal even though the override was written, because what survives is
+# the duplicate the reader refuses.
+remove_existing "$target" >/dev/null \
+  || die "$ERR_WRITE" "wrote $target but could not remove an older session file beside it; both remain, and the override is refused as a duplicate until one is deleted"
 
 echo "set-work-folder: working files for this session now go to $folder_phys" >&2
 printf '%s\n' "$target"

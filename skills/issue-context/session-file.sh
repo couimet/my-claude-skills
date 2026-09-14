@@ -60,11 +60,15 @@ _issue_context_sessions_dir() {
 # _issue_context_session_file_matches <out-array-var> — collect every session
 # file belonging to the current session into the named array variable.
 #
-# Session ids are unique, so at most one session owns a file and the glob
-# cannot reach another session's. Both spellings match: <id>.json when the
-# writer had no name to work from, and <id>--<slug>.json when it did. Nothing
-# ever looks a file up by its slug, so a filename whose slug went stale stays
-# cosmetic.
+# Exactly two spellings match, and they are matched as two patterns rather
+# than as one <id>* glob: <id>.json when the writer had no name to work from,
+# and <id>--<slug>.json when it did. A single <id>* glob would also reach an
+# id that merely starts with this one, and a stranger's file arriving here
+# reads as this session's override or, beside a real one, as a duplicate that
+# discards a valid override. Real session ids are fixed-length uuids that
+# cannot prefix one another, so that is unreachable in practice; the narrower
+# patterns are what make the code say so. Nothing ever looks a file up by its
+# slug, so a filename whose slug went stale stays cosmetic.
 #
 # Returns 1 when there is no session id or no sessions directory. An empty
 # array with a 0 return means the directory exists and holds nothing for this
@@ -77,7 +81,9 @@ _issue_context_session_file_matches() {
   _isf_dir="$(_issue_context_sessions_dir)" || return 1
   [ -d "$_isf_dir" ] || return 1
 
-  for _isf_candidate in "$_isf_dir/${CLAUDE_CODE_SESSION_ID}"*.json; do
+  for _isf_candidate in \
+    "$_isf_dir/${CLAUDE_CODE_SESSION_ID}.json" \
+    "$_isf_dir/${CLAUDE_CODE_SESSION_ID}--"*.json; do
     [ -f "$_isf_candidate" ] || continue
     _isf_found+=("$_isf_candidate")
   done

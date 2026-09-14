@@ -153,6 +153,34 @@ EOF
   [ "$output" = "1||duplicate" ]
 }
 
+# ============================================================================
+# Only the two documented filename forms match
+# ============================================================================
+
+@test "a file whose id merely starts with this session's id is ignored" {
+  write_file "${SESSION_ID}-other.json" "$(valid_doc "$TEST_TEMP_DIR/stranger")"
+  read_session
+  [ "$output" = "1||none" ]
+}
+
+@test "a prefix collision does not turn a valid override into a duplicate" {
+  # The stranger's id starts with this session's and continues with a single
+  # dash, so it is not the <id>--<slug> form and must not be read here. An
+  # <id>* glob would match it, and the valid file beside it would be discarded
+  # as a duplicate rather than returned.
+  write_file "${SESSION_ID}.json" "$(valid_doc "$TEST_TEMP_DIR/mine")"
+  write_file "${SESSION_ID}-other.json" "$(valid_doc "$TEST_TEMP_DIR/stranger")"
+  read_session
+  [ "$output" = "0|$TEST_TEMP_DIR/mine|" ]
+}
+
+@test "a prefix collision is not read even when this session owns a slug file" {
+  write_file "${SESSION_ID}--mine.json" "$(valid_doc "$TEST_TEMP_DIR/mine")"
+  write_file "${SESSION_ID}-other--mine.json" "$(valid_doc "$TEST_TEMP_DIR/stranger")"
+  read_session
+  [ "$output" = "0|$TEST_TEMP_DIR/mine|" ]
+}
+
 @test "malformed JSON → rc 1, reason malformed" {
   write_file "${SESSION_ID}.json" '{"version":1,"folder":'
   read_session

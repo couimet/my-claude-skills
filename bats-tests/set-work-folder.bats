@@ -11,8 +11,12 @@
 
 # `run --separate-stderr` is a flagged run, which bats guarantees only from
 # 1.5.0 onward. Declaring the floor turns the BW02 warning into a checked
-# requirement; CI pins bats 1.14.0 (.github/workflows/ci.yml).
-bats_require_minimum_version 1.5.0
+# requirement; CI pins bats 1.14.0 (.github/workflows/ci.yml). The floor reads
+# 1.7.0 rather than 1.5.0 because bats_require_minimum_version is itself a
+# 1.7.0 command: asking for 1.5.0 names two versions, 1.5.x and 1.6.x, that
+# cannot resolve the line making the request, so the suite fails while loading
+# on exactly the versions the declaration claims to allow.
+bats_require_minimum_version 1.7.0
 
 load test_helper
 
@@ -20,6 +24,10 @@ SCRIPT="$PROJECT_ROOT/skills/issue-context/set-work-folder.sh"
 RESOLVER="$PROJECT_ROOT/skills/issue-context/get-issue-folder-path.sh"
 
 SESSION_ID="06cb4128-c112-4696-bddb-3a52d1684a20"
+
+# The writer's ERR_WRITE code, mirrored here so a failure assertion names the
+# code rather than a message that is free to be reworded.
+ERR_WRITE_CODE="S005"
 
 setup() {
   TEST_TEMP_DIR="$(mktemp -d)"
@@ -212,6 +220,33 @@ session_file_count() {
   [ -f "$SESSIONS_DIR/${SESSION_ID}.json" ]
 }
 
+@test "rewriting under the same slug keeps the file it just wrote" {
+  # The write installs $target and only then removes the other files this
+  # session owns. A cleanup that did not except $target would delete the
+  # document it had just written and leave the session with no override.
+  set_folder "$TOPIC" "same name"
+  [ "$status" -eq 0 ]
+  local other="$TEST_TEMP_DIR/second-topic"
+  mkdir -p "$other"
+  set_folder "$other" "same name"
+  [ "$status" -eq 0 ]
+  [ "$(session_file_count)" -eq 1 ]
+  run jq -r .folder "$SESSIONS_DIR/${SESSION_ID}--same-name.json"
+  [ "$output" = "$other" ]
+}
+
+@test "a slug change leaves only the new file, carrying the new folder" {
+  set_folder "$TOPIC" "first name"
+  local other="$TEST_TEMP_DIR/second-topic"
+  mkdir -p "$other"
+  set_folder "$other" "second name"
+  [ "$status" -eq 0 ]
+  [ "$(session_file_count)" -eq 1 ]
+  [ ! -f "$SESSIONS_DIR/${SESSION_ID}--first-name.json" ]
+  run jq -r .folder "$SESSIONS_DIR/${SESSION_ID}--second-name.json"
+  [ "$output" = "$other" ]
+}
+
 @test "another session's file is left alone" {
   set_folder "$TOPIC"
   printf '%s' '{"version":1,"folder":"/elsewhere"}' > "$SESSIONS_DIR/other-session.json"
@@ -262,6 +297,23 @@ session_file_count() {
   set_folder "$TOPIC"
   set_folder --clear
   [ -f "$SESSIONS_DIR/other-session.json" ]
+}
+
+@test "--clear errors rather than reporting success when the removal fails" {
+  # Removing a file is governed by the write bit on its directory, not on the
+  # file, so making the sessions directory read-only is what makes rm fail.
+  set_folder "$TOPIC"
+  [ "$status" -eq 0 ]
+  chmod a-w "$SESSIONS_DIR"
+  set_folder --clear
+  local clear_status="$status" clear_stderr="$stderr"
+  chmod u+w "$SESSIONS_DIR"
+  [ "$clear_status" -ne 0 ]
+  [[ "$clear_stderr" == *"$ERR_WRITE_CODE"* ]]
+  # The old message is the whole point: the override survived and is still
+  # routing this session's files, so saying none was set would be a lie.
+  [[ "$clear_stderr" != *"no folder override was set"* ]]
+  [ "$(session_file_count)" -eq 1 ]
 }
 
 @test "--clear rejects a second argument" {
