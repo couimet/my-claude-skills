@@ -121,6 +121,16 @@ EOF
   [ "$output" = "1||none" ]
 }
 
+@test "a session id that could not be a filename → rc 1, reason none" {
+  # `../settings` would name the settings file the sessions directory sits
+  # beside. The reader only reads, so nothing here is destructive; what it
+  # asserts is that the reader answers `none` rather than a reported refusal,
+  # because an id that cannot name a session cannot have had an override set.
+  write_file "${SESSION_ID}.json" "$(valid_doc "$TEST_TEMP_DIR")"
+  read_session "../settings"
+  [ "$output" = "1||none" ]
+}
+
 # ============================================================================
 # A valid file
 # ============================================================================
@@ -243,6 +253,7 @@ EOF
 }
 
 @test "unreadable file → rc 1, reason malformed" {
+  _require_enforced_permission_bits
   write_file "${SESSION_ID}.json" "$(valid_doc "$TEST_TEMP_DIR/topic")"
   chmod a-r "$SESSIONS_DIR/${SESSION_ID}.json"
   read_session

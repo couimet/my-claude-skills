@@ -3,7 +3,7 @@
 # session-file.sh — Owns the per-session folder-override file: where it lives,
 # what it is called, what it contains, and how a reader decides to trust it.
 # Source this file; do not execute it. It requires issue-settings.sh to have
-# been sourced first, for SETTINGS_FILE.
+# been sourced first, for SETTINGS_FILE and _issue_settings_is_safe_component.
 #
 # The override exists because placement used to be a function of the branch
 # alone, so a repository organised by topic could not say where its files
@@ -25,6 +25,7 @@
 #
 # Functions defined on source:
 #   _issue_context_sessions_dir
+#   _issue_context_session_id_ok
 #   _issue_context_session_file_read <out-folder-var> <out-reason-var>
 #   _issue_context_session_file_matches <out-array-var>
 #
@@ -57,6 +58,25 @@ _issue_context_sessions_dir() {
   esac
 }
 
+# _issue_context_session_id_ok — 0 when CLAUDE_CODE_SESSION_ID is set and can
+# be spelled into a filename, 1 otherwise.
+#
+# Every path here is the session id interpolated into a name beside the
+# settings file, so an id carrying a slash names a file somewhere else
+# entirely: `../settings` resolves to the settings file the sessions directory
+# sits beside, which the writer would overwrite and --clear would delete.
+# Claude Code sets a uuid, so nothing reaches this in an ordinary run. The
+# guard is here because that outcome is destructive and silent, not because
+# the value is under anyone's control.
+#
+# The rule is _issue_settings_is_safe_component, the same one that guards a
+# path component taken from a branch name, so what may be a filename has one
+# definition rather than a second that can drift from it.
+_issue_context_session_id_ok() {
+  [ -n "${CLAUDE_CODE_SESSION_ID:-}" ] || return 1
+  _issue_settings_is_safe_component "$CLAUDE_CODE_SESSION_ID"
+}
+
 # _issue_context_session_file_matches <out-array-var> — collect every session
 # file belonging to the current session into the named array variable.
 #
@@ -70,14 +90,15 @@ _issue_context_sessions_dir() {
 # patterns are what make the code say so. Nothing ever looks a file up by its
 # slug, so a filename whose slug went stale stays cosmetic.
 #
-# Returns 1 when there is no session id or no sessions directory. An empty
+# Returns 1 when there is no session id, when the session id could not be a
+# filename component, or when there is no sessions directory. An empty
 # array with a 0 return means the directory exists and holds nothing for this
 # session, which is the ordinary no-override case.
 _issue_context_session_file_matches() {
   local _isf_out_var="$1" _isf_dir _isf_candidate
   local -a _isf_found=()
 
-  [ -n "${CLAUDE_CODE_SESSION_ID:-}" ] || return 1
+  _issue_context_session_id_ok || return 1
   _isf_dir="$(_issue_context_sessions_dir)" || return 1
   [ -d "$_isf_dir" ] || return 1
 
@@ -105,8 +126,11 @@ _issue_context_session_file_matches() {
 # Returns 0 when a single well-formed file of a known version yielded a
 # non-empty folder. Otherwise returns 1 and writes one of these reasons:
 #
-#   none        no session id, no sessions directory, or no file for this
-#               session. The ordinary case, and the caller reports nothing.
+#   none        no session id, a session id that could not be a filename
+#               component, no sessions directory, or no file for this
+#               session. An id that cannot name a session cannot have an
+#               override, so this is absence rather than a refusal being
+#               swallowed. The ordinary case, and the caller reports nothing.
 #   duplicate   more than one file matched. Two files cannot both describe one
 #               session, so neither is trusted.
 #   nojq        jq is absent, so the document cannot be parsed.

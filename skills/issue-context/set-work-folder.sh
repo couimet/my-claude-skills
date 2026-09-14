@@ -102,6 +102,13 @@ esac
 [ -n "${CLAUDE_CODE_SESSION_ID:-}" ] \
   || die "$ERR_NO_SESSION" "CLAUDE_CODE_SESSION_ID is not set, so there is no session to set a folder for"
 
+# Refused here, before sessions_dir is resolved, so neither mode can reach a
+# path built from an id that is not a filename component. `../settings` names
+# the settings file the sessions directory sits beside: the write would
+# overwrite it and --clear would delete it.
+_issue_context_session_id_ok \
+  || die "$ERR_NO_SESSION" "CLAUDE_CODE_SESSION_ID '$CLAUDE_CODE_SESSION_ID' cannot be a filename component, so no session file can be named for it"
+
 sessions_dir="$(_issue_context_sessions_dir)" \
   || die "$ERR_NO_SESSION" "could not resolve the sessions directory from the settings path"
 
@@ -239,7 +246,7 @@ jq -n \
 # changed slug still leaves two files for an instant, and the resolver reports
 # that as a duplicate rather than falling back in silence.
 # Subagents share their parent's session id, so two agents in one session can
-# reach this line at once.
+# reach this line at once, which is what the surviving-file check below is for.
 mv -f "$tmp" "$target" || die "$ERR_WRITE" "could not write $target"
 trap - EXIT
 
@@ -249,6 +256,15 @@ trap - EXIT
 # the duplicate the reader refuses.
 remove_existing "$target" >/dev/null \
   || die "$ERR_WRITE" "wrote $target but could not remove an older session file beside it; both remain, and the override is refused as a duplicate until one is deleted"
+
+# Nothing above serializes two writers. Two agents in one session passing
+# different names install two files and then remove each other's in their own
+# cleanup, and without this both would report success over a session that has
+# no file left. The loser says so instead. Serializing them properly wants a
+# lock this script does not have (macOS ships no flock), and the point of
+# failing here is that a race nobody has hit yet leaves evidence if it is.
+[ -f "$target" ] \
+  || die "$ERR_WRITE" "$target did not survive its own cleanup, which is what happens when another agent in this session wrote a different name at the same moment; the folder is not set"
 
 echo "set-work-folder: working files for this session now go to $folder_phys" >&2
 printf '%s\n' "$target"

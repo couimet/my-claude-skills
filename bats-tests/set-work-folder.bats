@@ -254,6 +254,33 @@ session_file_count() {
   [ -f "$SESSIONS_DIR/other-session.json" ]
 }
 
+@test "a write that does not survive its own cleanup errors rather than reporting success" {
+  # Two agents in one session passing different names install two files and
+  # then remove each other's. Nothing serializes them, so the race cannot be
+  # staged directly; the stub stands in for the other writer finishing its
+  # cleanup between our move and ours, which is the state the check is for.
+  set_folder "$TOPIC" "first name"
+  [ "$status" -eq 0 ]
+  local stub="$TEST_TEMP_DIR/racy-rm"
+  mkdir -p "$stub"
+  cat > "$stub/rm" <<'STUB'
+#!/usr/bin/env bash
+for a in "$@"; do
+  case "$a" in -*) continue ;; esac
+  /bin/rm -f "${a%/*}"/*.json
+done
+exec /bin/rm "$@"
+STUB
+  chmod +x "$stub/rm"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" PATH="$stub:$PATH" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
+    "$SCRIPT" "$TOPIC" "second name"
+  [ "$status" -ne 0 ]
+  [[ "$stderr" == *"$ERR_WRITE_CODE"* ]]
+  [[ "$stderr" == *"did not survive"* ]]
+  [ "$(session_file_count)" -eq 0 ]
+}
+
 @test "no temporary file is left behind" {
   set_folder "$TOPIC"
   run bash -c "ls -A '$SESSIONS_DIR' | grep -c '^\\.tmp-' || true"
@@ -376,6 +403,39 @@ session_file_count() {
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"S002"* ]]
   [[ "$stderr" == *"CLAUDE_CODE_SESSION_ID"* ]]
+}
+
+@test "a session id that could not be a filename is refused, and nothing beside the sessions directory is touched" {
+  # sessions_dir is $TEST_TEMP_DIR/sessions, so `../settings` names $CFG: the
+  # write would land on the settings file itself. The guard fires before
+  # sessions_dir is resolved, so the decoy has to come through byte-identical.
+  local before
+  before="$(cat "$CFG")"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    CLAUDE_CODE_SESSION_ID="../settings" \
+    "$SCRIPT" "$TOPIC"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"S002"* ]]
+  [[ "$stderr" == *"filename component"* ]]
+  [ "$(cat "$CFG")" = "$before" ]
+}
+
+@test "--clear with a session id that could not be a filename removes nothing" {
+  # The same path, reached through the cleanup rather than the write. The
+  # sessions directory has to exist for the matcher to glob at all, which is
+  # what makes this the case that would have deleted $CFG.
+  mkdir -p "$SESSIONS_DIR"
+  local before
+  before="$(cat "$CFG")"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    CLAUDE_CODE_SESSION_ID="../settings" \
+    "$SCRIPT" --clear
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"S002"* ]]
+  [ -f "$CFG" ]
+  [ "$(cat "$CFG")" = "$before" ]
 }
 
 @test "--help prints usage on stdout and exits 0" {
