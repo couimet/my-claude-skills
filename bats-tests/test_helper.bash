@@ -49,3 +49,26 @@ _stub_failing() {
   chmod +x "$dir/$tool"
   printf '%s:%s' "$dir" "$PATH"
 }
+
+# _require_enforced_permission_bits — skip the calling test when this process
+# can walk through mode bits.
+#
+# A process holding CAP_DAC_OVERRIDE, root in a container being the usual case,
+# enters a mode 000 directory and writes to an unwritable one, so a chmod-based
+# denial denies nothing and every assertion resting on it fails. Probing rather
+# than reading `id -u`: the uid misses a non-root process carrying the
+# capability, and misfires on a filesystem that ignores mode bits altogether.
+# The probe asks the filesystem the same question the test does.
+_require_enforced_permission_bits() {
+  local probe="$TEST_TEMP_DIR/.perm-probe" bypassed=0
+  mkdir -p "$probe"
+  chmod 000 "$probe"
+  if (cd "$probe" && : > probe-file) 2>/dev/null; then
+    bypassed=1
+  fi
+  chmod 755 "$probe"
+  rm -rf "$probe"
+  if [ "$bypassed" -eq 1 ]; then
+    skip "permission bits are not enforced for this process"
+  fi
+}

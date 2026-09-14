@@ -300,6 +300,7 @@ session_file_count() {
 }
 
 @test "--clear errors rather than reporting success when the removal fails" {
+  _require_enforced_permission_bits
   # Removing a file is governed by the write bit on its directory, not on the
   # file, so making the sessions directory read-only is what makes rm fail.
   set_folder "$TOPIC"
@@ -392,6 +393,7 @@ session_file_count() {
 # ============================================================================
 
 @test "a folder that exists but cannot be entered is refused" {
+  _require_enforced_permission_bits
   # Mode 000 is testable with -d, which reads the parent, and unenterable by
   # cd: the gap between the existence check and canonicalisation.
   local locked="$TEST_TEMP_DIR/locked"
@@ -417,6 +419,7 @@ session_file_count() {
 }
 
 @test "a sessions directory that cannot be created is reported" {
+  _require_enforced_permission_bits
   local ro="$TEST_TEMP_DIR/readonly"
   mkdir -p "$ro"
   printf '%s' '{}' > "$ro/settings.json"
@@ -434,6 +437,7 @@ session_file_count() {
 }
 
 @test "a temporary file that cannot be created is reported" {
+  _require_enforced_permission_bits
   # The sessions directory already exists, so mkdir -p succeeds and mktemp is
   # the first thing the read-only bit stops.
   mkdir -p "$SESSIONS_DIR"

@@ -388,6 +388,7 @@ write_session_file() {
 }
 
 @test "override: a folder that cannot be entered is ignored and reported" {
+  _require_enforced_permission_bits
   # Mode 000 leaves the directory testable with -d, because that reads the
   # parent, and unenterable by cd, which is the gap between the existence
   # check and canonicalisation.
