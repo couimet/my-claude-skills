@@ -1,7 +1,7 @@
 ---
 name: scratchpad
 version: 2026.09.08@212eab1
-description: "Create an auto-numbered working document in .claude-work/scratchpads/: implementation plans, PR descriptions, analysis notes, architecture decisions, issue drafts."
+description: "Create a working document in .claude-work/scratchpads/: implementation plans, PR descriptions, analysis notes, architecture decisions, issue drafts."
 argument-hint: <description>
 allowed-tools: Read, Write, Glob, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
@@ -36,7 +36,7 @@ Run these two commands as parallel tool calls. They are independent.
 ~/.claude/skills/ensure-gitignore/ensure-gitignore.sh
 ```
 
-Use the stdout of the first command as the full absolute file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch the output is an absolute path ending in `/.claude-work/issues/<ID>/scratchpads/NNNN-<slug>.txt`. Otherwise it is an absolute path ending in `/.claude-work/scratchpads/NNNN-<slug>.txt`.
+Use the stdout of the first command as the full absolute file path. The path is unique and its directory exists, so write the file directly to it. See `/issue-context` for the full contract.
 
 ## File Format
 

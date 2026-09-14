@@ -7,15 +7,13 @@ load test_helper
 # permission /note requires) is now enforced by
 # scripts/check-transitive-tools.sh via bats-tests/transitive-tools.bats.
 # The tests below cover only the cases the validator does not:
-# skills that call mkdir -p directly.
+# skills that call mkdir -p directly. /note is not among them any
+# more: it delegates its whole path to target-path.sh, which creates
+# the directory itself (see bats-tests/note.bats).
 # =============================================================
 
 @test "allowed-tools: breadcrumb has Bash(mkdir -p *) (writes to .claude-work/ directories)" {
   grep "^allowed-tools:" "$PROJECT_ROOT/skills/breadcrumb/SKILL.md" | grep -q 'Bash(mkdir -p \*)'
-}
-
-@test "allowed-tools: note has Bash(mkdir -p *) (calls mkdir -p directly)" {
-  grep "^allowed-tools:" "$PROJECT_ROOT/skills/note/SKILL.md" | grep -q 'Bash(mkdir -p \*)'
 }
 
 # =============================================================

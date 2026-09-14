@@ -3,7 +3,7 @@ name: start-side-quest
 version: 2026.09.08@212eab1
 description: Start a side-quest branch for orthogonal improvements discovered while working on an issue
 argument-hint: <description | path/to/file.ts#L10-L20> [--scratchpad]
-allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *), Bash(git branch --show-current), Bash(git status *), Bash(git stash *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Write, Glob, Grep, Bash(git fetch *), Bash(git checkout *), Bash(git branch --show-current), Bash(git status *), Bash(git stash *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
 ---
 
 # Start Side-Quest
@@ -97,7 +97,7 @@ After the working document is created (via either path), write the pointer file 
 **Contents:** the project-root-relative path to the working document, for example:
 
 ```text
-.claude-work/notes/20260424-143022-side-quest-cleanup-test-mocks.txt
+.claude-work/notes/<the-filename-/note-returned>.txt
 ```
 
 Overwrite any existing pointer with the same slug.

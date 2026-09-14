@@ -21,8 +21,9 @@ We follow the format from [adr.github.io](https://adr.github.io/):
 
 ## ADRs
 
-| #                                                  | Title                                               | Status   |
-| -------------------------------------------------- | --------------------------------------------------- | -------- |
-| [0001](./001-skill-extension-hooks.md)             | Skill Extension Hooks — Project-Local Customization | Accepted |
-| [0002](./002-skill-distribution-via-skills-cli.md) | Skill Distribution via the Skills CLI               | Accepted |
-| [0003](./003-configurable-work-item-path.md)       | Configurable Work-Item Path Convention              | Accepted |
+| #                                                                     | Title                                                | Status   |
+| --------------------------------------------------------------------- | ---------------------------------------------------- | -------- |
+| [0001](./001-skill-extension-hooks.md)                                | Skill Extension Hooks — Project-Local Customization  | Accepted |
+| [0002](./002-skill-distribution-via-skills-cli.md)                    | Skill Distribution via the Skills CLI                | Accepted |
+| [0003](./003-configurable-work-item-path.md)                          | Configurable Work-Item Path Convention               | Accepted |
+| [0004](./004-working-file-naming-and-the-script-contract-boundary.md) | Working-File Naming and the Script-Contract Boundary | Accepted |

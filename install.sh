@@ -33,6 +33,23 @@ for skill_dir in "$REPO_DIR"/*/; do
     continue
   fi
 
+  # The -e test below does not see a dangling symlink. Control would fall
+  # through to `ln -s`, which fails with "File exists". set -e turns that
+  # failure into a full abort. A link left from a previous checkout path is
+  # this case. The prune after the loop cannot reach such a link, because its
+  # stored target is not under the current REPO_DIR. Reclaim the link here.
+  if [ -L "$target" ] && [ ! -e "$target" ]; then
+    # Name the discarded target. Ownership of a dangling link is not knowable
+    # from the link alone, so this reclaims a name something else may have
+    # created; saying what was there is what makes that recoverable.
+    previous="$(readlink "$target")"
+    rm "$target"
+    ln -s "$source" "$target"
+    updated=$((updated + 1))
+    echo "  ✓ $name (relinked; previous link pointed at $previous)"
+    continue
+  fi
+
   if [ -e "$target" ]; then
     if [ -L "$target" ]; then
       rm "$target"
@@ -56,8 +73,34 @@ for skill_dir in "$REPO_DIR"/*/; do
   echo "  ✓ $name"
 done
 
+# Prune links this installer created for skills the repo no longer ships.
+# readlink still reports the stored target after that target is deleted, which
+# is what makes a broken link attributable. Attribution is by shape, not by
+# resolution: the `ln -s` above is only ever reached with a source globbed from
+# REPO_DIR/*/, so every link this installer writes stores exactly
+# REPO_DIR/<one component>. Requiring that exact shape is therefore the whole
+# ownership test. It rejects a target that reaches outside through a symlink
+# component, and one that escapes through `..`, without resolving either.
+# Resolution is not available here in any case: a target that still resolved
+# would not be a broken link, and neither realpath nor readlink -f is reliable
+# in base macOS. A broken link of any other shape belongs to something this
+# installer does not manage, so it is left alone even though it is equally
+# broken.
+pruned=0
+for target in "$SKILLS_DIR"/*; do
+  [ -L "$target" ] || continue
+  [ ! -e "$target" ] || continue
+  link_target="$(readlink "$target")"
+  if [ "${link_target%/*}" != "$REPO_DIR" ]; then
+    continue
+  fi
+  rm "$target"
+  pruned=$((pruned + 1))
+  echo "  ✗ $(basename "$target") (pruned; no longer in the repo)"
+done
+
 echo ""
-echo "Done: $installed new, $updated updated, $unchanged unchanged, $conflict conflict(s)"
+echo "Done: $installed new, $updated updated, $unchanged unchanged, $pruned pruned, $conflict conflict(s)"
 echo "Skills available as /skill-name in all Claude Code projects."
 echo ""
 echo "External skill dependencies (optional, installed separately):"

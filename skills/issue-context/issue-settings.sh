@@ -183,10 +183,13 @@ _issue_settings_read_patterns() {
       fi
     fi
   fi
-  # Fall through to the built-in default list.
-  while IFS= read -r entry; do
-    printf '%s\n' "$entry"
-  done < <("$default_fn")
+  # Fall through to the built-in default list. This calls the function directly
+  # rather than reading it line by line and reprinting it. The round trip gave
+  # identical output. Its per-line printf into the caller's pipe could also take
+  # an EINTR from the process substitution's SIGCHLD. Bash reports that EINTR as
+  # a write error on stderr, and the caller folds the stderr line into the value
+  # it reads.
+  "$default_fn"
 }
 
 _issue_settings_apply_defaults() {

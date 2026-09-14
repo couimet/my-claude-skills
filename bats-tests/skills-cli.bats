@@ -46,7 +46,7 @@ SKILLS_CLI="npx --yes skills@${SKILLS_CLI_VERSION}"
 
   # Script-backed skills keep their helper scripts, executable.
   [ -x "$installed/issue-context/claude-work-root.sh" ]
-  [ -x "$installed/auto-number/auto-number.sh" ]
+  [ -x "$installed/start-issue/update-project-status.sh" ]
   [ -x "$installed/cleanup-issue/remove-issue-dir.sh" ]
   [ -x "$installed/rebase-issue/apply-stacked-diff.sh" ]
 }

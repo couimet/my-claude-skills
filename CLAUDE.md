@@ -56,7 +56,7 @@ allowed-tools: Read, Write, Glob, Grep, Bash(git status *), Bash(gh issue view *
 ---
 ```
 
-**`user-invocable: false`** — marks a skill as a foundation (sub) skill. Foundation skills are consulted automatically by other skills but are not directly invoked by the user. Examples: `issue-context`, `auto-number`, `code-ref`, `github-ref`.
+**`user-invocable: false`** — marks a skill as a foundation (sub) skill. Foundation skills are consulted automatically by other skills but are not directly invoked by the user. Examples: `issue-context`, `pre-write`, `code-ref`, `github-ref`.
 
 **`allowed-tools:`** — restricts which Bash commands the skill may use. Use specific patterns (`Bash(git checkout *)`) rather than `Bash(*)` unless the skill genuinely needs unrestricted shell access (only `tackle-scratchpad-block` does, because it runs arbitrary user-authored steps).
 
@@ -103,9 +103,9 @@ All ephemeral working files live under `.claude-work/` (git-ignored). Never comm
 ```text
 .claude-work/
   issues/<ID>/
-    scratchpads/   ← implementation plans (NNNN-description.txt)
-    questions/     ← design decision files (NNNN-description.txt)
-    commit-msgs/   ← commit message drafts (NNNN-description.txt)
+    scratchpads/   ← implementation plans (timestamped; target-path.sh names them)
+    questions/     ← design decision files (same)
+    commit-msgs/   ← commit message drafts (same)
     breadcrumb.md  ← running notes collected by /finish-issue
   scratchpads/     ← flat placement when not on an issues/* branch
   questions/
@@ -118,7 +118,7 @@ All ephemeral working files live under `.claude-work/` (git-ignored). Never comm
 
 **`install.sh` symlink rule:** `install.sh` creates symlinks from `~/.claude/skills/` to the main checkout's `skills/` directory — never to a worktree directory. The global skill install is shared across all worktrees, so the target is always the main checkout (e.g., `/Users/couimet/geek/my-claude-skills/skills/`).
 
-**Auto-numbering:** File sequence numbers (`NNNN`) are managed by `skills/auto-number/auto-number.sh`. Foundation skills call it automatically — don't reimplement the logic.
+**Working-file naming:** `skills/issue-context/target-path.sh` owns working-file naming. Pass it a description and use the path it returns. Never derive a timestamp, a slug, or a path by hand. A skill states only the properties it relies on: the path is absolute, its directory exists, it is unique, and lexicographic order equals creation order. A skill never states the filename format. The format has two homes, `target-path.sh` and one marked example in `/issue-context`. See `docs/ADR/004-working-file-naming-and-the-script-contract-boundary.md`.
 
 ## CHANGELOG Conventions
 

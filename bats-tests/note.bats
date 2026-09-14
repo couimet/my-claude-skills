@@ -37,11 +37,7 @@ SKILL="$PROJECT_ROOT/skills/note/SKILL.md"
 # =============================================================
 
 @test "note skill: references issue-context scripts for path resolution" {
-  grep -q "issue-context/get-issue-folder-path.sh" "$SKILL"
-}
-
-@test "note skill: does not cross-reference /auto-number" {
-  ! grep -q "/auto-number" "$SKILL"
+  grep -q "issue-context/target-path.sh" "$SKILL"
 }
 
 @test "note skill: does not cross-reference /ensure-gitignore" {
@@ -57,31 +53,37 @@ SKILL="$PROJECT_ROOT/skills/note/SKILL.md"
 }
 
 # =============================================================
-# Key content: timestamp naming and branch detection
+# Path resolution is delegated, not described.
+#
+# These tests used to assert that this skill documented the filename format,
+# the extension, and the directory routing. It owned none of those; it only
+# restated them. Per docs/ADR/004 the skill states the properties it relies
+# on and cross-references the contract. The format itself is enforced in
+# bats-tests/script-contract-boundary.bats across every consumer, so
+# asserting its absence here would just duplicate that check.
 # =============================================================
 
-@test "note skill: mentions timestamp format YYYYMMDD-HHMMSS" {
-  grep -q "YYYYMMDD-HHMMSS" "$SKILL"
+# Regression, issues/261: the timestamp used to be derived in prose by telling
+# the model to run `date`, which is how filenames with a wrong date and no time
+# reached .claude-work/. The prose guard against that was dropped once the
+# permission was, because withholding Bash(date *) is a barrier the model
+# cannot talk itself past, and prose is not.
+@test "note skill: cannot derive a timestamp itself" {
+  ! grep -q 'date +%Y%m%d-%H%M%S' "$SKILL"
+  ! grep "^allowed-tools:" "$SKILL" | grep -q 'Bash(date \*)'
 }
 
-@test "note skill: uses date command for timestamps" {
-  grep -q 'date +%Y%m%d-%H%M%S' "$SKILL"
-}
-
-@test "note skill: delegates work-item folder resolution to get-issue-folder-path.sh" {
-  grep -q "issue-context/get-issue-folder-path.sh" "$SKILL"
+@test "note skill: delegates the whole path to target-path.sh" {
+  grep -q "issue-context/target-path.sh --type notes" "$SKILL"
+  ! grep -q "issue-context/get-issue-folder-path.sh" "$SKILL"
   ! grep -q "issue-context/branch-issue-id.sh" "$SKILL"
   ! grep -q "issue-context/claude-work-root.sh" "$SKILL"
 }
 
-@test "note skill: routes to <base>/issues/<ID>/notes/ on issue branches" {
-  grep -q '<base>/issues/.*notes/' "$SKILL"
+@test "note skill: points at the contract rather than restating it" {
+  grep -q "/issue-context" "$SKILL"
 }
 
-@test "note skill: routes to <base>/notes/ as fallback" {
-  grep -q '<base>/notes/' "$SKILL"
-}
-
-@test "note skill: uses .txt extension" {
-  grep -q '\.txt' "$SKILL"
+@test "note skill: does not build its own path" {
+  ! grep "^allowed-tools:" "$SKILL" | grep -q 'Bash(mkdir -p \*)'
 }

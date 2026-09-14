@@ -3,7 +3,7 @@ name: start-issue
 version: 2026.09.08@212eab1
 description: Start working on a GitHub issue - analyze, explore codebase, and create detailed implementation plan
 argument-hint: <github-issue-url> [--scratchpad]
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/auto-number/auto-number.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/render-branch-template.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/start-issue/update-project-status.sh *)
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/render-branch-template.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/start-issue/update-project-status.sh *)
 ---
 
 # Start Issue
@@ -129,7 +129,7 @@ Where `<branch>` is the rendered template value (e.g., `issues/248`) and `<BASE_
 
 Before drafting the plan, re-read the issue body, any parent issue, and the files surfaced in Step 3. Think through actual file and function names, step ordering, and dependencies before writing. The plan is the highest-leverage artifact this skill produces. Treat it as such. See `/pre-write` for the think-before-writing rule. If any aspect of the plan is unclear after this review, use `/question` before writing.
 
-**Grill the draft before creating the working document.** Draft the plan content in-session, write the draft to a scratchpads file via `~/.claude/skills/issue-context/target-path.sh --type scratchpad --description "DRAFT <NUMBER> plan"`, then run `/g2q <absolute-draft-path>` on the draft. It grills the draft for genuinely open ambiguities (applying the trigger predicate at the top of `/g2q`, the single source of trigger truth), creates a questions file under the issue's `<folder>/questions/` directory (from Step 2) when it finds any, and reports whether any were raised and, when raised, whether the run is paused or complete. The report gates how the working document is created in 4a/4b:
+**Grill the draft before creating the working document.** Draft the plan content in-session, write the draft to a scratchpads file via `~/.claude/skills/issue-context/target-path.sh --type scratchpads --description "DRAFT <NUMBER> plan"`, then run `/g2q <absolute-draft-path>` on the draft. It grills the draft for genuinely open ambiguities (applying the trigger predicate at the top of `/g2q`, the single source of trigger truth), creates a questions file under the issue's `<folder>/questions/` directory (from Step 2) when it finds any, and reports whether any were raised and, when raised, whether the run is paused or complete. The report gates how the working document is created in 4a/4b:
 
 - If grilling raised questions, create the note/scratchpad only as a pending stub (see 4a/4b): it MUST start with the banner `Production of this plan awaits answers to the questions in <absolute questions file path>, which will affect the plan.`, followed by a `Draft: <absolute draft path>` line recording where the full unfinalized draft lives, followed by the draft outline, and MUST NOT contain the finalized plan. Write the active-plan pointer (4c) and base-branch marker (4d) to the stub, then continue to Step 5. A paused report (the newest wave file ends with questions held for a later wave) still counts as raised: create the stub exactly this way, since answers are pending, and Step 6 re-grills the draft between answer waves before finalizing.
 - If grilling raised nothing, create the full plan note/scratchpad per 4a/4b, then continue to Step 5.
@@ -176,7 +176,7 @@ After the working document is created (via either path), write the pointer file 
 **Contents:** the project-root-relative path to the working document (a single line, no trailing newline required), for example:
 
 ```text
-.claude-work/issues/126/notes/20260424-143022-start-issue-plan.txt
+.claude-work/issues/126/notes/<the-filename-/note-returned>.txt
 ```
 
 Overwrite any existing pointer. Only the most recent working document is "active". When the grilling gate created a pending stub, the pointer targets the stub and stays valid after finalization (Step 6), which rewrites the same file.

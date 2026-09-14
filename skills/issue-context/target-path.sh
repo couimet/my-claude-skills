@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# target-path.sh — Resolve the full target path for a numbered working file,
+# target-path.sh — Resolve the full target path for a timestamped working file,
 # combining branch detection, issue-ID extraction, slug derivation, and
-# auto-numbering into one deterministic call.
+# timestamp stamping into one deterministic call.
 #
 # Usage: target-path.sh --type <type> --description <text> [--ext <ext>]
 #
@@ -13,14 +13,19 @@
 #                  txt, md, json). Default: txt
 #
 # Output (single line on stdout):
-#   The full path of the next numbered file for the current branch context,
+#   The full path of the next working file for the current branch context,
 #   with the directory already created. The work-item folder is resolved
 #   through get-issue-folder-path.sh, so it follows the configured segment.
 #
 #   On a branch matching a configured branchPatterns entry (a work branch):
-#     .claude-work[/<segment>]/<identifier>/<type>/NNNN-<slug>.<ext>
+#     .claude-work[/<segment>]/<identifier>/<type>/YYYYMMDD-HHMMSS-NNN-<slug>.<ext>
 #   Otherwise:
-#     .claude-work/<type>/NNNN-<slug>.<ext>
+#     .claude-work/<type>/YYYYMMDD-HHMMSS-NNN-<slug>.<ext>
+#
+#   NNN orders the files created within one second, so a byte-order sort of the
+#   directory is creation order. The path is reserved as an empty file before
+#   it is printed, so two concurrent calls never receive the same path; the
+#   caller writes over its own reservation.
 #
 # Exit codes:
 #   0  — success
@@ -45,6 +50,7 @@ readonly ERR_UNKNOWN_FLAG="T002"
 readonly ERR_INVALID_TYPE="T100"
 readonly ERR_BRANCH_DETECT="T101"
 readonly ERR_INVALID_EXT="T102"
+readonly ERR_ORDINAL_EXHAUSTED="T103"
 
 # --- Defaults ---
 type_arg=""
@@ -102,8 +108,8 @@ fi
 # --- Validate ext ---
 # Whitelist only bare alphanumeric extensions (txt, md, json, yaml, etc.).
 # Reject dots, slashes, whitespace, glob characters, and shell metacharacters
-# so the value can't be used to escape the target directory or inject via the
-# glob pattern we pass to auto-number.sh.
+# so the value can't be used to escape the target directory or to smuggle a
+# pattern into the emitted filename.
 if ! [[ "$ext" =~ ^[A-Za-z0-9]+$ ]]; then
   echo "target-path $ERR_INVALID_EXT error: invalid --ext '$ext' (expected alphanumeric characters only)" >&2
   exit 1
@@ -137,15 +143,59 @@ if [ -z "$slug" ]; then
   slug="file"
 fi
 
-# --- Get next sequence number via auto-number ---
-auto_number_script="${script_dir}/../auto-number/auto-number.sh"
+# --- Create the target directory ---
+mkdir -p "$target_dir"
 
-if [ ! -x "$auto_number_script" ]; then
-  echo "target-path $ERR_MISSING_ARG error: auto-number.sh not found or not executable at $auto_number_script" >&2
-  exit 1
-fi
+# --- Stamp the filename ---
+# Local time, deliberately. `date -u` would name tomorrow's date for anything
+# created after 17:00 in a UTC-7 zone, which is one of the defects this
+# replaces, and /breadcrumb already stamps local time.
+stamp="$(date +%Y%m%d-%H%M%S)"
 
-next_num="$("$auto_number_script" "$target_dir" --glob "*.${ext}" --width 4 --mkdir)"
+# The stamp alone orders only across distinct seconds: two files created in the
+# same second sort by slug, so the one created first can sort last. An ordinal
+# between the stamp and the slug restores a total order. It is unconditional
+# rather than added only on collision, because a digit sorts before a letter,
+# so an optional ordinal would put the second file of a second ahead of the
+# first and invert the order it exists to fix.
+#
+# Anchoring the scan to this second's literal prefix is what keeps it safe. The
+# retired auto-number.sh read the leading digit run of every sibling, so one
+# date-named file poisoned a whole directory. A name that does not carry this
+# second's stamp and a three-digit field is never read here.
+ordinal=0
+for existing in "${target_dir}/${stamp}-"[0-9][0-9][0-9]-*; do
+  [ -e "$existing" ] || continue
+  field="${existing##*/}"
+  field="${field#"${stamp}-"}"
+  field="${field%%-*}"
+  [[ "$field" =~ ^[0-9]{3}$ ]] || continue
+  # 10# forces base 10: 008 and 009 are not valid octal.
+  field=$((10#$field))
+  if [ "$field" -gt "$ordinal" ]; then
+    ordinal="$field"
+  fi
+done
+
+# Reserve the name, do not merely test it. Two calls can both find the same
+# path absent before either writes, and the later write would then replace the
+# earlier file. Under noclobber the redirection opens with O_CREAT|O_EXCL, so
+# the exit status reports whether this call created the path or lost the race,
+# and the test and the claim are one syscall with no window between them. It
+# also refuses a dangling symlink, which a plain -e test does not see and which
+# would otherwise send the caller's write wherever the link points.
+while :; do
+  ordinal=$((ordinal + 1))
+  if [ "$ordinal" -gt 999 ]; then
+    echo "target-path $ERR_ORDINAL_EXHAUSTED error: ordinals for $stamp are exhausted in '$target_dir' (999 files in one second)" >&2
+    exit 1
+  fi
+  printf -v seq '%03d' "$ordinal"
+  candidate="${target_dir}/${stamp}-${seq}-${slug}.${ext}"
+  if ( set -o noclobber; : > "$candidate" ) 2>/dev/null; then
+    break
+  fi
+done
 
 # --- Emit full path ---
-printf '%s/%s-%s.%s\n' "$target_dir" "$next_num" "$slug" "$ext"
+printf '%s\n' "$candidate"

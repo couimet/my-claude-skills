@@ -1,7 +1,7 @@
 ---
 name: commit-msg
 version: 2026.09.08@212eab1
-description: Create a commit message file in .claude-work/commit-msgs/ with auto-numbered filenames. Focuses on WHY not WHAT. The diff already shows what changed. User reviews and commits manually.
+description: Create a commit message file in .claude-work/commit-msgs/. Every call creates a new file. Focuses on WHY not WHAT. The diff already shows what changed. User reviews and commits manually.
 argument-hint: <description>
 allowed-tools: Read, Write, AskUserQuestion, Bash(git diff *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
 ---
@@ -24,7 +24,7 @@ Focus on **WHY**, not **WHAT**. The git diff already shows what changed. The com
 
 The diff is also the filter for WHICH changes to describe. If a change was added then reverted in the same working tree, it never happened. Don't mention it. Only include reasoning and decisions that relate to files and changes visible in the actual diff.
 
-Always create a new file. Never edit an existing commit-msg file. `target-path.sh` already guarantees unique filenames via auto-numbering. Old files stay on disk as historical artifacts. Two invocations without an intermediate commit simply produce two files — the user picks whichever they want at commit time.
+Always create a new file. Never edit an existing commit-msg file. `target-path.sh` already guarantees a unique filename. Old files stay on disk as historical artifacts. Two invocations without an intermediate commit simply produce two files — the user picks whichever they want at commit time.
 
 ## Step 1: Resolve the Target Path
 
@@ -38,7 +38,7 @@ Run these two commands as parallel tool calls. They are independent.
 ~/.claude/skills/ensure-gitignore/ensure-gitignore.sh
 ```
 
-Use the stdout of the first command as the full absolute file path. The script handles branch detection, issue-ID extraction, directory creation, auto-numbering, and slug normalization in one call. On an `issues/<ID>` branch, the output is an absolute path ending in `/.claude-work/issues/<ID>/commit-msgs/NNNN-<slug>.txt`. Otherwise it ends in `/.claude-work/commit-msgs/NNNN-<slug>.txt`.
+Use the stdout of the first command as the full absolute file path. The path is unique and its directory exists, so write the file directly to it. See `/issue-context` for the full contract.
 
 ## Complexity Assessment
 
