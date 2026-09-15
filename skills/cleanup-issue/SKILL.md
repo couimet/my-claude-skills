@@ -3,7 +3,7 @@ name: cleanup-issue
 version: 2026.09.10@486eb33
 description: Delete an issue's working directory under .claude-work/ after confirming with the user via interactive prompt
 argument-hint: [optional: issue-id (number, key, or slug) | --sweep]
-allowed-tools: Read, Glob, AskUserQuestion, Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Glob, AskUserQuestion, Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/issue-context/work-folder-tier.sh *)
 ---
 
 # Cleanup Issue
@@ -49,6 +49,14 @@ Then resolve the issue's working directory from the ID. The resolver builds `<ba
 
 Use its stdout as `<folder>`.
 
+Then ask which tier named this session's work folder, because it changes what a delete can reach:
+
+```bash
+~/.claude/skills/issue-context/work-folder-tier.sh
+```
+
+Record its stdout as `<tier>`. It prints exactly one of `session`, `worktree`, or `branch`.
+
 Use Glob to list contents:
 
 ```text
@@ -61,6 +69,8 @@ Glob(pattern="**/*", path="<folder>")
 - Skip to Step 5
 
 ## Step 3: Confirm Deletion
+
+**If `<tier>` is `worktree`:** this worktree points its working files at a folder named by `CLAUDE_WORK_FOLDER`, and that placement is flat. Notes, questions, scratchpads, and commit messages for every work item sit together in `<marker>/notes/` and its siblings, so `<folder>` holds only what the `--id` callers put there: the `active-plan` and `base-branch` pointers, `last-finish-issue`, and the breadcrumb. Say so in the confirmation below, naming what goes and what stays, so nobody reads a completed cleanup as having removed the work item's files. The other two tiers need no such line: under them `<folder>` is the work item's whole directory.
 
 Use `AskUserQuestion` to prompt for confirmation. Include the full directory path and file list in the question so the user knows exactly what the script will delete.
 

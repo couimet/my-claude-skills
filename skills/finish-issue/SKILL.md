@@ -63,20 +63,20 @@ Resolve the working location, which differs by mode:
 ~/.claude/skills/issue-context/get-issue-folder-path.sh --id <ID>
 ```
 
-- **Side-quest mode** — resolve the `.claude-work/` root and record its stdout as `<base>`:
+- **Side-quest mode** — resolve the work folder with `get-issue-folder-path.sh` and no arguments, and record its stdout as `<base>`:
 
 ```bash
-~/.claude/skills/issue-context/claude-work-root.sh
+~/.claude/skills/issue-context/get-issue-folder-path.sh
 ```
 
-Both scripts automatically detect git worktrees and return the shared location.
+Both calls detect git worktrees, and both follow the session's work folder or this worktree's `CLAUDE_WORK_FOLDER` when one is set.
 
 Read the active-plan pointer written by `/start-issue` or `/start-side-quest` to locate the primary working document:
 
 - **Issue mode:** read `<folder>/active-plan`
 - **Side-quest mode:** read `<base>/active-plan-<slug>`
 
-The pointer contents is a single project-root-relative path. Record it as the **resolved plan path**. This is the single source of truth for the primary plan.
+The pointer contents is a single absolute path. Record it as the **resolved plan path**. This is the single source of truth for the primary plan. A pointer written before this became the format holds a project-root-relative path instead; resolve anything that is not absolute against the project root.
 
 **If the pointer is missing:** proceed without a resolved plan. Step 4 context gathering falls back to git log and breadcrumbs only.
 

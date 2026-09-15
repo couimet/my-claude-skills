@@ -311,29 +311,32 @@ write_session_file() {
   [[ "$stderr" == *"not an absolute path"* ]]
 }
 
-@test "override: a path outside the repository is refused and named" {
+@test "override: a path outside the repository is honoured" {
+  # Containment is gone on purpose: a topic folder in another repository is
+  # the case the override exists for. The session tier is the self-cleaning
+  # one, so a mistake here dies with the session.
   local outside
   outside="$(mktemp -d)"
   outside="$(cd "$outside" && pwd -P)"
   write_session_file "$outside"
   folder_with_session "$CFG" "$SESSION_ID"
-  rm -rf "$outside"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
+  [ "$output" = "$outside" ]
   [ "${#lines[@]}" -eq 1 ]
-  [[ "$stderr" == *"outside this repository"* ]]
+  rm -rf "$outside"
 }
 
-@test "override: a path escaping through .. is refused" {
-  # The literal string sits under the repo; the physical path does not.
+@test "override: a path spelled through .. resolves to where it physically is" {
+  # Canonicalisation outlived containment. Nothing refuses this path now, and
+  # what is emitted is still the physical location rather than the spelling.
   local escaping="$TEST_TEMP_DIR/../$(basename "$TEST_TEMP_DIR")-escape"
   mkdir -p "$escaping"
   write_session_file "$escaping"
   folder_with_session "$CFG" "$SESSION_ID"
-  rm -rf "$escaping"
   [ "$status" -eq 0 ]
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
-  [[ "$stderr" == *"outside this repository"* ]]
+  [ "$output" = "$(cd "$escaping" && pwd -P)" ]
+  [[ "$output" != *".."* ]]
+  rm -rf "$escaping"
 }
 
 @test "override: a malformed session file is ignored and reported" {
@@ -405,10 +408,10 @@ write_session_file() {
   [[ "$err" == *"could not be resolved"* ]]
 }
 
-@test "override: outside a git repository it is ignored and reported" {
-  # Containment cannot be judged with no repository to judge against, so the
-  # override is refused rather than trusted. Nothing else can resolve either,
-  # so the run ends in an error; the override message is the assertion.
+@test "override: outside a git repository it still wins" {
+  # There is nothing left to judge an override against, and the tiers below it
+  # both need a repository, so an override is the only thing that can resolve
+  # here at all. Refusing it would fail a call it is able to answer.
   local outside
   outside="$(mktemp -d)"
   outside="$(cd "$outside" && pwd -P)"
@@ -420,11 +423,11 @@ write_session_file() {
     MY_CLAUDE_SKILLS_CONFIG="$outside/settings.json" \
     CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
     "$SCRIPT"
-  local err="$stderr"
+  local out="$output" st="$status"
   cd "$TEST_TEMP_DIR"
   rm -rf "$outside"
-  [[ "$err" == *"override ignored"* ]]
-  [[ "$err" == *"not inside a git repository"* ]]
+  [ "$st" -eq 0 ]
+  [ "$out" = "$outside/my-topic" ]
 }
 
 @test "a bad argument count prints usage and errors" {
@@ -452,20 +455,21 @@ write_session_file() {
   [ ! -d "$TEST_TEMP_DIR/never-made" ]
 }
 
-@test "override: the repository root itself is inside the repository" {
+@test "override: the repository root itself resolves as given" {
   write_session_file "$TEST_TEMP_DIR"
   folder_with_session "$CFG" "$SESSION_ID"
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR" ]
 }
 
-@test "override: a sibling path sharing the root's name prefix is refused" {
-  # "$TEST_TEMP_DIR-sibling" starts with the root string but is not under it.
+@test "override: a sibling sharing the root's name prefix resolves to itself" {
+  # "$TEST_TEMP_DIR-sibling" starts with the root string without being under
+  # it. The containment check that once had to tell those apart is gone; this
+  # stays as the guard that no string-prefix comparison crept back in.
   local sibling="${TEST_TEMP_DIR}-sibling"
   mkdir -p "$sibling"
   write_session_file "$sibling"
   folder_with_session "$CFG" "$SESSION_ID"
+  [ "$output" = "$sibling" ]
   rm -rf "$sibling"
-  [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
-  [[ "$stderr" == *"outside this repository"* ]]
 }

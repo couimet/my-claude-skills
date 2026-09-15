@@ -9,9 +9,18 @@
 # say where its files belong, instead of having the branch decide.
 #
 # Usage:
-#   set-work-folder.sh <folder> [name]   set the override for this session
-#   set-work-folder.sh --clear           remove this session's override
+#   set-work-folder.sh <folder> [name]        set the override for this session
+#   set-work-folder.sh --clear                remove this session's override
+#   set-work-folder.sh --worktree <folder>    set this worktree's marker
+#   set-work-folder.sh --clear --worktree     remove this worktree's marker
 #   set-work-folder.sh --help
+#
+# The session modes write a document keyed on CLAUDE_CODE_SESSION_ID that dies
+# with the session. The worktree modes write CLAUDE_WORK_FOLDER at the worktree
+# root, which lives until someone deletes it and needs no session at all. Both
+# refuse a relative path and a directory that does not exist, so a typo is read
+# here, where someone is watching, rather than days later by a resolver that
+# falls back in silence.
 #
 #   <folder>  Absolute path to an existing directory. It is not required to be
 #             inside any repository: a session is not pinned to one, and the
@@ -46,11 +55,15 @@ usage() {
   cat <<'EOF'
 Usage: set-work-folder.sh <folder> [name]
        set-work-folder.sh --clear
+       set-work-folder.sh --worktree <folder>
+       set-work-folder.sh --clear --worktree
 
-  <folder>  Absolute path to an existing directory
-  [name]    Optional readable label for the session file's name
-  --clear   Remove this session's override
-  --help    Show this help message
+  <folder>     Absolute path to an existing directory
+  [name]       Optional readable label for the session file's name
+  --clear      Remove this session's override
+  --worktree   Write or clear this worktree's CLAUDE_WORK_FOLDER marker
+               instead of this session's override
+  --help       Show this help message
 EOF
 }
 
@@ -61,6 +74,8 @@ source "$_self_dir/issue-settings.sh"
 source "$_self_dir/session-file.sh"
 # shellcheck disable=SC1091 # sourced sibling; lint-sh runs shellcheck without -x
 source "$_self_dir/slugify.sh"
+# shellcheck disable=SC1091 # sourced sibling; lint-sh runs shellcheck without -x
+source "$_self_dir/marker-file.sh"
 
 die() {
   echo "set-work-folder $1 error: $2" >&2
@@ -69,6 +84,7 @@ die() {
 
 # --- Parse arguments ---
 clear_mode=0
+worktree_mode=0
 folder=""
 name=""
 
@@ -78,8 +94,20 @@ case "${1-}" in
     exit 0
     ;;
   --clear)
-    [ "$#" -eq 1 ] || die "$ERR_USAGE" "--clear takes no other arguments"
+    case "${2-}" in
+      "") [ "$#" -eq 1 ] || die "$ERR_USAGE" "--clear takes no other arguments" ;;
+      --worktree)
+        [ "$#" -eq 2 ] || die "$ERR_USAGE" "--clear --worktree takes no other arguments"
+        worktree_mode=1
+        ;;
+      *) die "$ERR_USAGE" "--clear takes no other arguments" ;;
+    esac
     clear_mode=1
+    ;;
+  --worktree)
+    [ "$#" -eq 2 ] || die "$ERR_USAGE" "--worktree takes exactly one folder"
+    worktree_mode=1
+    folder="$2"
     ;;
   "")
     usage >&2
@@ -95,7 +123,47 @@ case "${1-}" in
     ;;
 esac
 
-# --- The session is the identity, so it is required for both modes ---
+# --- Worktree modes: the worktree is the identity, so no session is needed ---
+# A marker belongs to a checkout, not to a conversation, which is the whole
+# reason it outlives one. Requiring a session id here would refuse the mode in
+# exactly the place it is most useful: a shell with no Claude session at all.
+if [ "$worktree_mode" -eq 1 ]; then
+  marker="$(_issue_context_marker_path)" \
+    || die "$ERR_FOLDER" "not inside a git repository, so there is no worktree root to write $_ISSUE_CONTEXT_MARKER_NAME at"
+
+  if [ "$clear_mode" -eq 1 ]; then
+    if [ -e "$marker" ]; then
+      rm -f "$marker" \
+        || die "$ERR_WRITE" "could not remove $marker, so the worktree marker is still in effect"
+      echo "set-work-folder: cleared this worktree's folder marker" >&2
+    else
+      # Not an error, for the same reason --clear is not: the caller asked for
+      # a state that is already the state.
+      echo "set-work-folder: no folder marker was set for this worktree" >&2
+    fi
+    exit 0
+  fi
+
+  case "$folder" in
+    /*) ;;
+    *) die "$ERR_FOLDER" "'$folder' is not an absolute path" ;;
+  esac
+  [ -d "$folder" ] \
+    || die "$ERR_FOLDER" "'$folder' is not an existing directory (create it first, or fix the path)"
+  folder_phys="$(cd "$folder" && pwd -P)" \
+    || die "$ERR_FOLDER" "'$folder' could not be resolved"
+
+  # Written canonicalised, so the file says where the folder actually is rather
+  # than how it was typed. A hand-authored ~/ still expands on read.
+  printf '%s\n' "$folder_phys" > "$marker" \
+    || die "$ERR_WRITE" "could not write $marker"
+
+  echo "set-work-folder: working files for this worktree now go to $folder_phys" >&2
+  printf '%s\n' "$marker"
+  exit 0
+fi
+
+# --- The session is the identity, so it is required for both session modes ---
 # CLAUDE_CODE_SESSION_ID survives a session moving to a background spare; the
 # process behind the session does not, which is why nothing here keys off a
 # process id or an exported variable.

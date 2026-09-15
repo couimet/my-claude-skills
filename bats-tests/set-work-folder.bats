@@ -589,10 +589,10 @@ STUB
   [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
 }
 
-@test "end to end: the writer does not require the folder to be in a repository" {
-  # A session is not pinned to one repository. The writer accepts any existing
-  # absolute path; the resolver is what refuses one that does not belong to the
-  # repository being resolved in.
+@test "end to end: a folder in another repository is written and then resolved" {
+  # A session is not pinned to one repository, and nothing checks that a folder
+  # belongs to the one being resolved in. This is the case the override exists
+  # for: a topic folder in one checkout collecting the work done from another.
   local outside
   outside="$(mktemp -d)"
   outside="$(cd "$outside" && pwd -P)"
@@ -602,9 +602,9 @@ STUB
     MY_CLAUDE_SKILLS_CONFIG="$CFG" \
     CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
     "$RESOLVER"
-  local resolved="$output" resolved_stderr="$stderr"
+  local resolved="$output" resolved_lines="${#lines[@]}"
   rm -rf "$outside"
   [ "$write_status" -eq 0 ]
-  [ "$resolved" = "$TEST_TEMP_DIR/.claude-work" ]
-  [[ "$resolved_stderr" == *"outside this repository"* ]]
+  [ "$resolved" = "$outside" ]
+  [ "$resolved_lines" -eq 1 ]
 }
