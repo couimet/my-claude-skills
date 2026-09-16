@@ -10,6 +10,15 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.09.16
+
+### Added
+
+- `/launch-agent <folder> <task prompt>` starts a background agent with everything already in place: the topic folder exists, the launch prompt is saved inside it, the job carries a name you can find it by, and the agent points its own working files at that folder as its first action. Doing this by hand took four steps, and the ones that got forgotten were found out later, as a job named after nothing or a launch prompt that scrolled away. Name the folder with a slug to put it at your repository root, or with an absolute path to put it anywhere. ([issues/269](https://github.com/couimet/my-claude-skills/issues/269))
+- `/launch-agent` refuses the mistakes that are only visible later. A slug that nearly matches a folder you already have is refused by name, so `agent-launch-skill` does not quietly become a second topic beside `agent_launch_skill`. A prompt that looks like a file path and names no readable file is refused too, rather than launching an agent whose whole prompt is the typo. An absolute path is read as deliberate and skips both, which is how you get past a refusal you meant. ([issues/269](https://github.com/couimet/my-claude-skills/issues/269))
+- `/launch-agent` keeps every launch prompt. The prompt is saved to `prompt-new-agent-launch.txt` in the folder before the agent starts, so it is there even when the launch fails, and a prompt already at that name is archived under its own timestamp first. ([issues/269](https://github.com/couimet/my-claude-skills/issues/269))
+- `/launch-agent` takes a file path in place of the prompt when the prompt is long: a single argument naming a readable file contributes that file's content, which pairs with saving the prompt as a `/note` first. ([issues/269](https://github.com/couimet/my-claude-skills/issues/269))
+
 ## 2026.09.15
 
 ### Added
