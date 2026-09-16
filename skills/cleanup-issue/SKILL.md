@@ -44,7 +44,7 @@ Use the stdout as `<base>`. This script automatically detects git worktrees and 
 Then resolve the issue's working directory from the ID. Under the branch tier the resolver builds `<base>/<segment>/<identifier>` from the configured `segment` (defaulting to `<base>/issues/<ID>`; an empty segment omits the directory), and under a worktree marker it returns `<marker>/<identifier>` with no segment between. Take what it prints rather than assembling either form:
 
 ```bash
-~/.claude/skills/issue-context/get-issue-folder-path.sh --id <ID>
+~/.claude/skills/issue-context/get-issue-folder-path.sh --id "<ID>"
 ```
 
 Use its stdout as `<folder>`.
@@ -52,7 +52,7 @@ Use its stdout as `<folder>`.
 Then ask which tier named that folder, because it changes what a delete can reach. Ask in the `--id` form, matching the resolution just performed: a bare call would answer for a no-argument resolution, and with a session override and a marker both set it would report `session` while `<folder>` came from the marker.
 
 ```bash
-~/.claude/skills/issue-context/work-folder-tier.sh --id <ID>
+~/.claude/skills/issue-context/work-folder-tier.sh --id "<ID>"
 ```
 
 Record its stdout as `<tier>`. It prints `worktree` or `branch`; the `--id` form never prints `session`, because naming a work item bypasses the session override.
@@ -94,10 +94,18 @@ AskUserQuestion(
 Only reached if the user selected Delete in Step 3. Pass `<folder>` from Step 2 verbatim: that is the path the user was shown and agreed to, and it is the only way the delete reaches the same directory the confirmation named under every tier. The script validates the ID, refuses a folder whose last component is not that ID, refuses one that resolves through a symlink to somewhere else, and performs the removal. No raw `rm -rf` is used.
 
 ```bash
-~/.claude/skills/cleanup-issue/remove-issue-dir.sh <folder> --id <ID>
+~/.claude/skills/cleanup-issue/remove-issue-dir.sh "<folder>" --id "<ID>"
 ```
 
-The script prints the removed path on stdout. Report that path to the user:
+The script prints the removed path on stdout. Report that path to the user in the form that matches `<tier>` from Step 2. Under the worktree tier the folder held only the pointers and the breadcrumb, so the unconditional line would claim more than the delete did.
+
+**If `<tier>` is `worktree`:**
+
+```text
+Cleaned up <stdout>/. The plan pointers and the breadcrumb are gone. This work item's notes, questions, scratchpads, and commit messages sit flat under the worktree's folder and remain.
+```
+
+**Otherwise:**
 
 ```text
 Cleaned up <stdout>/. All working files removed.
@@ -143,7 +151,7 @@ Use the stdout as `<base>`.
 Run the sweep script:
 
 ```bash
-~/.claude/skills/cleanup-issue/find-obsolete-issue-dirs.sh <base>
+~/.claude/skills/cleanup-issue/find-obsolete-issue-dirs.sh "<base>"
 ```
 
 The script prints one line per deletable folder on stdout:
@@ -186,7 +194,7 @@ AskUserQuestion(
 Only reached if the user selected Delete all N folders in Sweep Step 3. For each listed path, run the removal script once per folder, passing the DELETABLE line's path verbatim, where `<ID>` is the folder name (the last segment of that path):
 
 ```bash
-~/.claude/skills/cleanup-issue/remove-issue-dir.sh <path> --id <ID>
+~/.claude/skills/cleanup-issue/remove-issue-dir.sh "<path>" --id "<ID>"
 ```
 
 The script prints the removed path on stdout. Report each removed path to the user:

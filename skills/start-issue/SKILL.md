@@ -29,12 +29,12 @@ Use the stdout of `claude-work-root.sh` as `<base>` for all `.claude-work/` path
 If issue directories have piled up, check for obsolete folders. Run the finder with the `<base>` resolved above:
 
 ```bash
-~/.claude/skills/cleanup-issue/find-obsolete-issue-dirs.sh <base>
+~/.claude/skills/cleanup-issue/find-obsolete-issue-dirs.sh "<base>"
 ```
 
 Each DELETABLE line has the form `DELETABLE<TAB><path><TAB><reason>`. Count the DELETABLE lines in the output. If fewer than 5, skip silently. If 5 or more, present one AskUserQuestion whose question text lists the deletable folder paths from the output (the path field of each DELETABLE line), with these options:
 
-- **Prune now**: delete each listed folder via `~/.claude/skills/cleanup-issue/remove-issue-dir.sh <path> --id <ID>`, where `<path>` is the DELETABLE line's path field and `<ID>` is its last segment, then report each removed path
+- **Prune now**: delete each listed folder via `~/.claude/skills/cleanup-issue/remove-issue-dir.sh "<path>" --id "<ID>"`, where `<path>` is the DELETABLE line's path field and `<ID>` is its last segment, then report each removed path
 - **Keep everything**: leave all folders untouched (safe default)
 
 If the user picks Prune now, delete each listed folder with `remove-issue-dir.sh` and report the removed paths. The finder already prints the absolute path of every folder it offers, so pass that path rather than rebuilding one from `<base>`. Otherwise continue to Step 1 untouched. The manual `/cleanup-issue --sweep` mode always shows the full list regardless of threshold.
@@ -48,11 +48,11 @@ Parse `$ARGUMENTS` first: it holds the issue URL optionally followed by `--scrat
 Run both commands as parallel tool calls in the same response. They are independent (one reads, one writes) and both use `<issue-url>` directly:
 
 ```bash
-gh issue view <issue-url> --json title,body,number,state,labels,assignees,comments
+gh issue view "<issue-url>" --json title,body,number,state,labels,assignees,comments
 ```
 
 ```bash
-gh issue edit <issue-url> --add-assignee @me
+gh issue edit "<issue-url>" --add-assignee @me
 ```
 
 The assign is additive: existing assignees are preserved, not replaced. The command is idempotent (silently succeeds if you are already assigned).
@@ -64,7 +64,7 @@ The assign is additive: existing assignees are preserved, not replaced. The comm
 After assignment, detect whether the issue belongs to any GitHub Projects V2 boards and move those project items to "In Progress" status:
 
 ```bash
-~/.claude/skills/start-issue/update-project-status.sh <owner> <repo> <issue_number>
+~/.claude/skills/start-issue/update-project-status.sh "<owner>" "<repo>" "<issue_number>"
 ```
 
 Where `<owner>` and `<repo>` are extracted from the issue URL, and `<issue_number>` is the GitHub issue number.
@@ -84,7 +84,7 @@ Continue regardless of the script's exit code. Project status updates are additi
 First resolve the work-item identifier from `<issue-url>` (from Step 1):
 
 ```bash
-~/.claude/skills/issue-context/resolve-issue-id.sh <issue-url>
+~/.claude/skills/issue-context/resolve-issue-id.sh "<issue-url>"
 ```
 
 The script matches a URL against the configured `urlPatterns` and prints the identifier (a GitHub `/issues/248` URL prints `248`); a bare number passes through its safety check. Record its stdout as `<ID>`.
@@ -92,7 +92,7 @@ The script matches a URL against the configured `urlPatterns` and prints the ide
 Resolve the issue folder this identifier maps to, for all `.claude-work/` paths in the remaining steps:
 
 ```bash
-~/.claude/skills/issue-context/get-issue-folder-path.sh --id <ID>
+~/.claude/skills/issue-context/get-issue-folder-path.sh --id "<ID>"
 ```
 
 Its stdout is `<folder>` (e.g., `<base>/issues/248` under the default `segment`), derived from the configured `segment`.
@@ -100,7 +100,7 @@ Its stdout is `<folder>` (e.g., `<base>/issues/248` under the default `segment`)
 Render the feature branch name from the configured `branchTemplate` with the helper, which substitutes `{id}` with `<ID>` and degrades to the default `issues/{id}` when the settings template is missing or unsubstitutable:
 
 ```bash
-~/.claude/skills/issue-context/render-branch-template.sh <ID>
+~/.claude/skills/issue-context/render-branch-template.sh "<ID>"
 ```
 
 Use its stdout as `<branch>`.
@@ -108,7 +108,7 @@ Use its stdout as `<branch>`.
 Create the feature branch from the selected base branch (`origin/main` by default, or another base branch if instructed):
 
 ```bash
-git fetch origin && git checkout -b <branch> <BASE_BRANCH>
+git fetch origin && git checkout -b "<branch>" "<BASE_BRANCH>"
 ```
 
 Where `<branch>` is the rendered template value (e.g., `issues/248`) and `<BASE_BRANCH>` is typically `origin/main`. Record the actual base branch used in the scratchpad's `Base branch:` field. It may differ in stacked-PR workflows.
@@ -172,6 +172,12 @@ Use `/scratchpad` with description `start-issue-plan`. When the grilling gate ra
 After the working document is created (via either path), write the pointer file so `/finish-issue` and `/tackle-scratchpad-block` can resolve the primary plan without guessing:
 
 **Path:** `<folder>/active-plan` (where `<folder>` is from Step 2)
+
+Create `<folder>` before writing either pointer. Step 2 resolved it with `--id`, and under a session override or a worktree marker that names a directory nothing has created yet: `/note` and `/scratchpad` resolve with no argument, so they created `<override>/notes/` or `<override>/scratchpads/` somewhere else entirely. Only under the branch tier do the two resolutions agree, which is the one case where the directory already exists.
+
+```bash
+mkdir -p "<folder>"
+```
 
 **Contents:** the absolute path to the working document (a single line, no trailing newline required), which is what `/note` and `/scratchpad` already return, so write what they gave you without converting it. For example:
 
@@ -272,6 +278,7 @@ Before finishing, verify:
 
 - [ ] Feature branch built from the configured `branchTemplate` (default `issues/{id}`) was created
 - [ ] Working document created via `/note` (default) or `/scratchpad` (opt-in), not both
+- [ ] `<folder>` created before either pointer was written
 - [ ] `<folder>/active-plan` pointer written with the absolute path to the working document
 - [ ] `<folder>/base-branch` marker written with the recorded `Base branch:` ref
 - [ ] Plan has specific file/function names (not "update the code")

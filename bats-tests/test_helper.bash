@@ -7,6 +7,18 @@
 # shellcheck disable=SC2034
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# Nine suites build a temporary git repository and work inside it, and `cd`
+# does not override an inherited GIT_DIR, GIT_WORK_TREE, GIT_COMMON_DIR or
+# GIT_INDEX_FILE. Git exports those to hooks and to `bisect run`, so a suite
+# launched from one of them would run its `git init`, `git commit` and
+# `git checkout -B main` against the caller's real checkout, where the last of
+# those moves a branch someone is using.
+#
+# Unset here rather than in setup(): every suite that needs its own setup()
+# overrides this file's, while `load` runs in the test process itself, so one
+# unset at load time covers every suite and every command a test spawns.
+unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_INDEX_FILE
+
 setup() {
   TEST_TEMP_DIR="$(mktemp -d)"
 }

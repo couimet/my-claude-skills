@@ -189,6 +189,38 @@ argument-hint: pass it to */skills/issue-context/target-path.sh *
   [[ "$output" == *"skills/issue-context/target-path.sh"* ]]
 }
 
+@test "a permission for a near-miss filename is a gap" {
+  # Searching the declaration for the call as a substring accepts this: the
+  # declared path contains the called one. The permission would not fire at
+  # runtime, so the gate has to say so.
+  fixture caller 'Read, Bash(*/skills/issue-context/target-path.sh.bak *)' '```bash
+~/.claude/skills/issue-context/target-path.sh --type notes
+```'
+  run "$SCRIPT" "$TEST_TEMP_DIR/skills"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"skills/issue-context/target-path.sh"* ]]
+}
+
+@test "a permission whose path only ends on the called one is a gap" {
+  # The call's whole path must be preceded by a slash, or "myskills/..." would
+  # cover "skills/...".
+  fixture caller 'Read, Bash(*/myskills/issue-context/target-path.sh *)' '```bash
+~/.claude/skills/issue-context/target-path.sh --type notes
+```'
+  run "$SCRIPT" "$TEST_TEMP_DIR/skills"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"skills/issue-context/target-path.sh"* ]]
+}
+
+@test "a permission declaring the call with no glob prefix passes" {
+  fixture caller 'Read, Bash(skills/issue-context/target-path.sh *)' '```bash
+~/.claude/skills/issue-context/target-path.sh --type notes
+```'
+  run "$SCRIPT" "$TEST_TEMP_DIR/skills"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
 # =============================================================
 # Bash(*) is the one wildcard
 # =============================================================

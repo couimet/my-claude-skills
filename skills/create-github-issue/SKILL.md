@@ -58,8 +58,8 @@ Separately, write the collected title to its own one-line file in the same notes
 Create the issue with a simple one-liner (pass `--repo owner/repo` when a target repo override was resolved in Step 2. Omit it to use the current git remote). Do not pass `--label`. Label selection happens on the issue page after Step 8:
 
 ```bash
-gh issue create --title "$(cat <TITLE_FILE_PATH>)" --body-file <BODY_FILE_PATH>
-gh issue create --repo '<OWNER>/<REPO>' --title "$(cat <TITLE_FILE_PATH>)" --body-file <BODY_FILE_PATH>
+gh issue create --title "$(cat '<TITLE_FILE_PATH>')" --body-file "<BODY_FILE_PATH>"
+gh issue create --repo '<OWNER>/<REPO>' --title "$(cat '<TITLE_FILE_PATH>')" --body-file "<BODY_FILE_PATH>"
 ```
 
 Read the title from the title file written in Step 4 instead of splicing its text into the command as a quoted literal. Inside `"$(cat <TITLE_FILE_PATH>)"` the shell substitutes the file's contents without re-parsing them, so an apostrophe, a `"`, a `$`, or a backtick in the title reaches gh verbatim. Never double an apostrophe to escape it: in the shell `'O''Brien'` parses as two adjacent quoted words that concatenate to `OBrien`, dropping the apostrophe. The `--repo` value stays a single-quoted argument because it is a controlled `owner/repo` value, not user prose.

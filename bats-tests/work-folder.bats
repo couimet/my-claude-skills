@@ -449,6 +449,56 @@ write_session_file() {
   [ "$status" -eq 1 ]
 }
 
+@test "--worktree refuses a marker that is a symlink, leaving its target alone" {
+  # The marker is deliberately not gitignored and sits at the worktree root,
+  # so a repository can ship one as a symlink. A redirect onto it would write
+  # through to whatever it names.
+  local victim="$TEST_TEMP_DIR/victim"
+  printf 'do not touch\n' > "$victim"
+  ln -s "$victim" "$MARKER"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" "$WRITER" --worktree "$TOPIC"
+  [ "$status" -ne 0 ]
+  [[ "$stderr" == *"S005"* ]]
+  [[ "$stderr" == *"symlink"* ]]
+  [ "$(cat "$victim")" = "do not touch" ]
+  [ -L "$MARKER" ]
+}
+
+@test "--clear --worktree removes a symlinked marker rather than its target" {
+  # The one way out of the refusal above. rm unlinks the link itself.
+  local victim="$TEST_TEMP_DIR/victim"
+  printf 'do not touch\n' > "$victim"
+  ln -s "$victim" "$MARKER"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" "$WRITER" --clear --worktree
+  [ "$status" -eq 0 ]
+  [ ! -e "$MARKER" ]
+  [ -f "$victim" ]
+  [ "$(cat "$victim")" = "do not touch" ]
+}
+
+@test "--worktree leaves no temporary file at the worktree root" {
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" "$WRITER" --worktree "$TOPIC"
+  [ "$status" -eq 0 ]
+  run bash -c "ls -A '$TEST_TEMP_DIR' | grep -c '^\\.$MARKER_NAME-' || true"
+  [ "$output" = "0" ]
+}
+
+@test "--worktree writes the marker with the mode a plain redirect would give it" {
+  # mktemp creates 0600, which would narrow a marker the previous redirect had
+  # created at the umask default. Compared against a redirect made here rather
+  # than against a literal mode, which would only hold under umask 022.
+  local reference="$TEST_TEMP_DIR/reference"
+  : > "$reference"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" "$WRITER" --worktree "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ -r "$MARKER" ]
+  [ "$(ls -l "$MARKER" | cut -c1-10)" = "$(ls -l "$reference" | cut -c1-10)" ]
+}
+
 @test "a second --worktree replaces the first" {
   local other="$TEST_TEMP_DIR/other"
   mkdir -p "$other"

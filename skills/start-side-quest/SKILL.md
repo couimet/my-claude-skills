@@ -44,7 +44,7 @@ The base branch for the side-quest is the branch that was active when `/start-si
 
 ```bash
 git fetch origin
-git checkout -b side-quest/<slug> <base-branch>
+git checkout -b "side-quest/<slug>" "<base-branch>"
 ```
 
 Branch naming pattern: `side-quest/<descriptive-slug>`
@@ -131,7 +131,7 @@ Stash: <stash message if applicable>
 Ready to implement. When done:
 1. Commit your changes
 2. Run `/finish-issue` to verify, generate PR description, and wrap up
-3. Return to parent: git checkout <parent-branch>
+3. Return to parent: git checkout "<parent-branch>"
    (run `git stash pop` only if changes were stashed)
 ```
 

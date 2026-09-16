@@ -153,10 +153,38 @@ if [ "$worktree_mode" -eq 1 ]; then
   folder_phys="$(cd "$folder" && pwd -P)" \
     || die "$ERR_FOLDER" "'$folder' could not be resolved"
 
+  # The marker sits at the worktree root and is deliberately not gitignored, so
+  # a repository can ship one as a symlink pointing at any file this user can
+  # write. A redirect onto it would follow the link and overwrite that file.
+  # Refused rather than quietly replaced: --clear --worktree removes the link
+  # itself, which is the one way out that never touches what it points at.
+  [ ! -L "$marker" ] \
+    || die "$ERR_WRITE" "$marker is a symlink, so writing it would write through to its target; remove it first (set-work-folder.sh --clear --worktree)"
+
   # Written canonicalised, so the file says where the folder actually is rather
   # than how it was typed. A hand-authored ~/ still expands on read.
-  printf '%s\n' "$folder_phys" > "$marker" \
+  #
+  # Composed in a temporary file and renamed, the same way the session file is
+  # written below. rename() within one directory is atomic and replaces a
+  # symlink rather than following it, so this, and not the check above, is what
+  # makes the write safe; the check is what makes a planted link visible
+  # instead of silently replacing it.
+  marker_tmp="$(mktemp "$(dirname "$marker")/.${_ISSUE_CONTEXT_MARKER_NAME}-XXXXXX")" \
+    || die "$ERR_WRITE" "could not create a temporary file beside $marker"
+  trap 'rm -f "$marker_tmp"' EXIT
+
+  # mktemp creates the file 0600. A plain redirect would have created it at
+  # 0666 minus the caller's umask, and this change is about where the bytes
+  # land rather than about who may read them, so the mode is put back.
+  marker_mode=$((0666 & ~0$(umask)))
+  chmod "$(printf '%03o' "$marker_mode")" "$marker_tmp" \
+    || die "$ERR_WRITE" "could not set the mode on $marker_tmp"
+
+  printf '%s\n' "$folder_phys" > "$marker_tmp" \
+    || die "$ERR_WRITE" "could not write $marker_tmp"
+  mv -f "$marker_tmp" "$marker" \
     || die "$ERR_WRITE" "could not write $marker"
+  trap - EXIT
 
   echo "set-work-folder: working files for this worktree now go to $folder_phys" >&2
   printf '%s\n' "$marker"

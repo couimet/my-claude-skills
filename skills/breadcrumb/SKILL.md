@@ -23,7 +23,7 @@ Run `branch-issue-id.sh` to resolve the issue identifier:
 - **Exit 0** — the current branch matches a configured `branchPatterns` entry (a work branch): the printed identifier is the issue breadcrumb identifier. Resolve the issue folder with `get-issue-folder-path.sh` and record its stdout as the issue `<folder>`:
 
 ```bash
-~/.claude/skills/issue-context/get-issue-folder-path.sh --id <ID>
+~/.claude/skills/issue-context/get-issue-folder-path.sh --id "<ID>"
 ```
 
 - **Exit 1** — the branch is not an issue branch. Check for a side-quest branch by running `git branch --show-current`:

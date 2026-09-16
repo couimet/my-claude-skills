@@ -106,6 +106,14 @@ slugify() {
   [ "$output" = "one-two-three" ]
 }
 
+@test "the fallback is bounded like any other result" {
+  # The fallback is four characters, so a bound below four is the one case
+  # where applying the bound first would return more than max-len asked for.
+  slugify "!!!" 2
+  [ "$status" -eq 0 ]
+  [ "$output" = "fi" ]
+}
+
 # ============================================================================
 # target-path.sh keeps producing what it always did
 # ============================================================================

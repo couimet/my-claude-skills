@@ -39,7 +39,7 @@ Then resolve the folder that holds the pointer and read it:
 - **Issue mode** — resolve `<folder>` and read `<folder>/active-plan`:
 
 ```bash
-~/.claude/skills/issue-context/get-issue-folder-path.sh --id <ID>
+~/.claude/skills/issue-context/get-issue-folder-path.sh --id "<ID>"
 ```
 
 - **Side-quest mode** — resolve `<base>` and read `<base>/active-plan-<slug>`:

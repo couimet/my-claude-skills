@@ -22,11 +22,13 @@
 # A skill declaring Bash(*) needs nothing else: it is the one wildcard, matching
 # the rule check-transitive-tools.sh applies.
 #
-# A declaration covers a call when it contains the call's whole
-# skills/<skill>/<script>.sh path. Matching the bare filename instead would let
-# a permission for one skill's target-path.sh satisfy a call to another's, and
-# the skill would then pass this gate and stop at a permission prompt anyway,
-# which is the failure the gate exists to catch.
+# A declaration covers a call when the executable it permits IS the call's
+# skills/<skill>/<script>.sh path, whole and at the end. Matching the bare
+# filename instead would let a permission for one skill's target-path.sh
+# satisfy a call to another's, and searching the declaration for the path as a
+# substring would let a permission for target-path.sh.bak satisfy a call to
+# target-path.sh. Either way the skill passes this gate and stops at a
+# permission prompt anyway, which is the failure the gate exists to catch.
 #
 # Output: one gap line per missing permission, exit 1 if any remain, or exit 0
 # with no output.
@@ -75,6 +77,55 @@ allowed_tools() {
   '
 }
 
+# declared_commands <allowed-tools text> — print the executable each Bash(...)
+# declaration permits, one per line.
+#
+# The text is joined into one buffer before matching. YAML lets the value wrap,
+# allowed_tools keeps the continuation lines, and a declaration split across
+# one of those wraps would otherwise match nothing. A Bash(...) form that is
+# never closed yields no executable and therefore covers nothing, which leaves
+# the call reported as a gap: for a gate, an unreadable declaration is the same
+# answer as a missing one.
+declared_commands() {
+  printf '%s\n' "$1" | awk '
+    { buf = buf " " $0 }
+    END {
+      while (match(buf, /Bash\([^)]*\)/)) {
+        decl = substr(buf, RSTART + 5, RLENGTH - 6)
+        buf = substr(buf, RSTART + RLENGTH)
+        sub(/^[[:space:]]+/, "", decl)
+        sub(/[[:space:]].*$/, "", decl)
+        if (decl != "") print decl
+      }
+    }
+  '
+}
+
+# covers <allowed-tools text> <call> — 0 when a declaration permits <call>.
+#
+# The declared executable must end on the call's whole path, preceded by a
+# slash or nothing at all. The leading slash is what keeps a declaration for
+# .../myskills/<skill>/<script>.sh from covering skills/<skill>/<script>.sh,
+# and ending the comparison there is what keeps a .bak or .orig sibling from
+# covering the real script.
+#
+# Read line by line rather than iterated as a word list: a declared executable
+# holds the glob that makes the permission portable, and an unquoted expansion
+# of "*/skills/..." would be matched against the filesystem before it was ever
+# compared.
+covers() {
+  local declared
+  while IFS= read -r declared; do
+    [ -n "$declared" ] || continue
+    case "$declared" in
+      "$2" | *"/$2") return 0 ;;
+    esac
+  done <<EOF
+$(declared_commands "$1")
+EOF
+  return 1
+}
+
 gaps=0
 
 for skill_file in "$SKILLS_ROOT"/*/SKILL.md; do
@@ -90,9 +141,9 @@ for skill_file in "$SKILLS_ROOT"/*/SKILL.md; do
   # Unquoted on purpose: one call per line, and no script path holds a space.
   # shellcheck disable=SC2086
   for call in $calls; do
-    case "$allowed" in
-      *"$call"*) continue ;;
-    esac
+    if covers "$allowed" "$call"; then
+      continue
+    fi
     echo "skills/$skill/SKILL.md: calls $call but does not declare it in allowed-tools"
     gaps=1
   done
