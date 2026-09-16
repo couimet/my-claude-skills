@@ -28,14 +28,18 @@
 #     scratchpads, commit-msgs). Under a marker, and under an empty segment,
 #     those directories sit at the same level as work-item folders, so the
 #     refusal is unconditional rather than tied to a setting.
-#   - <folder> still ends in <id> after symlinks are resolved, which is what
-#     catches a work-item directory pointed somewhere else entirely.
+#   - <folder>'s last component is not a symlink, which is what catches a
+#     work-item directory pointed somewhere else entirely. A symlinked parent
+#     is fine and stays accepted: only the last component is the one this ID
+#     claims.
 #
 # Output (stdout):
 #   The absolute path removed (e.g., /Users/x/project/.claude-work/issues/42).
 #
 # Exit codes:
-#   0  — directory removed (or didn't exist — idempotent)
+#   0  — directory removed (or didn't exist — idempotent). A symlink at the
+#        last component is not part of that case: it is refused below rather
+#        than read as an absent directory.
 #   1  — validation error (see stderr)
 #   2  — runtime error (see stderr)
 
@@ -88,18 +92,15 @@ if [ "${folder##*/}" != "$id" ]; then
   exit 1
 fi
 
-# Resolve physically to catch a work-item directory symlinked elsewhere. A
-# symlinked parent is fine and stays accepted: only the last component matters,
-# because that is the one this ID claims.
-if [ -d "$folder" ]; then
-  if ! folder_physical="$({ cd "$folder" && pwd -P; } 2>/dev/null)"; then
-    echo "remove-issue-dir $ERR_BAD_FOLDER error: could not resolve folder: $folder" >&2
-    exit 2
-  fi
-  if [ "${folder_physical##*/}" != "$id" ]; then
-    echo "remove-issue-dir $ERR_BAD_ID error: folder '$folder' resolves to '$folder_physical', which is not the issue ID '$id'" >&2
-    exit 1
-  fi
+# A symlink at the last component is refused outright, because rm -rf removes
+# the link and leaves everything it points at, so the run would report a
+# cleanup that did not happen. A symlinked parent is fine and stays accepted:
+# only the last component is the one this ID claims. This is checked before
+# the directory test below, so a dangling link is refused rather than read as
+# an absent directory and reported as an idempotent success.
+if [ -L "$folder" ]; then
+  echo "remove-issue-dir $ERR_BAD_FOLDER error: folder '$folder' is a symlink; removing it would leave what it points at in place" >&2
+  exit 1
 fi
 
 # --- Remove ---

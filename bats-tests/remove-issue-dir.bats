@@ -235,8 +235,36 @@ teardown() {
 
   run "$SCRIPT" "$BASE/issues/escape-hatch" --id "escape-hatch"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R001"* ]]
+  [[ "$output" == *"R002"* ]]
   [ -f "$TEST_TEMP_DIR/outside/keep-me" ]
+}
+
+# Regression: the guard used to compare the resolved path's basename to the
+# ID, which a link named 42 pointing at a directory named 42 satisfies. rm -rf
+# then removed the link, left the files, and exited 0, so the run reported a
+# cleanup that had not happened.
+@test "refuses a symlink whose target's last component is also the ID" {
+  mkdir -p "$TEST_TEMP_DIR/outside/42"
+  touch "$TEST_TEMP_DIR/outside/42/keep-me"
+  ln -s "$TEST_TEMP_DIR/outside/42" "$BASE/issues/42"
+
+  run "$SCRIPT" "$BASE/issues/42" --id "42"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"R002"* ]]
+  [ -L "$BASE/issues/42" ]
+  [ -f "$TEST_TEMP_DIR/outside/42/keep-me" ]
+}
+
+# A dangling link is not the absent-directory case: something put a link where
+# a work-item directory belongs, and reporting an idempotent success over it
+# would say the cleanup examined a directory nobody ever looked at.
+@test "refuses a dangling symlink rather than reporting an idempotent success" {
+  ln -s "$TEST_TEMP_DIR/never-existed" "$BASE/issues/42"
+
+  run "$SCRIPT" "$BASE/issues/42" --id "42"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"R002"* ]]
+  [ -L "$BASE/issues/42" ]
 }
 
 @test "a symlinked parent is fine: only the last component is checked" {
