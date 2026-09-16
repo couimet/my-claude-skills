@@ -1,6 +1,6 @@
 ---
 name: issue-context
-version: 2026.09.10@486eb33
+version: 2026.09.15@bf82540
 user-invocable: false
 description: Contract for the issue-context shell scripts that resolve working-file paths from the current session's folder override, the current git branch, and the configurable work-item settings. Referenced by name from the skills that write working files, not auto-consulted.
 allowed-tools: Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/render-branch-template.sh *), Bash(*/skills/issue-context/set-work-folder.sh *), Bash(*/skills/issue-context/work-folder-tier.sh *)

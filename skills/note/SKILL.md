@@ -1,6 +1,6 @@
 ---
 name: note
-version: 2026.09.10@486eb33
+version: 2026.09.15@bf82540
 description: Capture a note, finding, or result in a new file under .claude-work/. Lightweight alternative to /scratchpad
 argument-hint: <description>
 allowed-tools: Read, Write, Bash(*/skills/issue-context/target-path.sh *)
