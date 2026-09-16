@@ -44,7 +44,7 @@
 _iwfu_usable() {
   local _iwfu_path="$1" _iwfu_out="$2" _iwfu_phys
   case "$_iwfu_path" in
-    /*) ;;
+    /*) ;; # kcov-exclude-line
     *) return 2 ;;
   esac
   [ -d "$_iwfu_path" ] || return 3
@@ -82,7 +82,7 @@ _issue_context_marker_folder() {
 
   if ! _issue_context_marker_read _iwfm_raw _iwfm_reason; then
     case "$_iwfm_reason" in
-      none) ;; # No marker. Nothing to say.
+      none) ;; # No marker. Nothing to say. (kcov-exclude-line)
       unreadable)
         _iwfa_append "$_iwfm_report_var" "worktree marker ignored: $_ISSUE_CONTEXT_MARKER_NAME could not be read" ;;
       empty)
@@ -142,7 +142,7 @@ _issue_context_work_folder() {
     esac
   else
     case "$_iwfw_reason" in
-      none) ;; # No override set. Nothing to say.
+      none) ;; # No override set. Nothing to say. (kcov-exclude-line)
       duplicate)
         _iwfa_append "$_iwfw_report_var" "override ignored: more than one session file matches this session id" ;;
       nojq)

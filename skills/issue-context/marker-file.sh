@@ -101,7 +101,7 @@ _issue_context_marker_read() {
   esac
 
   case "$_imf_folder" in
-    /*) ;;
+    /*) ;; # kcov-exclude-line
     *) eval "$_imf_out_reason_var='relative'"; return 1 ;;
   esac
 

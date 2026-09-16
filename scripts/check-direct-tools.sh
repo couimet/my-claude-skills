@@ -55,6 +55,7 @@ front_matter() {
 # spaces, so the caller may split this on whitespace.
 fenced_calls() {
   awk '
+    # kcov-exclude-start
     /^[[:space:]]*```/ { infence = !infence; next }
     infence {
       while (match($0, /skills\/[a-z0-9-]+\/[a-z0-9._-]+\.sh/)) {
@@ -62,6 +63,7 @@ fenced_calls() {
         $0 = substr($0, RSTART + RLENGTH)
       }
     }
+    # kcov-exclude-end
   ' "$1" | sort -u
 }
 
@@ -71,9 +73,11 @@ fenced_calls() {
 # only the key line would report a wrapped permission as a gap.
 allowed_tools() {
   front_matter "$1" | awk '
+    # kcov-exclude-start
     /^allowed-tools:/ { collecting = 1; print; next }
     collecting && /^[[:space:]]/ { print; next }
     collecting { exit }
+    # kcov-exclude-end
   '
 }
 
@@ -88,6 +92,7 @@ allowed_tools() {
 # answer as a missing one.
 declared_commands() {
   printf '%s\n' "$1" | awk '
+    # kcov-exclude-start
     { buf = buf " " $0 }
     END {
       while (match(buf, /Bash\([^)]*\)/)) {
@@ -98,6 +103,7 @@ declared_commands() {
         if (decl != "") print decl
       }
     }
+    # kcov-exclude-end
   '
 }
 

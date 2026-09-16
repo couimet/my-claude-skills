@@ -275,3 +275,26 @@ teardown() {
   [ "$status" -eq 0 ]
   [ ! -d "$BASE/real/42" ]
 }
+
+# ============================================================================
+# Removal failure
+# ============================================================================
+
+# rm -rf succeeds on a directory this process owns even after a chmod, so the
+# tool is stubbed rather than the filesystem permissions changed. See
+# _stub_failing in test_helper.bash: a stub is the only way into an error
+# branch guarding a command that a permission change does not make fail.
+@test "a removal that fails is reported rather than counted as done" {
+  mkdir -p "$BASE/issues/42"
+  local stub_path
+  stub_path="$(_stub_failing "$TEST_TEMP_DIR/badrm" rm)"
+
+  run env PATH="$stub_path" "$SCRIPT" "$BASE/issues/42" --id "42"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"R003"* ]]
+  [[ "$output" == *"failed to remove"* ]]
+  # Still on disk. A caller reading the printed path as "this is gone" would be
+  # wrong, which is why the branch exits non-zero instead of falling through to
+  # the print.
+  [ -d "$BASE/issues/42" ]
+}

@@ -145,7 +145,7 @@ if [ "$worktree_mode" -eq 1 ]; then
   fi
 
   case "$folder" in
-    /*) ;;
+    /*) ;; # kcov-exclude-line
     *) die "$ERR_FOLDER" "'$folder' is not an absolute path" ;;
   esac
   [ -d "$folder" ] \
@@ -252,7 +252,7 @@ fi
 
 # --- Validate the folder ---
 case "$folder" in
-  /*) ;;
+  /*) ;; # kcov-exclude-line
   *) die "$ERR_FOLDER" "'$folder' is not an absolute path" ;;
 esac
 
@@ -320,6 +320,7 @@ jq -n \
   --arg pid "${CLAUDE_PID:-}" \
   --arg child "${CLAUDE_CODE_CHILD_SESSION:-}" \
   '{
+     # kcov-exclude-start
      version: $version,
      folder: $folder,
      session_id: $session_id,
@@ -330,6 +331,7 @@ jq -n \
        pid: (if $pid == "" then null else ($pid | tonumber? // $pid) end),
        child_session: (if $child == "" then null else ($child != "0") end)
      }
+     # kcov-exclude-end
    }' > "$tmp" || die "$ERR_WRITE" "could not compose the session file"
 
 # The rename comes first and the cleanup after. mv within one directory is

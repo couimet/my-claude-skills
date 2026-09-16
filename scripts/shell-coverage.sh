@@ -59,9 +59,33 @@ mkdir -p "$outdir"
 # its output to a log and surface only the tail on failure; otherwise CI step
 # logs would be flooded on every run.
 kcov_log="$outdir/kcov.log"
+#
+# The two exclusion flags mark lines kcov structurally cannot observe, not
+# lines nobody tested. kcov hooks bash's DEBUG trap, which fires once per
+# command at the line where that command completes, so two constructs are
+# unmeasurable no matter how many tests run over them:
+#
+#   1. A multi-line statement. The hit lands on the closing line; the opening
+#      line and every line of an embedded awk or jq program read as a miss
+#      forever. Those program bodies are not bash at all.
+#   2. An empty case arm. `/*) ;;` holds no command, so nothing fires even on
+#      a run where that arm is the one taken.
+#
+# Markers go as close to the unmeasurable lines as possible -- inside the
+# quoted awk or jq program, so the statement's closing line keeps being
+# measured and a reader can still see the call ran. A marker is never a way to
+# hide untested logic; anything a test could reach stays counted.
+#
+# The three markers are spelled <prefix>-start, <prefix>-end and <prefix>-line.
+# They are assembled from the prefix rather than written out, because this file
+# is traced too: a literal marker here would exclude the line carrying it, and
+# the region flag would name a start and an end on one line of its own source.
+mark="kcov-exclude"
 if ! kcov --clean \
   --include-path="$repo_root" \
   --exclude-pattern="bats-tests/,coverage/,.git/,.history/,demo/,node_modules/,\.claude-work/" \
+  --exclude-region="${mark}-start:${mark}-end" \
+  --exclude-line="${mark}-line" \
   "$outdir" \
   bats bats-tests/ >"$kcov_log" 2>&1; then
   echo "shell-coverage $ERR_PREREQ error: kcov run failed; last log lines follow" >&2
