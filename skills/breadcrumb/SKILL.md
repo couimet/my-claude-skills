@@ -23,7 +23,7 @@ Run `branch-issue-id.sh` to resolve the issue identifier:
 - **Exit 0** — the current branch matches a configured `branchPatterns` entry (a work branch): the printed identifier is the issue breadcrumb identifier. Resolve the issue folder with `get-issue-folder-path.sh` and record its stdout as the issue `<folder>`:
 
 ```bash
-~/.claude/skills/issue-context/get-issue-folder-path.sh --id <ID>
+~/.claude/skills/issue-context/get-issue-folder-path.sh --id "<ID>"
 ```
 
 - **Exit 1** — the branch is not an issue branch. Check for a side-quest branch by running `git branch --show-current`:
@@ -34,13 +34,13 @@ git branch --show-current
 
 If the branch starts with `side-quest/`, the identifier is the full slug after `side-quest/` (e.g., `side-quest/cleanup-test-mocks` → `cleanup-test-mocks`). If it matches neither pattern, print: "Not on a work branch. Breadcrumbs require an `issues/*` or `side-quest/*` branch." and STOP.
 
-For a side-quest branch, run `claude-work-root.sh` to resolve the base path:
+For a side-quest branch, run `get-issue-folder-path.sh` with no arguments to resolve the base path:
 
 ```bash
-~/.claude/skills/issue-context/claude-work-root.sh
+~/.claude/skills/issue-context/get-issue-folder-path.sh
 ```
 
-Use the stdout of `claude-work-root.sh` as the base path (e.g., `/Users/x/project/.claude-work`). This script automatically detects git worktrees and returns the shared `.claude-work/` location. Side-quest breadcrumbs sit flat at `<base>/breadcrumb-<slug>.md`.
+Use its stdout as the base path (e.g., `/Users/x/project/.claude-work`). It detects git worktrees, and it follows the session's work folder or this worktree's `CLAUDE_WORK_FOLDER` when one is set, so a side-quest breadcrumb lands beside the working document it belongs to. Side-quest breadcrumbs sit flat at `<base>/breadcrumb-<slug>.md`.
 
 ## Step 2: Validate Input
 
@@ -56,7 +56,7 @@ Use the stdout of `claude-work-root.sh` as the base path (e.g., `/Users/x/projec
 - Issues: `<folder>/breadcrumb.md`, where `<folder>` is the stdout from `get-issue-folder-path.sh` in Step 1 (it honors the configured `segment`)
 - Side-quests: `<base>/breadcrumb-<slug>.md`
 
-Where `<base>` is the stdout from `claude-work-root.sh`, `<ID>` or `<slug>` is the value extracted in Step 1.
+Where `<base>` is the stdout from `get-issue-folder-path.sh`, `<ID>` or `<slug>` is the value extracted in Step 1.
 
 **If file doesn't exist**, create it with `<!-- markdownlint-disable MD013 -->` as the very first line, then the header:
 

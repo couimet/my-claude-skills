@@ -2,8 +2,8 @@
 name: issue-context
 version: 2026.09.10@486eb33
 user-invocable: false
-description: Contract for the issue-context shell scripts that resolve .claude-work/ file paths from the current git branch and from the configurable work-item settings. Referenced by name from the skills that write working files, not auto-consulted.
-allowed-tools: Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/render-branch-template.sh *)
+description: Contract for the issue-context shell scripts that resolve working-file paths from the current session's folder override, the current git branch, and the configurable work-item settings. Referenced by name from the skills that write working files, not auto-consulted.
+allowed-tools: Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/render-branch-template.sh *), Bash(*/skills/issue-context/set-work-folder.sh *), Bash(*/skills/issue-context/work-folder-tier.sh *)
 ---
 
 # Issue Context
@@ -27,7 +27,7 @@ The script resolves the work-item folder through `get-issue-folder-path.sh`. Tha
 3. **Unique.** The script never hands out a path that is already taken, and two calls never hand out the same path, even when they run at the same moment. The only file your write replaces is the empty reservation property 2 describes. Do not check the directory first. Do not edit an earlier file instead of creating a new one.
 4. **Lexicographic order equals creation order.** A byte-order sort of a directory lists the files from oldest to newest. To find the newest file that matches a pattern, take the maximum. Any caller that resolves "the most recent" file relies on this.
 
-Placement follows the branch context. On a branch that matches a configured `branchPatterns` entry, the file goes under the work-item folder. On every other branch, the file goes to the `.claude-work/` root, under its type directory.
+Placement has three levels, resolved in this order. First, the current session's folder override, when one is set and passes the checks below. Second, this worktree's `CLAUDE_WORK_FOLDER` marker. Third, the branch context: on a branch matching a configured `branchPatterns` entry the file goes under the work-item folder, and on every other branch it goes to the `.claude-work/` root, under its type directory. A caller writes a working file the same way in every case; the override and the marker are invisible to it.
 
 The next line is an example, not a specification. Read the filename format from `target-path.sh`. Do not read it from prose:
 
@@ -80,7 +80,50 @@ Resolves the current branch's work-item identifier through the shared matcher in
 ~/.claude/skills/issue-context/get-issue-folder-path.sh [--id <identifier>]
 ```
 
-Prints the `.claude-work/` folder that holds a work item's files: `<claude-work-root>[/<segment>]/<identifier>`. With `--id` the identifier is validated through `resolve-issue-id.sh`. Without `--id` the identifier is inferred through `branch-issue-id.sh`; a branch matching no pattern prints just the root (flat placement). The folder is NOT created. Errors print to stderr and exit 1.
+Prints the folder that holds a work item's files. Without `--id` it walks three tiers in order: the session override, then this worktree's `CLAUDE_WORK_FOLDER` marker, then the branch-derived `<claude-work-root>[/<segment>]/<identifier>` with the identifier inferred through `branch-issue-id.sh`; a branch matching no pattern and no override prints just the root (flat placement). With `--id` the identifier is validated through `resolve-issue-id.sh`, the session override is never consulted, and the marker is honoured as `<marker>/<identifier>` with no segment between. The folder is NOT created. Errors print to stderr and exit 1.
+
+**Stdout is exactly one line, and it is a path.** Callers capture it with command substitution and then create the directory it names, so a status message on stdout would be captured as part of the path and turned into a directory named after the message. Every report this script makes goes to stderr for that reason, and the rule is written here so nobody reintroduces the fault.
+
+The script reports the folder it chose on stderr on every run, and reports separately any override it found and did not use. Without that second line, an override silently ignored looks exactly like never having set one.
+
+## The session folder override
+
+A session can name the folder its working files go to, instead of letting the branch decide. This exists because a repository organised by topic has no way to express placement through a branch name.
+
+The override is written by `set-work-folder.sh`:
+
+```bash
+~/.claude/skills/issue-context/set-work-folder.sh <folder> [name]
+~/.claude/skills/issue-context/set-work-folder.sh --clear
+~/.claude/skills/issue-context/set-work-folder.sh --worktree <folder>
+~/.claude/skills/issue-context/set-work-folder.sh --clear --worktree
+```
+
+`<folder>` must be an absolute path to an existing directory; a relative path and a missing directory are both refused rather than warned about or created, because a typo at write time is read immediately. `[name]` is a cosmetic label for the stored file's name, taken from the argument, else from the `name` in the session's job state file, else omitted. Nothing is ever looked up by the label, so it may go stale. The folder is not required to be inside any repository, and nothing checks that it is: an override may name any existing absolute directory. `--clear` removes the override and succeeds when none is set.
+
+The `--worktree` forms write and remove this worktree's marker instead of this session's override. They need no session id, because a marker belongs to a checkout rather than to a conversation, and they refuse to run outside a git repository, where there is no worktree root for the file to sit at.
+
+## Script: work-folder-tier.sh
+
+```bash
+~/.claude/skills/issue-context/work-folder-tier.sh
+```
+
+Prints exactly one token, `session`, `worktree`, or `branch`, naming the tier that resolution would use right now. A caller cannot work this out from a resolved path, and checking whether the marker file exists is wrong because the session tier outranks it. A skill that deletes a work item's directory asks this so its confirmation can say what the delete will and will not reach. The tier order lives in `work-folder.sh`, sourced by this script and by `get-issue-folder-path.sh`, so the two cannot disagree.
+
+**Three tiers, in order.** The session override comes first, then this worktree's marker, then branch-derived placement. The session tier is deliberate and ephemeral, so it beats the standing one; both beat a default inferred from a branch name. The order lives in `work-folder.sh` and nowhere else.
+
+**Where the worktree marker lives.** A file named `CLAUDE_WORK_FOLDER` at the worktree root, holding one line: an absolute path, or a path whose leading `~/` expands against `$HOME`. It sits at the worktree root rather than under `.claude-work/` because that directory is shared across a repository's worktrees, and two worktrees must be able to point at different folders or at none. It is not gitignored on purpose: it shows in `git status` every day, which is what makes a standing override one you cannot forget you set. It is not JSON, so a missing `jq` cannot take out this tier as well as the session tier.
+
+**Where the override lives.** One JSON file per session, under a `sessions/` directory beside the settings file, named for the session id and the optional label. `MY_CLAUDE_SKILLS_CONFIG` therefore relocates the settings and the sessions together. The document carries a `version`, the `folder` (the only field routing reads), the `session_id`, the `slug`, a `written_at` stamp, and a best-effort `written_by` record of which agent set it. A reader ignores any field it does not recognise, so a later version can add fields safely. The file is written atomically, because two agents in one session can write at the same moment and a half-written document must never be readable. The session id is spelled straight into that filename, so a session id that could not be a filename component is refused by the writer and read as no override at all, rather than naming a file beside the sessions directory instead of inside it.
+
+**A session keeps exactly one file.** A second write replaces the first in place, even under a different label. Two files describing one session cannot be told apart, so the reader refuses a multiple match instead of picking one.
+
+**When an override is refused.** Each of these falls back to the next tier and says so on stderr: the folder does not exist, the path is not absolute, more than one file matches the session, the file is unreadable or malformed, the file carries a version the reader does not know, or `jq` is absent. A marker is refused on the same terms, plus when it is empty or unreadable. Refusing to resolve a path at all would block an unrelated call for a reason that has nothing to do with it, so the resolver never fails on a bad override.
+
+**The override is session-wide.** Subagents launched through the Agent tool run in the same process and inherit the session identity, so one agent setting a folder changes it for its parent and its siblings too. The `written_by` record is what makes an unexpected change traceable afterwards.
+
+**Identity is the session, never the process.** The process backing a conversation is replaced underneath it, and every environment variable dies at that replacement, while the session id survives it. That is why this is a file keyed on the session id and not an exported variable, including as a seed for the file.
 
 ## Script: render-branch-template.sh
 

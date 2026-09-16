@@ -21,6 +21,27 @@ jobs:
 
       - uses: couimet/github-actions/prettier@main
 
+  # Both permission gates run here as named steps so a failure names itself in
+  # the checks list. They also run inside the BATS suite, which is what enforces
+  # them for anyone running `make check` locally; the duplication is deliberate,
+  # because a gate reachable only by reading the test suite is one nobody knows
+  # is running.
+  permissions-coverage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Transitive permissions (each skill declares what the skills it invokes declare)
+        run: bash scripts/check-transitive-tools.sh
+
+      - name: Direct permissions (each skill declares the scripts it tells you to run)
+        run: bash scripts/check-direct-tools.sh
+
   shell-ci-checks:
     uses: couimet/github-actions/.github/workflows/shell-ci-checks.yml@main
     with:

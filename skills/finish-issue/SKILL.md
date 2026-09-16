@@ -22,7 +22,7 @@ If an argument was provided:
 - **It is a URL** (it contains a scheme like `https://`) — resolve it to the issue identifier with `resolve-issue-id.sh`:
 
 ```bash
-~/.claude/skills/issue-context/resolve-issue-id.sh <ARGUMENTS>
+~/.claude/skills/issue-context/resolve-issue-id.sh "<ARGUMENTS>"
 ```
 
 Use its stdout as the identifier (issue mode) and skip branch detection. If it exits 1 (no configured `urlPattern` matched the URL), print its error and STOP.
@@ -60,23 +60,23 @@ Resolve the working location, which differs by mode:
 - **Issue mode** — resolve the issue folder with `get-issue-folder-path.sh` and record its stdout as `<folder>` (it honors the configured `segment`):
 
 ```bash
-~/.claude/skills/issue-context/get-issue-folder-path.sh --id <ID>
+~/.claude/skills/issue-context/get-issue-folder-path.sh --id "<ID>"
 ```
 
-- **Side-quest mode** — resolve the `.claude-work/` root and record its stdout as `<base>`:
+- **Side-quest mode** — resolve the work folder with `get-issue-folder-path.sh` and no arguments, and record its stdout as `<base>`:
 
 ```bash
-~/.claude/skills/issue-context/claude-work-root.sh
+~/.claude/skills/issue-context/get-issue-folder-path.sh
 ```
 
-Both scripts automatically detect git worktrees and return the shared location.
+Both calls detect git worktrees, and they part company on overrides. The `--id` call never consults the session override, because naming a work item is an explicit request that an ambient setting must not retarget: it honors this worktree's `CLAUDE_WORK_FOLDER` marker when one is set, as `<marker>/<ID>`, and otherwise uses branch-derived placement. The no-argument side-quest call follows the session's work folder first, then the marker, then the branch.
 
 Read the active-plan pointer written by `/start-issue` or `/start-side-quest` to locate the primary working document:
 
 - **Issue mode:** read `<folder>/active-plan`
 - **Side-quest mode:** read `<base>/active-plan-<slug>`
 
-The pointer contents is a single project-root-relative path. Record it as the **resolved plan path**. This is the single source of truth for the primary plan.
+The pointer contents is a single absolute path. Record it as the **resolved plan path**. This is the single source of truth for the primary plan. A pointer written before this became the format holds a project-root-relative path instead; resolve anything that is not absolute against the project root.
 
 **If the pointer is missing:** proceed without a resolved plan. Step 4 context gathering falls back to git log and breadcrumbs only.
 
@@ -273,8 +273,8 @@ PR description: <actual-absolute-path-to-pr-description>
 ---
 
 Ready for PR. Review the file and:
-1. Commit: git add -p && git commit -F <actual-absolute-path-to-pr-description>
-2. Push and create PR: gh pr create --title "..." --body-file <actual-absolute-path-to-pr-description>
+1. Commit: git add -p && git commit -F "<actual-absolute-path-to-pr-description>"
+2. Push and create PR: gh pr create --title "..." --body-file "<actual-absolute-path-to-pr-description>"
 3. Or ask Claude to create the PR
 ```
 
@@ -293,8 +293,8 @@ PR description: <actual-absolute-path-to-pr-description>
 ---
 
 Ready for PR. Review the file and:
-1. Commit: git add -p && git commit -F <actual-absolute-path-to-pr-description>
-2. Push and create PR: gh pr create --title "..." --body-file <actual-absolute-path-to-pr-description>
+1. Commit: git add -p && git commit -F "<actual-absolute-path-to-pr-description>"
+2. Push and create PR: gh pr create --title "..." --body-file "<actual-absolute-path-to-pr-description>"
 3. Or ask Claude to create the PR
 ```
 

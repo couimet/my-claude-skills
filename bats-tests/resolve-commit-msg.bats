@@ -7,6 +7,15 @@
 # temp settings file and a developer's real ~/.my-claude-skills/settings.json
 # can never change the outcome.
 
+# `run --separate-stderr` is a flagged run, which bats guarantees only from
+# 1.5.0 onward. Declaring the floor turns the BW02 warning into a checked
+# requirement; CI pins bats 1.14.0 (.github/workflows/ci.yml). The floor reads
+# 1.7.0 rather than 1.5.0 because bats_require_minimum_version is itself a
+# 1.7.0 command: asking for 1.5.0 names two versions, 1.5.x and 1.6.x, that
+# cannot resolve the line making the request, so the suite fails while loading
+# on exactly the versions the declaration claims to allow.
+bats_require_minimum_version 1.7.0
+
 load test_helper
 
 SCRIPT="$PROJECT_ROOT/skills/rebase-issue/resolve-commit-msg.sh"
@@ -46,45 +55,45 @@ write_file() {
 # ============================================================================
 
 @test "missing all arguments prints error with C001" {
-  run "$SCRIPT"
+  run --separate-stderr "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"C001"* ]]
-  [[ "$output" == *"expected 2 arguments, got 0"* ]]
+  [[ "$stderr" == *"C001"* ]]
+  [[ "$stderr" == *"expected 2 arguments, got 0"* ]]
 }
 
 @test "missing target argument prints error with C001" {
-  run "$SCRIPT" "" "42"
+  run --separate-stderr "$SCRIPT" "" "42"
   [ "$status" -eq 1 ]
 }
 
 @test "missing issue-number argument prints error with C001" {
-  run "$SCRIPT" "origin/main"
+  run --separate-stderr "$SCRIPT" "origin/main"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"C001"* ]]
+  [[ "$stderr" == *"C001"* ]]
 }
 
 @test "too many arguments prints error with C001" {
-  run "$SCRIPT" "origin/main" "42" "extra"
+  run --separate-stderr "$SCRIPT" "origin/main" "42" "extra"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"C001"* ]]
+  [[ "$stderr" == *"C001"* ]]
 }
 
 @test "empty issue number prints error with C001" {
-  run "$SCRIPT" "origin/main" ""
+  run --separate-stderr "$SCRIPT" "origin/main" ""
   [ "$status" -eq 1 ]
-  [[ "$output" == *"C001"* ]]
+  [[ "$stderr" == *"C001"* ]]
 }
 
 @test "issue number with slash prints error with C001" {
-  run "$SCRIPT" "origin/main" "42/evil"
+  run --separate-stderr "$SCRIPT" "origin/main" "42/evil"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"C001"* ]]
+  [[ "$stderr" == *"C001"* ]]
 }
 
 @test "usage text is printed on argument error" {
-  run "$SCRIPT"
+  run --separate-stderr "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"Usage:"* ]]
+  [[ "$stderr" == *"Usage:"* ]]
 }
 
 # ============================================================================
@@ -97,7 +106,7 @@ write_file() {
   write_file "$pr_desc" "PR description content here"
   write_file "$issue_dir/last-finish-issue" "$pr_desc"
 
-  run "$SCRIPT" "origin/main" "42"
+  run --separate-stderr "$SCRIPT" "origin/main" "42"
   [ "$status" -eq 0 ]
   [ "$output" = "PR description content here" ]
 }
@@ -108,7 +117,7 @@ write_file() {
   write_file "$pr_desc" "PR description content"
   printf '%s\n' "$pr_desc" > "$issue_dir/last-finish-issue"
 
-  run "$SCRIPT" "origin/main" "42"
+  run --separate-stderr "$SCRIPT" "origin/main" "42"
   [ "$status" -eq 0 ]
   [ "$output" = "PR description content" ]
 }
@@ -121,7 +130,7 @@ write_file() {
   local note="$issue_dir/notes/20260701-120000-finish-issue-42.txt"
   write_file "$note" "fallback note content"
 
-  run "$SCRIPT" "origin/main" "42"
+  run --separate-stderr "$SCRIPT" "origin/main" "42"
   [ "$status" -eq 0 ]
   [ "$output" = "fallback note content" ]
 }
@@ -134,7 +143,7 @@ write_file() {
   local note="$issue_dir/notes/20260701-120000-finish-issue-42.txt"
   write_file "$note" "fallback note content"
 
-  run "$SCRIPT" "origin/main" "42"
+  run --separate-stderr "$SCRIPT" "origin/main" "42"
   [ "$status" -eq 0 ]
   [ "$output" = "fallback note content" ]
 }
@@ -149,7 +158,7 @@ write_file() {
   local note="$issue_dir/notes/20260701-120000-finish-issue-42.txt"
   write_file "$note" "fallback note content"
 
-  run "$SCRIPT" "origin/main" "42"
+  run --separate-stderr "$SCRIPT" "origin/main" "42"
   [ "$status" -eq 0 ]
   [ "$output" = "fallback note content" ]
 }
@@ -163,7 +172,7 @@ write_file() {
   local note="$issue_dir/notes/20260701-120000-finish-issue-42.txt"
   write_file "$note" "single note content"
 
-  run "$SCRIPT" "origin/main" "42"
+  run --separate-stderr "$SCRIPT" "origin/main" "42"
   [ "$status" -eq 0 ]
   [ "$output" = "single note content" ]
 }
@@ -176,7 +185,7 @@ write_file() {
   write_file "$issue_dir/notes/20260703-150000-finish-issue-42.txt" "newer match"
   write_file "$issue_dir/notes/20260704-080000-unrelated.txt" "nope"
 
-  run "$SCRIPT" "origin/main" "42"
+  run --separate-stderr "$SCRIPT" "origin/main" "42"
   [ "$status" -eq 0 ]
   [ "$output" = "newer match" ]
 }
@@ -188,7 +197,7 @@ write_file() {
   git checkout -q -b issues/42
   git commit --allow-empty -q -m "commit message from git log"
 
-  run "$SCRIPT" "main" "42"
+  run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"commit message from git log"* ]]
 }
@@ -197,7 +206,7 @@ write_file() {
   git checkout -q -b issues/42
   git commit --allow-empty -q -m "commit from git log"
 
-  run "$SCRIPT" "main" "42"
+  run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"commit from git log"* ]]
 }
@@ -209,7 +218,7 @@ write_file() {
   git checkout -q -b issues/42
   git commit --allow-empty -q -m "commit from git log"
 
-  run "$SCRIPT" "main" "42"
+  run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"commit from git log"* ]]
 }
@@ -222,7 +231,7 @@ write_file() {
   git checkout -q -b issues/42
   git commit --allow-empty -q -m "issue work commit"
 
-  run "$SCRIPT" "main" "42"
+  run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"issue work commit"* ]]
 }
@@ -233,7 +242,7 @@ write_file() {
 
 Second paragraph of the commit message."
 
-  run "$SCRIPT" "main" "42"
+  run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"First line of commit"* ]]
   [[ "$output" == *"Second paragraph"* ]]
@@ -244,17 +253,17 @@ Second paragraph of the commit message."
   git commit --allow-empty -q -m "first issue commit"
   git commit --allow-empty -q -m "second issue commit"
 
-  run "$SCRIPT" "main" "42"
+  run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 0 ]
   [[ "$output" == *"first issue commit"* ]]
   [[ "$output" == *"second issue commit"* ]]
 }
 
 @test "git log with no divergence → all sources empty" {
-  run "$SCRIPT" "main" "42"
+  run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"C004"* ]]
-  [[ "$output" == *"all commit message sources are empty"* ]]
+  [[ "$stderr" == *"C004"* ]]
+  [[ "$stderr" == *"all commit message sources are empty"* ]]
 }
 
 # ============================================================================
@@ -262,9 +271,9 @@ Second paragraph of the commit message."
 # ============================================================================
 
 @test "all sources empty → exits 1 with C004" {
-  run "$SCRIPT" "origin/main" "99"
+  run --separate-stderr "$SCRIPT" "origin/main" "99"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"C004"* ]]
+  [[ "$stderr" == *"C004"* ]]
 }
 
 @test "non-numeric issue number works (e.g., rfc-auth)" {
@@ -272,7 +281,7 @@ Second paragraph of the commit message."
   local note="$issue_dir/notes/20260701-120000-finish-issue-rfc-auth.txt"
   write_file "$note" "RFC auth plan"
 
-  run "$SCRIPT" "origin/main" "rfc-auth"
+  run --separate-stderr "$SCRIPT" "origin/main" "rfc-auth"
   [ "$status" -eq 0 ]
   [ "$output" = "RFC auth plan" ]
 }
@@ -286,7 +295,7 @@ Second paragraph of the commit message."
 
   write_file "$issue_dir/notes/20260701-120000-finish-issue-42.txt" "note content"
 
-  run "$SCRIPT" "origin/main" "42"
+  run --separate-stderr "$SCRIPT" "origin/main" "42"
   [ "$status" -eq 0 ]
   [ "$output" = "pointer content" ]
 }
@@ -299,7 +308,7 @@ Second paragraph of the commit message."
   git checkout -q -b issues/42
   git commit --allow-empty -q -m "git log content"
 
-  run "$SCRIPT" "origin/main" "42"
+  run --separate-stderr "$SCRIPT" "origin/main" "42"
   [ "$status" -eq 0 ]
   [ "$output" = "note content" ]
 }
@@ -311,15 +320,15 @@ Second paragraph of the commit message."
   write_file "$pr_desc" "content with spaces path"
   write_file "$issue_dir/last-finish-issue" "$pr_desc"
 
-  run "$SCRIPT" "origin/main" "42"
+  run --separate-stderr "$SCRIPT" "origin/main" "42"
   [ "$status" -eq 0 ]
   [ "$output" = "content with spaces path" ]
 }
 
 @test "target ref that does not exist → git log skipped, falls to C004" {
-  run "$SCRIPT" "nonexistent-ref" "42"
+  run --separate-stderr "$SCRIPT" "nonexistent-ref" "42"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"C004"* ]]
+  [[ "$stderr" == *"C004"* ]]
 }
 
 # ============================================================================
@@ -340,7 +349,7 @@ Second paragraph of the commit message."
   write_file "$pr_desc" "PR description content here"
   write_file "$issue_dir/last-finish-issue" "$pr_desc"
 
-  run "$SCRIPT" "main" "42"
+  run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 0 ]
   [ "$output" = "PR description content here" ]
 }
@@ -354,7 +363,7 @@ Second paragraph of the commit message."
   local note="$issue_dir/notes/20260702-090000-finish-issue-42.txt"
   write_file "$note" "segment work note content"
 
-  run "$SCRIPT" "origin/main" "42"
+  run --separate-stderr "$SCRIPT" "origin/main" "42"
   [ "$status" -eq 0 ]
   [ "$output" = "segment work note content" ]
 }
@@ -372,13 +381,13 @@ Second paragraph of the commit message."
   local note="$issue_dir/notes/20260701-120000-finish-issue-42.txt"
   write_file "$note" "flat note content"
 
-  run "$SCRIPT" "main" "42"
+  run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 0 ]
   [ "$output" = "flat note content" ]
 }
 
 @test "not in a git repository → exits 1" {
   cd /tmp
-  run "$SCRIPT" "origin/main" "42"
+  run --separate-stderr "$SCRIPT" "origin/main" "42"
   [ "$status" -eq 1 ]
 }

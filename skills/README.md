@@ -2,15 +2,16 @@
 
 ## Foundation Skills (standalone workflow primitives)
 
-| Skill            | Invocation                          | What It Does                                                                                                                                                                           |
-| ---------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `note`           | `/note <desc>`                      | Creates a timestamped file under `.claude-work/notes/` — lightweight capture; default working-document type for composite skills                                                       |
-| `scratchpad`     | `/scratchpad <desc>`                | Creates a timestamped file under `.claude-work/scratchpads/` with a JSON step block; opt-in when composite skills need formal step tracking via `/tackle-scratchpad-block`             |
-| `question`       | `/question [--format-only] <topic>` | Creates a timestamped file under `.claude-work/questions/` for user Q&A; a bare call delegates the challenge of what to ask to `/g2q`, while `--format-only` only creates the file     |
-| `changelog`      | `/changelog <desc>`                 | Creates or updates a CHANGELOG entry with tone guardrails, thematic grouping, and detail-leak detection                                                                                |
-| `commit-msg`     | `/commit-msg <desc>`                | Creates a timestamped file under `.claude-work/commit-msgs/`                                                                                                                           |
-| `breadcrumb`     | `/breadcrumb <note>`                | Appends timestamped note to `.claude-work/issues/<ID>/breadcrumb.md`                                                                                                                   |
-| `concise-output` | `/concise-output <text>`            | Rewrites the given text with the STE-flavored conciseness pass and prints the result. No file is written. Also auto-consulted through `/prose-style` when a skill writes file content. |
+| Skill             | Invocation                          | What It Does                                                                                                                                                                           |
+| ----------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `note`            | `/note <desc>`                      | Creates a timestamped file under `.claude-work/notes/` — lightweight capture; default working-document type for composite skills                                                       |
+| `scratchpad`      | `/scratchpad <desc>`                | Creates a timestamped file under `.claude-work/scratchpads/` with a JSON step block; opt-in when composite skills need formal step tracking via `/tackle-scratchpad-block`             |
+| `question`        | `/question [--format-only] <topic>` | Creates a timestamped file under `.claude-work/questions/` for user Q&A; a bare call delegates the challenge of what to ask to `/g2q`, while `--format-only` only creates the file     |
+| `changelog`       | `/changelog <desc>`                 | Creates or updates a CHANGELOG entry with tone guardrails, thematic grouping, and detail-leak detection                                                                                |
+| `commit-msg`      | `/commit-msg <desc>`                | Creates a timestamped file under `.claude-work/commit-msgs/`                                                                                                                           |
+| `breadcrumb`      | `/breadcrumb <note>`                | Appends timestamped note to `.claude-work/issues/<ID>/breadcrumb.md`                                                                                                                   |
+| `concise-output`  | `/concise-output <text>`            | Rewrites the given text with the STE-flavored conciseness pass and prints the result. No file is written. Also auto-consulted through `/prose-style` when a skill writes file content. |
+| `set-work-folder` | `/set-work-folder <folder> [name]`  | Points this session's files at a folder, `--worktree <folder>` a checkout's until `--clear --worktree`. Tiers: session, marker, branch. Subagents share the session, so they share it. |
 
 ## Non-Invocable Skills
 
@@ -32,7 +33,7 @@ Non-invocable skills (`user-invocable: false`) don't appear in the `/` menu. The
 | Skill               | Purpose                                                                                                                                                                                                                |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/ensure-gitignore` | Checks that `.gitignore` contains the Claude working directory sentinel and appends it if missing. One Bash call — no file contents loaded into context. Called directly by `/question`, `/scratchpad`, `/commit-msg`. |
-| `/issue-context`    | Thin pointer skill for `target-path.sh` — the shell script that resolves `.claude-work/` file paths from the current git branch. Not auto-consulted; referenced by contract.                                           |
+| `/issue-context`    | Thin pointer skill for `target-path.sh` — the shell script that resolves working-file paths from the session's folder override, then this worktree's `CLAUDE_WORK_FOLDER` marker, then the current git branch.         |
 
 ## Composite Skills (higher-level workflows)
 

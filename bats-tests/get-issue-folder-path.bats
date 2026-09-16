@@ -5,6 +5,15 @@
 # identifier (--id) or inferred from the current branch. Every test runs in a
 # fresh git repo with MY_CLAUDE_SKILLS_CONFIG pointed at a temp settings file.
 
+# `run --separate-stderr` is a flagged run, which bats guarantees only from
+# 1.5.0 onward. Declaring the floor turns the BW02 warning into a checked
+# requirement; CI pins bats 1.14.0 (.github/workflows/ci.yml). The floor reads
+# 1.7.0 rather than 1.5.0 because bats_require_minimum_version is itself a
+# 1.7.0 command: asking for 1.5.0 names two versions, 1.5.x and 1.6.x, that
+# cannot resolve the line making the request, so the suite fails while loading
+# on exactly the versions the declaration claims to allow.
+bats_require_minimum_version 1.7.0
+
 load test_helper
 
 SCRIPT="$PROJECT_ROOT/skills/issue-context/get-issue-folder-path.sh"
@@ -28,8 +37,19 @@ teardown() {
 }
 
 # Run the resolver with MY_CLAUDE_SKILLS_CONFIG pointing at the given config.
+#
+# --separate-stderr, so $output is the resolver's single stdout line and
+# $stderr holds its reports and the settings loader's warnings. The resolver
+# reports the folder it chose on every run (issues/267); without the flag that
+# line would be folded into $output and every exact-equality assertion below
+# would be asserting on two lines.
+# -u CLAUDE_CODE_SESSION_ID: a bats run inherits the environment of whoever
+# started it, and a Claude Code session exports a real session id. These tests
+# assert branch-derived placement, so the session must be absent rather than
+# whatever the developer happens to be running under.
 folder_with_config() {
-  run env MY_CLAUDE_SKILLS_CONFIG="$1" "$SCRIPT" "${@:2}"
+  run --separate-stderr env -u CLAUDE_CODE_SESSION_ID \
+    MY_CLAUDE_SKILLS_CONFIG="$1" "$SCRIPT" "${@:2}"
 }
 
 # ============================================================================
@@ -72,7 +92,7 @@ folder_with_config() {
 @test "--id with an unsafe identifier errors" {
   folder_with_config "$CFG" --id ".hidden"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"not usable"* ]]
+  [[ "$stderr" == *"not usable"* ]]
 }
 
 # ============================================================================
@@ -117,7 +137,7 @@ folder_with_config() {
   local cfg="$TEST_TEMP_DIR/override.json"
   printf '%s' '{"segment":"overrideval"}' > "$cfg"
   git checkout -q -b issues/42
-  run env HOME="$home" MY_CLAUDE_SKILLS_CONFIG="$cfg" "$SCRIPT"
+  run --separate-stderr env -u CLAUDE_CODE_SESSION_ID HOME="$home" MY_CLAUDE_SKILLS_CONFIG="$cfg" "$SCRIPT"
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR/.claude-work/overrideval/42" ]
 }
@@ -127,8 +147,8 @@ folder_with_config() {
   printf '%s' '{"segment":' > "$cfg"
   folder_with_config "$cfg" --id 42
   [ "$status" -eq 0 ]
-  [[ "$output" == *"warning"* ]]
-  [[ "$output" == *"$TEST_TEMP_DIR/.claude-work/issues/42" ]]
+  [[ "$stderr" == *"warning"* ]]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
 }
 
 # ============================================================================
@@ -140,8 +160,8 @@ folder_with_config() {
   printf '%s' '{"segment":"work/../x"}' > "$cfg"
   folder_with_config "$cfg" --id 42
   [ "$status" -eq 0 ]
-  [[ "$output" == *"warning"* ]]
-  [[ "$output" == *"$TEST_TEMP_DIR/.claude-work/issues/42" ]]
+  [[ "$stderr" == *"warning"* ]]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
   [[ "$output" != *"/work/../x/"* ]]
 }
 
@@ -150,8 +170,8 @@ folder_with_config() {
   printf '%s' '{"segment":".."}' > "$cfg"
   folder_with_config "$cfg" --id 42
   [ "$status" -eq 0 ]
-  [[ "$output" == *"warning"* ]]
-  [[ "$output" == *"$TEST_TEMP_DIR/.claude-work/issues/42" ]]
+  [[ "$stderr" == *"warning"* ]]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
 }
 
 # ============================================================================
@@ -187,4 +207,269 @@ folder_with_config() {
   folder_with_config "$CFG" --id 262
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/262" ]
+}
+
+# ============================================================================
+# Session folder override (issues/267)
+#
+# These tests run the resolver with --separate-stderr, so $output is the single
+# stdout line and $stderr holds the reports. Every case asserts the stdout line
+# count as well as its value: the whole point of routing reports to stderr is
+# that a caller capturing stdout with command substitution gets a path and
+# nothing else.
+# ============================================================================
+
+SESSION_ID="06cb4128-c112-4696-bddb-3a52d1684a20"
+
+# Run the resolver with a session id in the environment.
+folder_with_session() {
+  run --separate-stderr env \
+    MY_CLAUDE_SKILLS_CONFIG="$1" \
+    CLAUDE_CODE_SESSION_ID="$2" \
+    "$SCRIPT" "${@:3}"
+}
+
+# Write a session file for SESSION_ID pointing at <folder>, under the sessions
+# directory beside the config file.
+write_session_file() {
+  local folder="$1" name="${2:-${SESSION_ID}.json}"
+  mkdir -p "$TEST_TEMP_DIR/sessions"
+  printf '{"version":1,"folder":"%s","session_id":"%s"}' \
+    "$folder" "$SESSION_ID" > "$TEST_TEMP_DIR/sessions/$name"
+}
+
+@test "override: no session file → branch-derived placement, unchanged" {
+  git checkout -q -b issues/42
+  folder_with_session "$CFG" "$SESSION_ID"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
+  [ "${#lines[@]}" -eq 1 ]
+  [[ "$stderr" == *"using $TEST_TEMP_DIR/.claude-work/issues/42"* ]]
+  [[ "$stderr" != *"override"* ]]
+}
+
+@test "override: valid session file wins over the branch" {
+  mkdir -p "$TEST_TEMP_DIR/my-topic"
+  write_session_file "$TEST_TEMP_DIR/my-topic"
+  git checkout -q -b issues/42
+  folder_with_session "$CFG" "$SESSION_ID"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/my-topic" ]
+  [ "${#lines[@]}" -eq 1 ]
+  [[ "$stderr" == *"using $TEST_TEMP_DIR/my-topic"* ]]
+}
+
+@test "override: valid session file also wins over flat placement" {
+  mkdir -p "$TEST_TEMP_DIR/my-topic"
+  write_session_file "$TEST_TEMP_DIR/my-topic"
+  folder_with_session "$CFG" "$SESSION_ID"
+  [ "$output" = "$TEST_TEMP_DIR/my-topic" ]
+  [ "${#lines[@]}" -eq 1 ]
+}
+
+@test "override: a file with no slug in its name resolves the same" {
+  mkdir -p "$TEST_TEMP_DIR/my-topic"
+  write_session_file "$TEST_TEMP_DIR/my-topic" "${SESSION_ID}--some-work.json"
+  folder_with_session "$CFG" "$SESSION_ID"
+  [ "$output" = "$TEST_TEMP_DIR/my-topic" ]
+}
+
+@test "override: another session's file is not read" {
+  mkdir -p "$TEST_TEMP_DIR/my-topic"
+  write_session_file "$TEST_TEMP_DIR/my-topic" "some-other-session.json"
+  folder_with_session "$CFG" "$SESSION_ID"
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
+  [[ "$stderr" != *"override"* ]]
+}
+
+@test "override: --id bypasses it and says so" {
+  mkdir -p "$TEST_TEMP_DIR/my-topic"
+  write_session_file "$TEST_TEMP_DIR/my-topic"
+  folder_with_session "$CFG" "$SESSION_ID" --id 42
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
+  [ "${#lines[@]}" -eq 1 ]
+  [[ "$stderr" == *"bypassed"* ]]
+  [[ "$stderr" == *"--id names a work item explicitly"* ]]
+}
+
+@test "override: a folder that no longer exists is ignored and reported" {
+  write_session_file "$TEST_TEMP_DIR/deleted-topic"
+  git checkout -q -b issues/42
+  folder_with_session "$CFG" "$SESSION_ID"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
+  [ "${#lines[@]}" -eq 1 ]
+  [[ "$stderr" == *"not an existing directory"* ]]
+}
+
+@test "override: a relative path is refused" {
+  write_session_file "my-topic"
+  folder_with_session "$CFG" "$SESSION_ID"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
+  [[ "$stderr" == *"not an absolute path"* ]]
+}
+
+@test "override: a path outside the repository is honoured" {
+  # Containment is gone on purpose: a topic folder in another repository is
+  # the case the override exists for. The session tier is the self-cleaning
+  # one, so a mistake here dies with the session.
+  local outside
+  outside="$(mktemp -d)"
+  outside="$(cd "$outside" && pwd -P)"
+  write_session_file "$outside"
+  folder_with_session "$CFG" "$SESSION_ID"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$outside" ]
+  [ "${#lines[@]}" -eq 1 ]
+  rm -rf "$outside"
+}
+
+@test "override: a path spelled through .. resolves to where it physically is" {
+  # Canonicalisation outlived containment. Nothing refuses this path now, and
+  # what is emitted is still the physical location rather than the spelling.
+  local escaping="$TEST_TEMP_DIR/../$(basename "$TEST_TEMP_DIR")-escape"
+  mkdir -p "$escaping"
+  write_session_file "$escaping"
+  folder_with_session "$CFG" "$SESSION_ID"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cd "$escaping" && pwd -P)" ]
+  [[ "$output" != *".."* ]]
+  rm -rf "$escaping"
+}
+
+@test "override: a malformed session file is ignored and reported" {
+  mkdir -p "$TEST_TEMP_DIR/sessions"
+  printf '%s' '{"version":1,"folder":' > "$TEST_TEMP_DIR/sessions/${SESSION_ID}.json"
+  folder_with_session "$CFG" "$SESSION_ID"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
+  [ "${#lines[@]}" -eq 1 ]
+  [[ "$stderr" == *"unreadable or malformed"* ]]
+}
+
+@test "override: an unrecognised version is ignored and reported" {
+  mkdir -p "$TEST_TEMP_DIR/my-topic" "$TEST_TEMP_DIR/sessions"
+  printf '{"version":99,"folder":"%s/my-topic"}' "$TEST_TEMP_DIR" \
+    > "$TEST_TEMP_DIR/sessions/${SESSION_ID}.json"
+  folder_with_session "$CFG" "$SESSION_ID"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
+  [[ "$stderr" == *"unrecognised version"* ]]
+}
+
+@test "override: two files for one session are refused and reported" {
+  mkdir -p "$TEST_TEMP_DIR/my-topic"
+  write_session_file "$TEST_TEMP_DIR/my-topic"
+  write_session_file "$TEST_TEMP_DIR/my-topic" "${SESSION_ID}--second.json"
+  folder_with_session "$CFG" "$SESSION_ID"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
+  [ "${#lines[@]}" -eq 1 ]
+  [[ "$stderr" == *"more than one session file"* ]]
+}
+
+@test "override: jq absent is ignored and reported, not fatal" {
+  # The reader cannot parse the document without jq. Resolving must still
+  # produce a path, because refusing would block a call that has nothing to do
+  # with the override.
+  mkdir -p "$TEST_TEMP_DIR/my-topic"
+  write_session_file "$TEST_TEMP_DIR/my-topic"
+  git checkout -q -b issues/42
+  local nojq_path
+  nojq_path="$(_stub_path_without "$TEST_TEMP_DIR/nojq-bin" jq)"
+  run --separate-stderr env PATH="$nojq_path" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
+    "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
+  [ "${#lines[@]}" -eq 1 ]
+  [[ "$stderr" == *"override ignored"* ]]
+  [[ "$stderr" == *"jq not found"* ]]
+}
+
+@test "override: a folder that cannot be entered is ignored and reported" {
+  _require_enforced_permission_bits
+  # Mode 000 leaves the directory testable with -d, because that reads the
+  # parent, and unenterable by cd, which is the gap between the existence
+  # check and canonicalisation.
+  mkdir -p "$TEST_TEMP_DIR/locked-topic"
+  write_session_file "$TEST_TEMP_DIR/locked-topic"
+  git checkout -q -b issues/42
+  chmod 000 "$TEST_TEMP_DIR/locked-topic"
+  folder_with_session "$CFG" "$SESSION_ID"
+  local st="$status" out="$output" err="$stderr"
+  chmod 755 "$TEST_TEMP_DIR/locked-topic"
+  [ "$st" -eq 0 ]
+  [ "$out" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
+  [[ "$err" == *"override ignored"* ]]
+  [[ "$err" == *"could not be resolved"* ]]
+}
+
+@test "override: outside a git repository it still wins" {
+  # There is nothing left to judge an override against, and the tiers below it
+  # both need a repository, so an override is the only thing that can resolve
+  # here at all. Refusing it would fail a call it is able to answer.
+  local outside
+  outside="$(mktemp -d)"
+  outside="$(cd "$outside" && pwd -P)"
+  mkdir -p "$outside/sessions" "$outside/my-topic"
+  printf '{"version":1,"folder":"%s","session_id":"%s"}' \
+    "$outside/my-topic" "$SESSION_ID" > "$outside/sessions/${SESSION_ID}.json"
+  cd "$outside"
+  run --separate-stderr env \
+    MY_CLAUDE_SKILLS_CONFIG="$outside/settings.json" \
+    CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
+    "$SCRIPT"
+  local out="$output" st="$status"
+  cd "$TEST_TEMP_DIR"
+  rm -rf "$outside"
+  [ "$st" -eq 0 ]
+  [ "$out" = "$outside/my-topic" ]
+}
+
+@test "a bad argument count prints usage and errors" {
+  folder_with_config "$CFG" --id
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"usage: get-issue-folder-path.sh"* ]]
+}
+
+@test "override: the sessions directory follows MY_CLAUDE_SKILLS_CONFIG" {
+  # A config elsewhere means a sessions directory elsewhere, so a file beside
+  # the default config must not be found.
+  mkdir -p "$TEST_TEMP_DIR/my-topic" "$TEST_TEMP_DIR/elsewhere"
+  write_session_file "$TEST_TEMP_DIR/my-topic"
+  local other="$TEST_TEMP_DIR/elsewhere/settings.json"
+  printf '%s' '{}' > "$other"
+  folder_with_session "$other" "$SESSION_ID"
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
+  [[ "$stderr" != *"override"* ]]
+}
+
+@test "override: the folder is not created by resolving it" {
+  write_session_file "$TEST_TEMP_DIR/never-made"
+  folder_with_session "$CFG" "$SESSION_ID"
+  [ ! -d "$TEST_TEMP_DIR/never-made" ]
+}
+
+@test "override: the repository root itself resolves as given" {
+  write_session_file "$TEST_TEMP_DIR"
+  folder_with_session "$CFG" "$SESSION_ID"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR" ]
+}
+
+@test "override: a sibling sharing the root's name prefix resolves to itself" {
+  # "$TEST_TEMP_DIR-sibling" starts with the root string without being under
+  # it. The containment check that once had to tell those apart is gone; this
+  # stays as the guard that no string-prefix comparison crept back in.
+  local sibling="${TEST_TEMP_DIR}-sibling"
+  mkdir -p "$sibling"
+  write_session_file "$sibling"
+  folder_with_session "$CFG" "$SESSION_ID"
+  [ "$output" = "$sibling" ]
+  rm -rf "$sibling"
 }

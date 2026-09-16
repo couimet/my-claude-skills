@@ -44,7 +44,7 @@ The base branch for the side-quest is the branch that was active when `/start-si
 
 ```bash
 git fetch origin
-git checkout -b side-quest/<slug> <base-branch>
+git checkout -b "side-quest/<slug>" "<base-branch>"
 ```
 
 Branch naming pattern: `side-quest/<descriptive-slug>`
@@ -64,7 +64,7 @@ Choose the working-document type based on whether formal step tracking is reques
 - **Default (`/note`):** use this unless the user explicitly opted in. Produces a lightweight, freeform plan. Relies on you (the LLM) to self-organize execution in-session.
 - **Opt-in (`/scratchpad`):** triggered when `$ARGUMENTS` contains `--scratchpad`, or when the user's invoking message contains a natural-language opt-in phrase ("use a scratchpad", "with step tracking", "formal plan", "track steps"). Produces a scratchpad with a JSON step block so `/tackle-scratchpad-block` can drive execution.
 
-Side-quest branches don't match `issues/*`, so the working document lands in the flat `<base>/notes/` (default) or `<base>/scratchpads/` (opt-in) directory. `<base>` is the output of `~/.claude/skills/issue-context/claude-work-root.sh`.
+Side-quest branches don't match `issues/*`, so the working document lands in the flat `<base>/notes/` (default) or `<base>/scratchpads/` (opt-in) directory. `<base>` is the output of `~/.claude/skills/issue-context/get-issue-folder-path.sh` with no arguments, which is the session's work folder when one is set, this worktree's `CLAUDE_WORK_FOLDER` when one is, and the `.claude-work/` root otherwise.
 
 ### 3a. Default path: `/note`
 
@@ -92,12 +92,12 @@ Use `/scratchpad` with description `side-quest-<slug>`. Same sections as 3a, exc
 
 After the working document is created (via either path), write the pointer file so `/finish-issue` and `/tackle-scratchpad-block` can resolve the primary plan:
 
-**Path:** `<base>/active-plan-<slug>` (where `<base>` is from `claude-work-root.sh`)
+**Path:** `<base>/active-plan-<slug>` (where `<base>` is the stdout of `get-issue-folder-path.sh` with no arguments, so the pointer lands beside the working document it names rather than at the `.claude-work/` root)
 
-**Contents:** the project-root-relative path to the working document, for example:
+**Contents:** the absolute path to the working document, which is what `/note` and `/scratchpad` already return, so write what they gave you without converting it. For example:
 
 ```text
-.claude-work/notes/<the-filename-/note-returned>.txt
+/Users/you/project/.claude-work/notes/<the-filename-/note-returned>.txt
 ```
 
 Overwrite any existing pointer with the same slug.
@@ -131,7 +131,7 @@ Stash: <stash message if applicable>
 Ready to implement. When done:
 1. Commit your changes
 2. Run `/finish-issue` to verify, generate PR description, and wrap up
-3. Return to parent: git checkout <parent-branch>
+3. Return to parent: git checkout "<parent-branch>"
    (run `git stash pop` only if changes were stashed)
 ```
 
@@ -149,7 +149,7 @@ Before finishing, verify:
 - [ ] Current work stashed (if on a work branch with changes)
 - [ ] Side-quest branch created from `<base-branch>`
 - [ ] Working document created via `/note` (default) or `/scratchpad` (opt-in). Not both
-- [ ] `<base>/active-plan-<slug>` pointer written with the project-root-relative path to the working document
+- [ ] `<base>/active-plan-<slug>` pointer written with the absolute path to the working document
 - [ ] Plan has specific file/change details
 - [ ] Parent branch noted for easy return
 

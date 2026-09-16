@@ -10,6 +10,25 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.09.15
+
+### Added
+
+- `/set-work-folder <folder>` points this session's working files at a folder you choose, instead of letting the current git branch decide where they go. Notes, questions, scratchpads, and commit-message drafts all follow it. This is for repositories organised by topic rather than by branch, where the branch name says nothing about what you are working on and the files end up scattered. `/set-work-folder --clear` removes it, and your files go back to the folder this worktree names if you have set one, and to branch-derived placement if you have not. ([issues/267](https://github.com/couimet/my-claude-skills/issues/267))
+- `/set-work-folder --worktree <folder>` does the same thing for a checkout rather than a session, and it lasts until you clear it. It writes a `CLAUDE_WORK_FOLDER` file at the root of the worktree you are in, so a checkout that always belongs to one topic says so once instead of once per session. The file is not gitignored on purpose: it sits in `git status` until you remove it, because a setting that outlives your session is one worth being reminded about. Two worktrees of the same repository can point at different folders, or one at a folder and the other at nothing. `/set-work-folder --clear --worktree` removes it. ([issues/267](https://github.com/couimet/my-claude-skills/issues/267))
+
+### Changed
+
+- A folder you set applies to the whole session, including subagents. An agent launched from your session shares its identity, so a folder it sets moves your files too, and yours moves its. ([issues/267](https://github.com/couimet/my-claude-skills/issues/267))
+- A folder you set may live anywhere: any existing directory, in another repository or in none. That is the point of setting one, and it is what lets a topic folder in one checkout collect the work you do from another. A folder that has been deleted is still ignored rather than obeyed. ([issues/267](https://github.com/couimet/my-claude-skills/issues/267))
+- Every path resolution now says on stderr which folder it chose, and says when a folder you set was found and not used. Without that line, an ignored setting looked exactly like never having set one. ([issues/267](https://github.com/couimet/my-claude-skills/issues/267))
+- Naming a work item explicitly, as `/cleanup-issue 42` does, still resolves that work item's folder rather than the one your session is pointed at. It does follow a worktree's `CLAUDE_WORK_FOLDER`, because that is a standing statement about where a checkout keeps its files rather than a setting made in passing. ([issues/267](https://github.com/couimet/my-claude-skills/issues/267))
+- Cleaning up a work item while a worktree folder is set removes the plan pointers and the breadcrumb, and leaves the notes and questions, which sit together for every work item rather than in per-item directories. `/cleanup-issue` now says this at its confirmation prompt and again when it reports what it removed, so a finished cleanup is not read as more than it was. It says it whether or not you have also set a folder for this session, because naming a work item follows the worktree's folder either way, and that is the directory the cleanup reaches. ([issues/267](https://github.com/couimet/my-claude-skills/issues/267))
+
+### Fixed
+
+- `/finish-issue` can find the plan `/start-issue` wrote when you work in a linked git worktree. The pointer between them held a path relative to the project root, while working files live in the main checkout, so in a worktree it named a file that was not there. Both ends use an absolute path now. ([issues/267](https://github.com/couimet/my-claude-skills/issues/267))
+
 ## 2026.09.10
 
 ### Changed

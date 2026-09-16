@@ -45,7 +45,7 @@ git fetch origin
 Run the target resolution script:
 
 ```bash
-~/.claude/skills/rebase-issue/resolve-target.sh <NUMBER> [$ARGUMENTS]
+~/.claude/skills/rebase-issue/resolve-target.sh "<NUMBER>" [$ARGUMENTS]
 ```
 
 The script resolves the target from the explicit argument (if provided), `gh pr list` (authoritative for PR stacking relationships), the base-branch marker file, or falls back to `origin/main`. It outputs two lines:
@@ -63,7 +63,7 @@ Use these values throughout the remaining steps.
 ## Step 4: Show Divergence — Our Commits
 
 ```bash
-git log --oneline <target>..HEAD
+git log --oneline "<target>..HEAD"
 ```
 
 Shows commits on our branch that are not on the target. If empty, there is nothing to rebase. Report "No upstream changes — nothing to rebase" and stop the procedure here.
@@ -71,7 +71,7 @@ Shows commits on our branch that are not on the target. If empty, there is nothi
 ## Step 5: Show Divergence — Target Commits
 
 ```bash
-git log --oneline HEAD..<target>
+git log --oneline "HEAD..<target>"
 ```
 
 Shows commits on the target that are not on our branch. This is what will be replayed onto our branch.
@@ -81,11 +81,11 @@ Shows commits on the target that are not on our branch. This is what will be rep
 Run both commands:
 
 ```bash
-git diff --name-only $(git merge-base <target> HEAD)..HEAD
+git diff --name-only "$(git merge-base '<target>' HEAD)..HEAD"
 ```
 
 ```bash
-git log --name-only HEAD..<target>
+git log --name-only "HEAD..<target>"
 ```
 
 Compare the file lists. Files appearing in both lists are potential conflict areas. Report these to the user before proceeding so they know what to expect.
@@ -95,7 +95,7 @@ Compare the file lists. Files appearing in both lists are potential conflict are
 **Normal mode** (MODE=normal):
 
 ```bash
-git rebase <target>
+git rebase "<target>"
 ```
 
 **Stacked mode** (MODE=stacked):
@@ -103,7 +103,7 @@ git rebase <target>
 Run the diff-apply script:
 
 ```bash
-~/.claude/skills/rebase-issue/apply-stacked-diff.sh <target>
+~/.claude/skills/rebase-issue/apply-stacked-diff.sh "<target>"
 ```
 
 The script saves the current HEAD to a unique temp branch, captures the unique diff against the target, resets to the target, and applies the changes with `--reject`. On success, all changes are staged and temp resources are cleaned up. On failure, `.rej` files and the patch file are preserved for manual resolution. Inspect the `.rej` files beside the affected source files, hand-apply the changes, delete all generated `.rej` files, then stage with `git add -A`. `apply-stacked-diff.sh` writes the patch file to `/tmp`, outside the repo, so it is not staged. Continue to Step 9.
@@ -125,7 +125,7 @@ If `git rebase` reports conflicts, resolve them following this strategy:
 After rebase completes (cleanly or after conflict resolution):
 
 ```bash
-git diff <target> --stat
+git diff "<target>" --stat
 ```
 
 Verify only issue-specific changes remain. Then run the project's formatter and test suite. The commands are project-agnostic. The harness will prompt for the specific commands. If tests fail, investigate and fix before proceeding.
@@ -135,7 +135,7 @@ Verify only issue-specific changes remain. Then run the project's formatter and 
 **Normal mode:**
 
 ```bash
-git reset --soft <target>
+git reset --soft "<target>"
 ```
 
 All changes are now staged as a single diff, ready for one commit.
@@ -157,7 +157,7 @@ The pointer and notes live in the work-item folder `<folder> = <base>[/<segment>
 3. **git log fallback** — captures `git log --format=%B <target>..HEAD` (the original commits before the soft reset)
 
 ```bash
-~/.claude/skills/rebase-issue/resolve-commit-msg.sh <target> <ID>
+~/.claude/skills/rebase-issue/resolve-commit-msg.sh "<target>" "<ID>"
 ```
 
 The script outputs the commit message to stdout on success (exit 0) or an error to stderr (exit 1) if all sources are empty.
@@ -167,14 +167,14 @@ The script outputs the commit message to stdout on success (exit 0) or an error 
 If the script succeeded, write its stdout to a temporary file and commit:
 
 ```bash
-git commit -F <commit-message-file>
+git commit -F "<commit-message-file>"
 ```
 
 If the script failed (exit 1), all sources are empty. Abort and ask the user for a commit message.
 
 ## Step 13: Report and Offer Push
 
-Report: branch now has 1 commit on top of `<target>`. Show `git log --oneline -1` and `git diff <target> --stat`.
+Report: branch now has 1 commit on top of `<target>`. Show `git log --oneline -1` and `git diff "<target>" --stat`.
 
 First, use `AskUserQuestion` to confirm the target remote and branch. Default to the configured upstream remote and current branch name. If no upstream is configured, default to `origin` and the current branch name. Then use `AskUserQuestion` to ask whether to push:
 
@@ -196,7 +196,7 @@ When `git rebase` encounters conflicts during Step 8, apply this strategy:
 - **No upstream changes:** `HEAD..<target>` is empty. Nothing to rebase. Report and exit at Step 4.
 - **Stacked PRs:** when the base-branch marker file records a feature branch that still exists remotely, `git rebase` is replaced with a diff-apply via `apply-stacked-diff.sh` (Step 7). The script captures only the unique stacked diff, avoiding contamination from old commits whose changes already exist in the squashed base. When the recorded base branch disappears from the remote (PR merged and branch deleted), `resolve-target.sh` exits with a `T004` error telling the user the marker is stale. The user must specify an explicit target via `/rebase-issue <target>`. Classification is handled uniformly by `resolve-target.sh`. Any target that is not a long-lived base branch (`main`, `master`) uses stacked mode, regardless of naming convention.
 - **Diff apply conflicts:** when `git apply --reject` fails in stacked mode, `.rej` files and the patch file (written to `/tmp` by `apply-stacked-diff.sh`) are preserved for manual resolution. The diff is limited to the stacked branch's unique changes, so conflicts are narrow and focused.
-- **Clean rebase:** `git rebase <target>` completes with no conflicts. Proceed directly to Step 9.
+- **Clean rebase:** `git rebase "<target>"` completes with no conflicts. Proceed directly to Step 9.
 - **Unresolvable conflicts:** abort with `git rebase --abort` and ask the user.
 - **Missing pointer file:** fall back to find, then to git log (Step 11).
 - **Tests fail after rebase:** investigate and fix before proceeding. Check if project prerequisites need updating first.

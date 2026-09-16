@@ -4,6 +4,7 @@
 - **Date:** 2026-09-04
 - **Issue:** <https://github.com/couimet/my-claude-skills/issues/248>
 - **Amended:** 2026-09-08 by <https://github.com/couimet/my-claude-skills/issues/262> (identifier case)
+- **Amended:** 2026-09-14 by <https://github.com/couimet/my-claude-skills/issues/267> (session folder override)
 
 ## Context
 
@@ -37,11 +38,51 @@ The `upper` default is deliberately not backwards compatible. The defect is that
 
 The flexibility lives in the shell scripts, which already resolve paths and which the skills already delegate to. Skill prose gains no branching. This honors the token objection that deferred behavior-replacement hooks in ADR 001, and path resolution is where that deferral ends: this ADR supersedes it.
 
-Branch patterns are the whole identity mechanism. There is no declaration file recording the current work item. This deferral is deliberate and its cost is explicit: a branch renamed after work starts orphans its directory, because nothing else ties the folder to the work. Orphan detection in the cleanup skill is the mitigation.
+Branch patterns were the whole identity mechanism until issue 267 added a second one; the amendment below revises this paragraph. Nothing declares which work item a folder belongs to, and that deferral stands: a branch renamed after work starts orphans its directory, because nothing else ties the folder to the work. Orphan detection in the cleanup skill is the mitigation.
 
 Config loading is fail-open. A missing file, unreadable file, malformed JSON, or invalid regex writes a warning to stderr and falls back to the built-in defaults; a branch matching no pattern gets flat placement, today's behavior. Refusing to resolve a path is worse than resolving it the old way.
 
 URL patterns match on path shape, not hostname, so self-hosted and enterprise installations resolve the same URLs as github.com. The identifier resolver validates that a value is usable as a path segment and a branch name; it does not validate that the value looks like an identifier.
+
+### Session folder override (amendment, issue 267)
+
+**Let a session name the folder its working files go to, and resolve that before the branch.** Placement was a function of the branch alone, so a repository organised by topic could not express where its files belong. Instructions telling agents to write elsewhere do not fix this: the mechanism wins over the prose, which this repository already learned when it moved filename derivation out of skill prose and into `target-path.sh`.
+
+The override is one JSON file per session, under a `sessions/` directory beside the settings file, keyed on `CLAUDE_CODE_SESSION_ID`. `get-issue-folder-path.sh` reads it; a new `set-work-folder.sh` writes it, and a slash command wraps that so a folder can be set at any point in any session rather than only at launch. The motivating case was an ordinary session, not a launched agent, so a launch-time-only writer would have routed nothing.
+
+`get-issue-folder-path.sh` is the seam because returning a work item's folder is already its documented job. An override in `claude-work-root.sh` would redefine the root for callers that want only the root, and one in `target-path.sh` would leave the folder script reporting a location nothing uses. `target-path.sh` is unchanged, so `<topic>/notes/<name>` falls out on its own and the four contract properties still hold.
+
+**Identity is the session, never the process.** A conversation's process is replaced underneath it: moving a session to a background spare gives it a different `CLAUDE_PID` and an environment the terminal never set, while `CLAUDE_CODE_SESSION_ID` survives the swap. Routing by environment variable would therefore send one conversation to two places, silently, with nothing in the output to explain it. Seeding the file from a variable fails for the same reason, and buys nothing: the writer has to run either way. This is recorded because it is an obvious idea that will be proposed again.
+
+**Naming a work item bypasses the override.** A `--id` call resolves the work item named, not the session's folder. The callers that pass `--id` are the ones that delete a directory or read a pointer out of it, and an ambient session setting must not retarget those.
+
+**Every refusal falls back rather than failing.** A folder that is gone, an unreadable or malformed file, an unknown `version`, two files matching one session, or a missing `jq` all fall back to the next tier. Refusing to resolve a path would block an unrelated call for an unrelated reason. Each refusal is reported on stderr, because an override silently ignored is indistinguishable from never having set one.
+
+That reporting requirement is what put the script's stdout contract in writing: stdout is exactly one line and it is a path. Callers capture it with command substitution and create the directory it names, so a message on stdout becomes a directory named after the message.
+
+**The override is session-wide.** Subagents share their parent's session id, so one agent setting a folder changes it for its parent and its siblings. The file records which agent wrote it, best-effort, since Claude Code exposes no stable subagent identifier.
+
+**Nothing prunes old session files.** Each is a small document and the directory grows by one per session. Pruning at write time would tidy a directory already in use; pruning at read time would give a read a write side effect, which is the objection that ruled out other designs here. A slow leak beats a deletion path that could remove a live session's file.
+
+### Per-worktree override, and no containment (amendment, issue 267)
+
+**A checkout may name its own work folder, in a file at its own root.** The session override dies with the session that set it, while grouping one topic's working files is work that spans days, so every new session had to set the folder again before writing anything. `CLAUDE_WORK_FOLDER` at the worktree root holds one line naming the folder, and it lives until someone deletes it. This is the per-repository override this ADR had already deferred, arriving as a file in the checkout rather than as a settings key, which needs no key at all because it travels with the checkout it describes.
+
+The file sits at the worktree root and not under `.claude-work/`, which is the placement this ADR gives that directory: `claude-work-root.sh` resolves it to the main checkout so every linked worktree shares one copy. Sharing is right for working files and wrong for this. Two worktrees of one repository must be able to point at different folders, or one at a folder and the other at nothing, and only a per-worktree location can express that.
+
+It is deliberately not gitignored. It appears in `git status` until it is cleared, which is the property being bought: a setting that outlives the session that made it should be one the user cannot forget. The failure it invites, an accidental commit, is self-limiting, because a path from one machine is not a directory on another and the resolver refuses a folder that does not exist and says so.
+
+It holds one line rather than JSON. The resolver already treats a missing `jq` as a reason to ignore the session override, and a marker that needed `jq` would let one absent tool take out two tiers at once. A file holding one path has nothing to version, and a leading `{` is enough to tell the formats apart if fields are ever wanted.
+
+**Resolution has three tiers: session, worktree, branch.** The order lives in `work-folder.sh` and nowhere else, sourced by the resolver and by `work-folder-tier.sh`, so which tier wins and the path it produces cannot drift apart. Session before worktree because an explicit, just-typed setting should beat a standing one. Both before branch because naming a folder is a statement and inferring one from a branch is a default.
+
+**Containment is removed, not relaxed.** The check refused an override whose folder lay outside the repository being resolved in, which made the motivating case impossible: a topic folder in one repository, used from a checkout of another. Keeping it for the session tier while the worktree tier went unrestricted would have put the restriction on the wrong one. The session override is self-cleaning, so a mistake there dies with the session; the marker persists until someone deletes it, so a mistake there is the one that lasts. Restricting the ephemeral tier and not the durable one gets the risk backwards. What remains is that a folder must be an existing absolute directory, and that every refusal is still reported on stderr, which is what actually catches a setting someone forgot.
+
+**A `--id` call honours the marker and still bypasses the session override.** The bypass exists because the callers that name a work item are the ones that delete a directory or read a pointer out of it, and an ambient setting must not retarget those. That describes the session tier exactly, and the marker not at all: a file at the worktree root that `git status` names every day is the opposite of ambient. The marker resolves as `<marker>/<identifier>`, with no `segment` between, because marker placement is flat and a segment directory would name a level nothing else uses.
+
+The consequence is that `/cleanup-issue` under a marker removes the pointers and the breadcrumb and not the work item's notes and questions, which are flat and mixed across work items. That is inherent to flat placement rather than a fault in the bypass rule, and the skill says so at its confirmation prompt: a destructive command whose scope shrank must not let a completed run read as more than it was. `work-folder-tier.sh` exists for that sentence, because a skill cannot tell the tiers apart from a resolved path and must not guess from the marker file's presence, which the session tier can outrank.
+
+**The `active-plan` pointer holds an absolute path.** It was specified as project-root-relative, which never worked in a linked worktree: the project root is the worktree while `.claude-work/` is in the main checkout, so the path resolved to a file that was not there. Dropping containment adds a second way for it to be inexpressible, since a folder outside the repository has no project-root-relative form at all. Absolute also deletes work rather than adding it, because `/note` and `/scratchpad` already return absolute paths, so both writers were converting a path they had been handed and the reader was converting it back. `last-finish-issue`, written into the same folder, was already absolute.
 
 ## Consequences
 
@@ -57,6 +98,7 @@ URL patterns match on path shape, not hostname, so self-hosted and enterprise in
 ### Negative
 
 - **A branch renamed after work starts orphans its directory.** Nothing records that folder `42` belongs to work item `42`; only the branch name says so. The cleanup skill's orphan detection finds these and offers them for deletion, but between the rename and the cleanup the folder is detached from the work.
+- **An override points working files at tracked territory.** The folder is not required to be ignored, and it is not required to be inside any repository, so notes, questions and commit-message drafts can land where `git status` sees them, in this checkout or another one. That is the intent for a repository organised by topic, and it is a trap for anyone who only wanted files out of `.claude-work/`. Pointing the override at an ignored folder is the escape.
 - **An omitted `segment` reintroduces the collision the indirection was created to prevent.** With no segment, the work-item glob also matches the four category directories (`notes`, `questions`, `scratchpads`, `commit-msgs`); an exclusion list in the cleanup scripts handles it, and that list is the part that rots when a fifth category appears. Keeping the default avoids this entirely.
 - **Five config keys ship; the ones nobody sets are dead weight.** If real use settles on one, the rest are speculative generality and should be removed rather than documented.
 - **Config is a per-developer file under `$HOME`, not shared by the repository.** A team that wants one convention must document it; nothing in the repository enforces agreement.
