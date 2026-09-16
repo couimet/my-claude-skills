@@ -29,11 +29,11 @@ Otherwise, resolve the identifier from the current branch via `branch-issue-id.s
 
 ### Validate the ID
 
-The `remove-issue-dir.sh` script enforces ID validation internally (regex `^[A-Za-z0-9][A-Za-z0-9._-]*$`, rejects `.` and `..`). The ID resolved above is passed verbatim to the script in Step 4. If invalid, the script exits with a clear error and performs no deletion. No separate prose validation step is needed.
+The `remove-issue-dir.sh` script enforces ID validation internally (regex `^[A-Za-z0-9][A-Za-z0-9._-]*$`, rejects `.` and `..`, and refuses the reserved category names). The ID resolved above is passed verbatim to the script in Step 4. If invalid, the script exits with a clear error and performs no deletion. No separate prose validation step is needed.
 
 ## Step 2: Check for Issue Directory
 
-First, resolve the `.claude-work/` root directory (the removal call in Step 4 and sweep mode take it as their `<base>`):
+First, resolve the `.claude-work/` root directory (sweep mode takes it as its `<base>`):
 
 ```bash
 ~/.claude/skills/issue-context/claude-work-root.sh
@@ -41,7 +41,7 @@ First, resolve the `.claude-work/` root directory (the removal call in Step 4 an
 
 Use the stdout as `<base>`. This script automatically detects git worktrees and returns the shared location.
 
-Then resolve the issue's working directory from the ID. The resolver builds `<base>/<segment>/<identifier>` from the configured `segment` (defaulting to `<base>/issues/<ID>`; an empty segment omits the directory):
+Then resolve the issue's working directory from the ID. Under the branch tier the resolver builds `<base>/<segment>/<identifier>` from the configured `segment` (defaulting to `<base>/issues/<ID>`; an empty segment omits the directory), and under a worktree marker it returns `<marker>/<identifier>` with no segment between. Take what it prints rather than assembling either form:
 
 ```bash
 ~/.claude/skills/issue-context/get-issue-folder-path.sh --id <ID>
@@ -49,13 +49,13 @@ Then resolve the issue's working directory from the ID. The resolver builds `<ba
 
 Use its stdout as `<folder>`.
 
-Then ask which tier named this session's work folder, because it changes what a delete can reach:
+Then ask which tier named that folder, because it changes what a delete can reach. Ask in the `--id` form, matching the resolution just performed: a bare call would answer for a no-argument resolution, and with a session override and a marker both set it would report `session` while `<folder>` came from the marker.
 
 ```bash
-~/.claude/skills/issue-context/work-folder-tier.sh
+~/.claude/skills/issue-context/work-folder-tier.sh --id <ID>
 ```
 
-Record its stdout as `<tier>`. It prints exactly one of `session`, `worktree`, or `branch`.
+Record its stdout as `<tier>`. It prints `worktree` or `branch`; the `--id` form never prints `session`, because naming a work item bypasses the session override.
 
 Use Glob to list contents:
 
@@ -91,10 +91,10 @@ AskUserQuestion(
 
 ### Delete
 
-Only reached if the user selected Delete in Step 3. The `remove-issue-dir.sh` script validates the ID, verifies the base path, checks that the resolved physical path stays under the configured segment directory (under `<base>` itself when the segment is empty), and performs the removal. No raw `rm -rf` is used.
+Only reached if the user selected Delete in Step 3. Pass `<folder>` from Step 2 verbatim: that is the path the user was shown and agreed to, and it is the only way the delete reaches the same directory the confirmation named under every tier. The script validates the ID, refuses a folder whose last component is not that ID, refuses one that resolves through a symlink to somewhere else, and performs the removal. No raw `rm -rf` is used.
 
 ```bash
-~/.claude/skills/cleanup-issue/remove-issue-dir.sh <base> <ID>
+~/.claude/skills/cleanup-issue/remove-issue-dir.sh <folder> --id <ID>
 ```
 
 The script prints the removed path on stdout. Report that path to the user:
@@ -105,12 +105,16 @@ Cleaned up <stdout>/. All working files removed.
 
 ## Step 5: Check for Side-Quest Artifacts
 
-Regardless of whether the issue directory existed or was deleted, scan for orphaned side-quest files in the `.claude-work/` root (using `<base>` from Step 2):
+Regardless of whether the issue directory existed or was deleted, scan for orphaned side-quest files. They are not under `<base>`: `/start-side-quest` writes them through a no-argument resolution, so they follow a session folder or a worktree marker when one is set. Resolve that root the same way it did, and record the stdout as `<sq-root>`:
+
+```bash
+~/.claude/skills/issue-context/get-issue-folder-path.sh
+```
 
 ```text
-Glob(pattern="breadcrumb-*.md", path="<base>")
-Glob(pattern="scratchpads/*side-quest*", path="<base>")
-Glob(pattern="commit-msgs/*side-quest*", path="<base>")
+Glob(pattern="breadcrumb-*.md", path="<sq-root>")
+Glob(pattern="scratchpads/*side-quest*", path="<sq-root>")
+Glob(pattern="commit-msgs/*side-quest*", path="<sq-root>")
 ```
 
 **If side-quest artifacts are found:**
@@ -179,10 +183,10 @@ AskUserQuestion(
 
 ### Sweep Delete
 
-Only reached if the user selected Delete all N folders in Sweep Step 3. For each listed path, run the removal script once per folder, where `<ID>` is the folder name (the last segment of the path):
+Only reached if the user selected Delete all N folders in Sweep Step 3. For each listed path, run the removal script once per folder, passing the DELETABLE line's path verbatim, where `<ID>` is the folder name (the last segment of that path):
 
 ```bash
-~/.claude/skills/cleanup-issue/remove-issue-dir.sh <base> <ID>
+~/.claude/skills/cleanup-issue/remove-issue-dir.sh <path> --id <ID>
 ```
 
 The script prints the removed path on stdout. Report each removed path to the user:
@@ -193,7 +197,7 @@ Cleaned up <stdout>/. All working files removed.
 
 ### Sweep Step 5: Check for Side-Quest Artifacts
 
-Perform the side-quest artifact scan from the single-folder Step 5 (Glob for `breadcrumb-*.md`, `scratchpads/*side-quest*`, and `commit-msgs/*side-quest*` in `<base>` and report findings the same way).
+Perform the side-quest artifact scan from the single-folder Step 5 (resolve `<sq-root>` with the no-argument `get-issue-folder-path.sh`, Glob for `breadcrumb-*.md`, `scratchpads/*side-quest*`, and `commit-msgs/*side-quest*` in it, and report findings the same way).
 
 Note: `/start-issue` Step 0 also offers pruning automatically when 5 or more obsolete folders accumulate. This manual `--sweep` mode always shows the full list.
 

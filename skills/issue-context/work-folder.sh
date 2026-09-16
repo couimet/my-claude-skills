@@ -50,7 +50,7 @@ _iwfu_usable() {
   [ -d "$_iwfu_path" ] || return 3
   # Canonicalise: a path that leaves and re-enters through .. or a symlink
   # should be stored as where it actually is.
-  _iwfu_phys="$(cd "$_iwfu_path" && pwd -P 2>/dev/null)" || return 4
+  _iwfu_phys="$({ cd "$_iwfu_path" && pwd -P; } 2>/dev/null)" || return 4
   eval "$_iwfu_out=\"\$_iwfu_phys\""
   return 0
 }

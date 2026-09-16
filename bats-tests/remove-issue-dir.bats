@@ -1,7 +1,14 @@
 #!/usr/bin/env bats
 #
-# Tests for skills/cleanup-issue/remove-issue-dir.sh — safely removes an
-# issue's working directory after validating the ID and base path.
+# Tests for skills/cleanup-issue/remove-issue-dir.sh — safely removes a work
+# item's working directory after validating the ID and the folder it was
+# handed.
+#
+# The script no longer builds the path. The caller resolves it through
+# get-issue-folder-path.sh --id and passes it in, so the directory the user
+# confirmed is the directory that is removed under every tier. These tests
+# therefore hand it folders directly, including roots that are nothing like a
+# .claude-work tree, which is what a CLAUDE_WORK_FOLDER marker produces.
 
 load test_helper
 
@@ -10,13 +17,9 @@ SCRIPT="$PROJECT_ROOT/skills/cleanup-issue/remove-issue-dir.sh"
 setup() {
   TEST_TEMP_DIR="$(mktemp -d)"
   TEST_TEMP_DIR="$(cd "$TEST_TEMP_DIR" && pwd -P)"
-  # Create a realistic .claude-work/issues/ directory tree.
+  # A realistic .claude-work/issues/ tree for the branch-tier cases.
   mkdir -p "$TEST_TEMP_DIR/.claude-work/issues"
   BASE="$TEST_TEMP_DIR/.claude-work"
-  # Pin settings to an empty object so the loader uses the built-in defaults
-  # (segment "issues") regardless of the developer's real settings file.
-  export MY_CLAUDE_SKILLS_CONFIG="$TEST_TEMP_DIR/settings.json"
-  printf '{}\n' > "$MY_CLAUDE_SKILLS_CONFIG"
 }
 
 teardown() {
@@ -34,35 +37,53 @@ teardown() {
 }
 
 @test "single argument prints usage error" {
-  run "$SCRIPT" "$BASE"
+  run "$SCRIPT" "$BASE/issues/42"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"R002"* ]]
+}
+
+@test "the old <base> <id> form is a usage error, not a deletion" {
+  # A caller that was not migrated must fail loudly rather than removing
+  # whatever its second argument happens to name.
+  mkdir -p "$BASE/issues/42"
+  run "$SCRIPT" "$BASE" "42"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"R002"* ]]
+  [ -d "$BASE/issues/42" ]
+}
+
+@test "a third argument that is not --id is a usage error" {
+  run "$SCRIPT" "$BASE/issues/42" "--identifier" "42"
   [ "$status" -eq 1 ]
   [[ "$output" == *"R002"* ]]
 }
 
 # ============================================================================
-# Base validation
+# Folder validation
 # ============================================================================
 
-@test "rejects base that doesn't end in /.claude-work" {
-  mkdir -p "$TEST_TEMP_DIR/somewhere"
-  run "$SCRIPT" "$TEST_TEMP_DIR/somewhere" "42"
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"R002"* ]]
-}
-
-@test "rejects relative base path" {
-  # Create a directory at the relative path so the existence check passes.
-  mkdir -p "$TEST_TEMP_DIR/not-claude-work"
+@test "rejects a relative folder" {
+  mkdir -p "$TEST_TEMP_DIR/42"
   cd "$TEST_TEMP_DIR"
-  run "$SCRIPT" "not-claude-work" "42"
+  run "$SCRIPT" "42" --id "42"
   [ "$status" -eq 1 ]
   [[ "$output" == *"R002"* ]]
 }
 
-@test "rejects non-existent base directory" {
-  run "$SCRIPT" "$TEST_TEMP_DIR/.claude-work-nonexistent" "42"
-  [ "$status" -eq 2 ]
-  [[ "$output" == *"R002"* ]]
+@test "rejects a folder whose last component is not the ID" {
+  mkdir -p "$BASE/issues/42"
+  run "$SCRIPT" "$BASE/issues" --id "42"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"R001"* ]]
+  [ -d "$BASE/issues/42" ]
+}
+
+@test "accepts a trailing slash on the folder" {
+  mkdir -p "$BASE/issues/42"
+  run "$SCRIPT" "$BASE/issues/42/" --id "42"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$BASE/issues/42" ]
+  [ ! -d "$BASE/issues/42" ]
 }
 
 # ============================================================================
@@ -70,144 +91,159 @@ teardown() {
 # ============================================================================
 
 @test "rejects dot-only ID (.)" {
-  run "$SCRIPT" "$BASE" "."
+  run "$SCRIPT" "$BASE/issues/." --id "."
   [ "$status" -eq 1 ]
   [[ "$output" == *"R001"* ]]
 }
 
 @test "rejects dot-dot ID (..)" {
-  run "$SCRIPT" "$BASE" ".."
+  run "$SCRIPT" "$BASE/issues/.." --id ".."
   [ "$status" -eq 1 ]
   [[ "$output" == *"R001"* ]]
 }
 
 @test "rejects ID with slash" {
-  run "$SCRIPT" "$BASE" "foo/bar"
+  run "$SCRIPT" "$BASE/issues/foo/bar" --id "foo/bar"
   [ "$status" -eq 1 ]
   [[ "$output" == *"R001"* ]]
 }
 
 @test "rejects ID with space" {
-  run "$SCRIPT" "$BASE" "foo bar"
+  run "$SCRIPT" "$BASE/issues/foo bar" --id "foo bar"
   [ "$status" -eq 1 ]
   [[ "$output" == *"R001"* ]]
 }
 
 @test "rejects ID starting with hyphen" {
-  run "$SCRIPT" "$BASE" "-foo"
+  run "$SCRIPT" "$BASE/issues/-foo" --id "-foo"
   [ "$status" -eq 1 ]
   [[ "$output" == *"R001"* ]]
 }
 
 @test "rejects ID with shell metacharacters" {
-  run "$SCRIPT" "$BASE" '$(whoami)'
+  run "$SCRIPT" "$BASE/issues/x" --id '$(whoami)'
   [ "$status" -eq 1 ]
   [[ "$output" == *"R001"* ]]
 }
 
 @test "rejects empty ID" {
-  run "$SCRIPT" "$BASE" ""
+  run "$SCRIPT" "$BASE/issues/x" --id ""
   [ "$status" -eq 1 ]
   [[ "$output" == *"R001"* ]]
+}
+
+# ============================================================================
+# Reserved category names
+# ============================================================================
+
+@test "refuses a reserved category name whatever the folder looks like" {
+  # Under a marker, and under an empty segment, the category directories are
+  # siblings of work-item folders, so the refusal cannot be tied to a setting.
+  mkdir -p "$BASE/issues/notes"
+  run "$SCRIPT" "$BASE/issues/notes" --id "notes"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"R001"* ]]
+  [ -d "$BASE/issues/notes" ]
+}
+
+@test "refuses every reserved category name" {
+  local name
+  for name in notes questions scratchpads commit-msgs; do
+    mkdir -p "$TEST_TEMP_DIR/topic/$name"
+    run "$SCRIPT" "$TEST_TEMP_DIR/topic/$name" --id "$name"
+    [ "$status" -eq 1 ]
+    [ -d "$TEST_TEMP_DIR/topic/$name" ]
+  done
 }
 
 # ============================================================================
 # Successful removals
 # ============================================================================
 
-@test "removes existing issue directory and prints path" {
+@test "removes an existing directory and prints its path" {
   mkdir -p "$BASE/issues/42/scratchpads"
   touch "$BASE/issues/42/scratchpads/0001-plan.txt"
-  [ -d "$BASE/issues/42" ]
 
-  run "$SCRIPT" "$BASE" "42"
+  run "$SCRIPT" "$BASE/issues/42" --id "42"
   [ "$status" -eq 0 ]
   [ "$output" = "$BASE/issues/42" ]
   [ ! -d "$BASE/issues/42" ]
 }
 
-@test "idempotent: succeeds when issue directory does not exist" {
+@test "idempotent: succeeds when the directory does not exist" {
   [ ! -d "$BASE/issues/99" ]
 
-  run "$SCRIPT" "$BASE" "99"
+  run "$SCRIPT" "$BASE/issues/99" --id "99"
   [ "$status" -eq 0 ]
   [ "$output" = "$BASE/issues/99" ]
 }
 
-@test "idempotent: succeeds when issues/ parent directory does not exist" {
-  # Simulates a .claude-work/ with no issues/ subdirectory at all.
-  # The script must resolve the physical path from the base directory.
+@test "idempotent: succeeds when the parent does not exist either" {
   rm -rf "$BASE/issues"
-  [ ! -d "$BASE/issues" ]
 
-  run "$SCRIPT" "$BASE" "42"
+  run "$SCRIPT" "$BASE/issues/42" --id "42"
   [ "$status" -eq 0 ]
   [ "$output" = "$BASE/issues/42" ]
 }
 
 @test "accepts alphanumeric and dot-hyphen IDs" {
   mkdir -p "$BASE/issues/rfc-auth-v2.test/notes"
-  [ -d "$BASE/issues/rfc-auth-v2.test" ]
 
-  run "$SCRIPT" "$BASE" "rfc-auth-v2.test"
+  run "$SCRIPT" "$BASE/issues/rfc-auth-v2.test" --id "rfc-auth-v2.test"
   [ "$status" -eq 0 ]
   [ ! -d "$BASE/issues/rfc-auth-v2.test" ]
 }
 
-# ============================================================================
-# Path traversal guard
-# ============================================================================
-
-@test "rejects ID that would escape via physical path" {
-  # Create a symlink outside the .claude-work tree that points back in.
-  mkdir -p "$TEST_TEMP_DIR/outside"
-  ln -s "$TEST_TEMP_DIR/outside" "$BASE/issues/escape-hatch"
-
-  run "$SCRIPT" "$BASE" "escape-hatch"
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"R001"* ]]
-}
-
-# ============================================================================
-# Configurable segment
-# ============================================================================
-
-@test "non-default segment → removes under <base>/<segment>" {
+@test "removes a folder under a non-default segment the caller resolved" {
   mkdir -p "$BASE/work/42"
-  printf '{"segment":"work"}\n' > "$MY_CLAUDE_SKILLS_CONFIG"
 
-  run "$SCRIPT" "$BASE" "42"
+  run "$SCRIPT" "$BASE/work/42" --id "42"
   [ "$status" -eq 0 ]
   [ "$output" = "$BASE/work/42" ]
   [ ! -d "$BASE/work/42" ]
 }
 
-@test "empty segment → removes directly under <base>" {
+@test "removes a folder directly under the root when the segment is empty" {
   mkdir -p "$BASE/42"
-  printf '{"segment":""}\n' > "$MY_CLAUDE_SKILLS_CONFIG"
 
-  run "$SCRIPT" "$BASE" "42"
+  run "$SCRIPT" "$BASE/42" --id "42"
   [ "$status" -eq 0 ]
-  [ "$output" = "$BASE/42" ]
   [ ! -d "$BASE/42" ]
 }
 
-@test "empty segment → refuses a reserved category name as ID" {
-  mkdir -p "$BASE/notes"
-  printf '{"segment":""}\n' > "$MY_CLAUDE_SKILLS_CONFIG"
+@test "removes a marker folder that is nowhere near a .claude-work tree" {
+  # This is the case the old contract could not express: under a worktree
+  # marker the work item lives at <marker>/<ID>, with no .claude-work and no
+  # segment anywhere in the path.
+  mkdir -p "$TEST_TEMP_DIR/topic/42/notes"
+  touch "$TEST_TEMP_DIR/topic/42/active-plan"
 
-  run "$SCRIPT" "$BASE" "notes"
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"R001"* ]]
-  [ -d "$BASE/notes" ]
+  run "$SCRIPT" "$TEST_TEMP_DIR/topic/42" --id "42"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/topic/42" ]
+  [ ! -d "$TEST_TEMP_DIR/topic/42" ]
 }
 
-@test "empty segment → refuses ID escaping via physical path" {
-  mkdir -p "$TEST_TEMP_DIR/outside"
-  ln -s "$TEST_TEMP_DIR/outside" "$BASE/escape-hatch"
-  printf '{"segment":""}\n' > "$MY_CLAUDE_SKILLS_CONFIG"
+# ============================================================================
+# Symlink guard
+# ============================================================================
 
-  run "$SCRIPT" "$BASE" "escape-hatch"
+@test "refuses a work-item directory symlinked somewhere else" {
+  mkdir -p "$TEST_TEMP_DIR/outside"
+  touch "$TEST_TEMP_DIR/outside/keep-me"
+  ln -s "$TEST_TEMP_DIR/outside" "$BASE/issues/escape-hatch"
+
+  run "$SCRIPT" "$BASE/issues/escape-hatch" --id "escape-hatch"
   [ "$status" -eq 1 ]
   [[ "$output" == *"R001"* ]]
+  [ -f "$TEST_TEMP_DIR/outside/keep-me" ]
+}
+
+@test "a symlinked parent is fine: only the last component is checked" {
+  mkdir -p "$BASE/real/42"
+  ln -s "$BASE/real" "$BASE/link"
+
+  run "$SCRIPT" "$BASE/link/42" --id "42"
+  [ "$status" -eq 0 ]
+  [ ! -d "$BASE/real/42" ]
 }

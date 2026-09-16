@@ -34,10 +34,10 @@ If issue directories have piled up, check for obsolete folders. Run the finder w
 
 Each DELETABLE line has the form `DELETABLE<TAB><path><TAB><reason>`. Count the DELETABLE lines in the output. If fewer than 5, skip silently. If 5 or more, present one AskUserQuestion whose question text lists the deletable folder paths from the output (the path field of each DELETABLE line), with these options:
 
-- **Prune now**: delete each listed folder via `~/.claude/skills/cleanup-issue/remove-issue-dir.sh <base> <ID>`, then report each removed path
+- **Prune now**: delete each listed folder via `~/.claude/skills/cleanup-issue/remove-issue-dir.sh <path> --id <ID>`, where `<path>` is the DELETABLE line's path field and `<ID>` is its last segment, then report each removed path
 - **Keep everything**: leave all folders untouched (safe default)
 
-If the user picks Prune now, delete each listed folder with `remove-issue-dir.sh` and report the removed paths. Otherwise continue to Step 1 untouched. The manual `/cleanup-issue --sweep` mode always shows the full list regardless of threshold.
+If the user picks Prune now, delete each listed folder with `remove-issue-dir.sh` and report the removed paths. The finder already prints the absolute path of every folder it offers, so pass that path rather than rebuilding one from `<base>`. Otherwise continue to Step 1 untouched. The manual `/cleanup-issue --sweep` mode always shows the full list regardless of threshold.
 
 **If no issue context on the current branch, or the directory doesn't exist or is empty:** proceed directly to Step 1.
 

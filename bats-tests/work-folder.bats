@@ -58,7 +58,7 @@ resolve() {
 
 tier_of() {
   run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
-    MY_CLAUDE_SKILLS_CONFIG="$CFG" "$TIER"
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" "$TIER" "$@"
 }
 
 # Give this session a valid override folder, so the session tier can outrank
@@ -187,6 +187,24 @@ write_session_file() {
   [[ "$err" == *"could not be read"* ]]
 }
 
+@test "a marker naming a directory that cannot be entered is ignored, and nothing leaks to stderr" {
+  # The -d test passes on a mode 000 directory whose parent is traversable, so
+  # cd is what fails. Its own message must not escape: work-folder-tier.sh
+  # promises an empty stderr, and every caller inherits this helper.
+  _require_enforced_permission_bits
+  local closed="$TEST_TEMP_DIR/closed"
+  mkdir -p "$closed"
+  write_marker "$closed"
+  chmod 000 "$closed"
+  resolve
+  local err="$stderr"
+  chmod 755 "$closed"
+  [[ "$err" == *"could not be resolved"* ]]
+  # The resolver prefixes every line it writes with its own name, so stderr
+  # naming work-folder.sh at all means cd reported from underneath it.
+  [[ "$err" != *"work-folder.sh"* ]]
+}
+
 @test "a marker in a sibling worktree's root is not read" {
   # The marker is per-worktree by construction: it is found at this
   # worktree's toplevel and nowhere else.
@@ -297,6 +315,71 @@ write_session_file() {
   write_marker "$TOPIC"
   tier_of
   [ -z "$stderr" ]
+}
+
+@test "tier --id: worktree when the marker is set" {
+  write_marker "$TOPIC"
+  tier_of --id 42
+  [ "$status" -eq 0 ]
+  [ "$output" = "worktree" ]
+}
+
+@test "tier --id: worktree even when a session override outranks the marker" {
+  # The bare form answers "session" here, and the path a --id resolution
+  # produces comes from the marker. Asking in the wrong form is how the
+  # confirmation prompt came to describe a tier that had lost.
+  write_marker "$TOPIC"
+  write_session_file "$TEST_TEMP_DIR/elsewhere"
+  mkdir -p "$TEST_TEMP_DIR/elsewhere"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" "$TIER"
+  [ "$output" = "session" ]
+
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" "$TIER" --id 42
+  [ "$output" = "worktree" ]
+}
+
+@test "tier --id: branch when no marker is set" {
+  tier_of --id 42
+  [ "$status" -eq 0 ]
+  [ "$output" = "branch" ]
+}
+
+@test "tier --id: branch when the marker names a folder that is gone" {
+  write_marker "$TEST_TEMP_DIR/not-there"
+  tier_of --id 42
+  [ "$output" = "branch" ]
+}
+
+@test "tier --id: says nothing on stderr" {
+  write_marker "$TOPIC"
+  tier_of --id 42
+  [ -z "$stderr" ]
+}
+
+@test "tier: the --id form and the resolver agree about the folder" {
+  # The whole point of the flag: the tier reported and the path resolved must
+  # describe the same resolution.
+  write_marker "$TOPIC"
+  write_session_file "$TEST_TEMP_DIR/elsewhere"
+  mkdir -p "$TEST_TEMP_DIR/elsewhere"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" "$RESOLVER" --id 42
+  [ "$output" = "$TOPIC/42" ]
+}
+
+@test "tier: a wrong argument form is a usage error" {
+  tier_of --id
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"usage"* ]]
+}
+
+@test "tier: an unknown flag is a usage error" {
+  tier_of --nope 42
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"usage"* ]]
 }
 
 # ============================================================================

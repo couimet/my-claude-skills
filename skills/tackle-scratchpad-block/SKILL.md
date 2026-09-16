@@ -20,7 +20,37 @@ Determine the file the user's argument points at (the path portion before `#S00N
 
 **If the argument resolves to a file containing a JSON step block:** proceed normally to Step 1. The explicit argument always takes precedence. The active-plan pointer is not consulted.
 
-**If the argument does NOT resolve to a JSON step block** (file not found, or file exists but has no `"steps"` array): resolve `<base>` via `~/.claude/skills/issue-context/get-issue-folder-path.sh` with no arguments, then read the active-plan pointer (issue mode: `<base>/issues/<ID>/active-plan`, side-quest mode: `<base>/active-plan-<slug>`) to name the resolved path in the guidance message. The pointer holds an absolute path; resolve one that is not against the project root, since pointers written before that was the format are relative. If the pointer file is missing or empty, use `(no active-plan pointer found)` as the resolved path. Then STOP:
+**If the argument does NOT resolve to a JSON step block** (file not found, or file exists but has no `"steps"` array): resolve the active-plan pointer exactly the way `/finish-issue` Step 1b does, so the two readers of that pointer agree with the `/start-issue` that wrote it, then name the resolved path in the guidance message.
+
+First set mode and identifier. Run the gate alongside `git branch --show-current`, which is needed for side-quest detection:
+
+```bash
+~/.claude/skills/issue-context/branch-issue-id.sh
+```
+
+```bash
+git branch --show-current
+```
+
+Exit 0 means issue mode, and the printed value is `<ID>`. Exit 1 on a branch starting with `side-quest/` means side-quest mode, and the full slug after `side-quest/` is `<slug>`.
+
+Then resolve the folder that holds the pointer and read it:
+
+- **Issue mode** — resolve `<folder>` and read `<folder>/active-plan`:
+
+```bash
+~/.claude/skills/issue-context/get-issue-folder-path.sh --id <ID>
+```
+
+- **Side-quest mode** — resolve `<base>` and read `<base>/active-plan-<slug>`:
+
+```bash
+~/.claude/skills/issue-context/get-issue-folder-path.sh
+```
+
+The `--id` form is not interchangeable with the no-argument one. It is what `/start-issue` used to write the pointer: it bypasses a session folder override and honours a worktree marker, and it applies the configured `segment` itself, so neither the segment nor an identifier directory is ever appended to what it returns.
+
+The pointer holds an absolute path; resolve one that is not against the project root, since pointers written before that was the format are relative. If neither mode applies, or the pointer file is missing or empty, use `(no active-plan pointer found)` as the resolved path. Then STOP:
 
 ```text
 This skill drives execution against a JSON step block, but the working document at

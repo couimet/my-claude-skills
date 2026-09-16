@@ -22,6 +22,12 @@
 # A skill declaring Bash(*) needs nothing else: it is the one wildcard, matching
 # the rule check-transitive-tools.sh applies.
 #
+# A declaration covers a call when it contains the call's whole
+# skills/<skill>/<script>.sh path. Matching the bare filename instead would let
+# a permission for one skill's target-path.sh satisfy a call to another's, and
+# the skill would then pass this gate and stop at a permission prompt anyway,
+# which is the failure the gate exists to catch.
+#
 # Output: one gap line per missing permission, exit 1 if any remain, or exit 0
 # with no output.
 
@@ -57,12 +63,24 @@ fenced_calls() {
   ' "$1" | sort -u
 }
 
+# allowed_tools <file> — print the front matter's allowed-tools declaration:
+# the key line plus any indented continuation lines. YAML allows the value to
+# wrap, check-transitive-tools.sh reads it that way, and a checker that kept
+# only the key line would report a wrapped permission as a gap.
+allowed_tools() {
+  front_matter "$1" | awk '
+    /^allowed-tools:/ { collecting = 1; print; next }
+    collecting && /^[[:space:]]/ { print; next }
+    collecting { exit }
+  '
+}
+
 gaps=0
 
 for skill_file in "$SKILLS_ROOT"/*/SKILL.md; do
   [ -f "$skill_file" ] || continue
   skill="$(basename "$(dirname "$skill_file")")"
-  allowed="$(front_matter "$skill_file" | grep '^allowed-tools:' || true)"
+  allowed="$(allowed_tools "$skill_file")"
 
   case "$allowed" in
     *"Bash(*)"*) continue ;;
@@ -72,9 +90,8 @@ for skill_file in "$SKILLS_ROOT"/*/SKILL.md; do
   # Unquoted on purpose: one call per line, and no script path holds a space.
   # shellcheck disable=SC2086
   for call in $calls; do
-    script="${call##*/}"
     case "$allowed" in
-      *"$script"*) continue ;;
+      *"$call"*) continue ;;
     esac
     echo "skills/$skill/SKILL.md: calls $call but does not declare it in allowed-tools"
     gaps=1

@@ -117,6 +117,79 @@ fixture() {
 }
 
 # =============================================================
+# A declaration is read across its continuation lines
+# =============================================================
+
+# raw_fixture <name> <full SKILL.md text> — for the cases where the
+# declaration's exact line shape is the thing under test.
+raw_fixture() {
+  local root="$TEST_TEMP_DIR/skills/$1"
+  mkdir -p "$root"
+  printf '%s\n' "$2" > "$root/SKILL.md"
+}
+
+@test "a declaration wrapped onto a continuation line still counts" {
+  # YAML lets the value wrap, and check-transitive-tools.sh reads it that
+  # way. A checker keeping only the key line would call this a gap.
+  raw_fixture caller '---
+name: caller
+allowed-tools: Read,
+  Bash(*/skills/issue-context/target-path.sh *)
+---
+
+```bash
+~/.claude/skills/issue-context/target-path.sh --type notes
+```'
+  run "$SCRIPT" "$TEST_TEMP_DIR/skills"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "a continuation line is still a gap when it declares something else" {
+  raw_fixture caller '---
+name: caller
+allowed-tools: Read,
+  Bash(*/skills/issue-context/branch-issue-id.sh *)
+---
+
+```bash
+~/.claude/skills/issue-context/target-path.sh --type notes
+```'
+  run "$SCRIPT" "$TEST_TEMP_DIR/skills"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"target-path.sh"* ]]
+}
+
+@test "a later front matter key is not read as part of the declaration" {
+  raw_fixture caller '---
+name: caller
+allowed-tools: Read
+argument-hint: pass it to */skills/issue-context/target-path.sh *
+---
+
+```bash
+~/.claude/skills/issue-context/target-path.sh --type notes
+```'
+  run "$SCRIPT" "$TEST_TEMP_DIR/skills"
+  [ "$status" -eq 1 ]
+}
+
+# =============================================================
+# A declaration is matched by the whole called path
+# =============================================================
+
+@test "a permission naming another skill's script of the same name is a gap" {
+  # Matching the bare filename would accept this, and the skill would then
+  # stop at a permission prompt in front of a user anyway.
+  fixture caller 'Read, Bash(*/skills/other-skill/target-path.sh *)' '```bash
+~/.claude/skills/issue-context/target-path.sh --type notes
+```'
+  run "$SCRIPT" "$TEST_TEMP_DIR/skills"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"skills/issue-context/target-path.sh"* ]]
+}
+
+# =============================================================
 # Bash(*) is the one wildcard
 # =============================================================
 

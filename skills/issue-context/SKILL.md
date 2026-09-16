@@ -27,7 +27,7 @@ The script resolves the work-item folder through `get-issue-folder-path.sh`. Tha
 3. **Unique.** The script never hands out a path that is already taken, and two calls never hand out the same path, even when they run at the same moment. The only file your write replaces is the empty reservation property 2 describes. Do not check the directory first. Do not edit an earlier file instead of creating a new one.
 4. **Lexicographic order equals creation order.** A byte-order sort of a directory lists the files from oldest to newest. To find the newest file that matches a pattern, take the maximum. Any caller that resolves "the most recent" file relies on this.
 
-Placement has two levels, resolved in this order. First, the current session's folder override, when one is set and passes the checks below. Second, the branch context: on a branch matching a configured `branchPatterns` entry the file goes under the work-item folder, and on every other branch it goes to the `.claude-work/` root, under its type directory. A caller writes a working file the same way either way; the override is invisible to it.
+Placement has three levels, resolved in this order. First, the current session's folder override, when one is set and passes the checks below. Second, this worktree's `CLAUDE_WORK_FOLDER` marker. Third, the branch context: on a branch matching a configured `branchPatterns` entry the file goes under the work-item folder, and on every other branch it goes to the `.claude-work/` root, under its type directory. A caller writes a working file the same way in every case; the override and the marker are invisible to it.
 
 The next line is an example, not a specification. Read the filename format from `target-path.sh`. Do not read it from prose:
 
