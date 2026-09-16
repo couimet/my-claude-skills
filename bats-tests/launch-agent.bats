@@ -6,11 +6,17 @@
 #
 # `claude` is replaced by a stub first on PATH that records its arguments and
 # its working directory, so every dispatch assertion is made without starting
-# a real background session.
+# a real background session. The --here tests start no session at all: they
+# point MY_CLAUDE_SKILLS_CONFIG at a temp settings file, which puts the
+# sessions directory beside it, so a developer's real
+# ~/.my-claude-skills/sessions/ is never touched.
 
 load test_helper
 
 SCRIPT="$PROJECT_ROOT/skills/launch-agent/launch-agent.sh"
+RESOLVER="$PROJECT_ROOT/skills/issue-context/get-issue-folder-path.sh"
+
+SESSION_ID="9c1f3e70-2a44-4c8e-9d61-5b0f7a2c8d13"
 
 # claude_stub <dir> — write a stub `claude` that records "$*" to $ARGS_FILE and
 # its working directory to $CWD_FILE, then prints a job id. Set STUB_FAIL=1 in
@@ -49,6 +55,12 @@ setup() {
   REPO="$TEST_TEMP_DIR/repo"
   mkdir -p "$REPO"
   git -C "$REPO" init -q
+
+  # --here writes a session override through set-work-folder.sh, which derives
+  # the sessions directory from the settings file's own directory.
+  CFG="$TEST_TEMP_DIR/settings.json"
+  printf '%s' '{}' > "$CFG"
+  SESSIONS_DIR="$TEST_TEMP_DIR/sessions"
 }
 
 teardown() {
@@ -60,6 +72,24 @@ run_in() {
   local dir="$1"
   shift
   run env PATH="$STUB_PATH" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" \
+    bash -c 'cd "$1" && shift && exec "$@"' _ "$dir" "$SCRIPT" "$@"
+}
+
+# run_here <dir> <args...> — run the script from <dir> as a Claude Code session
+# owning SESSION_ID, with the settings file in the temp directory.
+#
+# Every other CLAUDE_* variable set-work-folder.sh reads is unset first. A bats
+# run inherits the environment of whoever started it, and when that is a Claude
+# Code session the real id, job directory and pid are all set, so without -u
+# these tests would write into the developer's live session rather than the
+# fixture.
+run_here() {
+  local dir="$1"
+  shift
+  run env -u CLAUDE_JOB_DIR -u CLAUDE_CODE_AGENT -u CLAUDE_PID \
+    -u CLAUDE_CODE_CHILD_SESSION \
+    PATH="$STUB_PATH" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
     bash -c 'cd "$1" && shift && exec "$@"' _ "$dir" "$SCRIPT" "$@"
 }
 
@@ -401,5 +431,90 @@ run_in() {
     bash -c 'cd "$1" && shift && exec "$@"' _ "$REPO" "$SCRIPT" my-topic "do the thing"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L004"* ]]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "do the thing" ]
+}
+
+# ============================================================================
+# --here
+# ============================================================================
+
+@test "--here starts no agent and says so" {
+  run_here "$REPO" my-topic --here "do the thing"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Here: no agent was started"* ]]
+  [[ "$output" != *"Job:"* ]]
+  [[ "$output" != *"Attach:"* ]]
+  [ ! -f "$ARGS_FILE" ]
+}
+
+@test "--here creates the folder and saves the prompt, as the default does" {
+  run_here "$REPO" my-topic --here "do the thing"
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Folder: $REPO/my-topic" ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "do the thing" ]
+}
+
+@test "--here points this session's working files at the folder" {
+  run_here "$REPO" my-topic --here "do the thing"
+  [ "$status" -eq 0 ]
+  [ -f "$SESSIONS_DIR/${SESSION_ID}--my-topic.json" ]
+}
+
+@test "the resolver then answers with the folder for this session" {
+  run_here "$REPO" my-topic --here "do the thing"
+  [ "$status" -eq 0 ]
+  run env -u CLAUDE_JOB_DIR -u CLAUDE_CODE_AGENT -u CLAUDE_PID \
+    -u CLAUDE_CODE_CHILD_SESSION \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
+    bash -c 'cd "$1" && shift && exec "$@"' _ "$REPO" "$RESOLVER"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"$REPO/my-topic"* ]]
+}
+
+@test "--here reads the same before --name as after it" {
+  run_here "$REPO" my-topic --here --name "Topic run" "do the thing"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Name: Topic run"* ]]
+  [ -f "$SESSIONS_DIR/${SESSION_ID}--topic-run.json" ]
+}
+
+@test "--here takes a folder outside the launcher's repository" {
+  target="$TEST_TEMP_DIR/elsewhere/topic"
+  run_here "$REPO" "$target" --here "do the thing"
+  [ "$status" -eq 0 ]
+  [ "$(cat "$target/prompt-new-agent-launch.txt")" = "do the thing" ]
+  [ -f "$SESSIONS_DIR/${SESSION_ID}--topic.json" ]
+}
+
+@test "--here outside a session → L005, nothing created" {
+  run env -u CLAUDE_CODE_SESSION_ID -u CLAUDE_JOB_DIR -u CLAUDE_CODE_AGENT \
+    -u CLAUDE_PID -u CLAUDE_CODE_CHILD_SESSION \
+    PATH="$STUB_PATH" MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    bash -c 'cd "$1" && shift && exec "$@"' _ "$REPO" "$SCRIPT" my-topic --here "do the thing"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"L005"* ]]
+  [[ "$output" == *"CLAUDE_CODE_SESSION_ID"* ]]
+  [ ! -d "$REPO/my-topic" ]
+}
+
+@test "--here refuses a near-match slug too, and creates nothing" {
+  mkdir -p "$REPO/my_topic"
+  run_here "$REPO" my-topic --here "do the thing"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"L002"* ]]
+  [ ! -d "$REPO/my-topic" ]
+}
+
+@test "a folder that cannot be adopted → L005, folder and prompt kept, pasteable command printed" {
+  bare="$TEST_TEMP_DIR/nojq"
+  _stub_path_without "$bare" jq > /dev/null
+  run env -u CLAUDE_JOB_DIR -u CLAUDE_CODE_AGENT -u CLAUDE_PID \
+    -u CLAUDE_CODE_CHILD_SESSION \
+    PATH="$bare" MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
+    bash -c 'cd "$1" && shift && exec "$@"' _ "$REPO" "$SCRIPT" my-topic --here "do the thing"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"L005"* ]]
+  [[ "$output" == *"set-work-folder.sh '$REPO/my-topic' 'my-topic'"* ]]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "do the thing" ]
 }

@@ -11,16 +11,27 @@
 # all four in one call.
 #
 # Usage:
-#   launch-agent.sh <folder> [--name <display-name>] <task prompt>
+#   launch-agent.sh <folder> [--name <display-name>] [--here] <task prompt>
 #   launch-agent.sh --help
 #
 #   <folder>        An absolute path, used as given, or a slug naming one
 #                   directory under the launcher's repository root.
 #   --name          The display name the job carries in `claude agents` and in
 #                   the terminal title. Defaults to the folder's basename.
+#   --here          Start no agent. Point the calling session's working files at
+#                   the folder instead.
 #   <task prompt>   The rest of the arguments. A single argument that names a
 #                   readable file contributes that file's content instead,
 #                   which is how a long prompt travels without shell quoting.
+#
+# Two modes, because two different intentions reach this script. The default
+# starts a background agent, and the calling session does not become that
+# agent: it stays where it is while the work runs somewhere else. --here starts
+# no agent at all. It runs every refusal, creates the folder, saves the prompt,
+# and then points the calling session's own working files at the folder, so the
+# session that ran the script is the session that does the work. Use --here when
+# you already sit in the session you want to work in, and the default when the
+# work should run without you.
 #
 # No claude flag passes through to the child. The child starts with the user's
 # default settings, and wanting a different model or permission mode is a
@@ -46,11 +57,12 @@
 # it survives a launch that fails and a child that crashes on its first turn.
 #
 # Output (stdout): the resolved folder first, so a typo shows in the first
-# line, then the prompt file, the display name, the job id, and the attach
-# command.
+# line, then the prompt file and the display name. The default mode ends with
+# the job id and the attach command; --here ends with one line saying that no
+# agent was started.
 #
 # Exit codes:
-#   0  — the agent was dispatched
+#   0  — the agent was dispatched, or --here pointed this session at the folder
 #   1  — error (see stderr)
 
 set -euo pipefail
@@ -59,6 +71,7 @@ readonly ERR_USAGE="L001"
 readonly ERR_FOLDER="L002"
 readonly ERR_PROMPT="L003"
 readonly ERR_DISPATCH="L004"
+readonly ERR_HERE="L005"
 
 # The one fixed filename this script owns. A launch prompt is found by name
 # rather than by search, so the name does not vary and is not configurable.
@@ -66,12 +79,14 @@ readonly PROMPT_BASENAME="prompt-new-agent-launch"
 
 usage() {
   cat <<'EOF'
-Usage: launch-agent.sh <folder> [--name <display-name>] <task prompt>
+Usage: launch-agent.sh <folder> [--name <display-name>] [--here] <task prompt>
        launch-agent.sh --help
 
   <folder>       Absolute path, or a slug naming one directory under the
                  launcher's repository root
   --name         Display name for the background job (default: folder basename)
+  --here         Start no agent; point the calling session's working files at
+                 the folder instead
   <task prompt>  The task for the agent. A single argument naming a readable
                  file contributes that file's content instead.
   --help         Show this help message
@@ -142,14 +157,36 @@ folder="$1"
 shift
 
 display_name=""
-if [ "${1-}" = "--name" ]; then
-  [ "$#" -ge 2 ] || die "$ERR_USAGE" "--name takes a display name"
-  display_name="$2"
-  [ -n "$display_name" ] || die "$ERR_USAGE" "--name takes a non-empty display name"
-  shift 2
-fi
+here_mode=0
+# A loop rather than one test each: the two flags are independent, and a caller
+# who writes them in the other order means the same thing.
+while :; do
+  case "${1-}" in
+    --name)
+      [ "$#" -ge 2 ] || die "$ERR_USAGE" "--name takes a display name"
+      display_name="$2"
+      [ -n "$display_name" ] || die "$ERR_USAGE" "--name takes a non-empty display name"
+      shift 2
+      ;;
+    --here)
+      here_mode=1
+      shift
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
 
 [ "$#" -ge 1 ] || die "$ERR_USAGE" "a task prompt is required"
+
+# --here adopts the folder for the session that ran this script, and
+# set-work-folder.sh identifies that session by CLAUDE_CODE_SESSION_ID. Checked
+# here, among the argument errors, so a --here outside a Claude Code session is
+# refused before it creates a folder that nothing would then point at.
+if [ "$here_mode" -eq 1 ] && [ -z "${CLAUDE_CODE_SESSION_ID:-}" ]; then
+  die "$ERR_HERE" "--here needs CLAUDE_CODE_SESSION_ID, and it is not set, so there is no session to point at the folder; run without --here to start an agent instead"
+fi
 
 # Trailing slashes would make the basename this script derives and the path it
 # creates disagree about what they are looking at.
@@ -267,6 +304,25 @@ printf '%s\n' "$prompt" > "$prompt_file" \
 
 printf 'Prompt: %s\n' "$prompt_file"
 printf 'Name: %s\n' "$display_name"
+
+# --- Point this session at the folder, and stop ---
+# No child, so no working directory to choose and no preamble to compose. The
+# writer prints the session file on stdout and says what it did on stderr.
+# Its stdout is dropped: this script's stdout is a list of labelled facts, and
+# the fact that matters is the last line printed here.
+if [ "$here_mode" -eq 1 ]; then
+  set_work_folder="$(cd "$_self_dir/../issue-context" && pwd -P)/set-work-folder.sh"
+  if ! "$set_work_folder" "$folder_abs" "$display_name" > /dev/null; then
+    {
+      echo "launch-agent $ERR_HERE error: the folder was not adopted. The folder and the prompt file are in place; run this to adopt it by hand:"
+      echo
+      printf '%s %s %s\n' "$set_work_folder" "'$folder_abs'" "'$display_name'"
+    } >&2
+    exit 1
+  fi
+  printf 'Here: no agent was started; this session now writes its working files to %s\n' "$folder_abs"
+  exit 0
+fi
 
 # --- Choose the child's working directory ---
 # The repository root that contains the folder, so that repository's CLAUDE.md
