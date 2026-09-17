@@ -101,8 +101,17 @@ fi
 
 notes_dir="${issue_folder}/notes"
 
+# The -size +0c predicate drops reservations before the sort, so the newest
+# written description wins rather than the newest name. target-path.sh claims a
+# path as an empty file before it prints it, and /issue-context defines an empty
+# file at a stamped path as a reservation and not a working file. An order that
+# selects first and tests for content after abandons this whole source when a
+# caller claims the newest name and never writes. It then sends a description
+# sitting one name below to the git log fallback, which is the crudest source.
+# The sweep in target-path.sh does not close the gap. It clears a reservation
+# only after ten minutes, and only when a later call runs.
 if [ -d "$notes_dir" ]; then
-  newest_note="$(find "$notes_dir" -maxdepth 1 -type f -name "*finish-issue-${issue_number}*" 2>/dev/null | sort | tail -n1)"
+  newest_note="$(find "$notes_dir" -maxdepth 1 -type f -name "*finish-issue-${issue_number}*" -size +0c 2>/dev/null | sort | tail -n1)"
   if [ -n "$newest_note" ] && file_has_content "$newest_note"; then
     cat "$newest_note"
     exit 0

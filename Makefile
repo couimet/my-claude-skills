@@ -26,7 +26,7 @@ format:
 lint-sh: install-prereqs
 	find . -type f \( -name '*.sh' -o -name '*.bash' \) \
 		-not -path '*/.claude-work/*' -not -path '*/.history/*' -not -path '*/demo/*' \
-		-not -path '*/.git/*' -not -path '*/node_modules/*' \
+		-not -path '*/.git/*' -not -path '*/node_modules/*' -not -path './coverage/*' \
 		-exec shellcheck {} +
 
 test: install-prereqs lint-sh
