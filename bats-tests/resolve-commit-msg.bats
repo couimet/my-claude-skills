@@ -190,6 +190,25 @@ write_file() {
   [ "$output" = "newer match" ]
 }
 
+@test "newest matching note is an empty reservation → older nonempty note wins" {
+  local issue_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
+
+  write_file "$issue_dir/notes/20260702-090000-finish-issue-42.txt" "older written description"
+  # An unwritten reservation: target-path.sh claims the path as an empty file
+  # before it prints it, and the caller never wrote over it. write_file above
+  # created the directory.
+  : > "$issue_dir/notes/20260703-150000-finish-issue-42.txt"
+
+  # A real git log exists, so the assertion proves source 2 kept the answer
+  # instead of falling through to source 3.
+  git checkout -q -b issues/42
+  git commit --allow-empty -q -m "git log content"
+
+  run --separate-stderr "$SCRIPT" "main" "42"
+  [ "$status" -eq 0 ]
+  [ "$output" = "older written description" ]
+}
+
 @test "notes directory exists but no matching files → falls through to source 3" {
   local issue_dir="$TEST_TEMP_DIR/.claude-work/issues/42"
   write_file "$issue_dir/notes/unrelated-note.txt" "not a match"
