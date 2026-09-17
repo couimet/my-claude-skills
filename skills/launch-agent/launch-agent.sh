@@ -15,7 +15,9 @@
 #   launch-agent.sh --help
 #
 #   <folder>        An absolute path, used as given, or a slug naming one
-#                   directory under the launcher's repository root.
+#                   directory under the launcher's repository root. A slug
+#                   that names an existing symlink to a directory resolves
+#                   to the link's target, which can sit outside that root.
 #   --name          The display name the job carries in `claude agents` and in
 #                   the terminal title. Defaults to the folder's basename.
 #   --here          Start no agent. Point the calling session's working files at
@@ -42,7 +44,7 @@
 #
 #   Your work folder is <folder>. As your first action, run:
 #
-#   ~/.claude/skills/issue-context/set-work-folder.sh "<folder>" "<name>"
+#   ~/.claude/skills/issue-context/set-work-folder.sh '<folder>' '<name>'
 #
 #   Then read <cwd>/CLAUDE.md and follow it. Your launch prompt is already
 #   saved at <folder>/prompt-new-agent-launch.txt, so do not write it again.
@@ -136,6 +138,22 @@ _launch_agent_mtime_stamp() {
     fi
   fi
   return 1
+}
+
+# _launch_agent_shquote <value> — print <value> as one single-quoted shell word,
+# with an embedded apostrophe escaped as '\''.
+#
+# The commands this script prints on failure are meant to be pasted and run, and
+# English prose carries apostrophes, so a value wrapped in literal single quotes
+# stops being one word the moment it holds one. Single quotes rather than
+# printf %q: the dispatch fallback prints the whole composed child prompt, and
+# %q collapses that multi-line string into one $'...' line nobody can read
+# before pasting it.
+_launch_agent_shquote() {
+  local value="$1"
+  local apostrophe="'"
+  local escaped="'\\''"
+  printf "'%s'" "${value//"$apostrophe"/$escaped}"
 }
 
 # --- Parse arguments ---
@@ -275,6 +293,11 @@ if [ -e "$target" ] && [ ! -d "$target" ]; then
   die "$ERR_FOLDER" "'$target' exists and is not a directory"
 fi
 mkdir -p "$target" || die "$ERR_FOLDER" "could not create $target"
+# pwd -P resolves symlinks, so a slug that names an existing symlink to a
+# directory reports the link's target, which can sit outside the repository
+# root. That is left to stand rather than refused: a symlinked topic folder is
+# something the user arranged on purpose, and the resolved folder is the first
+# line this script prints, so the reader sees where the topic actually landed.
 folder_abs="$({ cd "$target" && pwd -P; } 2>/dev/null)" \
   || die "$ERR_FOLDER" "'$target' could not be resolved"
 
@@ -316,8 +339,9 @@ if [ "$here_mode" -eq 1 ]; then
     {
       echo "launch-agent $ERR_HERE error: the folder was not adopted. The folder and the prompt file are in place; run this to adopt it by hand:"
       echo
-      printf '%s %s %s\n' "$set_work_folder" "'$folder_abs'" "'$display_name'"
-    } >&2
+      printf '%s %s %s\n' "$(_launch_agent_shquote "$set_work_folder")" \
+        "$(_launch_agent_shquote "$folder_abs")" "$(_launch_agent_shquote "$display_name")"
+    } >&2 # kcov-exclude-line
     exit 1
   fi
   printf 'Here: no agent was started; this session now writes its working files to %s\n' "$folder_abs"
@@ -333,7 +357,7 @@ child_cwd="$(git -C "$folder_abs" rev-parse --show-toplevel 2>/dev/null || true)
 # --- Compose the child prompt ---
 child_prompt="Your work folder is $folder_abs. As your first action, run:
 
-~/.claude/skills/issue-context/set-work-folder.sh \"$folder_abs\" \"$display_name\"
+~/.claude/skills/issue-context/set-work-folder.sh $(_launch_agent_shquote "$folder_abs") $(_launch_agent_shquote "$display_name")
 
 "
 if [ -f "$child_cwd/CLAUDE.md" ]; then
@@ -348,8 +372,9 @@ if ! job_id="$({ cd "$child_cwd" && claude --bg --name "$display_name" "$child_p
   {
     echo "launch-agent $ERR_DISPATCH error: the launch failed. The folder and the prompt file are in place; run this from $child_cwd to launch by hand:"
     echo
-    printf 'claude --bg --name %s %s\n' "'$display_name'" "'$child_prompt'"
-  } >&2
+    printf 'claude --bg --name %s %s\n' "$(_launch_agent_shquote "$display_name")" \
+      "$(_launch_agent_shquote "$child_prompt")"
+  } >&2 # kcov-exclude-line
   exit 1
 fi
 

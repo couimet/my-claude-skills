@@ -35,9 +35,9 @@ The folder holds the agent's notes, questions, scratchpads, and commit-message d
 
 The folder takes one of two forms.
 
-A **slug** is a single name. It resolves to a directory of that name at the root of the repository you are in. Use a slug in a repository organised by topic, where topic folders sit at the root. Do not use a slug in a code repository. There the folder lands beside the source tree and stays in `git status`.
+A **slug** is a single name. It resolves to a directory of that name at the root of the repository you are in. A slug that names an existing symlink to a directory resolves to the link's target, which can sit outside that root, so read the resolved folder in the script's first line when a topic folder is a symlink. Use a slug in a repository organised by topic, where topic folders sit at the root. Do not use a slug in a code repository. There the folder lands beside the source tree and stays in `git status`.
 
-The script uses an **absolute path** exactly as you give it, in any directory, inside a repository or outside one. Use an absolute path in a code repository, where the folder usually belongs under `.claude-work/`. An absolute path also bypasses every refusal below. The script reads it as a deliberate choice and not as a name that could be a typo.
+The script uses an **absolute path** exactly as you give it, in any directory, inside a repository or outside one. Use an absolute path in a code repository, where the folder usually belongs under `.claude-work/`. An absolute path also skips the two refusals that guard a slug, the single-component shape check and the near-match guard. It does not skip the prompt refusal further down, which judges the prompt rather than the folder. The script reads it as a deliberate choice and not as a name that could be a typo.
 
 A slug must be a single path component. The script refuses a slug that contains a separator. It refuses `.` and `..`. It also refuses a slug that nearly matches a directory already at the root, and the message names the directory it matched. Without that refusal, `agent-launch-skill` beside an existing `agent_launch_skill` becomes a second topic. An exact match is not a refusal, because a second agent on an existing topic is normal.
 

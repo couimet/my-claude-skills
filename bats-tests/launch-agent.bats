@@ -36,6 +36,23 @@ STUB
   chmod +x "$1/claude"
 }
 
+# _contains <haystack> <needle> — fail the test when <needle> is not a literal
+# substring of <haystack>.
+#
+# A bare `[[ ... ]]` that is not the last command in a test does not fail that
+# test: bash fires no ERR trap for a conditional compound command, and the ERR
+# trap is what bats fails on. A function call is a simple command, so this one
+# fails where a bare [[ ]] silently passes. The tests below that assert exact
+# shell quoting use it, because a quoting assertion that cannot fail is worth
+# nothing.
+_contains() {
+  case "$1" in
+    *"$2"*) return 0 ;;
+  esac
+  printf 'expected to find:\n  %s\n\nin:\n  %s\n' "$2" "$1" >&2
+  return 1
+}
+
 setup() {
   # Canonicalised, because the script reports the folder it resolved with
   # `pwd -P` and macOS hands mktemp a /var path that is a symlink to
@@ -205,6 +222,16 @@ run_here() {
   [[ "$output" == *"is not a topic name"* ]]
 }
 
+@test "slug naming a symlink to a directory resolves to the link's target" {
+  outside="$TEST_TEMP_DIR/outside"
+  mkdir -p "$outside"
+  ln -s "$outside" "$REPO/linked"
+  run_in "$REPO" linked "do the thing"
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Folder: $outside" ]
+  [ "$(cat "$outside/prompt-new-agent-launch.txt")" = "do the thing" ]
+}
+
 # ============================================================================
 # The near-match slug guard
 # ============================================================================
@@ -331,6 +358,22 @@ run_here() {
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "the newer prompt" ]
 }
 
+@test "a modification time neither stat dialect reads → L003, earlier prompt kept" {
+  mkdir -p "$REPO/my-topic"
+  printf 'first\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  bare="$TEST_TEMP_DIR/nostat"
+  _stub_path_without "$bare" stat > /dev/null
+  # _stub_path_without hides one tool, and this branch needs both gone: the BSD
+  # arm calls stat alone, the GNU arm calls stat and then date.
+  rm -f "$bare/date"
+  run env PATH="$bare" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" \
+    bash -c 'cd "$1" && shift && exec "$@"' _ "$REPO" "$SCRIPT" my-topic "second"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L003"
+  _contains "$output" "modification time"
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "first" ]
+}
+
 # ============================================================================
 # The display name
 # ============================================================================
@@ -371,7 +414,7 @@ run_here() {
   [ "$status" -eq 0 ]
   args="$(cat "$ARGS_FILE")"
   [[ "$args" == *"Your work folder is $REPO/my-topic."* ]]
-  [[ "$args" == *"set-work-folder.sh \"$REPO/my-topic\" \"Topic run\""* ]]
+  _contains "$args" "set-work-folder.sh '$REPO/my-topic' 'Topic run'"
   [[ "$args" == *"already saved at $REPO/my-topic/prompt-new-agent-launch.txt"* ]]
   [[ "$args" == *"do the thing"* ]]
 }
@@ -414,6 +457,24 @@ run_here() {
   [[ "$output" == *"claude --bg --name 'my-topic'"* ]]
   [ -d "$REPO/my-topic" ]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "do the thing" ]
+}
+
+# The apostrophe tests assert the escaped text rather than running the printed
+# command. Evaluating it would prove pasteability, but on the failing side of the
+# test the quoting is broken by definition, so the eval would run whatever the
+# break exposes. The escaped form is the contract, so the escaped form is what
+# these assert.
+@test "dispatch failure escapes an apostrophe in the name and in the prompt" {
+  run env PATH="$STUB_PATH" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" STUB_FAIL=1 \
+    bash -c 'cd "$1" && shift && exec "$@"' _ "$REPO" "$SCRIPT" my-topic \
+    --name "Charles' agent" "Fix the user's bug"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"L004"* ]]
+  _contains "$output" "--name 'Charles'\\'' agent'"
+  _contains "$output" "Fix the user'\\''s bug'"
+  # The child prompt the stub recorded is the unescaped original, so the quoted
+  # set-work-folder call reads there the way the child will run it.
+  _contains "$(cat "$ARGS_FILE")" "set-work-folder.sh '$REPO/my-topic' 'Charles'\\'' agent'"
 }
 
 @test "a launch that prints no id → L004 rather than an attach command for nothing" {
@@ -515,6 +576,24 @@ run_here() {
     bash -c 'cd "$1" && shift && exec "$@"' _ "$REPO" "$SCRIPT" my-topic --here "do the thing"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L005"* ]]
-  [[ "$output" == *"set-work-folder.sh '$REPO/my-topic' 'my-topic'"* ]]
+  [[ "$output" == *"set-work-folder.sh' '$REPO/my-topic' 'my-topic'"* ]]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "do the thing" ]
+}
+
+@test "adoption failure escapes apostrophes in the folder and in the name" {
+  topic="$TEST_TEMP_DIR/Charles' topics/my-topic"
+  bare="$TEST_TEMP_DIR/nojq-apostrophe"
+  _stub_path_without "$bare" jq > /dev/null
+  run env -u CLAUDE_JOB_DIR -u CLAUDE_CODE_AGENT -u CLAUDE_PID \
+    -u CLAUDE_CODE_CHILD_SESSION \
+    PATH="$bare" MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
+    bash -c 'cd "$1" && shift && exec "$@"' _ "$REPO" "$SCRIPT" "$topic" --here \
+    --name "Ann's run" "do the thing"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"L005"* ]]
+  # The script's own path is quoted too, so the apostrophe after .sh is the
+  # closing quote of the first word rather than part of the name.
+  _contains "$output" "set-work-folder.sh' '$TEST_TEMP_DIR/Charles'\\'' topics/my-topic' 'Ann'\\''s run'"
+  [ "$(cat "$topic/prompt-new-agent-launch.txt")" = "do the thing" ]
 }
