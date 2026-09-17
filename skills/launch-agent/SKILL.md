@@ -1,5 +1,6 @@
 ---
 name: launch-agent
+version: 2026.09.16@ae50bfe
 description: Dispatch a background agent in one call, or set the same topic up in this session with --here. Creates the topic folder, saves the launch prompt in it, and sets the display name.
 argument-hint: '<folder> [--name <display-name>] [--here] <task prompt>'
 allowed-tools: Bash(*/skills/launch-agent/launch-agent.sh *)
