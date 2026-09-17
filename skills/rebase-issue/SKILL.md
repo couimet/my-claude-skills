@@ -153,7 +153,7 @@ Confirm only the expected unique stacked changes are present, then proceed to St
 The pointer and notes live in the work-item folder `<folder> = <base>[/<segment>]/<ID>`, resolved the same way `/finish-issue` writes them (via `get-issue-folder-path.sh`, honoring a configured `segment`). Run the commit message resolution script, which tries three sources in order:
 
 1. **`last-finish-issue` pointer** — reads the PR description path from `<folder>/last-finish-issue` and returns its contents
-2. **Find PR description in notes/** — searches for the most recent `*finish-issue-<ID>*` file in `<folder>/notes/`
+2. **Find PR description in notes/** — searches for the most recent `*finish-issue-<ID>*` file in `<folder>/notes/`, skipping any zero-byte match, which is an unwritten reservation rather than a description
 3. **git log fallback** — captures `git log --format=%B <target>..HEAD` (the original commits before the soft reset)
 
 ```bash

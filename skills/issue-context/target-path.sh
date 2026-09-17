@@ -27,6 +27,12 @@
 #   it is printed, so two concurrent calls never receive the same path; the
 #   caller writes over its own reservation.
 #
+#   A reservation whose caller never writes is swept. Before it claims a path,
+#   the script removes every empty, stamped file more than ten minutes old from
+#   the four type directories under the resolved folder, and names each removal
+#   on stderr. Without this, an abandoned path stays forever and a "newest file
+#   matching X" reader selects it and reads it empty.
+#
 # Exit codes:
 #   0  — success
 #   1  — error (see stderr)
@@ -131,6 +137,45 @@ folder_root="$("${script_dir}/get-issue-folder-path.sh")" || {
   echo "target-path $ERR_BRANCH_DETECT error: claude-work-root.sh failed" >&2
   exit 1
 }
+
+# --- Sweep abandoned reservations ---
+# A path is claimed as an empty file before it is printed, and nothing releases
+# a claim whose caller never writes. A caller that resolves a path and then
+# abandons it leaves that file for good, and a "newest file matching X" reader
+# then picks it and reads it empty, which is a wrong answer rather than a messy
+# directory. The sweep runs before this call claims anything, so it can never
+# remove the path this call is about to return.
+#
+# Deleting a reservation whose caller has not written yet is harmless. The
+# ordinal scan below and the name it claims both carry this second's stamp, so
+# two calls can only collide inside one second; a caller that writes minutes
+# later recreates the file under a name no later call can claim.
+#
+# find applies the age and the size tests, which keeps stat and date out of
+# this. Their BSD and GNU dialects disagree and need two code paths each; the
+# -mmin and -size 0c predicates behave the same on both.
+#
+# A deliberately empty working file is swept too. Property 2 of the contract in
+# /issue-context defines an empty file at a stamped path as a reservation and
+# not a working file, so this follows the contract rather than bending it.
+readonly SWEEP_AGE_MINUTES=10
+readonly STAMPED_NAME_GLOB='20[0-9][0-9][0-1][0-9][0-3][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9]-*'
+
+# Every type directory under the folder, not only this call's type: a stray in
+# a directory that never receives another call of its own type would otherwise
+# stay forever, which is exactly how the reported pair survived.
+for sweep_dir in "${folder_root}/scratchpads" "${folder_root}/questions" \
+  "${folder_root}/commit-msgs" "${folder_root}/notes"; do
+  [ -d "$sweep_dir" ] || continue
+  while IFS= read -r -d '' stale; do
+    # An `if` rather than `&&`: a delete this call cannot make is not this
+    # call's problem, and errexit must not turn it into a failed resolution.
+    if rm -f -- "$stale" 2>/dev/null; then
+      echo "target-path: swept abandoned reservation $stale" >&2
+    fi
+  done < <(find "$sweep_dir" -maxdepth 1 -type f -size 0c \
+    -mmin +"$SWEEP_AGE_MINUTES" -name "$STAMPED_NAME_GLOB" -print0 2>/dev/null)
+done
 
 # --- Determine target directory ---
 target_dir="${folder_root}/${type_arg}"

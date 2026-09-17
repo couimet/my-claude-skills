@@ -422,3 +422,105 @@ teardown() {
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR/.claude-work/42/questions/$STAMP-001-flat-layout.txt" ]
 }
+
+# ============================================================================
+# Sweeping abandoned reservations
+#
+# The script claims a path as an empty file before it prints it, and nothing
+# releases a claim whose caller never writes. These tests pin the four filters
+# that decide what the sweep may remove, and the ordering that keeps a call
+# from sweeping the path it is about to return.
+#
+# Age comes from mtime through `find -mmin`, not from the stamp in the name, so
+# `touch -t` sets it. The `date` stub pins the emitted stamp only.
+# ============================================================================
+
+# _stale <path> — create <path> as an empty file with an mtime old enough for
+# the sweep to reach it.
+_stale() {
+  mkdir -p "$(dirname "$1")"
+  : > "$1"
+  touch -t 202601010900 "$1"
+}
+
+@test "an abandoned reservation older than the threshold is swept" {
+  git checkout -q -b issues/42
+  local stray="$TEST_TEMP_DIR/.claude-work/issues/42/notes/20260101-090000-001-abandoned.txt"
+  _stale "$stray"
+  run_target_path --type notes --description "Fresh"
+  [ "$status" -eq 0 ]
+  [ ! -e "$stray" ]
+}
+
+@test "the sweep names each removal on stderr" {
+  git checkout -q -b issues/42
+  local stray="$TEST_TEMP_DIR/.claude-work/issues/42/notes/20260101-090000-001-abandoned.txt"
+  _stale "$stray"
+  run_target_path --type notes --description "Fresh"
+  [ "$status" -eq 0 ]
+  case "$stderr" in
+    *"swept abandoned reservation $stray"*) ;;
+    *) printf 'stderr did not name the removal:\n%s\n' "$stderr" >&2; return 1 ;;
+  esac
+}
+
+@test "a reservation younger than the threshold is kept" {
+  git checkout -q -b issues/42
+  local young="$TEST_TEMP_DIR/.claude-work/issues/42/notes/20260101-090000-002-still-warm.txt"
+  mkdir -p "$(dirname "$young")"
+  : > "$young"
+  run_target_path --type notes --description "Fresh"
+  [ "$status" -eq 0 ]
+  [ -e "$young" ]
+}
+
+@test "a file with content is never swept, however old it is" {
+  git checkout -q -b issues/42
+  local written="$TEST_TEMP_DIR/.claude-work/issues/42/notes/20260101-090000-003-written.txt"
+  mkdir -p "$(dirname "$written")"
+  printf 'real content\n' > "$written"
+  touch -t 202601010900 "$written"
+  run_target_path --type notes --description "Fresh"
+  [ "$status" -eq 0 ]
+  [ -e "$written" ]
+  [ -s "$written" ]
+}
+
+@test "an empty file whose name is not stamped is never swept" {
+  git checkout -q -b issues/42
+  local foreign="$TEST_TEMP_DIR/.claude-work/issues/42/notes/0001-legacy-numbered.txt"
+  _stale "$foreign"
+  run_target_path --type notes --description "Fresh"
+  [ "$status" -eq 0 ]
+  [ -e "$foreign" ]
+}
+
+@test "a stray in a sibling type directory is swept by a call for another type" {
+  git checkout -q -b issues/42
+  local stray="$TEST_TEMP_DIR/.claude-work/issues/42/questions/20260101-090000-001-abandoned.txt"
+  _stale "$stray"
+  run_target_path --type commit-msgs --description "Different type"
+  [ "$status" -eq 0 ]
+  [ ! -e "$stray" ]
+}
+
+@test "the path this call returns survives its own sweep" {
+  git checkout -q -b issues/42
+  # A stale reservation carrying the very name this call will claim. The sweep
+  # runs first, so the claim that follows recreates it and the caller still
+  # receives a path that exists.
+  local same="$TEST_TEMP_DIR/.claude-work/issues/42/notes/$STAMP-001-fresh.txt"
+  _stale "$same"
+  run_target_path --type notes --description "Fresh"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$same" ]
+  [ -f "$output" ]
+  [ ! -s "$output" ]
+}
+
+@test "a folder with no type directories yet sweeps nothing and still resolves" {
+  git checkout -q -b issues/99
+  run_target_path --type notes --description "First ever"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/99/notes/$STAMP-001-first-ever.txt" ]
+}

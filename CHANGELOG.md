@@ -19,6 +19,10 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 - `/launch-agent` keeps every launch prompt. The prompt is saved to `prompt-new-agent-launch.txt` in the folder before the agent starts, so it is there even when the launch fails, and a prompt already at that name is archived under its own timestamp first. ([issues/269](https://github.com/couimet/my-claude-skills/issues/269))
 - `/launch-agent` takes a file path in place of the prompt when the prompt is long: a single argument naming a readable file contributes that file's content, which pairs with saving the prompt as a `/note` first. ([issues/269](https://github.com/couimet/my-claude-skills/issues/269))
 
+### Fixed
+
+- Your working folders stop collecting empty files, and a skill that looks for "the most recent" working file no longer picks one of them up. Resolving a path reserves it as an empty file, so two calls can never be handed the same name, and until now nothing removed a reservation whose caller decided not to write after all. The leftovers stayed for good. Worse, a reservation carries the newest timestamp of anything in its folder, so `/g2q` resuming a grill and `/rebase-issue` looking for a PR description could each select one and read it as empty. Any skill that writes a working file now clears these leftovers from the folder as it goes, ten minutes after they are abandoned, and both skills skip an empty file when they look for the newest one.
+
 ## 2026.09.15
 
 ### Added
