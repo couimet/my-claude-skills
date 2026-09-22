@@ -3,10 +3,16 @@
 # token-budget.sh — Report what each skill costs the model, and whether it is
 # over its size budget.
 #
-# Every SKILL.md body enters context when its skill is invoked, and every
+# Every SKILL.md enters context when its skill is invoked, and every
 # description enters context once per session whether or not the skill runs.
 # Those are the two numbers this prints, so a claim about token use can be
 # checked rather than asserted.
+#
+# The per-skill number is the whole file, front matter included, which is what
+# a reader reproduces with `wc -c` and what the caps in ADR 005 were
+# calibrated against. A description is therefore counted twice, once in its
+# file and once in the session floor, and that is deliberate: the two totals
+# price two different costs, and a description is paid in both.
 #
 # Caps, per ADR 005:
 #   foundation (user-invocable: false)   4000 bytes
@@ -47,7 +53,17 @@ CHECK=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --check) CHECK=1; shift ;;
-    --skills-dir) SKILLS_DIR="${2:-}"; shift 2 ;;
+    # A missing value must be a usage error, not a failing `shift 2`: that
+    # fails under `set -e` and exits 1, the status reserved for a real
+    # over-budget finding.
+    --skills-dir)
+      if [ "$#" -lt 2 ]; then
+        echo "token-budget B001 error: --skills-dir needs a directory" >&2
+        usage >&2
+        exit 2
+      fi
+      SKILLS_DIR="$2"; shift 2
+      ;;
     --help | -h) usage; exit 0 ;;
     *) echo "token-budget B001 error: unknown argument '$1'" >&2; usage >&2; exit 2 ;;
   esac
@@ -73,6 +89,7 @@ allowlisted() {
 # the body is documentation, not configuration.
 fm_field() {
   awk -v key="$2" '
+    # kcov-exclude-start
     NR == 1 && $0 == "---" { infm = 1; next }
     infm && $0 == "---"    { exit }
     infm && index($0, key ":") == 1 {
@@ -80,12 +97,13 @@ fm_field() {
       print
       exit
     }
+    # kcov-exclude-end
   ' "$1"
 }
 
 tokens_of() { echo $(( $1 * 10 / CHARS_PER_TOKEN )); }
 
-total_body=0
+total_file=0
 total_desc=0
 over=0
 rows=""
@@ -96,7 +114,10 @@ for dir in "$SKILLS_DIR"/*/; do
   file="$dir/SKILL.md"
   bytes="$(wc -c < "$file" | tr -d ' ')"
   desc="$(fm_field "$file" description)"
-  desc_bytes=${#desc}
+  # Bytes, not characters: ${#desc} undercounts any non-ASCII description,
+  # and the cost being measured is bytes. printf keeps the trailing newline
+  # `wc -c` would otherwise add out of the count.
+  desc_bytes="$(printf '%s' "$desc" | wc -c | tr -d ' ')"
   invocable="$(fm_field "$file" user-invocable)"
   kind="$(fm_field "$file" skill-kind)"
 
@@ -118,7 +139,7 @@ for dir in "$SKILLS_DIR"/*/; do
     fi
   fi
 
-  total_body=$((total_body + bytes))
+  total_file=$((total_file + bytes))
   total_desc=$((total_desc + desc_bytes))
   rows="$rows$(printf '%-26s %-11s %7s %7s %6s %5s  %s\n' \
     "$name" "$tier" "$bytes" "$(tokens_of "$bytes")" "$desc_bytes" "$cap" "$status")"$'\n'
@@ -136,8 +157,8 @@ fi
 printf '%-26s %-11s %7s %7s %6s %5s  %s\n' SKILL TIER BYTES TOKENS DESC CAP STATUS
 printf '%s' "$rows" | sort
 echo
-printf 'Bodies:       %7s bytes  ~%s tokens (loaded per invocation, per chain)\n' \
-  "$total_body" "$(tokens_of "$total_body")"
+printf 'Files:        %7s bytes  ~%s tokens (loaded per invocation, per chain)\n' \
+  "$total_file" "$(tokens_of "$total_file")"
 printf 'Descriptions: %7s bytes  ~%s tokens (session floor, loaded whether or not a skill runs)\n' \
   "$total_desc" "$(tokens_of "$total_desc")"
 if [ "$over" -gt 0 ]; then

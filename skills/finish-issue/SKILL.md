@@ -231,7 +231,9 @@ Fill `<VERSION>` from:
 
 ```bash
 ~/.claude/skills/issue-context/skill-version.sh finish-issue
-``` This footer replaces the default `🤖 Generated with [Claude Code](https://claude.com/claude-code)` line. Do not add both. The skill footer is the sole attribution.
+```
+
+This footer replaces the default `🤖 Generated with [Claude Code](https://claude.com/claude-code)` line. Do not add both. The skill footer is the sole attribution.
 
 **Diff-filtering rule:** The `## Changes` section must be derivable from the `git diff --stat` output captured in Step 4. Use one bullet per logical grouping in the diff, not one bullet per conversation turn. Drop any mention of files, edits, or approaches that don't appear in the final diff. The `## Summary` must describe what shipped, not what was considered. Populate `## Key Discoveries` from breadcrumbs or the active plan's assumptions/deviations. Only include findings that relate to the final shipped changes. If an approach was tried then replaced, only the final approach matters. Omit the section entirely when there is nothing to surface.
 

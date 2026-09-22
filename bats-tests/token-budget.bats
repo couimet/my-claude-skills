@@ -116,11 +116,11 @@ _skill() {
   [[ "$output" == *"OVER"* ]]
 }
 
-@test "token-budget: report names both the body total and the session floor" {
+@test "token-budget: report names both the file total and the session floor" {
   _skill small 100
   run "$BUDGET" --skills-dir "$SKILLS"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Bodies:"* ]]
+  [[ "$output" == *"Files:"* ]]
   [[ "$output" == *"Descriptions:"* ]]
 }
 
@@ -132,6 +132,34 @@ _skill() {
 @test "token-budget: B002 when the skills dir does not exist" {
   run "$BUDGET" --skills-dir "$TEST_TEMP_DIR/nope"
   [ "$status" -eq 2 ]
+}
+
+@test "token-budget: B001 with exit 2 when --skills-dir has no value" {
+  run "$BUDGET" --skills-dir
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"B001"* ]]
+}
+
+@test "token-budget: a non-ASCII description is measured in bytes" {
+  _skill ascii 100
+  run "$BUDGET" --skills-dir "$SKILLS"
+  [ "$status" -eq 0 ]
+  local ascii_desc
+  ascii_desc="$(printf '%s\n' "$output" | awk '$1 == "ascii" { print $5 }')"
+
+  rm -rf "${SKILLS:?}/ascii"
+  mkdir -p "$SKILLS/wide"
+  printf -- '---\nname: wide\ndescription: A test skill \xc3\xa9\xc3\xa9.\n---\n\n# wide\n\nbody\n' \
+    > "$SKILLS/wide/SKILL.md"
+  run "$BUDGET" --skills-dir "$SKILLS"
+  [ "$status" -eq 0 ]
+  local wide_desc
+  wide_desc="$(printf '%s\n' "$output" | awk '$1 == "wide" { print $5 }')"
+
+  # "A test skill." is 13 bytes; "A test skill ee." with two two-byte accented
+  # characters is 18. A character count would report 16 and hide the cost.
+  [ "$ascii_desc" -eq 13 ]
+  [ "$wide_desc" -eq 18 ]
 }
 
 # =============================================================
@@ -158,6 +186,14 @@ _skill() {
   run "$HEADERS" "$TEST_TEMP_DIR/s"
   [ "$status" -eq 1 ]
   [[ "$output" == *"bare.sh"* ]]
+}
+
+@test "check-script-headers: a .bash script with no header fails" {
+  mkdir -p "$TEST_TEMP_DIR/s"
+  printf '#!/usr/bin/env bash\necho hi\n' > "$TEST_TEMP_DIR/s/bare.bash"
+  run "$HEADERS" "$TEST_TEMP_DIR/s"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"bare.bash"* ]]
 }
 
 @test "check-script-headers: a script with a header passes" {

@@ -56,6 +56,7 @@ FILE="$1"
 [ -s "$FILE" ] || die "X003" "'$FILE' is empty"
 
 awk '
+# kcov-exclude-start
 function flush_answer(   i, letter, marked, body, key, text, line) {
   if (open_id == "") return
   marked = (opener ~ /\[RECOMMENDED\]/)
@@ -161,4 +162,5 @@ END {
   for (i = 1; i <= retired; i++) printf "  %s\n", retiredline[i]
   for (i = 1; i <= nout; i++) print out[i]
 }
+# kcov-exclude-end
 ' "$FILE"

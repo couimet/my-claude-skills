@@ -12,6 +12,8 @@
 # the script outputs, and short enough that a genuinely tiny helper is not
 # forced to pad.
 #
+# Every *.sh and *.bash file is checked, which is the set lint-sh covers.
+#
 # Usage: check-script-headers.sh [<dir> ...]   (default: skills/ and scripts/)
 #
 # Exit codes:
@@ -24,7 +26,7 @@ set -euo pipefail
 MIN_HEADER_LINES=5
 
 if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
-  sed -n '3,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '3,19p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
   exit 0
 fi
 
@@ -46,7 +48,7 @@ while IFS= read -r script; do
     echo "${script#"$root"/}: header is $count comment lines, needs at least $MIN_HEADER_LINES" >&2
     missing=$((missing + 1))
   fi
-done < <(find "${dirs[@]}" -type f -name '*.sh' | sort)
+done < <(find "${dirs[@]}" -type f \( -name '*.sh' -o -name '*.bash' \) | sort)
 
 if [ "$missing" -gt 0 ]; then
   echo "check-script-headers: $missing script(s) without a header block. Say what the script does, what it prints, and how it exits." >&2

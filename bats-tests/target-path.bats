@@ -387,6 +387,18 @@ teardown() {
   [ ! -d "$TEST_TEMP_DIR/wt-linked/.claude-work" ]
 }
 
+@test "linked worktree: the sentinel lands in the main checkout .gitignore" {
+  git worktree add "$TEST_TEMP_DIR/wt-sentinel" -b issues/98 -q
+  rm -f "$TEST_TEMP_DIR/.gitignore" "$TEST_TEMP_DIR/wt-sentinel/.gitignore"
+  cd "$TEST_TEMP_DIR/wt-sentinel"
+  run_target_path --type notes --description "sentinel from worktree"
+  [ "$status" -eq 0 ]
+  # The main checkout owns the shared .claude-work/, so its .gitignore is the
+  # one that must carry the sentinel.
+  grep -qF '.claude-work/' "$TEST_TEMP_DIR/.gitignore"
+  [ ! -f "$TEST_TEMP_DIR/wt-sentinel/.gitignore" ]
+}
+
 # ============================================================================
 # Repo-root anchoring: output is an absolute path independent of CWD
 # ============================================================================

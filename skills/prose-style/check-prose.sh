@@ -68,6 +68,9 @@ report() {
 # Fenced code blocks, tables and list items are exempt from every rule here.
 # A fence toggles on any line whose first non-space characters are three
 # backticks, so an indented fence inside a list still closes correctly.
+# Markdown allows a fence up to three leading spaces and treats a fourth as
+# indented content, so the line is trimmed of at most three before the marker
+# is tested.
 in_fence=0
 lineno=0
 prev_text=""
@@ -76,15 +79,22 @@ prev_no=0
 while IFS= read -r line || [ -n "$line" ]; do
   lineno=$((lineno + 1))
 
-  case "$line" in
-    '```'* | '   '*'```'*) in_fence=$((1 - in_fence)); prev_text=""; continue ;;
+  unindented="$line"
+  for _ in 1 2 3; do unindented="${unindented# }"; done
+  case "$unindented" in
+    '```'*) in_fence=$((1 - in_fence)); prev_text=""; continue ;;
   esac
   [ "$in_fence" -eq 1 ] && continue
 
   # Structural lines are never prose: headings, table rows, list items,
-  # blockquotes, and the answer-region delimiters /question-format defines.
+  # blockquotes, thematic breaks, and the answer-region delimiters
+  # /question-format defines. A list marker carries its trailing space, so a
+  # bold label such as **Related:** stays prose and is still checked, which is
+  # the form P004 misses most. A bare --- stays excluded: a front-matter
+  # delimiter and a thematic break end no sentence, and reading either as prose
+  # reports the line below it as a wrap.
   case "$line" in
-    '#'* | '|'* | '-'* | '*'* | '>'* | '</A'* | [0-9]'.'* | '    '*)
+    '#'* | '|'* | '- '* | '* '* | '---'* | '>'* | '</A'* | [0-9]'.'* | '    '*)
       prev_text=""
       continue
       ;;

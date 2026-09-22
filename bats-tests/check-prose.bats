@@ -134,3 +134,37 @@ teardown() {
   [ "$status" -eq 1 ]
   [ "$(printf '%s\n' "$output" | wc -l | tr -d ' ')" -eq 2 ]
 }
+
+@test "check-prose: a fence toggles at every valid indentation" {
+  for indent in "" " " "  " "   "; do
+    printf '# Title\n\n%s```\n%slines 26-37 inside a fence\n%s```\n' \
+      "$indent" "$indent" "$indent" > "$FILE"
+    run "$SCRIPT" "$FILE"
+    [ "$status" -eq 0 ]
+  done
+}
+
+@test "check-prose: a four-space fence stays indented content" {
+  printf '# Title\n\n    ```\n    lines 26-37 indented four spaces\n    ```\n' > "$FILE"
+  run "$SCRIPT" "$FILE"
+  [ "$status" -eq 0 ]
+}
+
+@test "check-prose: a bold label is prose and is checked for P004" {
+  printf '# Title\n\n**Related:** PR #42 carries the change.\n' > "$FILE"
+  run "$SCRIPT" "$FILE"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"P004"* ]]
+}
+
+@test "check-prose: a bare thematic break is exempt from the wrap rule" {
+  printf '# Title\n\n---\n\nA sentence that follows the break.\n' > "$FILE"
+  run "$SCRIPT" "$FILE"
+  [ "$status" -eq 0 ]
+}
+
+@test "check-prose: an emphasis-led list item is still exempt" {
+  printf '# Title\n\n- **one** item\n- **another** item\n' > "$FILE"
+  run "$SCRIPT" "$FILE"
+  [ "$status" -eq 0 ]
+}

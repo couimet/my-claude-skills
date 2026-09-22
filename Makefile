@@ -24,7 +24,7 @@ lint-budget:
 	./scripts/token-budget.sh --check
 	./scripts/check-script-headers.sh
 
-# What each skill costs: body bytes per invocation, description bytes per
+# What each skill costs: file bytes per invocation, description bytes per
 # session. Not part of `check` -- it reports, it does not gate.
 token-report:
 	./scripts/token-budget.sh

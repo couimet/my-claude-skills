@@ -18,7 +18,7 @@ Two kinds of file carry one. A questions wave file holds `ANNN:` answers, in the
 
 ## Step 1: Resolve the file
 
-With a path in `$ARGUMENTS`, use it. With no path, run:
+Remove an exact standalone trailing `ready` token from `$ARGUMENTS` first: it is the second signal above, not part of the path, and the classifier reads it as one. With a path in what remains, use it. With nothing left, run:
 
 ```bash
 ~/.claude/skills/answers-ready/find-waves.sh

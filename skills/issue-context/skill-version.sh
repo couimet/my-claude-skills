@@ -83,6 +83,7 @@ fi
 # Front matter only: the first block delimited by --- at column zero. A
 # `version:` line further down the body is documentation, not the stamp.
 version="$(awk '
+  # kcov-exclude-start
   NR == 1 && $0 == "---" { infm = 1; next }
   infm && $0 == "---"    { exit }
   infm && /^version:[[:space:]]*/ {
@@ -90,6 +91,7 @@ version="$(awk '
     print
     exit
   }
+  # kcov-exclude-end
 ' "$skill_file")"
 
 if [ -z "$version" ]; then

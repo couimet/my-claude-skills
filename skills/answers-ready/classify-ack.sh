@@ -78,6 +78,7 @@ echo "UNACKNOWLEDGED: $marked"
 # caller can tell the user which ones to look at without reading the file.
 if [ "$marked" -gt 0 ]; then
   awk '
+    # kcov-exclude-start
     /^###[[:space:]]+Feedback[[:space:]]/ {
       item = $0
       sub(/^###[[:space:]]+/, "", item)
@@ -89,5 +90,6 @@ if [ "$marked" -gt 0 ]; then
       sub(/^Decision:[[:space:]]*\[RECOMMENDED\][[:space:]]*/, "", verdict)
       printf "%s - %s\n", (item == "" ? "(unnamed decision)" : item), verdict
     }
+    # kcov-exclude-end
   ' "$FILE"
 fi
