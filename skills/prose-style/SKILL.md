@@ -3,7 +3,7 @@ name: prose-style
 version: 2026.09.16@ae50bfe
 user-invocable: false
 description: 'Prose, reference, and conciseness rules for any skill that writes to a file: the hard-wrap rule, code-reference syntax, GitHub-reference syntax, and the /concise-output pass. Auto-consulted when a skill produces file content.'
-allowed-tools: Bash(gh repo view *)
+allowed-tools: Bash(gh repo view *), Bash(*/skills/prose-style/check-prose.sh *)
 ---
 
 # Prose Style
@@ -22,13 +22,17 @@ Format: one continuous line per paragraph, no hard wrapping. Code references: pa
 
 ### Self-check before you finish
 
-Before reporting a file path back to the user, re-read the file you just wrote. For each paragraph (text between blank lines, not inside a code block or table), verify it is a single continuous line. If you find any mid-sentence line break, rewrite that paragraph as one line. This check is cheap and catches the most common failure mode.
+Before reporting a file path back to the user, run the checker on the file you just wrote:
 
-Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
+```bash
+~/.claude/skills/prose-style/check-prose.sh "<absolute path to the file>"
+```
 
-Also scan for reference violations: each code reference is a bare workspace-relative permalink (src/parser.ts#L42), never backtick-wrapped and never a plain-text form like "lines 26-37"; each GitHub reference is a full URL, never #NNN, PR #NNN, or issue #NNN; and each generated file path you report to the user is absolute, never a relative .claude-work/... path. Rewrite any you find.
+It prints one line per finding and nothing when the file is clean, so it costs a few tokens where re-reading the file costs the whole file. Fix every line it names, then run it again. It covers the mechanical rules: hard wraps (P001), backtick-wrapped code references (P002), plain-text line references (P003), short-form GitHub references (P004), and relative `.claude-work/` paths (P005).
 
-Then apply the `/concise-output` pass from Rule 5. After the pass, re-run this self-check so the final file satisfies the hard-wrap and reference rules as well as the conciseness and STE rules.
+One thing the checker cannot judge, so you still do it once: skim for AI-writing tells, meaning em dashes, filler phrases (in order to, due to the fact that), vague attributions, and generic positive conclusions. Rewrite any you find.
+
+Then apply the `/concise-output` pass from Rule 5.
 
 ## Rule 2: Code references (in file content)
 
@@ -74,7 +78,7 @@ This applies to every skill that prints a file path: notes, scratchpads, questio
 
 Run `/concise-output` on the file's prose content in STE-flavored mode: enforce its structural rules (active voice, ≤25-word sentences, no semicolons, one topic per paragraph, lists for sequences) and treat its lexical rules as advisory. `/concise-output` invokes `/asd-ste100` when available and applies its condensed fallback rules when it is not. STE-flavored fits prose deliverables — PR descriptions, changelogs, READMEs, explanatory prose. Reserve the strict mode for error messages, inter-agent instructions, and status text.
 
-Re-run the Rule 1 self-check after the pass.
+Run `check-prose.sh` once more after the pass, since a rewrite can reintroduce a wrap.
 
 ## What this replaces
 

@@ -1,11 +1,11 @@
-.PHONY: check lint lint-fix lint-md lint-md-fix fmt-check format lint-sh test coverage install-prereqs stamp
+.PHONY: check lint lint-fix lint-md lint-md-fix fmt-check format lint-sh lint-budget token-report test coverage install-prereqs stamp
 
 include versions.mk
 
 # `check` is the default target and the gate CI mirrors.
 check: lint test
 
-lint: install-prereqs lint-md fmt-check lint-sh
+lint: install-prereqs lint-md fmt-check lint-sh lint-budget
 
 lint-fix: install-prereqs lint-md-fix format
 
@@ -16,6 +16,18 @@ lint-md:
 lint-md-fix:
 	@[ -d node_modules/@couimet/markdownlint-config ] || { echo 'Missing npm dependencies: run `npm install` first.'; exit 1; }
 	./node_modules/.bin/markdownlint-cli2 --fix "**/*.md"
+
+# Size budget and the script-header convention, both per ADR 005. A skill over
+# its cap must earn a line in skills/.budget-allowlist, which is a backlog
+# rather than a settings file.
+lint-budget:
+	./scripts/token-budget.sh --check
+	./scripts/check-script-headers.sh
+
+# What each skill costs: body bytes per invocation, description bytes per
+# session. Not part of `check` -- it reports, it does not gate.
+token-report:
+	./scripts/token-budget.sh
 
 fmt-check:
 	npx --yes prettier@$(PRETTIER_VERSION) --check .

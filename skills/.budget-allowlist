@@ -1,0 +1,37 @@
+# Skills permitted to exceed their size cap, per ADR 005.
+#
+# This file is a backlog, not a settings file. Every line is a debt, and adding
+# one shows up in a diff so the exception is argued rather than assumed. The
+# caps and the tiers live in scripts/token-budget.sh.
+#
+# Every entry is measured, never estimated: run `make token-report`, and add a
+# line only for a skill the report shows over its cap. Shrink the skill in a
+# later PR and delete its line when you do.
+
+# --- Contract documents: the bulk is spec, not rationale --------------------
+# Both carry a format or a set of script contracts that cannot compress
+# without losing the thing a caller reads them for. question-format holds a
+# worked template of about 1,150 bytes on its own.
+question-format
+issue-context-internals
+issue-draft-reader
+
+# --- prose-style: five rules plus three reference tables --------------------
+# Shrinks when the tables move to an ADR and the skill keeps the rules only.
+prose-style
+
+# --- Composite skills still above the 12,000 composite cap ------------------
+# Each orchestrates five or more skills. start-issue and tackle-pr-comment are
+# the two largest in the collection and the obvious next targets.
+start-issue
+tackle-pr-comment
+finish-issue
+release-article
+
+# --- Ordinary skills above 8,000 -------------------------------------------
+# No dedicated slimming pass yet; each is over on its own content.
+changelog
+cleanup-issue
+commit-msg
+create-github-issue
+create-jira-issue

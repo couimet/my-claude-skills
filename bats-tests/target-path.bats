@@ -524,3 +524,53 @@ _stale() {
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/99/notes/$STAMP-001-first-ever.txt" ]
 }
+
+# ============================================================================
+# The gitignore sentinel is the script's job, not the caller's
+# ============================================================================
+#
+# Two skills wrote working files through this script without making the
+# parallel ensure-gitignore.sh call every sibling made, so in a repository
+# whose .gitignore lacked the sentinel they produced untracked-but-unignored
+# files. Folding the check in here removes the whole class: a caller cannot
+# forget a call it no longer makes.
+
+@test "gitignore: the sentinel is added when .gitignore is missing" {
+  git checkout -q -b issues/42
+  [ ! -f "$TEST_TEMP_DIR/.gitignore" ]
+  run "$SCRIPT" --type notes --description "first note"
+  [ "$status" -eq 0 ]
+  grep -q '^\.claude-work/$' "$TEST_TEMP_DIR/.gitignore"
+}
+
+@test "gitignore: the sentinel is added when .gitignore exists without it" {
+  git checkout -q -b issues/42
+  printf 'node_modules/\n' > "$TEST_TEMP_DIR/.gitignore"
+  run "$SCRIPT" --type notes --description "first note"
+  [ "$status" -eq 0 ]
+  grep -q '^node_modules/$' "$TEST_TEMP_DIR/.gitignore"
+  grep -q '^\.claude-work/$' "$TEST_TEMP_DIR/.gitignore"
+}
+
+@test "gitignore: an existing sentinel is left alone" {
+  git checkout -q -b issues/42
+  printf '# Claude skill working directories\n.claude-work/\n' > "$TEST_TEMP_DIR/.gitignore"
+  local before
+  before="$(cat "$TEST_TEMP_DIR/.gitignore")"
+  run "$SCRIPT" --type notes --description "first note"
+  [ "$status" -eq 0 ]
+  [ "$(cat "$TEST_TEMP_DIR/.gitignore")" = "$before" ]
+}
+
+# stdout is exactly one line and it is a path. The helper prints "present" or
+# "added" on its own stdout, so a leak here would be captured by a caller's
+# command substitution and turned into a directory named after the message.
+@test "gitignore: the helper's output never reaches stdout" {
+  git checkout -q -b issues/42
+  run --separate-stderr "$SCRIPT" --type notes --description "first note"
+  [ "$status" -eq 0 ]
+  [ "$(printf '%s' "$output" | wc -l | tr -d ' ')" -eq 0 ]
+  [[ "$output" != *present* ]]
+  [[ "$output" != *added* ]]
+  [[ "$output" == /* ]]
+}

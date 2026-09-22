@@ -5,11 +5,16 @@ set -euo pipefail
 #
 # Usage: update-project-status.sh <owner> <repo> <issue_number>
 #
-# Queries the issue's project items via GraphQL. For each item with a Status field
-# that is not already "In Progress", runs the updateProjectV2ItemFieldValue mutation
-# and posts an issue comment documenting the transition.
+# Queries the issue's project items via GraphQL, looking for a field named
+# "Status" (case-insensitive). For each item not already "In Progress", finds an
+# option matching "In Progress" (case-insensitive), runs the
+# updateProjectV2ItemFieldValue mutation, and posts an issue comment documenting
+# the transition (e.g. "Moved Status from Todo to In Progress on project Roadmap").
 #
-# Exits 0 on success or if no action needed. Never fails the parent skill.
+# Exits 0 and prints a summary line per updated project. Exits 0 silently when:
+# the token lacks the `project` OAuth scope, the issue is in no project, a
+# project has no "Status" field, or that field has no "In Progress" option.
+# Never fails the parent skill: /start-issue continues regardless of exit code.
 
 OWNER="$1"
 REPO="$2"

@@ -3,7 +3,7 @@ name: note
 version: 2026.09.16@ae50bfe
 description: Capture a note, finding, or result in a new file under .claude-work/. Lightweight alternative to /scratchpad
 argument-hint: <description>
-allowed-tools: Read, Write, Bash(*/skills/issue-context/target-path.sh *)
+allowed-tools: Read, Write, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/prose-style/check-prose.sh *)
 ---
 
 # Note
@@ -38,8 +38,7 @@ Format: freeform text.
 Length: unlimited.
 Perspective: whatever fits the content being captured.
 
-Before printing the path in Step 3, re-read the file and verify no paragraph contains a mid-sentence line break. Rewrite any that do.
-Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
+Before printing the path in Step 3, run `check-prose.sh` on the file and fix every line it names. See `/prose-style` Rule 1.
 
 ## Step 3: Confirm
 

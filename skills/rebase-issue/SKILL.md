@@ -4,6 +4,7 @@ version: 2026.09.16@ae50bfe
 description: Rebase the current issue branch onto origin/main (or a specified target) after upstream PRs merge. Handles conflict resolution, squashes to a single commit, and runs autonomously
 argument-hint: <target>
 user-invocable: true
+skill-kind: composite
 allowed-tools: Read, Write, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git log *), Bash(git diff *), Bash(git rebase *), Bash(git reset *), Bash(git commit *), Bash(git add *), Bash(git checkout *), Bash(git merge-base *), Bash(git rev-parse *), Bash(git status *), Bash(gh pr list *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/rebase-issue/resolve-target.sh *), Bash(*/skills/rebase-issue/apply-stacked-diff.sh *), Bash(*/skills/rebase-issue/resolve-commit-msg.sh *)
 ---
 
@@ -48,7 +49,7 @@ Run the target resolution script:
 ~/.claude/skills/rebase-issue/resolve-target.sh "<NUMBER>" [$ARGUMENTS]
 ```
 
-The script resolves the target from the explicit argument (if provided), `gh pr list` (authoritative for PR stacking relationships), the base-branch marker file, or falls back to `origin/main`. It outputs two lines:
+It outputs two lines:
 
 ```text
 TARGET=<ref>
@@ -106,7 +107,7 @@ Run the diff-apply script:
 ~/.claude/skills/rebase-issue/apply-stacked-diff.sh "<target>"
 ```
 
-The script saves the current HEAD to a unique temp branch, captures the unique diff against the target, resets to the target, and applies the changes with `--reject`. On success, all changes are staged and temp resources are cleaned up. On failure, `.rej` files and the patch file are preserved for manual resolution. Inspect the `.rej` files beside the affected source files, hand-apply the changes, delete all generated `.rej` files, then stage with `git add -A`. `apply-stacked-diff.sh` writes the patch file to `/tmp`, outside the repo, so it is not staged. Continue to Step 9.
+On success all changes are staged. On failure `.rej` files and the patch file are preserved for manual resolution. Inspect the `.rej` files beside the affected source files, hand-apply the changes, delete all generated `.rej` files, then stage with `git add -A`. `apply-stacked-diff.sh` writes the patch file to `/tmp`, outside the repo, so it is not staged. Continue to Step 9.
 
 Proceed to Step 9. Skip Step 8. The conflict resolution strategy in Step 8 targets `git rebase` conflicts. Stacked-mode apply failures are resolved inline per the script's output.
 
