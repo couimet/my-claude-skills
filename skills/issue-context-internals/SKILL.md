@@ -1,5 +1,6 @@
 ---
 name: issue-context-internals
+version: 2026.09.21@73231a2
 user-invocable: false
 description: Contract for the issue-context scripts beyond path resolution - identifier resolution, branch matching, work-item folder resolution, branch-name rendering, the work-folder tier, and the settings file. Referenced by name from the skills that need one of them.
 allowed-tools: Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/render-branch-template.sh *), Bash(*/skills/issue-context/set-work-folder.sh *), Bash(*/skills/issue-context/work-folder-tier.sh *)
