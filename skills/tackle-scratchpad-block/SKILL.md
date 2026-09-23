@@ -3,6 +3,7 @@ name: tackle-scratchpad-block
 version: 2026.09.16@ae50bfe
 description: Execute a single step from a scratchpad plan. Transitions status, runs tests, creates a commit message. Main execution engine for /start-issue → /finish-issue.
 argument-hint: <path/to/scratchpad.txt [#S00N | S00N | #L10-L20]>
+skill-kind: composite
 allowed-tools: Read, Write, Edit, AskUserQuestion, Bash(*), Glob, Grep
 ---
 
@@ -22,7 +23,7 @@ Determine the file the user's argument points at (the path portion before `#S00N
 
 **If the argument does NOT resolve to a JSON step block** (file not found, or file exists but has no `"steps"` array): resolve the active-plan pointer exactly the way `/finish-issue` Step 1b does, so the two readers of that pointer agree with the `/start-issue` that wrote it, then name the resolved path in the guidance message.
 
-First set mode and identifier. Run the gate alongside `git branch --show-current`, which is needed for side-quest detection:
+First set mode and identifier, per `/issue-context-internals`. Run the gate alongside `git branch --show-current`, which is needed for side-quest detection:
 
 ```bash
 ~/.claude/skills/issue-context/branch-issue-id.sh

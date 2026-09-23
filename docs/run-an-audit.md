@@ -1,6 +1,6 @@
 # Run an efficiency audit on this skills collection
 
-This used to be a skill (`/audit-efficiency`). The skill was removed in [issues/120](https://github.com/couimet/my-claude-skills/issues/120) because an independent audit run from a fresh session found the skill itself was a source of bias — the in-repo version auto-loaded into context and steered Claude toward a HIGH/MEDIUM/LOW framing and a pre-picked category list before it got to see the actual state of the collection.
+This used to be a skill (`/audit-efficiency`). The skill was removed in [issues/120](https://github.com/couimet/my-claude-skills/issues/120) because an independent audit run from a fresh session found the skill itself was a source of bias — the in-repo version auto-loaded into context and steered Claude toward a HIGH/MEDIUM/LOW framing and a pre-picked category list before it got to see the actual state of the collection. The prompt below no longer mentions that skill: it was deleted with the issue, so instructing an auditor to avoid it only sent them looking for a file that is not there.
 
 The replacement is this file: a prompt you paste into a fresh Claude Code session. The narrative for why is in [media/2026-04-devto-post-audit-pivot.md](../media/2026-04-devto-post-audit-pivot.md).
 
@@ -13,17 +13,15 @@ The replacement is this file: a prompt you paste into a fresh Claude Code sessio
 
 ## The prompt
 
-> I want an independent audit of a Claude Code skills collection for token efficiency. I am the author of this collection and I have already written a skill called `/audit-efficiency` that performs this kind of analysis, but I want you to NOT use it. I want your own reasoning, your own categories, and your own priorities — not a rerun of my existing framing.
+> I want an independent audit of a Claude Code skills collection for token efficiency. I want your own reasoning, your own categories, and your own priorities, not a rerun of a framing I already have.
 >
 > The project root is `/path/to/your/skills`. The skills live in `skills/<name>/SKILL.md`, each with YAML front matter (`name`, `version`, `description`, `user-invocable`, `allowed-tools`) followed by Markdown instructions. Skills marked `user-invocable: false` are "foundation" skills that are not directly invokable but are loaded into context either by explicit `/skill-name` prose references in other skills or by auto-consultation (Claude matches the foundation's `description` against the current task and loads the whole SKILL.md file).
 >
-> Do not read `skills/audit-efficiency/SKILL.md` until after you have formed your own opinion. If you find yourself about to read it, stop and finish your own analysis first. You can read it at the end as a cross-check.
->
-> Do not read the CHANGELOG, the README, or the skills/README.md until after your initial scan — they will bias you toward the author's existing mental model.
+> Do not read the CHANGELOG, the README, `skills/README.md`, or `docs/` until after your initial scan. They will bias you toward the author's existing mental model.
 >
 > Here is the question I want you to answer, in order:
 >
-> 1. For a Claude Code user who invokes skills like `/start-issue`, `/scratchpad`, `/question`, `/commit-msg`, `/finish-issue`, `/tackle-scratchpad-block`, `/tackle-pr-comment` many times per week, where is token budget being spent unnecessarily on this collection?
+> 1. For a Claude Code user who invokes skills like `/start-issue`, `/scratchpad`, `/question`, `/g2q`, `/answers-ready`, `/commit-msg`, `/finish-issue`, `/tackle-scratchpad-block`, `/tackle-pr-comment` many times per week, where is token budget being spent unnecessarily on this collection?
 > 2. For each finding, estimate how often the overhead is paid (once per session, once per skill invocation, once per skill type, etc.) — frequency matters more than absolute size for ranking.
 > 3. Rank findings by your own impact scheme. Do not use HIGH/MEDIUM/LOW if that is what the project's own audit skill uses — pick labels that reflect your actual reasoning.
 > 4. For each top-ranked finding, propose at least two alternative fixes and state which you would recommend and why. Include the alternative "do nothing because the cost is acceptable" when it is plausible.
@@ -36,6 +34,7 @@ The replacement is this file: a prompt you paste into a fresh Claude Code sessio
 > - Use Grep and Glob for structural scans (cross-reference counts, front-matter surveys, line counts). Do not grep for terms you picked up from this prompt — pick your own terms.
 > - Do not stop at the obvious. If you see only one category of inefficiency, push yourself to find a second and third.
 > - Call out skills that look well-optimized — not just problems. A balanced report is more useful than a hit list.
+> - Measure before you rank. A skill's body enters context on every invocation, and a skill that references others in prose pulls their bodies in too, so byte counts per invocation chain are data you can gather directly rather than estimate.
 > - If you discover that my starting hypothesis (DRY-via-cross-references costs tokens) is wrong or weakly supported, say so and explain what the data actually shows.
 >
 > Output format:
@@ -53,7 +52,7 @@ The replacement is this file: a prompt you paste into a fresh Claude Code sessio
 
 Three design choices carry the weight:
 
-1. **Explicit "do not read" list.** Claude's default behavior is to pull in context aggressively. Telling it explicitly to ignore the in-repo audit skill, the CHANGELOG, and the README reduces priming.
+1. **Explicit "do not read" list.** Claude's default behavior is to pull in context aggressively. Telling it explicitly to ignore the CHANGELOG, the README, and `docs/` reduces priming.
 2. **Forced alternative-fix reasoning.** Asking for at least two alternatives per finding (including "do nothing") prevents the audit from becoming a rationalization for a predetermined answer.
 3. **The "question I would have asked" trailer.** This is the cheapest way to surface a gap in your framing — if Claude had a better audit to run but felt constrained by your phrasing, this is where it says so.
 

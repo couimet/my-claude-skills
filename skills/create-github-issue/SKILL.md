@@ -3,7 +3,7 @@ name: create-github-issue
 version: 2026.09.16@ae50bfe
 description: Create a GitHub issue from a standardized draft or an inline title, with label groups offered after creation and optional sub-issue and dependency linking
 argument-hint: <title-or-path>
-allowed-tools: Read, Write, Glob, Edit, AskUserQuestion, Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(mkdir -p *), Bash(date *), Bash(gh repo view *), Bash(gh label list *), Bash(gh issue create *), Bash(*/skills/create-github-issue/link-sub-issue.sh *), Bash(*/skills/create-github-issue/link-dependency.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
+allowed-tools: Read, Write, Glob, Edit, AskUserQuestion, Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(mkdir -p *), Bash(date *), Bash(gh repo view *), Bash(gh label list *), Bash(gh issue create *), Bash(*/skills/create-github-issue/link-sub-issue.sh *), Bash(*/skills/create-github-issue/link-dependency.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/prose-style/check-prose.sh *), Bash(*/skills/issue-context/skill-version.sh *)
 ---
 
 # Create GitHub Issue
@@ -42,7 +42,7 @@ There can be zero, one, or many entries in each dependency list.
 
 Use `/note` with description `issue-body` to save the sanitized body to the issue's notes folder. A saved body stays traceable alongside the other working files. It also avoids heredoc compound commands, which do not match the `allowed-tools` globs.
 
-Before creating the issue, append a footer line to the body file identifying the skill that generated it. Precede it with a blank line so it stands out from the body content. Read the `version:` field from this SKILL.md's front matter to fill `<VERSION>`. Use the Edit tool to append to the body file:
+Before creating the issue, append a footer line to the body file identifying the skill that generated it. Precede it with a blank line so it stands out from the body content. Fill `<VERSION>` from `~/.claude/skills/issue-context/skill-version.sh create-github-issue`. Use the Edit tool to append to the body file:
 
 ```text
 
@@ -80,7 +80,7 @@ Run the script once per child issue to link:
 
 The script resolves the parent in `--owner`/`--repo` and the child in `--child-owner`/`--child-repo`. That lets a child in a different repository than the parent link correctly. Both child flags default to the parent owner and repo, so the same-repository case needs no extra values.
 
-The script handles all GraphQL calls internally, with `jq -n`, writing payloads to temp files. This keeps zsh history expansion from stripping `!` from GraphQL type annotations (`String!`, `Int!`, `ID!`). It prints `linked #<child> → #<parent>` on success or an error message on failure (exit 1).
+It prints `linked #<child> → #<parent>` on success, or an error on failure (exit 1).
 
 If the script fails, note it in the Step 8 report as:
 

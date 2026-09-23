@@ -74,6 +74,16 @@ The rule is scoped to that one file rather than generalized, because direction i
 
 One consequence of the rule is that `/note` lost its prose guard against deriving its own timestamp. The guard named the concepts the rule removes, and it was never the real barrier. Withholding `Bash(date *)` from the skill's `allowed-tools` is mechanical, and the model cannot argue its way around it. The model can argue its way around prose. The permission assertion stays in `bats-tests/note.bats`.
 
+### The gitignore sentinel (amendment, issue 259)
+
+**`target-path.sh` ensures the `.claude-work/` sentinel itself, and callers stop making the call.** Eleven skills ran `ensure-gitignore.sh` as a parallel tool call beside the path helper. Two that write working files through the helper, `/note` and `/create-jira-issue`, did not, so in a repository whose `.gitignore` lacked the sentinel they produced untracked-but-unignored files. The gap is the same shape as the naming gap this ADR already records: an unenforced specification restated in prose at every call site, where the fix is to move the mechanism into the script rather than to add a twelfth and thirteenth copy of the instruction.
+
+The check is best-effort and never blocks path resolution. A repository it cannot resolve, or a `.gitignore` it cannot write, must not stop a caller from being handed a path, because the two concerns are unrelated and refusing would block a call for a reason that has nothing to do with it.
+
+The helper's stdout is discarded. `ensure-gitignore.sh` prints `present` or `added`, and `target-path.sh` prints exactly one line which is a path. A leak would be captured by a caller's command substitution and turned into a directory named after the message, which is the same failure `get-issue-folder-path.sh` records in ADR 003. `bats-tests/target-path.bats` holds that stdout stays one line and that neither word appears in it.
+
+`ensure-gitignore.sh` and its skill both stay. `/breadcrumb` writes `breadcrumb.md` without going through `target-path.sh`, so it still makes the call itself.
+
 ## Consequences
 
 ### Positive

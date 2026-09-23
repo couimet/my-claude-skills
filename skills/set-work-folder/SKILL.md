@@ -32,7 +32,7 @@ The marker is a plain file at the worktree root and it is deliberately not gitig
 ~/.claude/skills/issue-context/set-work-folder.sh $ARGUMENTS
 ```
 
-The script takes an absolute path to a directory that already exists, optionally followed by a short name. It refuses a relative path and refuses a directory that does not exist, rather than creating one, so a typo fails while you are still looking at it.
+Pass an absolute path to a directory that already exists, optionally followed by a short name. A relative path and a missing directory are both refused rather than created, so a typo fails while you are still looking at it.
 
 The name is optional and cosmetic. It goes into the stored file's name to make the sessions directory readable. Nothing is ever looked up by it, so it does not have to stay accurate. With no name given, the script reads one from the session's own job state when that is available, and otherwise leaves it off.
 
@@ -46,7 +46,7 @@ Print what the script said on stderr, which names the folder now in force or con
 
 ## What Callers See Afterwards
 
-Every skill that writes a working file resolves its folder through the same path helper, so none of them need to know an override exists. See `/issue-context` for the resolution order and the rules an override has to satisfy.
+Every skill that writes a working file resolves its folder through the same path helper, so none of them need to know an override exists. See `/issue-context-internals` for the resolution order and the rules an override has to satisfy.
 
 Two behaviors are worth stating plainly, because they surprise people:
 

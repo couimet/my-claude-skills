@@ -10,6 +10,24 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.09.21
+
+### Added
+
+- An answer in a `/question` file can run to several paragraphs. The `ANNN:` line you edit opens the answer, a `</ANNN>` line closes it, and everything between the two is read back. Before this the line was the unit, so the second line of a reason reached nothing. ([issues/259](https://github.com/couimet/my-claude-skills/issues/259))
+- `/answers-ready` tells Claude your answers are in. Send it with a path, or send it alone and it finds the right grill when several are open. A script collects the answers, so nothing reads the questions file itself. Every questions file now ends with the exact line to send. ([issues/259](https://github.com/couimet/my-claude-skills/issues/259))
+
+### Changed
+
+- No unreviewed recommendation reaches a plan. A `[RECOMMENDED]` marker that still stands means you have not read that answer, and nothing overrides it. The same gate now covers the ACCEPT and IGNORE verdicts `/tackle-pr-comment` writes. A paused grill resumes with its held questions intact. ([issues/259](https://github.com/couimet/my-claude-skills/issues/259))
+- The skills print and write less. `/start-issue` and `/tackle-pr-comment` print a receipt instead of a briefing, and they no longer write a draft plan before grilling it. A script now checks a generated file, so a skill no longer reads its own output back three times. ([issues/259](https://github.com/couimet/my-claude-skills/issues/259))
+- The skills you use most load far less instruction. `/g2q` and `/question` each pulled in the other's whole body, and the questions-file format now has its own home. `/issue-context` carried the design of eight scripts into every session that wrote a working file, and the rest moved to a second contract. Measured over a week of real use, `/note` reads 48 percent less per invocation, `/g2q` and `/question` 36 percent less, and `/start-issue` 24 percent less. ([issues/259](https://github.com/couimet/my-claude-skills/issues/259))
+
+### Fixed
+
+- `/answers-ready` accepts the working document that `/tackle-pr-comment` tells you to send. The command failed with "no answers found", which describes an empty questions file and not the wrong kind of file. The gate it broke is the one that refuses to implement an ACCEPT you have not read. ([issues/259](https://github.com/couimet/my-claude-skills/issues/259))
+- A fully answered questions file no longer shows as unanswered. The check counted the `[RECOMMENDED]` marker anywhere in the file, so any wave that discussed the convention reported a question nobody left open. Two answered files stayed on that list for four days. ([issues/259](https://github.com/couimet/my-claude-skills/issues/259))
+
 ## 2026.09.16
 
 ### Added

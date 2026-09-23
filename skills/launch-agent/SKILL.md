@@ -32,13 +32,13 @@ To point this session at a folder without starting a topic, see `/set-work-folde
 
 ## The Folder
 
-The folder holds the agent's notes, questions, scratchpads, and commit-message drafts. The agent's first action points its working files there. See `/set-work-folder` for what that setting does and how long it lasts. See `/issue-context` for the resolution order behind it.
+The folder holds the agent's notes, questions, scratchpads, and commit-message drafts. The agent's first action points its working files there. See `/set-work-folder` for what that setting does and how long it lasts. See `/issue-context-internals` for the resolution order behind it.
 
 The folder takes one of two forms.
 
 A **slug** is a single name. It resolves to a directory of that name at the root of the repository you are in. A slug that names an existing symlink to a directory resolves to the link's target, which can sit outside that root, so read the resolved folder in the script's first line when a topic folder is a symlink. Use a slug in a repository organised by topic, where topic folders sit at the root. Do not use a slug in a code repository. There the folder lands beside the source tree and stays in `git status`.
 
-The script uses an **absolute path** exactly as you give it, in any directory, inside a repository or outside one. Use an absolute path in a code repository, where the folder usually belongs under `.claude-work/`. An absolute path also skips the two refusals that guard a slug, the single-component shape check and the near-match guard. It does not skip the prompt refusal further down, which judges the prompt rather than the folder. The script reads it as a deliberate choice and not as a name that could be a typo.
+An **absolute path** is taken exactly as given, in any directory, inside a repository or outside one. Use one in a code repository, where the folder usually belongs under `.claude-work/`. An absolute path is read as a deliberate choice, so the refusals that guard a slug do not apply to it.
 
 A slug must be a single path component. The script refuses a slug that contains a separator. It refuses `.` and `..`. It also refuses a slug that nearly matches a directory already at the root, and the message names the directory it matched. Without that refusal, `agent-launch-skill` beside an existing `agent_launch_skill` becomes a second topic. An exact match is not a refusal, because a second agent on an existing topic is normal.
 
@@ -46,9 +46,9 @@ A slug must be a single path component. The script refuses a slug that contains 
 
 The task prompt is every argument after the folder and the optional `--name`. One argument that names a readable file is a special case. The script reads that file and uses its content as the prompt. This form carries a long prompt without shell quoting. Save a long prompt as a `/note` first, then give its path here.
 
-The script refuses one argument that looks like a path and names no readable file. Without that refusal, a mistyped path becomes the agent's whole prompt, and nobody finds out until someone reads the agent's transcript.
+One argument that looks like a path and names no readable file is refused, because a mistyped path would otherwise become the agent's whole prompt.
 
-The script saves the prompt to `prompt-new-agent-launch.txt` in the folder before it starts the agent. The file is therefore present even when the launch fails. The script first archives a prompt already at that name under its own modification time. The plain name always holds the latest launch, and no earlier prompt is lost.
+The prompt is saved to `prompt-new-agent-launch.txt` in the folder before the agent starts, so it is there even when the launch fails. An earlier prompt at that name is archived, never overwritten.
 
 ## Step 1: Run the Script
 
@@ -62,7 +62,7 @@ The display name defaults to the folder's basename. In the default mode `claude 
 
 ## Step 2: Report
 
-The script prints the resolved folder first, so a mistyped path shows in the first line. It then prints the prompt file and the display name. Give these to the user as the script printed them.
+Give the user the three lines the script printed, as it printed them: the resolved folder, the prompt file, and the display name.
 
 The default mode adds the job id and the attach command. Print both, and say plainly that this session did not become the agent, so the user knows where the work went.
 

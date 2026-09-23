@@ -3,7 +3,8 @@ name: start-issue
 version: 2026.09.16@ae50bfe
 description: Start working on a GitHub issue - analyze, explore codebase, and create detailed implementation plan
 argument-hint: <github-issue-url> [--scratchpad]
-allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/render-branch-template.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/issue-context/work-folder-tier.sh *), Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/start-issue/update-project-status.sh *)
+skill-kind: composite
+allowed-tools: Read, Write, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git fetch *), Bash(git checkout *), Bash(gh issue view *), Bash(gh issue edit * --add-assignee *), Bash(gh api graphql *), Bash(gh issue comment *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/render-branch-template.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/issue-context/work-folder-tier.sh *), Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/start-issue/update-project-status.sh *), Bash(*/skills/question/extract-answers.sh *), Bash(*/skills/answers-ready/find-waves.sh *), Bash(*/skills/prose-style/check-prose.sh *)
 ---
 
 # Start Issue
@@ -24,22 +25,19 @@ Run both commands as parallel tool calls:
 ~/.claude/skills/issue-context/claude-work-root.sh
 ```
 
-Use the stdout of `claude-work-root.sh` as `<base>` for all `.claude-work/` paths in this skill. The gate `branch-issue-id.sh` prints the current branch's work-item identifier when the branch matches a configured `branchPatterns` entry (e.g., on `issues/248` it prints `248`) and exits 1 with no output otherwise. If it exits 0, resolve that identifier's working directory with `get-issue-folder-path.sh --id <ID>` (this honors a non-default `segment`), then use `Glob(pattern="*", path="<folder>")` to check whether the issue's working directory has contents. If the directory exists and has files, invoke `/cleanup-issue` to offer cleanup of that specific directory. Other issue directories are left untouched. The user may return to them later. If the gate exits 1, there is no issue context on the current branch; proceed directly to Step 1.
+Use the stdout of `claude-work-root.sh` as `<base>` for all `.claude-work/` paths in this skill. See `/issue-context-internals` for the contracts of the identifier, branch, and folder scripts this skill calls.
 
-If issue directories have piled up, check for obsolete folders. Run the finder with the `<base>` resolved above:
+The gate `branch-issue-id.sh` prints the current branch's work-item identifier and exits 1 with no output when the branch matches no configured pattern. On exit 1 there is no issue context: go straight to Step 1.
+
+On exit 0, run the finder with the `<base>` resolved above:
 
 ```bash
 ~/.claude/skills/cleanup-issue/find-obsolete-issue-dirs.sh "<base>"
 ```
 
-Each DELETABLE line has the form `DELETABLE<TAB><path><TAB><reason>`. Count the DELETABLE lines in the output. If fewer than 5, skip silently. If 5 or more, present one AskUserQuestion whose question text lists the deletable folder paths from the output (the path field of each DELETABLE line), with these options:
+Each DELETABLE line has the form `DELETABLE<TAB><path><TAB><reason>`. Fewer than 5 means skip silently and go to Step 1. Five or more means present one AskUserQuestion whose text lists those paths, with two options: **Prune now**, which deletes each listed folder, and **Keep everything**, the safe default.
 
-- **Prune now**: delete each listed folder via `~/.claude/skills/cleanup-issue/remove-issue-dir.sh "<path>" --id "<ID>"`, where `<path>` is the DELETABLE line's path field and `<ID>` is its last segment, then report each removed path
-- **Keep everything**: leave all folders untouched (safe default)
-
-If the user picks Prune now, delete each listed folder with `remove-issue-dir.sh` and report the removed paths. The finder already prints the absolute path of every folder it offers, so pass that path rather than rebuilding one from `<base>`. Otherwise continue to Step 1 untouched. The manual `/cleanup-issue --sweep` mode always shows the full list regardless of threshold.
-
-**If no issue context on the current branch, or the directory doesn't exist or is empty:** proceed directly to Step 1.
+Only when the user picks Prune now do you need `/cleanup-issue`: it owns the delete, the confirmation wording, and the tier caveat that says what the delete will and will not reach. Until then its body is not worth the context, which is why this step reads the finder's output rather than invoking the skill to find out whether there is anything to do.
 
 ## Step 1: Fetch Issue Details and Assign
 
@@ -69,15 +67,7 @@ After assignment, detect whether the issue belongs to any GitHub Projects V2 boa
 
 Where `<owner>` and `<repo>` are extracted from the issue URL, and `<issue_number>` is the GitHub issue number.
 
-The script:
-
-- Queries the issue's project items via GraphQL, looking for a field named "Status" (case-insensitive)
-- For each item not already "In Progress", finds an option matching "In Progress" (case-insensitive) and moves it there
-- Posts an issue comment documenting each transition (e.g., "Moved Status from Todo to In Progress on project Roadmap")
-- Exits 0 and prints a summary line per updated project
-- Exits silently if: the token lacks the `project` OAuth scope, the issue isn't in any project, the project has no "Status" field, or the field has no "In Progress" option
-
-Continue regardless of the script's exit code. Project status updates are additive and must never block `/start-issue`.
+Continue regardless of the script's exit code, and say nothing when it prints nothing. Project status updates are additive and must never block `/start-issue`.
 
 ## Step 2: Create Feature Branch
 
@@ -87,7 +77,7 @@ First resolve the work-item identifier from `<issue-url>` (from Step 1):
 ~/.claude/skills/issue-context/resolve-issue-id.sh "<issue-url>"
 ```
 
-The script matches a URL against the configured `urlPatterns` and prints the identifier (a GitHub `/issues/248` URL prints `248`); a bare number passes through its safety check. Record its stdout as `<ID>`.
+Record its stdout as `<ID>`.
 
 Resolve the issue folder this identifier maps to, for all `.claude-work/` paths in the remaining steps:
 
@@ -129,10 +119,10 @@ Where `<branch>` is the rendered template value (e.g., `issues/248`) and `<BASE_
 
 Before drafting the plan, re-read the issue body, any parent issue, and the files surfaced in Step 3. Think through actual file and function names, step ordering, and dependencies before writing. The plan is the highest-leverage artifact this skill produces. Treat it as such. See `/pre-write` for the think-before-writing rule. If any aspect of the plan is unclear after this review, use `/question` before writing.
 
-**Grill the draft before creating the working document.** Draft the plan content in-session, write the draft to a scratchpads file via `~/.claude/skills/issue-context/target-path.sh --type scratchpads --description "DRAFT <NUMBER> plan"`, then run `/g2q <absolute-draft-path>` on the draft. It grills the draft for genuinely open ambiguities (applying the trigger predicate at the top of `/g2q`, the single source of trigger truth), creates a questions file under the issue's `<folder>/questions/` directory (from Step 2) when it finds any, and reports whether any were raised and, when raised, whether the run is paused or complete. The report gates how the working document is created in 4a/4b:
+**Grill before writing anything.** Work the plan out in-session and run `/g2q` on it as a topic, passing the plan you have reasoned out rather than a file. Do not write a draft file first. A draft costs output tokens to write and buys nothing on the common path, where grilling raises no questions and the real plan is written seconds later. `/g2q` grills for genuinely open ambiguities (applying the trigger predicate at its top, the single source of trigger truth), creates a questions file under the issue's `<folder>/questions/` directory (from Step 2) when it finds any, and reports whether any were raised and, when raised, whether the run is paused or complete. The report gates how the working document is created in 4a/4b:
 
-- If grilling raised questions, create the note/scratchpad only as a pending stub (see 4a/4b): it MUST start with the banner `Production of this plan awaits answers to the questions in <absolute questions file path>, which will affect the plan.`, followed by a `Draft: <absolute draft path>` line recording where the full unfinalized draft lives, followed by the draft outline, and MUST NOT contain the finalized plan. Write the active-plan pointer (4c) and base-branch marker (4d) to the stub, then continue to Step 5. A paused report (the newest wave file ends with questions held for a later wave) still counts as raised: create the stub exactly this way, since answers are pending, and Step 6 re-grills the draft between answer waves before finalizing.
-- If grilling raised nothing, create the full plan note/scratchpad per 4a/4b, then continue to Step 5.
+- If grilling raised questions, create the note/scratchpad only as a pending stub (see 4a/4b): it MUST start with the banner `Production of this plan awaits answers to the questions in <absolute questions file path>, which will affect the plan.`, followed by the plan outline, and MUST NOT contain the finalized plan. The stub is the only written record of the reasoning while the grill is open, so the outline must carry enough of it for a later session to resume. Write the active-plan pointer (4c) and base-branch marker (4d) to the stub, then continue to Step 5. A paused report (the newest wave file ends with questions held for a later wave) still counts as raised: create the stub exactly this way, since answers are pending, and Step 6 re-grills between answer waves before finalizing.
+- If grilling raised nothing, create the full plan note/scratchpad per 4a/4b, then continue to Step 5. Exactly one file is written on this path.
 
 Choose the working-document type based on whether formal step tracking is requested:
 
@@ -141,13 +131,15 @@ Choose the working-document type based on whether formal step tracking is reques
 
 ### 4a. Default path: `/note`
 
-Use `/note` with description `start-issue-plan`. When the grilling gate raised questions, create the note only as a pending stub (banner + `Draft: <path>` line + draft outline, no finalized plan). Otherwise the note MUST contain these sections (all prose, no JSON step block):
+Use `/note` with description `start-issue-plan`. When the grilling gate raised questions, create the note only as a pending stub (banner + plan outline, no finalized plan). Otherwise the note MUST contain these sections (all prose, no JSON step block):
 
 ```markdown
 # Issue #NUMBER: Title
 
 Base branch: <branch this was cut from (origin/main, or another branch if instructed)>
 Parent: https://github.com/{owner}/{repo}/issues/{XX} (omit if no parent)
+
+Commit model for this plan: one commit at the end covering all changes. When the work is done, call `/finish-issue` directly. Do not call `/commit-msg` first, because the PR description file doubles as the commit message body.
 
 ## Context
 
@@ -165,7 +157,7 @@ Numbered prose steps (no fenced JSON). Each step should be commit-sized, specifi
 
 ### 4b. Opt-in path: `/scratchpad`
 
-Use `/scratchpad` with description `start-issue-plan`. When the grilling gate raised questions, create the scratchpad only as a pending stub (banner + `Draft: <path>` line + draft outline, no finalized plan and no JSON step block yet). Otherwise the scratchpad uses the same prose sections as 4a, except the `## Plan` section is replaced with `## Implementation Plan` containing a fenced JSON step block. See the `/scratchpad` Step Tracking section for the full schema. For `/start-issue` specifically: set `finish_issue_on_complete: true` at the top level, and always set each step's `status: "pending"` when planning. `/tackle-scratchpad-block` manages status transitions during execution.
+Use `/scratchpad` with description `start-issue-plan`. When the grilling gate raised questions, create the scratchpad only as a pending stub (banner + plan outline, no finalized plan and no JSON step block yet). Otherwise the scratchpad uses the same prose sections as 4a, except the `## Plan` section is replaced with `## Implementation Plan` containing a fenced JSON step block. See the `/scratchpad` Step Tracking section for the full schema. For `/start-issue` specifically: set `finish_issue_on_complete: true` at the top level, and always set each step's `status: "pending"` when planning. `/tackle-scratchpad-block` manages status transitions during execution.
 
 ### 4c. Write the active-plan pointer
 
@@ -219,37 +211,41 @@ Tone: direct, concrete, file-and-function-named. No hedging, no generic conclusi
 
 ## Step 5: Report Status and STOP
 
-Print the branch name, the absolute working-document path, and any absolute questions file path. Then print the "Next" line that matches the state reached in Step 4:
+The terminal is a receipt, not a second copy of the plan. Print the branch, the created path, a questions path when one exists, and one `Next:` line. Nothing else: no plan summary, no step list, no pointer paths. Everything a reader needs beyond the receipt is in the file the receipt names.
+
+```text
+Branch: <branch>
+Created: <absolute working-document path>
+Questions: <absolute questions file path>   # only when one was created
+Next: <the line below that matches the state reached in Step 4>
+```
 
 **Grilling raised questions and the run is complete (pending stub created):**
 
 ```text
-Next: answer the questions in <absolute questions file path>. Then I will fold the answers into the plan and finalize it (Step 6).
+Next: answer the questions, then send /answers-ready <absolute questions file path>.
 ```
 
-**Grilling raised questions and the run is paused (pending stub created, more waves may follow):**
+**Grilling raised questions and the run is paused (more waves may follow):**
 
 ```text
-Next: answer the questions in <absolute questions file path>. More waves may follow: after you answer, I will re-grill the draft to emit the next wave, and I will only finalize the plan (Step 6) once a wave answers with nothing held.
+Next: answer the questions, then send /answers-ready <absolute questions file path>. The run is paused: questions remain held for a later wave, so answering this one emits the next rather than finalizing the plan.
 ```
+
+The paused wording stays because the user cannot infer it from anything else on screen.
 
 **No questions raised, full plan written - default path (note):**
 
 ```text
-Next: review the plan, then ask me to proceed with the first step (e.g. "start S1" or just "go ahead").
-I will self-organize execution using the note as reference.
-Commit model: one commit at the end covering all changes. When done, call /finish-issue directly.
-do NOT call /commit-msg first. The PR description file doubles as the commit message body.
+Next: review the plan, then tell me to go ahead.
 ```
+
+The commit model is not printed. It lives in the note's header (4a), where it survives into a session that reads the plan days later.
 
 **No questions raised, full plan written - opt-in path (scratchpad):**
 
 ```text
-Next: use `/tackle-scratchpad-block` to execute steps one at a time.
-Example: /tackle-scratchpad-block <absolute-path-to-scratchpad>
-(auto-selects first pending, unblocked step)
-If multiple pending, unblocked steps exist, specify which one:
-  /tackle-scratchpad-block <absolute-path-to-scratchpad>#S002
+Next: /tackle-scratchpad-block <absolute-path-to-scratchpad> (add #S002 to pick a specific step).
 ```
 
 **IMPORTANT: Do NOT proceed with implementation.**
@@ -262,15 +258,9 @@ This skill is for planning only. After reporting status:
 
 ## Step 6: Finalize the Plan After Answers
 
-Only reached when Step 4's grilling gate raised questions and the working document is a pending stub. Wait for the user to answer every question in the newest wave file (removing the `[RECOMMENDED]` marker, per the `/question` answer-acknowledgment convention). Then:
+Only reached when Step 4's grilling gate raised questions and the working document is a pending stub. `/answers-ready` owns this procedure: follow its Step 4.
 
-1. Read the newest wave's answers. If that wave still lists held questions, the run is paused: resume grilling by re-running `/g2q` on the draft at the path recorded in the stub, report the new wave file path, and wait for the user to answer it. The stub stays pending through the pause.
-2. Only when the newest wave file holds nothing do you fold every answer from every wave into the draft at the path recorded in the stub and rewrite the stub into the full plan per 4a or 4b, resolving each ambiguity per its answer and recording any decisions that became assumptions under `## Assumptions Made`.
-3. Remove the pending-stub banner line.
-4. Rewrite the same working-document file; the active-plan pointer (4c) already targets it and stays valid.
-5. Report the finalized plan path and STOP, matching the no-questions-raised output in Step 5.
-
-The plan is drafted once and finalized once, at the end of the wave sequence: no step before this one writes the finalized plan when the gate raised questions.
+This skill's specifics: the document is the implementation plan, the answers resolve its ambiguities and any decision that became an assumption goes under `## Assumptions Made`, the re-grill topic is the stub's outline plus every answer collected so far, and the active-plan pointer (4c) already targets the file and stays valid. Report the finalized plan path and STOP, matching the no-questions-raised output in Step 5.
 
 ## Quality Checklist
 
@@ -286,8 +276,7 @@ Before finishing, verify:
 - [ ] Test updates are mentioned for each step that changes behavior
 - [ ] Assumptions are documented with reasoning
 - [ ] Questions (if any) would genuinely change the plan if answered differently
-- [ ] Grilling ran on the draft plan (Step 4) and gated the working document on the answers
+- [ ] Grilling ran before any file was written (Step 4) and gated the working document on the answers
 - [ ] When grilling raised questions, the working document is a pending stub with the awaiting-answers banner and the full plan is deferred
 - [ ] Documentation and discoverability considered
 - [ ] Project status update attempted (Step 1b) — silent failure is OK, but the step must not be skipped
-- [ ] Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.

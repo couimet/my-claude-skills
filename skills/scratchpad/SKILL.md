@@ -3,7 +3,7 @@ name: scratchpad
 version: 2026.09.16@ae50bfe
 description: "Create a working document in .claude-work/scratchpads/: implementation plans, PR descriptions, analysis notes, architecture decisions, issue drafts."
 argument-hint: <description>
-allowed-tools: Read, Write, Glob, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/ensure-gitignore/ensure-gitignore.sh *)
+allowed-tools: Read, Write, Glob, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/question/extract-answers.sh *), Bash(*/skills/prose-style/check-prose.sh *)
 ---
 
 # Scratchpad
@@ -26,17 +26,13 @@ Perspective: third-person technical.
 
 ## Step 1: Resolve the Target Path
 
-Run these two commands as parallel tool calls. They are independent.
+Run the path helper:
 
 ```bash
 ~/.claude/skills/issue-context/target-path.sh --type scratchpads --description "$ARGUMENTS"
 ```
 
-```bash
-~/.claude/skills/ensure-gitignore/ensure-gitignore.sh
-```
-
-Use the stdout of the first command as the full absolute file path. The path is unique and its directory exists, so write the file directly to it. See `/issue-context` for the full contract.
+Use the stdout as the full absolute file path. The path is unique and its directory exists, so write the file directly to it. See `/issue-context` for the full contract.
 
 ## File Format
 
@@ -90,7 +86,7 @@ Top-level fields (siblings of `steps`):
 
 Step-level fields (inside each `steps` entry):
 
-- **`id`**: `S001`, `S002`, etc. Zero-padded 3-digit IDs mirroring the `/question` skill's `Q001`/`A001` pattern. Use `S001` as the short form in cross-references.
+- **`id`**: `S001`, `S002`, etc. Zero-padded 3-digit IDs mirroring the `Q001`/`A001` pattern in `/question-format`. Use `S001` as the short form in cross-references.
 - **`title`**: Short description of the step.
 - **`status`**: `pending` | `in_progress` | `done` | `blocked`. Planning skills always write `"pending"`. Only `/tackle-scratchpad-block` transitions status during execution.
 - **`done_when`**: Concrete completion criteria. Recommended for implementation plans. Omit only for steps where completion is self-evident (e.g., "Delete file X"). A concrete criterion here helps `/tackle-scratchpad-block` confirm the step is truly done.
@@ -99,11 +95,9 @@ Step-level fields (inside each `steps` entry):
 - **`tasks`**: Array of concrete action items within the step.
 - **`addresses`**: (tackle-pr-comment only) Array of feedback item letters, e.g. `["A", "C"]`.
 
-## After writing: self-check for hard-wrapping
+## After writing: run the prose checker
 
-Before reporting the absolute filepath back to the user, re-read the scratchpad you just wrote. For each paragraph in the body (text between blank lines, outside code blocks, tables, and lists), verify it is a single continuous line. If you find a mid-sentence line break, rewrite that paragraph as one line. Always complete this check. Wrapped prose is the most common failure mode for skill-generated files.
-
-Also skim for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
+Before reporting the absolute filepath back to the user, run `check-prose.sh` on the scratchpad and fix every line it names. See `/prose-style` Rule 1.
 
 ## Formatting
 

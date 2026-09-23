@@ -33,6 +33,10 @@
 #   on stderr. Without this, an abandoned path stays forever and a "newest file
 #   matching X" reader selects it and reads it empty.
 #
+#   The script also ensures the repository's .gitignore carries the
+#   .claude-work/ sentinel, so a caller never has to make that call itself.
+#   The check is best-effort and never blocks path resolution.
+#
 # Exit codes:
 #   0  — success
 #   1  — error (see stderr)
@@ -185,6 +189,29 @@ target_dir="${folder_root}/${type_arg}"
 # same way this names a working file. No bound is passed: these filenames have
 # always been unbounded and the extraction does not change them.
 slug="$(_issue_context_slugify "$description")"
+
+# --- Ensure .claude-work/ is gitignored ---
+# Done here so no caller can forget it. Every caller that writes a working file
+# goes through this script, and a caller that skips the check writes an
+# untracked-but-unignored file in a repository whose sentinel is missing.
+# Best-effort: a failure must never stop a path from being resolved, and the
+# helper's stdout must never reach ours, which is exactly one line and is a
+# path.
+#
+# Measured at about 23ms on a call that costs roughly 170ms. Guarding it with
+# an inline grep was tried and reverted: the `git rev-parse` such a guard needs
+# costs as much as the spawn it avoids, so the guard added code and no speed.
+#
+# The target is passed rather than defaulted. ensure-gitignore.sh resolves
+# `git rev-parse --show-toplevel`, which in a linked worktree is that worktree's
+# root, while the working files go to the main checkout that owns the shared
+# .claude-work/ directory. Without the argument the worktree gains a sentinel it
+# does not need and the checkout writing the files keeps generating unignored
+# ones. get-issue-folder-path.sh always returns a path under .claude-work/, so
+# trimming at that component recovers the owning checkout with no second
+# process, which is the cost the note above rules out.
+"$script_dir/../ensure-gitignore/ensure-gitignore.sh" \
+  "${folder_root%%/.claude-work*}/.gitignore" >/dev/null 2>&1 || true
 
 # --- Create the target directory ---
 mkdir -p "$target_dir"

@@ -207,5 +207,3 @@ Place the new entry after the last thematic match in the subsection. If no match
 ## Formatting
 
 See `/prose-style` for hard-wrap and GitHub-reference rules.
-
-Before writing the entry, skim the text for AI-writing tells: em dashes, filler phrases (in order to, due to the fact that), vague attributions, generic positive conclusions. Rewrite any you find.
