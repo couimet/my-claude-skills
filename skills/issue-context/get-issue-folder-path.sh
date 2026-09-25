@@ -83,6 +83,8 @@ $1
 EOF
 }
 
+# _print_folder_for_id <identifier> — print the branch tier's folder for
+# <identifier>, or report why it cannot be built and return 1.
 _print_folder_for_id() {
   local identifier="$1" folder="" reason=""
   if _issue_context_branch_folder "$identifier" folder reason; then

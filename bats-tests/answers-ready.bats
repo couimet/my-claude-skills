@@ -203,6 +203,7 @@ _work_repo() {
   mkdir -p "$TOPIC"
 }
 
+# Run find-waves.sh with no session and the pinned settings.
 _find_waves_in_repo() {
   run --separate-stderr env -u CLAUDE_CODE_SESSION_ID MY_CLAUDE_SKILLS_CONFIG="$CFG" \
     "$SCRIPT" "$@"
@@ -244,6 +245,20 @@ _find_waves_in_repo() {
   [ "$status" -eq 1 ]
   [ "$(printf '%s\n' "$stderr" | wc -l | tr -d ' ')" -eq 1 ]
   [[ "$stderr" == *"W002"* ]]
+}
+
+@test "find-waves: an unreadable outranked questions directory still ends in W002" {
+  _require_enforced_permission_bits
+  _work_repo
+  mkdir -p "$BRANCH_FOLDER/questions"
+  printf 'x\n' > "$BRANCH_FOLDER/questions/20260901-100000-001-a-wave-1.txt"
+  printf '%s\n' "$TOPIC" > "$REPO/CLAUDE_WORK_FOLDER"
+  chmod 000 "$BRANCH_FOLDER/questions"
+  _find_waves_in_repo
+  local rc="$status" err="$stderr"
+  chmod 755 "$BRANCH_FOLDER/questions"
+  [ "$rc" -eq 1 ]
+  [[ "$err" == *"W002"* ]]
 }
 
 @test "find-waves: an explicit directory argument prints only W002" {

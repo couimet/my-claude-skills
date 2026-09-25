@@ -74,8 +74,12 @@ _report_hidden() {
       continue
     fi
     [ -d "$dir/questions" ] || continue
+    # A directory find cannot read fails the pipeline under pipefail, and set -e
+    # would then end the script before W002 with nothing on stderr. The report
+    # is a hint beside the error, so a failed scan counts what it read and the
+    # error still prints.
     count="$(find "$dir/questions" -maxdepth 1 -type f -name '*.txt' ! -size 0c 2>/dev/null \
-      | wc -l | tr -d ' ')"
+      | wc -l | tr -d ' ' || true)"
     [ "${count:-0}" -gt 0 ] || continue
     if [ "$count" -eq 1 ]; then noun="1 questions file is"; else noun="$count questions files are"; fi
     printf 'find-waves: %s under %s/questions, where the %s tier points, but the %s tier outranks it\n' \

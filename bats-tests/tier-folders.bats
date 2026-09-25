@@ -43,15 +43,18 @@ teardown() {
   rm -rf "${TEST_TEMP_DIR:?}"
 }
 
+# Run tier-folders.sh under this session id and the pinned settings.
 folders() {
   run --separate-stderr "${CLAUDE_ENV_RESET[@]}" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" "$SCRIPT" "$@"
 }
 
+# Write the marker at the worktree root, holding the given folder.
 write_marker() {
   printf '%s\n' "$1" > "$TEST_TEMP_DIR/CLAUDE_WORK_FOLDER"
 }
 
+# Give this session a valid override folder, so the session tier resolves.
 write_session_file() {
   mkdir -p "$SESSIONS_DIR"
   printf '{"version":1,"folder":"%s","session_id":"%s"}' \
