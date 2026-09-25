@@ -608,3 +608,56 @@ STUB
   [ "$resolved" = "$outside" ]
   [ "$resolved_lines" -eq 1 ]
 }
+
+# ============================================================================
+# Files a session change leaves behind are named, never moved
+# ============================================================================
+
+# Put one non-empty working file at <folder>/<relative path>.
+working_file() {
+  mkdir -p "$(dirname "$1/$2")"
+  printf 'content\n' > "$1/$2"
+}
+
+@test "left behind: a session set over a branch folder with files names the count and the folder" {
+  git checkout -q -b issues/42
+  local branch_folder="$TEST_TEMP_DIR/.claude-work/issues/42"
+  working_file "$branch_folder" "notes/20260901-100000-001-plan.txt"
+  working_file "$branch_folder" "base-branch"
+  set_folder "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ "$(session_file_count)" -eq 1 ]
+  [[ "$stderr" == *"2 working files stay under $branch_folder, where readers no longer look; move them to $TOPIC or undo this change"* ]]
+}
+
+@test "left behind: --clear over a session folder with files names that folder" {
+  git checkout -q -b issues/42
+  set_folder "$TOPIC"
+  working_file "$TOPIC" "questions/20260901-100000-001-q-wave-1.txt"
+  set_folder --clear
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"1 working file stays under $TOPIC, where readers no longer look; move it to $TEST_TEMP_DIR/.claude-work/issues/42 or set the folder again"* ]]
+}
+
+@test "left behind: a session set over an empty folder says nothing about files" {
+  git checkout -q -b issues/42
+  set_folder "$TOPIC"
+  [ "$status" -eq 0 ]
+  [[ "$stderr" != *"under $TEST_TEMP_DIR/.claude-work"* ]]
+}
+
+@test "left behind: a session rewrite to the same folder says nothing" {
+  set_folder "$TOPIC"
+  working_file "$TOPIC" "notes/20260901-100000-001-plan.txt"
+  set_folder "$TOPIC" renamed
+  [ "$status" -eq 0 ]
+  [[ "$stderr" != *"stays under"* ]]
+}
+
+@test "left behind: --clear with nothing set says nothing about files" {
+  git checkout -q -b issues/42
+  working_file "$TEST_TEMP_DIR/.claude-work/issues/42" "notes/20260901-100000-001-plan.txt"
+  set_folder --clear
+  [ "$status" -eq 0 ]
+  [[ "$stderr" != *"stays under"* ]]
+}

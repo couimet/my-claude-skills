@@ -84,24 +84,20 @@ EOF
 }
 
 _print_folder_for_id() {
-  local identifier="$1"
-  local folder
-  # Belt-and-suspenders: callers already validate identifiers and the settings
-  # loader validates the segment, but refuse to build an escaping folder path
-  # even if a future call path skips one of those checks.
-  if ! _issue_settings_is_safe_component "$identifier"; then
-    echo "get-issue-folder-path: error: '$identifier' is not usable as a work-item identifier" >&2
-    return 1
+  local identifier="$1" folder="" reason=""
+  if _issue_context_branch_folder "$identifier" folder reason; then
+    printf '%s\n' "$folder"
+    return 0
   fi
-  folder="$(_root)" || return 1
-  if [ -n "$SETTINGS_SEGMENT" ]; then
-    if ! _issue_settings_is_safe_component "$SETTINGS_SEGMENT"; then
-      echo "get-issue-folder-path: error: settings segment '$SETTINGS_SEGMENT' is not usable as a path component" >&2
-      return 1
-    fi
-    folder="$folder/$SETTINGS_SEGMENT"
-  fi
-  printf '%s\n' "$folder/$identifier"
+  case "$reason" in
+    identifier)
+      echo "get-issue-folder-path: error: '$identifier' is not usable as a work-item identifier" >&2 ;;
+    segment)
+      echo "get-issue-folder-path: error: settings segment '$SETTINGS_SEGMENT' is not usable as a path component" >&2 ;;
+    *)
+      echo "get-issue-folder-path: error: could not resolve .claude-work root" >&2 ;;
+  esac
+  return 1
 }
 
 # _emit <folder> — report the choice on stderr, then print the one stdout line.

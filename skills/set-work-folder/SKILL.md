@@ -42,7 +42,7 @@ The name is optional and cosmetic. It goes into the stored file's name to make t
 
 ## Step 2: Report
 
-Print what the script said on stderr, which names the folder now in force or confirms the clear. Print the file path from stdout only when the user asks where the setting is kept.
+Print what the script said on stderr, which names the folder now in force or confirms the clear. When the change leaves working files behind, stderr also says how many, where they stay, and where readers look now. Print that line as it is, because the user decides whether to move the files. Print the file path from stdout only when the user asks where the setting is kept.
 
 ## What Callers See Afterwards
 
@@ -55,5 +55,7 @@ Two behaviors are worth stating plainly, because they surprise people:
 **Naming a work item bypasses the override.** A caller that resolves a folder by work-item identifier, rather than from the session, gets that work item's folder. This is what keeps a folder deletion or a pointer read addressed at the work item the user named, rather than at whatever the session was pointed at. The path helper says on stderr when it has bypassed an override, so the difference is never silent.
 
 **An override is ignored rather than obeyed when it does not apply.** A folder that has been deleted falls through to the next tier and says so. There is no containment rule: an override may name any existing absolute directory, in any repository or none, which is what makes a topic folder in one repository usable from a checkout of another.
+
+**A change that hides working files says so, and moves nothing.** Every reader looks only in the folder that wins, so files under the previous folder stop being found the moment the setting changes. The script counts them and names their folder. `/answers-ready` also names a hidden questions folder when it finds no questions where it looks.
 
 **Cleaning up a work item under a worktree marker removes less than it looks like.** Marker placement is flat, so every work item's notes and questions sit together, and only the pointers and the breadcrumb live in the per-item folder. `/cleanup-issue` says so at its confirmation prompt rather than letting a completed cleanup read as more than it was.

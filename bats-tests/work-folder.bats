@@ -573,3 +573,121 @@ write_session_file() {
     [[ "$output" == "$TOPIC/$t/"* ]]
   done
 }
+
+# ============================================================================
+# Files a marker change leaves behind are named, never moved
+# ============================================================================
+
+# Run the writer with no session, as a plain shell would.
+write_worktree() {
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" "$WRITER" "$@"
+}
+
+# Put one non-empty working file at <folder>/<relative path>.
+working_file() {
+  mkdir -p "$(dirname "$1/$2")"
+  printf 'content\n' > "$1/$2"
+}
+
+@test "left behind: --worktree over a branch folder with files names the count and the folder" {
+  git checkout -q -b issues/42
+  local branch_folder="$TEST_TEMP_DIR/.claude-work/42"
+  working_file "$branch_folder" "questions/20260901-100000-001-q-wave-1.txt"
+  working_file "$branch_folder" "notes/20260901-100000-001-plan.txt"
+  working_file "$branch_folder" "active-plan"
+  write_worktree --worktree "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$MARKER" ]
+  [[ "$stderr" == *"3 working files stay under $branch_folder"* ]]
+  [[ "$stderr" == *"move them to $TOPIC"* ]]
+  # Nothing moved.
+  [ -f "$branch_folder/active-plan" ]
+  [ ! -e "$TOPIC/notes" ]
+}
+
+@test "left behind: one file reads in the singular" {
+  git checkout -q -b issues/42
+  working_file "$TEST_TEMP_DIR/.claude-work/42" "notes/20260901-100000-001-plan.txt"
+  write_worktree --worktree "$TOPIC"
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"1 working file stays under"* ]]
+}
+
+@test "left behind: --worktree over an absent branch folder says nothing about files" {
+  git checkout -q -b issues/42
+  write_worktree --worktree "$TOPIC"
+  [ "$status" -eq 0 ]
+  [[ "$stderr" != *"stay under"* ]]
+  [[ "$stderr" != *"stays under"* ]]
+}
+
+@test "left behind: empty reservation files are not counted" {
+  git checkout -q -b issues/42
+  mkdir -p "$TEST_TEMP_DIR/.claude-work/42/notes"
+  : > "$TEST_TEMP_DIR/.claude-work/42/notes/20260901-100000-001-reserved.txt"
+  write_worktree --worktree "$TOPIC"
+  [ "$status" -eq 0 ]
+  [[ "$stderr" != *"under $TEST_TEMP_DIR/.claude-work/42"* ]]
+}
+
+@test "left behind: off a work branch only the root's working-file directories count" {
+  working_file "$TEST_TEMP_DIR/.claude-work" "notes/20260901-100000-001-flat.txt"
+  working_file "$TEST_TEMP_DIR/.claude-work" "77/notes/20260901-100000-001-other-item.txt"
+  write_worktree --worktree "$TOPIC"
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"1 working file stays under $TEST_TEMP_DIR/.claude-work,"* ]]
+}
+
+@test "left behind: marker A replaced by marker B names A" {
+  local other="$TEST_TEMP_DIR/other"
+  mkdir -p "$other"
+  write_marker "$TOPIC"
+  working_file "$TOPIC" "questions/20260901-100000-001-q-wave-1.txt"
+  working_file "$TOPIC" "README.md"
+  write_worktree --worktree "$other"
+  [ "$status" -eq 0 ]
+  # README.md is topic content, not a working file.
+  [[ "$stderr" == *"1 working file stays under $TOPIC,"* ]]
+  [[ "$stderr" == *"move it to $other"* ]]
+}
+
+@test "left behind: pointer files under <marker>/<identifier> are counted" {
+  git checkout -q -b issues/42
+  write_marker "$TOPIC"
+  working_file "$TOPIC" "notes/20260901-100000-001-plan.txt"
+  working_file "$TOPIC" "42/active-plan"
+  working_file "$TOPIC" "42/breadcrumb.md"
+  write_worktree --clear --worktree
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"3 working files stay under $TOPIC,"* ]]
+  [[ "$stderr" == *"move them to $TEST_TEMP_DIR/.claude-work/42 or set the folder again"* ]]
+}
+
+@test "left behind: --clear --worktree over an empty marker folder says nothing about files" {
+  write_marker "$TOPIC"
+  write_worktree --clear --worktree
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"cleared"* ]]
+  [[ "$stderr" != *"under $TOPIC"* ]]
+}
+
+@test "left behind: a rewrite to the same folder says nothing" {
+  write_marker "$TOPIC"
+  working_file "$TOPIC" "notes/20260901-100000-001-plan.txt"
+  write_worktree --worktree "$TOPIC"
+  [ "$status" -eq 0 ]
+  [[ "$stderr" != *"stays under"* ]]
+}
+
+@test "left behind: a session override does not change what the worktree form measures" {
+  git checkout -q -b issues/42
+  local sess="$TEST_TEMP_DIR/session-folder" branch_folder="$TEST_TEMP_DIR/.claude-work/42"
+  mkdir -p "$sess"
+  write_session_file "$sess"
+  working_file "$branch_folder" "notes/20260901-100000-001-plan.txt"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    CLAUDE_CODE_SESSION_ID="$SESSION_ID" "$WRITER" --worktree "$TOPIC"
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"1 working file stays under $branch_folder,"* ]]
+}

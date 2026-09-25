@@ -30,6 +30,7 @@ It prints one `<sequence><TAB><path><TAB><marked count>` line per grill sequence
 - **One line:** use that path.
 - **Several lines:** two grills are open. Ask which one with `AskUserQuestion`, listing each sequence name. Never guess.
 - **No lines:** every open wave is fully answered. Say so and stop.
+- **Error `W002`:** there is no questions directory. Relay any stderr line that names a hidden questions folder, then stop.
 
 ## Step 2: Classify, then read the right way
 

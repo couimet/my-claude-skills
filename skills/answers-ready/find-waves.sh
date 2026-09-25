@@ -44,15 +44,51 @@ if [ "$#" -gt 1 ]; then
   die "W001" "expected at most one argument, got $#"
 fi
 
+resolved_here=0
 if [ "$#" -eq 1 ]; then
   QDIR="$1"
 else
   folder="$("$SCRIPT_DIR/../issue-context/get-issue-folder-path.sh" 2>/dev/null)" \
     || die "W003" "could not resolve the work-item folder"
   QDIR="$folder/questions"
+  resolved_here=1
 fi
 
-[ -d "$QDIR" ] || die "W002" "no questions directory at '$QDIR'"
+# _report_hidden — before W002, name each outranked tier's folder that holds
+# questions files, one stderr line each. A session override or a worktree
+# marker set over existing work hides that work from this reader, and W002
+# alone says nothing about where it went. The lines carry no error code
+# because they add no reason to fail: the exit is W002 either way, and files
+# elsewhere never make this reader resolve somewhere else. An explicit
+# directory argument means the caller chose the location, so this runs only
+# for a folder resolved here.
+_report_hidden() {
+  local listing line tier dir winner="" count noun
+  listing="$("$SCRIPT_DIR/../issue-context/tier-folders.sh" 2>/dev/null)" || return 0
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    tier="${line%%$'\t'*}"
+    dir="${line#*$'\t'}"
+    if [ -z "$winner" ]; then
+      winner="$tier"
+      continue
+    fi
+    [ -d "$dir/questions" ] || continue
+    count="$(find "$dir/questions" -maxdepth 1 -type f -name '*.txt' ! -size 0c 2>/dev/null \
+      | wc -l | tr -d ' ')"
+    [ "${count:-0}" -gt 0 ] || continue
+    if [ "$count" -eq 1 ]; then noun="1 questions file is"; else noun="$count questions files are"; fi
+    printf 'find-waves: %s under %s/questions, where the %s tier points, but the %s tier outranks it\n' \
+      "$noun" "$dir" "$tier" "$winner" >&2
+  done <<EOF
+$listing
+EOF
+}
+
+if [ ! -d "$QDIR" ]; then
+  [ "$resolved_here" -eq 0 ] || _report_hidden
+  die "W002" "no questions directory at '$QDIR'"
+fi
 
 # Newest wave per sequence. Filenames sort lexicographically in creation order
 # (the timestamp prefix guarantees it), and the wave number is read from the
