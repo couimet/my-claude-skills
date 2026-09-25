@@ -178,6 +178,101 @@ _wave() {
 }
 
 # =============================================================
+# W002 names the questions a work folder hides
+# =============================================================
+#
+# A marker or a session override set over existing work retargets this reader
+# at once. W002 then said only that the new folder had no questions directory,
+# and open waves under the old folder stayed invisible for days.
+
+# _work_repo — a git repository on issues/42 with pinned settings, so the
+# resolver and tier-folders.sh answer the same way on every machine.
+_work_repo() {
+  REPO="$TEST_TEMP_DIR/repo"
+  mkdir -p "$REPO"
+  cd "$REPO"
+  git init -q .
+  git config user.email "test@example.com"
+  git config user.name "Test"
+  git commit --allow-empty -q -m "init"
+  git checkout -q -B issues/42
+  CFG="$TEST_TEMP_DIR/settings.json"
+  printf '%s' '{}' > "$CFG"
+  BRANCH_FOLDER="$REPO/.claude-work/issues/42"
+  TOPIC="$TEST_TEMP_DIR/topic"
+  mkdir -p "$TOPIC"
+}
+
+# Run find-waves.sh with no session and the pinned settings.
+_find_waves_in_repo() {
+  run --separate-stderr env -u CLAUDE_CODE_SESSION_ID MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    "$SCRIPT" "$@"
+}
+
+@test "find-waves: W002 under a marker names the branch folder that holds questions files" {
+  _work_repo
+  mkdir -p "$BRANCH_FOLDER/questions"
+  printf 'x\n' > "$BRANCH_FOLDER/questions/20260901-100000-001-a-wave-1.txt"
+  printf 'x\n' > "$BRANCH_FOLDER/questions/20260901-100000-002-b-wave-1.txt"
+  printf '%s\n' "$TOPIC" > "$REPO/CLAUDE_WORK_FOLDER"
+  _find_waves_in_repo
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"W002"* ]]
+  [[ "$stderr" == *"2 questions files are under $BRANCH_FOLDER/questions, where the branch tier points, but the worktree tier outranks it"* ]]
+}
+
+@test "find-waves: W002 under a session override names every outranked tier" {
+  _work_repo
+  local sid="06cb4128-c112-4696-bddb-3a52d1684a20" sess="$TEST_TEMP_DIR/session-topic"
+  mkdir -p "$sess" "$TEST_TEMP_DIR/sessions" "$TOPIC/questions" "$BRANCH_FOLDER/questions"
+  printf '{"version":1,"folder":"%s","session_id":"%s"}' "$sess" "$sid" \
+    > "$TEST_TEMP_DIR/sessions/$sid.json"
+  printf 'x\n' > "$TOPIC/questions/20260901-100000-001-a-wave-1.txt"
+  printf 'x\n' > "$BRANCH_FOLDER/questions/20260901-100000-001-b-wave-1.txt"
+  printf '%s\n' "$TOPIC" > "$REPO/CLAUDE_WORK_FOLDER"
+  run --separate-stderr env CLAUDE_CODE_SESSION_ID="$sid" MY_CLAUDE_SKILLS_CONFIG="$CFG" "$SCRIPT"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"1 questions file is under $TOPIC/questions, where the worktree tier points, but the session tier outranks it"* ]]
+  [[ "$stderr" == *"1 questions file is under $BRANCH_FOLDER/questions, where the branch tier points, but the session tier outranks it"* ]]
+}
+
+@test "find-waves: W002 with nothing hidden below the winner prints only the error" {
+  _work_repo
+  printf '%s\n' "$TOPIC" > "$REPO/CLAUDE_WORK_FOLDER"
+  mkdir -p "$BRANCH_FOLDER/questions"
+  : > "$BRANCH_FOLDER/questions/20260901-100000-001-reserved.txt"
+  _find_waves_in_repo
+  [ "$status" -eq 1 ]
+  [ "$(printf '%s\n' "$stderr" | wc -l | tr -d ' ')" -eq 1 ]
+  [[ "$stderr" == *"W002"* ]]
+}
+
+@test "find-waves: an unreadable outranked questions directory still ends in W002" {
+  _require_enforced_permission_bits
+  _work_repo
+  mkdir -p "$BRANCH_FOLDER/questions"
+  printf 'x\n' > "$BRANCH_FOLDER/questions/20260901-100000-001-a-wave-1.txt"
+  printf '%s\n' "$TOPIC" > "$REPO/CLAUDE_WORK_FOLDER"
+  chmod 000 "$BRANCH_FOLDER/questions"
+  _find_waves_in_repo
+  local rc="$status" err="$stderr"
+  chmod 755 "$BRANCH_FOLDER/questions"
+  [ "$rc" -eq 1 ]
+  [[ "$err" == *"W002"* ]]
+}
+
+@test "find-waves: an explicit directory argument prints only W002" {
+  _work_repo
+  mkdir -p "$BRANCH_FOLDER/questions"
+  printf 'x\n' > "$BRANCH_FOLDER/questions/20260901-100000-001-a-wave-1.txt"
+  printf '%s\n' "$TOPIC" > "$REPO/CLAUDE_WORK_FOLDER"
+  _find_waves_in_repo "$TOPIC/questions"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" != *"branch tier"* ]]
+  [[ "$stderr" == *"W002"* ]]
+}
+
+# =============================================================
 # classify-ack.sh: two file kinds reach this skill
 # =============================================================
 #

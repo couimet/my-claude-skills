@@ -586,3 +586,54 @@ _stale() {
   [[ "$output" != *added* ]]
   [[ "$output" == /* ]]
 }
+
+# A session override or a worktree marker names a folder anywhere, and a trim
+# at a .claude-work component that is not there removes nothing. The sentinel
+# then landed in a .gitignore inside every topic folder /launch-agent set up.
+
+@test "gitignore: a session override outside .claude-work writes no .gitignore" {
+  local topic="$TEST_TEMP_DIR/topics/one" sid="06cb4128-c112-4696-bddb-3a52d1684a20"
+  mkdir -p "$topic" "$TEST_TEMP_DIR/sessions"
+  printf '{"version":1,"folder":"%s","session_id":"%s"}' "$topic" "$sid" \
+    > "$TEST_TEMP_DIR/sessions/$sid.json"
+  run --separate-stderr env PATH="$STUB_BIN:$PATH" CLAUDE_CODE_SESSION_ID="$sid" \
+    "$SCRIPT" --type notes --description "topic note"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$topic/notes/$STAMP-001-topic-note.txt" ]
+  [ ! -e "$topic/.gitignore" ]
+  [ ! -e "$TEST_TEMP_DIR/topics/.gitignore" ]
+  [ ! -e "$TEST_TEMP_DIR/.gitignore" ]
+}
+
+@test "gitignore: a worktree marker outside .claude-work writes no .gitignore" {
+  local topic="$TEST_TEMP_DIR/topics/two"
+  mkdir -p "$topic"
+  printf '%s\n' "$topic" > "$TEST_TEMP_DIR/CLAUDE_WORK_FOLDER"
+  run_target_path --type questions --description "topic question"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$topic/questions/$STAMP-001-topic-question.txt" ]
+  [ ! -e "$topic/.gitignore" ]
+  [ ! -e "$TEST_TEMP_DIR/topics/.gitignore" ]
+  [ ! -e "$TEST_TEMP_DIR/.gitignore" ]
+}
+
+@test "gitignore: a marker inside a repository's .claude-work puts the sentinel at that repository" {
+  local topic="$TEST_TEMP_DIR/.claude-work/topic"
+  mkdir -p "$topic"
+  printf '%s\n' "$topic" > "$TEST_TEMP_DIR/CLAUDE_WORK_FOLDER"
+  run_target_path --type notes --description "inside"
+  [ "$status" -eq 0 ]
+  grep -q '^\.claude-work/$' "$TEST_TEMP_DIR/.gitignore"
+  [ ! -e "$topic/.gitignore" ]
+}
+
+@test "gitignore: a component that only starts with .claude-work is not trimmed" {
+  local topic="$TEST_TEMP_DIR/.claude-work-old/topic"
+  mkdir -p "$topic"
+  printf '%s\n' "$topic" > "$TEST_TEMP_DIR/CLAUDE_WORK_FOLDER"
+  run_target_path --type notes --description "old"
+  [ "$status" -eq 0 ]
+  [ ! -e "$TEST_TEMP_DIR/.gitignore" ]
+  [ ! -e "$TEST_TEMP_DIR/.claude-work-old/.gitignore" ]
+  [ ! -e "$topic/.gitignore" ]
+}
