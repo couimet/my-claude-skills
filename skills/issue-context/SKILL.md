@@ -1,6 +1,6 @@
 ---
 name: issue-context
-version: 2026.09.21@73231a2
+version: 2026.09.25@8860b27
 user-invocable: false
 description: Contract for the two scripts that resolve where a working file goes - target-path.sh and claude-work-root.sh. Referenced by name from the skills that write working files.
 allowed-tools: Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *)
