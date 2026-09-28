@@ -23,6 +23,7 @@
 # two can never disagree about precedence.
 #
 # Functions defined on source:
+#   _issue_context_branch_folder <identifier> <out-folder-var> <out-reason-var>
 #   _issue_context_marker_folder <out-folder-var> <out-report-var>
 #   _issue_context_work_folder <out-folder-var> <out-tier-var> <out-report-var>
 #
@@ -65,6 +66,46 @@ _iwfa_append() {
   else
     eval "$_iwfa_var=\"\$_iwfa_line\""
   fi
+}
+
+# _issue_context_branch_folder <identifier> <out-folder-var> <out-reason-var> —
+# build the branch tier's folder for <identifier>:
+# <claude-work-root>[/<segment>]/<identifier>.
+#
+# Returns 0 with the folder, or 1 with one of these reasons:
+#
+#   identifier  <identifier> is not usable as a path component
+#   segment     the configured segment is not usable as a path component
+#   root        claude-work-root.sh failed
+#
+# Callers already validate identifiers and the settings loader validates the
+# segment. Both are checked again here so a future call path that skips one of
+# those checks still cannot build a folder that escapes the root. This lives
+# here, beside the tier order, so every script that names the branch tier's
+# folder builds it the same way.
+_issue_context_branch_folder() {
+  local _iwfb_id="$1" _iwfb_out_var="$2" _iwfb_reason_var="$3" _iwfb_folder
+  eval "$_iwfb_out_var=''"
+  eval "$_iwfb_reason_var=''"
+  if ! _issue_settings_is_safe_component "$_iwfb_id"; then
+    eval "$_iwfb_reason_var='identifier'"
+    return 1
+  fi
+  # BASH_SOURCE[0] inside a function names the file that defined it, so this
+  # finds the sibling script whichever script sourced this file.
+  _iwfb_folder="$("$(dirname "${BASH_SOURCE[0]}")/claude-work-root.sh")" || {
+    eval "$_iwfb_reason_var='root'"
+    return 1
+  }
+  if [ -n "$SETTINGS_SEGMENT" ]; then
+    if ! _issue_settings_is_safe_component "$SETTINGS_SEGMENT"; then
+      eval "$_iwfb_reason_var='segment'"
+      return 1
+    fi
+    _iwfb_folder="$_iwfb_folder/$SETTINGS_SEGMENT"
+  fi
+  eval "$_iwfb_out_var=\"\$_iwfb_folder/\$_iwfb_id\""
+  return 0
 }
 
 # _issue_context_marker_folder <out-folder-var> <out-report-var> — resolve the

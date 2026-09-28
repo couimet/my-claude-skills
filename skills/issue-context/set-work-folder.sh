@@ -39,6 +39,16 @@
 # naming the sessions directory instead would read as though that were what it
 # removed. Both modes say what happened on stderr.
 #
+# Every form also says on stderr when the change leaves working files behind.
+# The folder the resolver chose before the change and the one it chooses after
+# are compared, and when they differ the working files under the old one are
+# counted: those are files no reader finds any more. A count of zero, an old
+# folder that does not exist, or no change of folder says nothing. The worktree
+# forms compare with the session tier left out, because a marker competes with
+# the branch tier and never with a session override. Nothing is moved: a write
+# that relocated files would fight the session tier, which can outrank the
+# marker at any time.
+#
 # Exit codes:
 #   0  — success
 #   1  — error (see stderr)
@@ -80,6 +90,70 @@ source "$_self_dir/marker-file.sh"
 die() {
   echo "set-work-folder $1 error: $2" >&2
   exit 1
+}
+
+# winner_line [--no-session] — print the first line of tier-folders.sh, the
+# winning <tier><TAB><folder>, or nothing when it cannot be resolved. The
+# signal below is best-effort, so a failure here must never fail the command
+# it reports on.
+winner_line() {
+  "$_self_dir/tier-folders.sh" "$@" 2>/dev/null | head -n 1 || true
+}
+
+# count_nonempty <find arguments...> — count the non-empty regular files find
+# reaches. An empty file is an unwritten target-path.sh reservation, not a
+# working file.
+count_nonempty() {
+  find "$@" -type f ! -size 0c 2>/dev/null | wc -l | tr -d ' '
+}
+
+# count_left_behind <tier> <folder> — count the working files a reader finds
+# under <folder> while <tier> names it.
+#
+# Only the four working-file directories are counted for the session and
+# worktree tiers, because those folders are often topic folders holding other
+# content. On a work branch the branch tier's folder belongs to its work item
+# alone, so every file under it counts, the pointers and the breadcrumb
+# included. Under a marker those live in <marker>/<identifier>, which is
+# counted as well. Off a work branch the branch tier names the bare root,
+# which holds every work item's folder, so only its four directories count.
+count_left_behind() {
+  local tier="$1" dir="$2" total=0 n kind id=""
+  [ -d "$dir" ] || { printf '0'; return 0; }
+  id="$("$_self_dir/branch-issue-id.sh" 2>/dev/null)" || id=""
+  if [ "$tier" = "branch" ] && [ -n "$id" ]; then
+    count_nonempty "$dir"
+    return 0
+  fi
+  for kind in notes questions scratchpads commit-msgs; do
+    [ -d "$dir/$kind" ] || continue
+    n="$(count_nonempty "$dir/$kind" -maxdepth 1)"
+    total=$((total + n))
+  done
+  if [ "$tier" = "worktree" ] && [ -n "$id" ] && [ -d "$dir/$id" ]; then
+    n="$(count_nonempty "$dir/$id")"
+    total=$((total + n))
+  fi
+  printf '%s' "$total"
+}
+
+# report_left_behind <line-before> <line-after> <remedy> — say on stderr how
+# many working files the change left behind, if any. Each line is a
+# winner_line result.
+report_left_behind() {
+  local tab=$'\t' tier before after count noun pronoun
+  tier="${1%%"$tab"*}"
+  before="${1#*"$tab"}"
+  after="${2#*"$tab"}"
+  [ -n "$1" ] && [ -n "$2" ] && [ "$before" != "$after" ] || return 0
+  count="$(count_left_behind "$tier" "$before")"
+  [ "${count:-0}" -gt 0 ] || return 0
+  if [ "$count" -eq 1 ]; then
+    noun="1 working file stays"; pronoun="it"
+  else
+    noun="$count working files stay"; pronoun="them"
+  fi
+  echo "set-work-folder: $noun under $before, where readers no longer look; move $pronoun to $after or $3" >&2
 }
 
 # --- Parse arguments ---
@@ -131,11 +205,15 @@ if [ "$worktree_mode" -eq 1 ]; then
   marker="$(_issue_context_marker_path)" \
     || die "$ERR_FOLDER" "not inside a git repository, so there is no worktree root to write $_ISSUE_CONTEXT_MARKER_NAME at"
 
+  line_before="$(winner_line --no-session)"
+
   if [ "$clear_mode" -eq 1 ]; then
     if [ -e "$marker" ]; then
       rm -f "$marker" \
         || die "$ERR_WRITE" "could not remove $marker, so the worktree marker is still in effect"
       echo "set-work-folder: cleared this worktree's folder marker" >&2
+      report_left_behind "$line_before" "$(winner_line --no-session)" \
+        "set the folder again"
     else
       # Not an error, for the same reason --clear is not: the caller asked for
       # a state that is already the state.
@@ -187,6 +265,8 @@ if [ "$worktree_mode" -eq 1 ]; then
   trap - EXIT
 
   echo "set-work-folder: working files for this worktree now go to $folder_phys" >&2
+  report_left_behind "$line_before" "$(winner_line --no-session)" \
+    "undo this change"
   printf '%s\n' "$marker"
   exit 0
 fi
@@ -237,11 +317,14 @@ remove_existing() {
   printf '%s' "$removed"
 }
 
+line_before="$(winner_line)"
+
 if [ "$clear_mode" -eq 1 ]; then
   removed="$(remove_existing)" \
     || die "$ERR_WRITE" "could not remove this session's file, so the folder override is still in effect"
   if [ "${removed:-0}" -gt 0 ]; then
     echo "set-work-folder: cleared this session's folder override" >&2
+    report_left_behind "$line_before" "$(winner_line)" "set the folder again"
   else
     # Not an error. Clearing something already absent is the state the caller
     # asked for, and repeating the command must not start failing.
@@ -365,4 +448,5 @@ remove_existing "$target" >/dev/null \
   || die "$ERR_WRITE" "$target did not survive its own cleanup, which is what happens when another agent in this session wrote a different name at the same moment; the folder is not set"
 
 echo "set-work-folder: working files for this session now go to $folder_phys" >&2
+report_left_behind "$line_before" "$(winner_line)" "undo this change"
 printf '%s\n' "$target"

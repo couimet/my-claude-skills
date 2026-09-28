@@ -35,7 +35,10 @@
 #
 #   The script also ensures the repository's .gitignore carries the
 #   .claude-work/ sentinel, so a caller never has to make that call itself.
-#   The check is best-effort and never blocks path resolution.
+#   The check is best-effort and never blocks path resolution. It runs only
+#   when the resolved folder sits under a .claude-work directory: a session
+#   override or a worktree marker may name any folder, and the sentinel
+#   protects nothing there.
 #
 # Exit codes:
 #   0  — success
@@ -207,11 +210,22 @@ slug="$(_issue_context_slugify "$description")"
 # root, while the working files go to the main checkout that owns the shared
 # .claude-work/ directory. Without the argument the worktree gains a sentinel it
 # does not need and the checkout writing the files keeps generating unignored
-# ones. get-issue-folder-path.sh always returns a path under .claude-work/, so
-# trimming at that component recovers the owning checkout with no second
-# process, which is the cost the note above rules out.
-"$script_dir/../ensure-gitignore/ensure-gitignore.sh" \
-  "${folder_root%%/.claude-work*}/.gitignore" >/dev/null 2>&1 || true
+# ones. Trimming the folder at its .claude-work component recovers the owning
+# checkout with no second process, which is the cost the note above rules out.
+#
+# A folder with no .claude-work component gets no call at all. The session and
+# worktree tiers name a folder anywhere. A trim of such a folder removes
+# nothing, and the helper then writes a .gitignore into the work folder itself,
+# one for each topic folder.
+# The component is matched exactly, with the trailing slash appended first, so
+# a directory such as .claude-work-old is not mistaken for it. The first match
+# wins because the outermost .claude-work is the one a repository owns.
+gitignore_probe="${folder_root}/"
+gitignore_owner="${gitignore_probe%%/.claude-work/*}"
+if [ "$gitignore_owner" != "$gitignore_probe" ]; then
+  "$script_dir/../ensure-gitignore/ensure-gitignore.sh" \
+    "${gitignore_owner}/.gitignore" >/dev/null 2>&1 || true
+fi
 
 # --- Create the target directory ---
 mkdir -p "$target_dir"

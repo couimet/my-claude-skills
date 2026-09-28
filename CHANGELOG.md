@@ -10,6 +10,17 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.09.25
+
+### Changed
+
+- `/set-work-folder` tells you when a change leaves working files behind. Every reader looks only in the folder that wins, so notes, questions, and plan pointers under the previous folder stop being found the moment you set or clear a folder. The script now says how many files stay, where they are, and where readers look now. It moves nothing. ([issues/272](https://github.com/couimet/my-claude-skills/issues/272))
+- `/answers-ready` names the folder that holds questions hidden by a work folder. When it finds no questions where it looks, it now also says which outranked folder still holds questions files, so an open wave is not lost for days. ([issues/272](https://github.com/couimet/my-claude-skills/issues/272))
+
+### Fixed
+
+- A work folder set by `/set-work-folder` or `/launch-agent` no longer gets its own `.gitignore`. The first working file written there created one holding the `.claude-work/` line, which protects nothing in a folder outside `.claude-work`. ([issues/272](https://github.com/couimet/my-claude-skills/issues/272))
+
 ## 2026.09.21
 
 ### Added

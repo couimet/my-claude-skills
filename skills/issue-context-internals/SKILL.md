@@ -3,7 +3,7 @@ name: issue-context-internals
 version: 2026.09.21@73231a2
 user-invocable: false
 description: Contract for the issue-context scripts beyond path resolution - identifier resolution, branch matching, work-item folder resolution, branch-name rendering, the work-folder tier, and the settings file. Referenced by name from the skills that need one of them.
-allowed-tools: Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/render-branch-template.sh *), Bash(*/skills/issue-context/set-work-folder.sh *), Bash(*/skills/issue-context/work-folder-tier.sh *)
+allowed-tools: Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/render-branch-template.sh *), Bash(*/skills/issue-context/set-work-folder.sh *), Bash(*/skills/issue-context/work-folder-tier.sh *), Bash(*/skills/issue-context/tier-folders.sh *)
 ---
 
 # Issue Context Internals
@@ -58,6 +58,14 @@ Prints the configured `branchTemplate` with `{id}` replaced by the identifier, f
 
 Prints exactly one token, `session`, `worktree`, or `branch`, naming the tier resolution would use right now. A caller cannot work this out from a resolved path, and checking whether the marker file exists is wrong because the session tier outranks it. A skill that deletes a work item's directory asks this so its confirmation can say what the delete will and will not reach.
 
+## Script: tier-folders.sh
+
+```bash
+~/.claude/skills/issue-context/tier-folders.sh [--no-session]
+```
+
+Prints one `<tier><TAB><folder>` line for each tier that resolves right now, in tier order. The first line is the winner, and it is always the folder `get-issue-folder-path.sh` prints with no argument. A tier that is not set, or that is refused, prints no line. `--no-session` leaves the session tier out. A caller that asks what a tier change hides reads the lines after the first. `set-work-folder.sh` and `find-waves.sh` both use it.
+
 ## Script: set-work-folder.sh
 
 ```bash
@@ -70,6 +78,8 @@ Prints exactly one token, `session`, `worktree`, or `branch`, naming the tier re
 Writes or removes this session's folder override. `<folder>` must be an absolute path to an existing directory; a relative path and a missing directory are both refused rather than created. `[name]` is a cosmetic label for the stored file's name and is never looked up, so it may go stale. The folder need not sit inside any repository.
 
 The `--worktree` forms write and remove this worktree's marker instead of the session override. They need no session id, because a marker belongs to a checkout rather than a conversation, and they refuse to run outside a git repository.
+
+Every form says on stderr when the change leaves working files behind: the count, the folder they stay under, and where readers look now. It compares the winning folder before and after the change, and the worktree forms leave the session tier out of that comparison. Nothing moves, and a change over an empty or absent folder says nothing.
 
 A session keeps exactly one override file; a second write replaces the first, even under a different label. Every refusal falls back to the next tier and says so on stderr: a folder that is gone, a non-absolute path, more than one file matching the session, an unreadable or malformed file, an unknown version, or a missing `jq`. A marker is refused on the same terms, plus when it is empty or unreadable.
 
