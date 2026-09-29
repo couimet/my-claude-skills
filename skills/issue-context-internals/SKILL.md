@@ -92,4 +92,5 @@ The path convention is configurable through `~/.my-claude-skills/settings.json`,
 - `branchTemplate` — branch name built from an identifier; default `issues/{id}`. Paired with `branchPatterns`.
 - `urlPatterns` — ordered EREs matched against tracker URLs; first match wins, capture group one is the identifier.
 - `identifierCase` — `upper` (default), `lower`, or `preserve`. Only tracker-key-shaped identifiers are folded, so numeric identifiers and free-form slugs pass through untouched. An unrecognized value warns and falls back to `upper`.
+- `launchAgentDefaultFolder` — the absolute directory that a `/launch-agent` slug resolves under; default unset, which resolves a slug at the repository root. The value is read as given: no `~` and no environment variable expands. This key is the one exception to the fall-back rule above: `launch-agent.sh` refuses a relative value or a directory that does not exist, and writes nothing, because a fall-back to the repository root puts the topic folder in a code repository.
 - `version` — settings schema version; default `1`.

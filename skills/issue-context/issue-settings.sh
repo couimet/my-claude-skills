@@ -21,6 +21,10 @@
 #                                   URL, first match wins, capture one is id
 #   identifierCase   "upper"        case a tracker-key-shaped identifier is
 #                                   folded to; "upper", "lower", "preserve"
+#   launchAgentDefaultFolder  ""   absolute directory a /launch-agent slug
+#                                   resolves under; read as-is, never
+#                                   expanded, and validated by its one
+#                                   consumer, launch-agent.sh
 #   version          1              schema version
 #
 # Globals set on return:
@@ -30,6 +34,7 @@
 #   SETTINGS_BRANCH_PATTERNS   (array)
 #   SETTINGS_URL_PATTERNS      (array)
 #   SETTINGS_IDENTIFIER_CASE
+#   SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER
 #   SETTINGS_FILE              the resolved config path
 #
 # Failure policy: every failure falls back to the built-in defaults and the
@@ -197,6 +202,7 @@ _issue_settings_apply_defaults() {
   SETTINGS_SEGMENT="issues"
   SETTINGS_BRANCH_TEMPLATE="issues/{id}"
   SETTINGS_IDENTIFIER_CASE="upper"
+  SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER=""
   SETTINGS_BRANCH_PATTERNS=()
   while IFS= read -r _issue_settings_entry; do
     SETTINGS_BRANCH_PATTERNS+=("$_issue_settings_entry")
@@ -250,6 +256,12 @@ if [ -f "$_issue_settings_file" ] && [ -r "$_issue_settings_file" ]; then
           SETTINGS_IDENTIFIER_CASE="upper"
           ;;
       esac
+      # Read as a raw string and not validated here: this file never refuses,
+      # and a bad value must refuse the launch rather than fall back to a
+      # root that puts the topic folder in a code repository. launch-agent.sh
+      # owns that check.
+      # shellcheck disable=SC2034
+      SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER="$(_issue_settings_read_scalar "$_issue_settings_json" launchAgentDefaultFolder '')"
       SETTINGS_BRANCH_PATTERNS=()
       while IFS= read -r _issue_settings_entry; do
         SETTINGS_BRANCH_PATTERNS+=("$_issue_settings_entry")

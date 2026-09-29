@@ -282,6 +282,44 @@ run_in_isolated_home() {
 }
 
 # ============================================================================
+# launchAgentDefaultFolder key handling
+# ============================================================================
+
+# Source the loader and print only the launch-agent key, bracketed so an empty
+# value is visible. The key has its own dump rather than a field in DUMP: its
+# one consumer is launch-agent.sh, and every other test compares DUMP exactly.
+DEFAULT_FOLDER_DUMP='
+  source "$1" 2>/dev/null
+  printf "[%s]" "$SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER"
+'
+
+@test "absent launchAgentDefaultFolder → empty" {
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  printf '%s' '{}' > "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$DEFAULT_FOLDER_DUMP" _ "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" = "[]" ]
+}
+
+@test "launchAgentDefaultFolder is read as written, with no expansion and no validation" {
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  # shellcheck disable=SC2016 # the literal $HOME is the point of the test
+  printf '%s' '{"launchAgentDefaultFolder":"~/topics/$HOME"}' > "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$DEFAULT_FOLDER_DUMP" _ "$SCRIPT"
+  [ "$status" -eq 0 ]
+  # shellcheck disable=SC2016
+  [ "$output" = '[~/topics/$HOME]' ]
+}
+
+@test "launchAgentDefaultFolder is empty when the settings file is malformed" {
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  printf '%s' '{not json' > "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$DEFAULT_FOLDER_DUMP" _ "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" = "[]" ]
+}
+
+# ============================================================================
 # The shared identifier normalizer
 # ============================================================================
 
