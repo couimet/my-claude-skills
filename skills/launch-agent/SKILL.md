@@ -36,7 +36,7 @@ The folder holds the notes, questions, scratchpads, and commit-message drafts of
 
 The folder takes one of two forms.
 
-A **slug** is a single name. When the `launchAgentDefaultFolder` setting is set, a slug resolves to a directory of that name under the setting's directory, from any repository. When the setting is not set, a slug resolves at the root of the repository you are in. See `/issue-context-internals` for the settings file. The setting holds one absolute path and expands nothing, so `~` and environment variables stay as written. The script refuses a relative value or a directory that does not exist, and writes nothing. A slug that names an existing symlink to a directory resolves to the link's target, which can sit outside the root, so read the resolved folder in the script's first line when a topic folder is a symlink. Without the setting, do not use a slug in a code repository. There the folder lands beside the source tree and stays in `git status`.
+A **slug** is a single name. When the `launchAgentDefaultFolder` setting is set, a slug resolves to a directory of that name under the setting's directory, from any repository. When the setting is not set, a slug resolves at the root of the repository you are in. See `/issue-context-internals` for the settings file. The setting holds one absolute path and expands nothing, so `~` and environment variables stay as written. The script refuses a relative value or a directory that does not exist, and writes nothing. It also refuses a slug when the settings file is there but cannot be read, because the setting can be in that file. A slug that names an existing symlink to a directory resolves to the link's target, which can sit outside the root, so read the resolved folder in the script's first line when a topic folder is a symlink. Without the setting, do not use a slug in a code repository. There the folder lands beside the source tree and stays in `git status`.
 
 An **absolute path** is taken exactly as given, in any directory, inside a repository or outside one. It wins over the setting. An absolute path is read as a deliberate choice, so the refusals that guard a slug do not apply to it.
 
@@ -54,7 +54,7 @@ The prompt is saved to `prompt-new-agent-launch.txt` in the folder before the wo
 
 ## Step 1: Run the Script
 
-Split `$ARGUMENTS` into three parts: the folder (the first word), `--bg` when it comes next, and the task prompt (all the text after them, exactly as the user typed it).
+Split `$ARGUMENTS` into three parts: the folder, `--bg` when it comes next, and the task prompt (all the text after them, exactly as the user typed it). The folder is the first word. When the user quotes it, the folder is the whole quoted string, spaces included, without the quotes.
 
 Check each line of the task prompt before you build the command. If a line is exactly `LAUNCH_AGENT_PROMPT_END`, run nothing. Tell the user which line collides with the heredoc marker. The check is necessary because that line ends the heredoc early, and the shell then runs every later line of the prompt as a command. The script cannot detect this, because it receives only the text above the marker.
 

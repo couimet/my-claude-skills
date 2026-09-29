@@ -14,7 +14,7 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 ### Added
 
-- `/launch-agent` takes a short folder name from any repository. Set `launchAgentDefaultFolder` in `~/.my-claude-skills/settings.json` to the absolute directory that holds your topic folders, and `/launch-agent my-topic` lands there even from a session in a code repository. A relative value or a missing directory is refused before anything is written. ([issues/278](https://github.com/couimet/my-claude-skills/issues/278))
+- `/launch-agent` takes a short folder name from any repository. Set `launchAgentDefaultFolder` in `~/.my-claude-skills/settings.json` to the absolute directory that holds your topic folders, and `/launch-agent my-topic` lands there even from a session in a code repository. A relative value, a missing directory, or a settings file that cannot be read is refused before anything is written. ([issues/278](https://github.com/couimet/my-claude-skills/issues/278))
 
 ### Changed
 

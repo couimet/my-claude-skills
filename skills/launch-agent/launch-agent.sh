@@ -268,11 +268,16 @@ case "$folder" in
     # lands in the topic repository. A bad value refuses rather than falling
     # back: the fall-back is the git root, which is the code repository this
     # setting exists to avoid. The value expands nothing, so it is checked
-    # exactly as written.
+    # exactly as written. A settings file that could not be read refuses for
+    # the same reason: the loader then reports the setting as empty, and the
+    # setting may well be in the file.
+    if [ "$SETTINGS_LOAD_STATUS" = "failed" ]; then
+      die "$ERR_FOLDER" "the settings file $SETTINGS_FILE could not be read, so launchAgentDefaultFolder is unknown; fix the file, or pass an absolute path as the folder"
+    fi
     default_folder="$SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER"
     if [ -n "$default_folder" ]; then
       case "$default_folder" in
-        /*) ;;
+        /*) ;; # kcov-exclude-line
         *)
           die "$ERR_FOLDER" "launchAgentDefaultFolder in $SETTINGS_FILE is '$default_folder', which is not an absolute path; set it to an absolute path, or pass an absolute path as the folder"
           ;;
@@ -312,7 +317,8 @@ case "$folder" in
 esac
 
 # --- Resolve the prompt ---
-# A prompt read from standard input is used exactly as read. Otherwise one
+# A prompt read from standard input is used as read, except that the read
+# drops trailing newlines and the save adds exactly one back. Otherwise one
 # argument with no whitespace that names a readable file carries a long prompt
 # without shell quoting, and one such argument that looks like a path and
 # names nothing is a typo: without this refusal the launch succeeds and the

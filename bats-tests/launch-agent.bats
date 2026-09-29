@@ -362,6 +362,48 @@ set_default_folder() {
   [ ! -d "$topics/topic" ]
 }
 
+@test "the setting with a trailing slash resolves the slug as if the slash were absent" {
+  topics="$TEST_TEMP_DIR/topics"
+  mkdir -p "$topics"
+  set_default_folder "$topics/"
+  run_here "$REPO" my-topic "do the thing"
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Folder: $topics/my-topic" ]
+}
+
+@test "a malformed settings file → L002 for a slug, nothing written in the repository" {
+  printf '%s' '{"launchAgentDefaultFolder":' > "$CFG"
+  run_in "$REPO" my-topic --bg "do the thing"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"L002"* ]]
+  [[ "$output" == *"$CFG could not be read"* ]]
+  [ ! -d "$REPO/my-topic" ]
+  [ ! -f "$ARGS_FILE" ]
+}
+
+@test "an unreadable settings file → L002 for a slug, nothing written in the repository" {
+  _require_enforced_permission_bits
+  set_default_folder "$TEST_TEMP_DIR/topics"
+  chmod 000 "$CFG"
+  run_in "$REPO" my-topic --bg "do the thing"
+  chmod 644 "$CFG"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"L002"* ]]
+  [[ "$output" == *"could not be read"* ]]
+  [ ! -d "$REPO/my-topic" ]
+}
+
+@test "a malformed settings file does not block an absolute folder" {
+  printf '%s' '{"launchAgentDefaultFolder":' > "$CFG"
+  target="$TEST_TEMP_DIR/elsewhere/topic"
+  run_in "$REPO" "$target" --bg "do the thing"
+  [ "$status" -eq 0 ]
+  # The loader's warning comes first in the merged output, so match the line
+  # anywhere rather than at lines[0].
+  [[ "$output" == *"Folder: $target"* ]]
+  [ -f "$target/prompt-new-agent-launch.txt" ]
+}
+
 @test "an absolute folder is used even when the setting names a missing directory" {
   set_default_folder "$TEST_TEMP_DIR/not-there"
   target="$TEST_TEMP_DIR/elsewhere/topic"
@@ -746,11 +788,13 @@ PROMPT
 @test "a folder that cannot be adopted → L005, folder and prompt kept, pasteable command printed" {
   bare="$TEST_TEMP_DIR/nojq"
   _stub_path_without "$bare" jq > /dev/null
+  # An absolute folder, because without jq the settings file cannot be read,
+  # and a slug then refuses with L002 before adoption is tried.
   run env -u CLAUDE_JOB_DIR -u CLAUDE_CODE_AGENT -u CLAUDE_PID \
     -u CLAUDE_CODE_CHILD_SESSION \
     PATH="$bare" MY_CLAUDE_SKILLS_CONFIG="$CFG" \
     CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
-    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" my-topic "do the thing"
+    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" "$REPO/my-topic" "do the thing"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L005"* ]]
   [[ "$output" == *"set-work-folder.sh' '$REPO/my-topic' 'my-topic'"* ]]
