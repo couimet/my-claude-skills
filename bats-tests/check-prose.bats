@@ -168,3 +168,41 @@ teardown() {
   run "$SCRIPT" "$FILE"
   [ "$status" -eq 0 ]
 }
+
+# =============================================================
+# Front matter and bold-label header blocks
+# =============================================================
+
+@test "check-prose: a front-matter block with active fields is exempt" {
+  printf -- '---\ntarget-repo: owner/repo\nissue-type: Task\nparent: https://github.com/owner/repo/issues/12\n---\n\n# Title\n\nA body sentence.\n' > "$FILE"
+  run "$SCRIPT" "$FILE"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "check-prose: a wrapped paragraph after the front matter still reports P001" {
+  printf -- '---\ntarget-repo: owner/repo\nissue-type: Task\n---\n\n# Title\n\nThis sentence wraps\nonto a second line.\n' > "$FILE"
+  run "$SCRIPT" "$FILE"
+  [ "$status" -eq 1 ]
+  [ "$output" = "8: P001 mid-paragraph line break (hard wrap)" ]
+}
+
+@test "check-prose: a --- after prose does not open a front-matter block" {
+  printf -- 'Intro sentence.\n\n---\nfirst field line\nsecond field line\n---\n' > "$FILE"
+  run "$SCRIPT" "$FILE"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"4: P001"* ]]
+}
+
+@test "check-prose: consecutive bold-label lines are a header block, not a wrap" {
+  printf '# Title\n\n**Base branch:** origin/main\n**Parent:** none\n' > "$FILE"
+  run "$SCRIPT" "$FILE"
+  [ "$status" -eq 0 ]
+}
+
+@test "check-prose: a bold-label line followed by a wrapped line still reports P001" {
+  printf '# Title\n\n**Note:** this sentence wraps\nonto a second line.\n' > "$FILE"
+  run "$SCRIPT" "$FILE"
+  [ "$status" -eq 1 ]
+  [ "$output" = "3: P001 mid-paragraph line break (hard wrap)" ]
+}

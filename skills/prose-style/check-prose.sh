@@ -75,9 +75,36 @@ in_fence=0
 lineno=0
 prev_text=""
 prev_no=0
+prev_label=0
+
+# A front-matter block holds machine fields, not prose, so every rule skips
+# it. The block opens only when the first non-empty line of the file is a bare
+# ---, and it closes at the next line that starts with ---. A --- anywhere
+# later stays a thematic break.
+seen_content=0
+in_front_matter=0
+
+# A bold label line, **Key:** value, starts a header field. Two such lines in a
+# row are a header block, not a wrapped paragraph, so P001 skips that pair. A
+# bold label line followed by any other prose line is still checked.
+label_re='^\*\*[^*]+:\*\*'
 
 while IFS= read -r line || [ -n "$line" ]; do
   lineno=$((lineno + 1))
+
+  if [ "$in_front_matter" -eq 1 ]; then
+    case "$line" in
+      '---'*) in_front_matter=0 ;;
+    esac
+    continue
+  fi
+  if [ "$seen_content" -eq 0 ] && [ -n "$line" ]; then
+    seen_content=1
+    if [ "$line" = "---" ]; then
+      in_front_matter=1
+      continue
+    fi
+  fi
 
   unindented="$line"
   for _ in 1 2 3; do unindented="${unindented# }"; done
@@ -110,7 +137,10 @@ while IFS= read -r line || [ -n "$line" ]; do
   # therefore mean the first was wrapped. Only flag when the previous line
   # does not end a sentence, so a deliberate two-sentence block is not a
   # finding and the common failure (a wrap mid-sentence) still is.
+  cur_label=0
+  [[ "$line" =~ $label_re ]] && cur_label=1
   if [ -n "$prev_text" ] \
+    && ! { [ "$prev_label" -eq 1 ] && [ "$cur_label" -eq 1 ]; } \
     && ! printf '%s' "$prev_text" | grep -qE '[].:;?!)"'"'"'`]$'; then
     report "$prev_no" "P001" "mid-paragraph line break (hard wrap)"
   fi
@@ -141,6 +171,7 @@ while IFS= read -r line || [ -n "$line" ]; do
 
   prev_text="$line"
   prev_no="$lineno"
+  prev_label="$cur_label"
 done < "$FILE"
 
 # A trailing wrapped line has no successor to trigger the P001 check above,

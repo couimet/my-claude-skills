@@ -28,7 +28,11 @@
 #   X004 — an answer opener has no closer
 #   X005 — a closer has no matching opener
 #   X006 — a closer's id does not match the opener it closes
-#   X007 — the file contains no answers
+#   X007 — the file contains no answers and no retired entries
+#
+# A terminal wave holds only retired entries and no answers. It is valid: it
+# reports ACKNOWLEDGED: 0 of 0 with RETIRED above zero, which marks the grill
+# as complete.
 
 set -euo pipefail
 
@@ -150,8 +154,8 @@ END {
     printf "extract-answers X004 error: answer A%s has no </A%s> closer\n", open_id, open_id > "/dev/stderr"
     exit 1
   }
-  if (total == 0) {
-    printf "extract-answers X007 error: no answers found\n" > "/dev/stderr"
+  if (total == 0 && retired == 0) {
+    printf "extract-answers X007 error: no answers and no retired entries found\n" > "/dev/stderr"
     exit 1
   }
   printf "ACKNOWLEDGED: %d of %d\n", ack, total

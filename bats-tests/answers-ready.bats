@@ -297,6 +297,13 @@ _doc() {
   [[ "$output" == *"KIND: wave"* ]]
 }
 
+@test "classify-ack: a terminal wave with only a Retired section is KIND: wave" {
+  printf '# Wave 3\n\nRetired:\n\n- A retired question? - A004 settled it.\n' > "$QDIR/t.txt"
+  run "$CLASSIFY" "$QDIR/t.txt"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"KIND: wave"* ]]
+}
+
 @test "classify-ack: a working document is KIND: document" {
   _doc "d.txt" "# PR response
 

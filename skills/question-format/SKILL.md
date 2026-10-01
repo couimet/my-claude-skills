@@ -94,15 +94,24 @@ A `/g2q` pass emits its questions in waves, each wave its own file, and a wave m
 
 A wave that holds questions closes with a `Held:` heading and one line per held question, naming the question and the answers it waits on. Held questions carry no number, so the sequence is recovered from the highest emitted number in the newest file.
 
-A wave whose just-answered predecessors made a still-open question moot carries `Retired: <question> - <answer responsible>` lines under the same heading, scoped to that wave, so a retired question is explained rather than silently dropped.
+A wave whose just-answered predecessors made a still-open question moot closes with a `Retired:` heading and one `- <question> - <answer responsible>` line per retired question, the same shape as `Held:`. The section is scoped to that wave, so a retired question is explained rather than silently dropped. The extractor counts only the list items under the heading, so an inline `Retired: <question>` line counts as nothing.
 
-A resume that retires the last held questions emits a terminal wave: only `Retired:` lines, no question blocks and no `Held:` section, which the run reads as complete.
+A resume that retires the last held questions emits a terminal wave: a title and the `Retired:` section, with no question blocks, no `Held:` section, and no paste-back block, because no answer waits. The extractor reports it as `ACKNOWLEDGED: 0 of 0` with `RETIRED:` above zero, which the run reads as complete:
+
+```text
+# <topic> wave 3
+
+Retired:
+
+- Which cache backend serves the reads? - A004 removed the cache.
+- How long does a cached entry live? - A004 removed the cache.
+```
 
 Acknowledgment applies per wave. The user clears markers on the newest file, and the caller resumes grilling once those answers are in.
 
 ## The paste-back block
 
-Every questions file closes with the block shown in the template, placed after the last answer's closer and before any `Held:` section. That is where the user's eye lands when the last answer is written, and it is bounded on both sides so a reader locates and skips it exactly.
+Every questions file except a terminal wave closes with the block shown in the template, placed after the last answer's closer and before any `Held:` section. That is where the user's eye lands when the last answer is written, and it is bounded on both sides so a reader locates and skips it exactly.
 
 The block names the skill rather than a shell command, because a file that carries an executable command trains a reader to run command strings that arrive through a file.
 

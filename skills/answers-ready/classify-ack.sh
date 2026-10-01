@@ -12,7 +12,8 @@
 # Usage: classify-ack.sh <file>
 #
 # Output (stdout):
-#   KIND: wave                 the file holds ANNN: answers; use extract-answers.sh
+#   KIND: wave                 the file holds ANNN: answers, or a Retired:
+#                              heading (a terminal wave); use extract-answers.sh
 #   KIND: document             the file holds Decision: lines
 #   DECISIONS: <n>             (document only) total decisions
 #   UNACKNOWLEDGED: <n>        (document only) decisions still carrying the marker
@@ -57,13 +58,15 @@ if [ ! -f "$FILE" ]; then
   exit 2
 fi
 
-if grep -qE '^A[0-9]{3}:' "$FILE"; then
+# A terminal wave holds no answers, only a Retired: section, and is still a
+# wave file.
+if grep -qE '^(A[0-9]{3}:|Retired:)' "$FILE"; then
   echo "KIND: wave"
   exit 0
 fi
 
 if ! grep -qE '^Decision:' "$FILE"; then
-  echo "classify-ack C003 error: '$FILE' holds neither ANNN: answers nor Decision: lines, so it is not an acknowledgment file" >&2
+  echo "classify-ack C003 error: '$FILE' holds no ANNN: answers, no Retired: section, and no Decision: lines, so it is not an acknowledgment file" >&2
   exit 1
 fi
 
