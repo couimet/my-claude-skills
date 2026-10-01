@@ -1,6 +1,6 @@
 ---
 name: question-format
-version: 2026.09.28@47953be
+version: 2026.10.01@01f61e4
 user-invocable: false
 description: The questions-file format - question block template, answer region and closer rules, the [RECOMMENDED] acknowledgment gate, wave emission with Held and Retired sections, and the paste-back block. Auto-consulted by any skill that writes or reads a questions file.
 allowed-tools:

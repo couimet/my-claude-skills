@@ -1,6 +1,6 @@
 ---
 name: g2q
-version: 2026.09.28@47953be
+version: 2026.10.01@01f61e4
 description: Grill a topic or working document and emit the genuinely open ambiguities as a questions file, in dependency waves.
 argument-hint: <topic-or-path>
 user-invocable: true
