@@ -326,3 +326,47 @@ FIXTURE
   [[ "$output" == *"HELD: 0"* ]]
   [[ "$output" == *"this bullet is part of my answer"* ]]
 }
+
+# =============================================================
+# Terminal wave: retired entries and no answers
+# =============================================================
+
+@test "extract-answers: a terminal wave exits 0 and lists every retired entry" {
+  cat > wave.txt <<'FIXTURE'
+# Wave 3
+
+Retired:
+
+- First retired question? - A004 settled it.
+- Second retired question? - A004 settled it.
+FIXTURE
+  run "$SCRIPT" wave.txt
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"ACKNOWLEDGED: 0 of 0"* ]]
+  [[ "$output" == *"HELD: 0"* ]]
+  [[ "$output" == *"RETIRED: 2"* ]]
+  [[ "$output" == *"First retired question? - A004 settled it."* ]]
+  [[ "$output" == *"Second retired question? - A004 settled it."* ]]
+}
+
+@test "extract-answers: X007 when the file holds only held entries" {
+  printf '# Wave\n\nHeld:\n\n- A held question? Waits on A001.\n' > wave.txt
+  run "$SCRIPT" wave.txt
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"X007"* ]]
+}
+
+@test "extract-answers: the terminal-wave example in /question-format parses as written" {
+  # The example is the first text fence after the terminal-wave paragraph.
+  awk '
+    /emits a terminal wave/ { found = 1; next }
+    found && /^```text$/ { inside = 1; next }
+    inside && /^```$/ { exit }
+    inside { print }
+  ' "$PROJECT_ROOT/skills/question-format/SKILL.md" > wave.txt
+  [ -s wave.txt ]
+  run "$SCRIPT" wave.txt
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"ACKNOWLEDGED: 0 of 0"* ]]
+  [[ "$output" == *"RETIRED: 2"* ]]
+}

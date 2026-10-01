@@ -58,6 +58,7 @@ Run it once per wave file of the sequence, because a resume needs every wave's a
 
 - `UNANSWERED:` lists answers still carrying `[RECOMMENDED]`. **Stop.** Name those questions and wait. A standing marker never means acceptance.
 - `HELD:` above zero means the grill is paused. Resume it with `/g2q` rather than finalizing.
+- `ACKNOWLEDGED: 0 of 0` with `RETIRED:` above zero is a terminal wave: the grill is complete.
 - Otherwise fold the answers into the work that was waiting, using the option text the extractor printed beside each letter.
 
 ## Step 3b: Act on a working document's decisions

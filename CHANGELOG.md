@@ -10,6 +10,13 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.10.01
+
+### Fixed
+
+- The prose check in `/prose-style` no longer reports a hard wrap on each field of a `/draft-issue` front-matter block, or on a header block of `**Key:** value` lines. A wrapped paragraph below the front matter, or after a bold label, is still reported. ([issues/275](https://github.com/couimet/my-claude-skills/issues/275))
+- A `/g2q` terminal wave, which holds only retired questions, now passes its own validation, and `/answers-ready` reports it as a completed grill instead of an error. `/question-format` now shows retired questions in the one shape the reader accepts: a `Retired:` heading over one list item per question, like `Held:`. ([issues/276](https://github.com/couimet/my-claude-skills/issues/276))
+
 ## 2026.09.28
 
 ### Added
