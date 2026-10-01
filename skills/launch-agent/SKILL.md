@@ -4,6 +4,7 @@ version: 2026.09.25@8860b27
 description: Start work on a topic in one call, in this session or with --bg in a background agent. Creates the topic folder, saves the launch prompt in it, and names the work after the folder.
 argument-hint: '<folder> [--bg] <task prompt>'
 allowed-tools: Bash(*/skills/launch-agent/launch-agent.sh *)
+disable-model-invocation: true
 ---
 
 # Launch Agent
@@ -20,7 +21,9 @@ The default starts no agent. It creates the folder, saves the prompt, and then p
 
 ## When to Use
 
-Use the default when the work is yours to do now, in the session you already sit in, and you want the folder, the saved prompt, and the name set up first. This is the usual case, above all when the user invokes this skill from a session started for the purpose.
+Only the user can start this skill, by typing `/launch-agent`.
+
+Use the default when the work is yours to do now, in the session you already sit in, and you want the folder, the saved prompt, and the name set up first. This is the usual case.
 
 Use `--bg` when work moves to a background agent and you must find that agent again later. The same four steps done by hand are four steps to forget. An agent started with no name appears as an unnamed row days later. A launch prompt that nobody saved is lost when the terminal scrolls.
 
@@ -50,7 +53,7 @@ The task prompt goes to the script on standard input, through a quoted heredoc (
 
 The script still reads a prompt given as arguments, for a person who runs it by hand. An argument that holds whitespace is always prompt text. One argument with no whitespace that names a readable file is a special case: the script uses that file's content as the prompt. One argument with no whitespace that looks like a path and names no readable file is refused, because a mistyped path would otherwise become the whole prompt. A bare URL as the whole prompt is refused for the same reason, and standard input is the fix.
 
-The prompt is saved to `prompt-new-agent-launch.txt` in the folder before the work starts, so it is there even when the launch fails. An earlier prompt at that name is archived, never overwritten.
+The prompt is saved in the folder before the work starts, so it is there even when the launch fails. The first prompt keeps `prompt-new-agent-launch.txt`. Each later launch adds `prompt-new-agent-launch.update-<stamp>.txt`, and a repeat of the newest prompt adds nothing. No saved prompt is ever changed.
 
 ## Step 1: Run the Script
 
@@ -72,7 +75,7 @@ Every refusal happens before the script writes anything, in both modes. A reject
 
 ## Step 2: Report
 
-Give the user the three lines the script printed, as it printed them: the resolved folder, the prompt file, and the name.
+Give the user the lines the script printed, as it printed them: the resolved folder, the prompt file, and the name. Give the `Repeat:` line too, when the script prints it.
 
 The default mode adds one line saying that no agent started, and one `Type /rename <name> ...` line. Print both. Claude Code gives a script no way to rename a session, so only the user can type that command. This session now owns the folder, so do the task the user gave you. Then repeat the `/rename` line, unchanged, as the last line of your first reply that gives control back to the user: a finished result, a question, or a stop for approval. Repeat it only that once. The script printed the line before the work started, and the user reads the first pause, not the launch output.
 

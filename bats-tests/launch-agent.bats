@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 #
 # Tests for skills/launch-agent/launch-agent.sh — folder resolution, the
-# near-match slug guard, prompt resolution and rotation, preamble composition,
+# near-match slug guard, prompt resolution and saving, preamble composition,
 # and dispatch.
 #
 # `claude` is replaced by a stub first on PATH that records its arguments and
@@ -42,6 +42,54 @@ STUB
   chmod +x "$1/claude"
 }
 
+# clock_stub <stamp>... — put `date` and `sleep` stubs first on PATH, so a test
+# decides each stamp the script reads and no test waits a real second.
+#
+# `date +%Y%m%d-%H%M%S` prints the next stamp from $DATE_QUEUE and logs the
+# call to $DATE_LOG. With the queue empty it prints the last stamp again,
+# which is a clock that stays on one second. Every other `date` call goes to
+# the real tool, because set-work-folder.sh reads the clock in its own format
+# during adoption, and a stub that answered it would break the default mode.
+# `sleep` logs each call to $SLEEP_LOG and returns at once.
+clock_stub() {
+  DATE_QUEUE="$TEST_TEMP_DIR/date-queue.txt"
+  DATE_LAST="$TEST_TEMP_DIR/date-last.txt"
+  DATE_LOG="$TEST_TEMP_DIR/date-log.txt"
+  SLEEP_LOG="$TEST_TEMP_DIR/sleep-log.txt"
+  export DATE_QUEUE DATE_LAST DATE_LOG SLEEP_LOG
+  printf '%s\n' "$@" > "$DATE_QUEUE"
+  : > "$DATE_LAST"
+  : > "$DATE_LOG"
+  : > "$SLEEP_LOG"
+  {
+    printf '#!/usr/bin/env bash\nREAL_DATE=%q\n' "$(command -v date)"
+    cat <<'STUB'
+if [ "$#" -eq 1 ] && [ "$1" = "+%Y%m%d-%H%M%S" ]; then
+  echo call >> "$DATE_LOG"
+  if [ -s "$DATE_QUEUE" ]; then
+    head -n 1 "$DATE_QUEUE" > "$DATE_LAST"
+    tail -n +2 "$DATE_QUEUE" > "$DATE_QUEUE.next"
+    mv "$DATE_QUEUE.next" "$DATE_QUEUE"
+  fi
+  cat "$DATE_LAST"
+  exit 0
+fi
+exec "$REAL_DATE" "$@"
+STUB
+  } > "$BIN/date"
+  cat > "$BIN/sleep" <<'STUB'
+#!/usr/bin/env bash
+echo "$*" >> "$SLEEP_LOG"
+STUB
+  chmod +x "$BIN/date" "$BIN/sleep"
+}
+
+# _prompt_files <dir> — print the prompt file names in <dir>, one per line, in
+# byte order.
+_prompt_files() {
+  (cd "$1" && LC_ALL=C ls -1 | grep '^prompt-new-agent-launch' || true)
+}
+
 # _contains <haystack> <needle> — fail the test when <needle> is not a literal
 # substring of <haystack>.
 #
@@ -57,6 +105,17 @@ _contains() {
   esac
   printf 'expected to find:\n  %s\n\nin:\n  %s\n' "$2" "$1" >&2
   return 1
+}
+
+# _lacks <haystack> <needle> — fail the test when <needle> is a literal
+# substring of <haystack>. The negative of _contains, for the same reason.
+_lacks() {
+  case "$1" in
+    *"$2"*)
+      printf 'expected not to find:\n  %s\n\nin:\n  %s\n' "$2" "$1" >&2
+      return 1
+      ;;
+  esac
 }
 
 setup() {
@@ -543,56 +602,173 @@ PROMPT
 }
 
 # ============================================================================
-# Prompt file rotation
+# Later launches: the first prompt stays, each later prompt is a new file
 # ============================================================================
 
-@test "existing prompt is archived under a stamp and the plain name holds the latest" {
+@test "a later launch leaves the first prompt's bytes and modification time as they were" {
   mkdir -p "$REPO/my-topic"
-  printf 'the earlier prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
-  run_in "$REPO" my-topic --bg "the newer prompt"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  touch -t 202001021530.45 "$REPO/my-topic/prompt-new-agent-launch.txt" "$TEST_TEMP_DIR/ref"
+  clock_stub 20260930-120000
+  run_in "$REPO" my-topic --bg "a later prompt"
   [ "$status" -eq 0 ]
-  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "the newer prompt" ]
-  archived="$(find "$REPO/my-topic" -name 'prompt-new-agent-launch.*.txt')"
-  [ -n "$archived" ]
-  [ "$(cat "$archived")" = "the earlier prompt" ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "the first prompt" ]
+  [ ! "$REPO/my-topic/prompt-new-agent-launch.txt" -nt "$TEST_TEMP_DIR/ref" ]
+  [ ! "$TEST_TEMP_DIR/ref" -nt "$REPO/my-topic/prompt-new-agent-launch.txt" ]
 }
 
-@test "archive name is stamped from the archived file's own mtime" {
+@test "a later launch writes an update file named after the launch time" {
   mkdir -p "$REPO/my-topic"
-  printf 'the earlier prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
-  touch -t 202001021530.45 "$REPO/my-topic/prompt-new-agent-launch.txt"
-  run_in "$REPO" my-topic --bg "the newer prompt"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  clock_stub 20260930-120000
+  run_in "$REPO" my-topic --bg "a later prompt"
   [ "$status" -eq 0 ]
-  [ -f "$REPO/my-topic/prompt-new-agent-launch.20200102-153045.txt" ]
+  update="$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt"
+  printf 'a later prompt\n' | cmp -s - "$update"
+  _contains "$output" "Prompt: $update"
+  _lacks "$output" "Repeat:"
 }
 
-@test "an archive name already taken gets a suffix rather than the earlier prompt" {
+@test "a second later launch adds a second update file and changes neither earlier file" {
   mkdir -p "$REPO/my-topic"
-  printf 'the earlier prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
-  touch -t 202001021530.45 "$REPO/my-topic/prompt-new-agent-launch.txt"
-  printf 'an even earlier prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.20200102-153045.txt"
-  run_in "$REPO" my-topic --bg "the newer prompt"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  clock_stub 20260930-120000 20260930-130000
+  run_in "$REPO" my-topic --bg "the second prompt"
   [ "$status" -eq 0 ]
-  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.20200102-153045.txt")" = "an even earlier prompt" ]
-  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.20200102-153045-001.txt")" = "the earlier prompt" ]
-  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "the newer prompt" ]
+  run_in "$REPO" my-topic --bg "the third prompt"
+  [ "$status" -eq 0 ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "the first prompt" ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt")" = "the second prompt" ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.update-20260930-130000.txt")" = "the third prompt" ]
 }
 
-@test "a modification time neither stat dialect reads → L003, earlier prompt kept" {
+@test "a taken update name waits one second and takes the next stamp" {
   mkdir -p "$REPO/my-topic"
-  printf 'first\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
-  bare="$TEST_TEMP_DIR/nostat"
-  _stub_path_without "$bare" stat > /dev/null
-  # _stub_path_without hides one tool, and this branch needs both gone: the BSD
-  # arm calls stat alone, the GNU arm calls stat and then date.
-  rm -f "$bare/date"
-  run env PATH="$bare" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" \
-    MY_CLAUDE_SKILLS_CONFIG="$CFG" \
-    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" my-topic --bg "second"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  printf 'a launch in the same second\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt"
+  clock_stub 20260930-120000 20260930-120001
+  run_in "$REPO" my-topic --bg "a later prompt"
+  [ "$status" -eq 0 ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt")" = "a launch in the same second" ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120001.txt")" = "a later prompt" ]
+  [ "$(wc -l < "$SLEEP_LOG" | tr -d ' ')" -eq 1 ]
+}
+
+@test "a clock that stays on a taken second → L003 after three reads, nothing written" {
+  mkdir -p "$REPO/my-topic"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  printf 'a launch in the same second\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt"
+  before="$(_prompt_files "$REPO/my-topic")"
+  clock_stub 20260930-120000
+  run_in "$REPO" my-topic --bg "a later prompt"
   [ "$status" -eq 1 ]
   _contains "$output" "L003"
-  _contains "$output" "modification time"
-  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "first" ]
+  _contains "$output" "no free name"
+  [ "$(wc -l < "$DATE_LOG" | tr -d ' ')" -eq 3 ]
+  [ "$(wc -l < "$SLEEP_LOG" | tr -d ' ')" -eq 2 ]
+  [ "$(_prompt_files "$REPO/my-topic")" = "$before" ]
+  [ ! -e "$ARGS_FILE" ]
+}
+
+@test "a repeat of the first prompt writes nothing and says so" {
+  mkdir -p "$REPO/my-topic"
+  printf 'the same prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  run_in "$REPO" my-topic --bg "the same prompt"
+  [ "$status" -eq 0 ]
+  first="$REPO/my-topic/prompt-new-agent-launch.txt"
+  _contains "$output" "Repeat: the prompt matches $first, so no new file was written."
+  _contains "$output" "Prompt: $first"
+  [ "$(_prompt_files "$REPO/my-topic")" = "prompt-new-agent-launch.txt" ]
+}
+
+@test "a repeat of the newest update file writes nothing and names that file" {
+  mkdir -p "$REPO/my-topic"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  printf 'the second prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260930-100000.txt"
+  before="$(_prompt_files "$REPO/my-topic")"
+  run_in "$REPO" my-topic --bg "the second prompt"
+  [ "$status" -eq 0 ]
+  _contains "$output" "Prompt: $REPO/my-topic/prompt-new-agent-launch.update-20260930-100000.txt"
+  _contains "$output" "Repeat:"
+  [ "$(_prompt_files "$REPO/my-topic")" = "$before" ]
+}
+
+@test "a prompt that matches an older file but not the newest is a new update file" {
+  mkdir -p "$REPO/my-topic"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  printf 'the second prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260930-100000.txt"
+  clock_stub 20260930-120000
+  run_in "$REPO" my-topic --bg "the first prompt"
+  [ "$status" -eq 0 ]
+  _lacks "$output" "Repeat:"
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt")" = "the first prompt" ]
+}
+
+@test "an old archive keeps its name and bytes, and is never taken as the newest prompt" {
+  mkdir -p "$REPO/my-topic"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  printf 'an archived prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.20200102-153045.txt"
+  clock_stub 20260930-120000
+  run_in "$REPO" my-topic --bg "an archived prompt"
+  [ "$status" -eq 0 ]
+  _lacks "$output" "Repeat:"
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.20200102-153045.txt")" = "an archived prompt" ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt")" = "an archived prompt" ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "the first prompt" ]
+}
+
+@test "--bg on a later launch names the update file in the preamble" {
+  mkdir -p "$REPO/my-topic"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  clock_stub 20260930-120000
+  run_in "$REPO" my-topic --bg "a later prompt"
+  [ "$status" -eq 0 ]
+  _contains "$(cat "$ARGS_FILE")" "already saved at $REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt"
+}
+
+@test "--bg on a repeat names the matched file in the preamble" {
+  mkdir -p "$REPO/my-topic"
+  printf 'the same prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  run_in "$REPO" my-topic --bg "the same prompt"
+  [ "$status" -eq 0 ]
+  _contains "$(cat "$ARGS_FILE")" "already saved at $REPO/my-topic/prompt-new-agent-launch.txt,"
+}
+
+@test "the default mode on a later launch adopts the folder and reports the update file" {
+  mkdir -p "$REPO/my-topic"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  clock_stub 20260930-120000
+  run_here "$REPO" my-topic "a later prompt"
+  [ "$status" -eq 0 ]
+  _contains "$output" "Prompt: $REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt"
+  _contains "$output" "Here: no agent was started"
+  [ "$(wc -l < "$DATE_LOG" | tr -d ' ')" -eq 1 ]
+}
+
+@test "the first prompt lists first and the update files follow in stamp order (C locale)" {
+  dir="$TEST_TEMP_DIR/order"
+  mkdir -p "$dir"
+  touch "$dir/prompt-new-agent-launch.update-20260930-120000.txt" \
+    "$dir/prompt-new-agent-launch.txt" \
+    "$dir/prompt-new-agent-launch.update-20260929-090000.txt"
+  expected="prompt-new-agent-launch.txt
+prompt-new-agent-launch.update-20260929-090000.txt
+prompt-new-agent-launch.update-20260930-120000.txt"
+  [ "$(cd "$dir" && LC_ALL=C ls -1)" = "$expected" ]
+}
+
+@test "the first prompt lists first and the update files follow in stamp order (en_US.UTF-8)" {
+  locale_name="$(locale -a 2>/dev/null | grep -i -m 1 '^en_US\.utf-\{0,1\}8$' || true)"
+  [ -n "$locale_name" ] || skip "en_US.UTF-8 is not installed"
+  dir="$TEST_TEMP_DIR/order"
+  mkdir -p "$dir"
+  touch "$dir/prompt-new-agent-launch.update-20260930-120000.txt" \
+    "$dir/prompt-new-agent-launch.txt" \
+    "$dir/prompt-new-agent-launch.update-20260929-090000.txt"
+  expected="prompt-new-agent-launch.txt
+prompt-new-agent-launch.update-20260929-090000.txt
+prompt-new-agent-launch.update-20260930-120000.txt"
+  [ "$(cd "$dir" && LC_ALL="$locale_name" ls -1)" = "$expected" ]
 }
 
 # ============================================================================

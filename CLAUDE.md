@@ -58,6 +58,8 @@ allowed-tools: Read, Write, Glob, Grep, Bash(git status *), Bash(gh issue view *
 
 **`user-invocable: false`** — marks a skill as a foundation (sub) skill. Foundation skills are consulted automatically by other skills but are not directly invoked by the user. Examples: `issue-context`, `pre-write`, `code-ref`, `github-ref`.
 
+**`disable-model-invocation: true`** — the opposite restriction: only the user can start the skill, by typing `/skill-name`. Claude Code blocks an invocation by Claude and keeps the skill description out of the context, so a request in words cannot start it. Use it for a skill whose side effects a session must not start alone. Example: `launch-agent`, because a session started later launches into existing topic folders with no request from the user.
+
 **`allowed-tools:`** — restricts which Bash commands the skill may use. Use specific patterns (`Bash(git checkout *)`) rather than `Bash(*)` unless the skill genuinely needs unrestricted shell access (only `tackle-scratchpad-block` does, because it runs arbitrary user-authored steps).
 
 **Transitive coverage rule:** When a skill cross-references a foundation skill that calls a script (e.g., `/question` calls `target-path.sh` from `issue-context`), the cross-referencing skill must also declare that script in its own `allowed-tools`. The AI does not always route through `Skill()` when following a cross-reference — it may follow the foundation skill's instructions inline, and those Bash calls are checked against the top-level skill's `allowed-tools`. Missing entries cause permission prompts.

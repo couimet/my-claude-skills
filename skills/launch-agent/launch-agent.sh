@@ -62,7 +62,9 @@
 #   Then read <cwd>/CLAUDE.md and follow it. Your launch prompt is already
 #   saved at <folder>/prompt-new-agent-launch.txt, so do not write it again.
 #
-# The CLAUDE.md sentence appears only when that file exists. The name is
+# The saved path is prompt-new-agent-launch.txt on the first launch into a
+# folder, and a dated prompt-new-agent-launch.update-<stamp>.txt on each later
+# one. The CLAUDE.md sentence appears only when that file exists. The name is
 # passed to set-work-folder.sh explicitly even though the script can read one
 # from the job state file, because the explicit form does not depend on an
 # undocumented internal file.
@@ -72,9 +74,10 @@
 # it survives a launch that fails and a child that crashes on its first turn.
 #
 # Output (stdout): the resolved folder first, so a typo shows in the first
-# line, then the prompt file and the name. The default mode ends with one line
-# saying that no agent was started and one line with the /rename command;
-# --bg ends with the job id and the attach command.
+# line, then the prompt file and the name. A launch that repeats the newest
+# prompt adds one Repeat: line before the prompt file. The default mode ends
+# with one line saying that no agent was started and one line with the /rename
+# command; --bg ends with the job id and the attach command.
 #
 # Exit codes:
 #   0  — this session was pointed at the folder, or --bg dispatched the agent
@@ -134,28 +137,6 @@ _launch_agent_normalize() {
   local norm
   norm="$(_issue_context_slugify "$1")"
   printf '%s' "${norm//-/}"
-}
-
-# _launch_agent_mtime_stamp <file> — print <file>'s modification time as
-# YYYYMMDD-HHMMSS. Returns 1 when neither stat dialect answers.
-#
-# The archived name is stamped from the file being archived rather than from
-# now, so the stamp says when that prompt was written. BSD stat formats the
-# time itself; GNU stat gives epoch seconds and GNU date formats them. The
-# daily driver is macOS and CI is Linux, so both are tried.
-_launch_agent_mtime_stamp() {
-  local file="$1" out epoch
-  if out="$(stat -f '%Sm' -t '%Y%m%d-%H%M%S' "$file" 2>/dev/null)"; then
-    printf '%s' "$out"
-    return 0
-  fi
-  if epoch="$(stat -c '%Y' "$file" 2>/dev/null)"; then
-    if out="$(date -d "@$epoch" +%Y%m%d-%H%M%S 2>/dev/null)"; then
-      printf '%s' "$out"
-      return 0
-    fi
-  fi
-  return 1
 }
 
 # _launch_agent_shquote <value> — print <value> as one single-quoted shell word,
@@ -372,26 +353,53 @@ folder_abs="$({ cd "$target" && pwd -P; } 2>/dev/null)" \
 printf 'Folder: %s\n' "$folder_abs"
 
 # --- Save the prompt ---
-# Before dispatch, so the file exists even when the launch fails. An existing
-# prompt is archived under its own modification time rather than overwritten:
-# the unsuffixed name always holds the latest launch, and no earlier prompt is
-# lost. Two archives can land on one stamp when their predecessors shared an
-# mtime second, so a collision takes a suffix rather than the earlier file.
-prompt_file="$folder_abs/$PROMPT_BASENAME.txt"
-if [ -f "$prompt_file" ]; then
-  stamp="$(_launch_agent_mtime_stamp "$prompt_file")" \
-    || die "$ERR_PROMPT" "could not read the modification time of $prompt_file"
-  rotated="$folder_abs/$PROMPT_BASENAME.$stamp.txt"
-  collision=1
-  while [ -e "$rotated" ]; do
-    rotated="$(printf '%s/%s.%s-%03d.txt' "$folder_abs" "$PROMPT_BASENAME" "$stamp" "$collision")"
-    collision=$((collision + 1))
+# Before dispatch, so the file exists even when the launch fails. The stable
+# name holds the first launch, because the first prompt is what defines the
+# topic and what readers look for. Each later launch adds a file stamped with
+# the launch time, and no launch renames, rewrites, or deletes a file that
+# exists. The later name continues with "update" so that the "t" of ".txt"
+# sorts the first prompt ahead of it in every locale, and the digits after it
+# sort the later prompts by stamp. A launch that repeats the newest prompt
+# byte for byte adds nothing, so a retry leaves no trace.
+#
+# A taken stamp waits for the next second rather than taking a suffix, because
+# "<stamp>-001.txt" sorts before "<stamp>.txt" and breaks the launch order.
+# noclobber makes each write fail rather than replace a file that appeared
+# after the name check, so a race between two launches cannot break the rule.
+first_prompt="$folder_abs/$PROMPT_BASENAME.txt"
+prompt_file="$first_prompt"
+repeat_of=""
+if [ -f "$first_prompt" ]; then
+  newest="$first_prompt"
+  # With no update file the pattern stays literal, and -f skips it.
+  for candidate in "$folder_abs/$PROMPT_BASENAME".update-*.txt; do
+    [ -f "$candidate" ] && newest="$candidate"
   done
-  mv "$prompt_file" "$rotated" \
-    || die "$ERR_PROMPT" "could not archive $prompt_file, so the earlier prompt would have been overwritten"
+  if printf '%s\n' "$prompt" | cmp -s - "$newest"; then
+    prompt_file="$newest"
+    repeat_of="$newest"
+  else
+    attempt=1
+    while :; do
+      stamp="$(date +%Y%m%d-%H%M%S)" \
+        || die "$ERR_PROMPT" "could not read the clock to name the new prompt file"
+      prompt_file="$folder_abs/$PROMPT_BASENAME.update-$stamp.txt"
+      [ -e "$prompt_file" ] || break
+      [ "$attempt" -lt 3 ] \
+        || die "$ERR_PROMPT" "no free name for a new prompt file in $folder_abs after $attempt tries; launch again in a second"
+      attempt=$((attempt + 1))
+      sleep 1
+    done
+  fi
 fi
-printf '%s\n' "$prompt" > "$prompt_file" \
-  || die "$ERR_PROMPT" "could not write $prompt_file"
+if [ -n "$repeat_of" ]; then
+  printf 'Repeat: the prompt matches %s, so no new file was written.\n' "$repeat_of"
+else
+  (
+    set -o noclobber
+    printf '%s\n' "$prompt" > "$prompt_file"
+  ) || die "$ERR_PROMPT" "could not write $prompt_file"
+fi
 
 printf 'Prompt: %s\n' "$prompt_file"
 printf 'Name: %s\n' "$display_name"
