@@ -10,6 +10,24 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.09.28
+
+### Added
+
+- `/launch-agent` takes a short folder name from any repository. Set `launchAgentDefaultFolder` in `~/.my-claude-skills/settings.json` to the absolute directory that holds your topic folders, and `/launch-agent my-topic` lands there even from a session in a code repository. A relative value, a missing directory, or a settings file that cannot be read is refused before anything is written. ([issues/278](https://github.com/couimet/my-claude-skills/issues/278))
+
+### Changed
+
+- `/launch-agent` sets the topic up in the session you are in by default. Pass `--bg` to start a background agent instead. ([issues/278](https://github.com/couimet/my-claude-skills/issues/278))
+- `/launch-agent` no longer refuses a prompt that holds a URL, a path, or a slash command. The prompt now reaches the script unchanged, apostrophes included, so a launch no longer needs retries. ([issues/278](https://github.com/couimet/my-claude-skills/issues/278))
+- `/launch-agent` reminds you to type `/rename <folder name>` when it sets the topic up in this session, once at launch and once at the first pause. Claude Code gives a skill no way to rename a session itself. ([issues/278](https://github.com/couimet/my-claude-skills/issues/278))
+- `/launch-agent` keeps the first prompt of a topic in `prompt-new-agent-launch.txt`. Each later launch into the same folder adds a dated `prompt-new-agent-launch.update-<stamp>.txt` file, and a launch that repeats the newest prompt adds nothing. A saved prompt is never renamed or rewritten, so the first prompt stays where readers and tools look for it. ([issues/278](https://github.com/couimet/my-claude-skills/issues/278))
+- Only you can start `/launch-agent`, by typing it. Claude no longer starts it on its own, so a session cannot launch into a topic folder without your request. ([issues/278](https://github.com/couimet/my-claude-skills/issues/278))
+
+### Removed
+
+- The `--name` and `--here` options of `/launch-agent`. The name is always the folder name, and the in-session mode that `--here` selected is now the default. A call that still passes either option fails with a message that says what to use instead. ([issues/278](https://github.com/couimet/my-claude-skills/issues/278))
+
 ## 2026.09.25
 
 ### Changed

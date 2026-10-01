@@ -282,6 +282,120 @@ run_in_isolated_home() {
 }
 
 # ============================================================================
+# launchAgentDefaultFolder key handling
+# ============================================================================
+
+# Source the loader and print only the launch-agent key, bracketed so an empty
+# value is visible. The key has its own dump rather than a field in DUMP: its
+# one consumer is launch-agent.sh, and every other test compares DUMP exactly.
+DEFAULT_FOLDER_DUMP='
+  source "$1" 2>/dev/null
+  printf "[%s]" "$SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER"
+'
+
+@test "absent launchAgentDefaultFolder → empty" {
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  printf '%s' '{}' > "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$DEFAULT_FOLDER_DUMP" _ "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" = "[]" ]
+}
+
+@test "launchAgentDefaultFolder is read as written, with no expansion and no validation" {
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  # shellcheck disable=SC2016 # the literal $HOME is the point of the test
+  printf '%s' '{"launchAgentDefaultFolder":"~/topics/$HOME"}' > "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$DEFAULT_FOLDER_DUMP" _ "$SCRIPT"
+  [ "$status" -eq 0 ]
+  # shellcheck disable=SC2016
+  [ "$output" = '[~/topics/$HOME]' ]
+}
+
+@test "launchAgentDefaultFolder is empty when the settings file is malformed" {
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  printf '%s' '{not json' > "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$DEFAULT_FOLDER_DUMP" _ "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" = "[]" ]
+}
+
+# ============================================================================
+# SETTINGS_LOAD_STATUS
+# ============================================================================
+
+# Source the loader and print only the load status. The status has its own
+# dump for the same reason as the key above: every other test compares DUMP
+# exactly.
+STATUS_DUMP='
+  source "$1" 2>/dev/null
+  printf "%s" "$SETTINGS_LOAD_STATUS"
+'
+
+@test "load status is absent when no file is at the path" {
+  run env MY_CLAUDE_SKILLS_CONFIG="$TEST_TEMP_DIR/does-not-exist.json" \
+    bash -c "$STATUS_DUMP" _ "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" = "absent" ]
+}
+
+@test "load status is loaded for a valid object document" {
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  printf '%s' '{}' > "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$STATUS_DUMP" _ "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" = "loaded" ]
+}
+
+@test "load status is failed for malformed JSON" {
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  printf '%s' '{not json' > "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$STATUS_DUMP" _ "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" = "failed" ]
+}
+
+@test "load status is failed for a document that is not an object" {
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  printf '%s' '[]' > "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$STATUS_DUMP" _ "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" = "failed" ]
+}
+
+@test "load status is failed when jq is not on PATH" {
+  local cfg="$TEST_TEMP_DIR/settings.json" nojq_path
+  printf '%s' '{}' > "$cfg"
+  nojq_path="$(_stub_path_without "$TEST_TEMP_DIR/nojq-bin" jq)"
+  run env PATH="$nojq_path" MY_CLAUDE_SKILLS_CONFIG="$cfg" \
+    bash -c "$STATUS_DUMP" _ "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" = "failed" ]
+}
+
+@test "load status is failed for a file that cannot be read" {
+  _require_enforced_permission_bits
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  printf '%s' '{}' > "$cfg"
+  chmod 000 "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$STATUS_DUMP" _ "$SCRIPT"
+  chmod 644 "$cfg"
+  [ "$status" -eq 0 ]
+  [ "$output" = "failed" ]
+}
+
+@test "load status is failed, and silent, for an unreadable file at the HOME default path" {
+  _require_enforced_permission_bits
+  local home="$TEST_TEMP_DIR/home"
+  mkdir -p "$home/.my-claude-skills"
+  printf '%s' '{}' > "$home/.my-claude-skills/settings.json"
+  chmod 000 "$home/.my-claude-skills/settings.json"
+  run env -u MY_CLAUDE_SKILLS_CONFIG HOME="$home" bash -c "$STATUS_DUMP" _ "$SCRIPT"
+  chmod 644 "$home/.my-claude-skills/settings.json"
+  [ "$status" -eq 0 ]
+  [ "$output" = "failed" ]
+}
+
+# ============================================================================
 # The shared identifier normalizer
 # ============================================================================
 

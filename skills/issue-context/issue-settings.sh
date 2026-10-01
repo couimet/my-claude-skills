@@ -21,6 +21,10 @@
 #                                   URL, first match wins, capture one is id
 #   identifierCase   "upper"        case a tracker-key-shaped identifier is
 #                                   folded to; "upper", "lower", "preserve"
+#   launchAgentDefaultFolder  ""   absolute directory a /launch-agent slug
+#                                   resolves under; read as-is, never
+#                                   expanded, and validated by its one
+#                                   consumer, launch-agent.sh
 #   version          1              schema version
 #
 # Globals set on return:
@@ -30,13 +34,22 @@
 #   SETTINGS_BRANCH_PATTERNS   (array)
 #   SETTINGS_URL_PATTERNS      (array)
 #   SETTINGS_IDENTIFIER_CASE
+#   SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER
 #   SETTINGS_FILE              the resolved config path
+#   SETTINGS_LOAD_STATUS       "absent" when no file is at SETTINGS_FILE,
+#                              "loaded" when the file parsed as an object,
+#                              "failed" when a file is there but could not be
+#                              read: unreadable, jq missing, malformed JSON,
+#                              or not an object. The fallback to defaults is
+#                              the same for "absent" and "failed"; the status
+#                              lets a consumer tell them apart.
 #
 # Failure policy: every failure falls back to the built-in defaults and the
 # caller continues. A missing or unreadable file at the default path is normal
 # and silent. A missing or unreadable file named by MY_CLAUDE_SKILLS_CONFIG is
 # a user error and warns. Malformed JSON, a non-object document, or an invalid
-# regex entry warns and falls back, per key, to defaults.
+# regex entry warns and falls back, per key, to defaults. A failure never
+# refuses here; a consumer that must not fall back reads SETTINGS_LOAD_STATUS.
 
 _issue_settings_default_branch_patterns() {
   printf '%s\n' \
@@ -197,6 +210,7 @@ _issue_settings_apply_defaults() {
   SETTINGS_SEGMENT="issues"
   SETTINGS_BRANCH_TEMPLATE="issues/{id}"
   SETTINGS_IDENTIFIER_CASE="upper"
+  SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER=""
   SETTINGS_BRANCH_PATTERNS=()
   while IFS= read -r _issue_settings_entry; do
     SETTINGS_BRANCH_PATTERNS+=("$_issue_settings_entry")
@@ -210,11 +224,15 @@ _issue_settings_apply_defaults() {
 
 # --- Load ---
 _issue_settings_json=""
+# shellcheck disable=SC2034
+SETTINGS_LOAD_STATUS="failed"
 if [ -f "$_issue_settings_file" ] && [ -r "$_issue_settings_file" ]; then
   if command -v jq >/dev/null 2>&1; then
     if _issue_settings_json="$(jq -c . "$_issue_settings_file" 2>/dev/null)" \
         && [ -n "$_issue_settings_json" ] \
         && printf '%s' "$_issue_settings_json" | jq -e 'type == "object"' >/dev/null 2>&1; then
+      # shellcheck disable=SC2034
+      SETTINGS_LOAD_STATUS="loaded"
       # Valid object document: overlay defaults per key.
       # The SETTINGS_* globals are the file's contract; they are read by the
       # scripts that source this file, never here, so shellcheck sees them as
@@ -250,6 +268,12 @@ if [ -f "$_issue_settings_file" ] && [ -r "$_issue_settings_file" ]; then
           SETTINGS_IDENTIFIER_CASE="upper"
           ;;
       esac
+      # Read as a raw string and not validated here: this file never refuses,
+      # and a bad value must refuse the launch rather than fall back to a
+      # root that puts the topic folder in a code repository. launch-agent.sh
+      # owns that check.
+      # shellcheck disable=SC2034
+      SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER="$(_issue_settings_read_scalar "$_issue_settings_json" launchAgentDefaultFolder '')"
       SETTINGS_BRANCH_PATTERNS=()
       while IFS= read -r _issue_settings_entry; do
         SETTINGS_BRANCH_PATTERNS+=("$_issue_settings_entry")
@@ -270,6 +294,13 @@ if [ -f "$_issue_settings_file" ] && [ -r "$_issue_settings_file" ]; then
 else
   if [ -n "${MY_CLAUDE_SKILLS_CONFIG:-}" ]; then
     echo "issue-settings: warning: MY_CLAUDE_SKILLS_CONFIG file not readable: $SETTINGS_FILE; using defaults" >&2
+  fi
+  # Nothing at the path is the ordinary case of no settings. Something there
+  # that could not be read keeps "failed": the user wrote settings, and they
+  # did not apply.
+  if [ ! -e "$_issue_settings_file" ]; then
+    # shellcheck disable=SC2034
+    SETTINGS_LOAD_STATUS="absent"
   fi
   _issue_settings_apply_defaults
 fi

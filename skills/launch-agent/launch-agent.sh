@@ -1,39 +1,52 @@
 #!/usr/bin/env bash
 #
-# launch-agent.sh — Dispatch a background agent with its folder, prompt file,
-# and display name all set at launch.
+# launch-agent.sh — Start work on a topic with its folder, launch prompt, and
+# name all set in one call, in this session or in a background agent.
 #
-# Launching a background agent on a topic used to take four steps done by
-# hand: create the topic folder, save the launch prompt into it, tell the
-# child to point its working files at that folder, and name the job. Each one
-# is easy to forget, and the ones that are forgotten are found out later —
-# a job named after nothing, or a launch prompt nobody kept. This script does
-# all four in one call.
+# Starting work on a topic used to take four steps done by hand: create the
+# topic folder, save the launch prompt into it, point the working files at
+# that folder, and name the work. Each one is easy to forget, and the ones
+# that are forgotten are found out later — a job named after nothing, or a
+# launch prompt nobody kept. This script does all four in one call.
 #
 # Usage:
-#   launch-agent.sh <folder> [--name <display-name>] [--here] <task prompt>
+#   launch-agent.sh <folder> [--bg] <<'LAUNCH_AGENT_PROMPT_END'
+#   <task prompt>
+#   LAUNCH_AGENT_PROMPT_END
+#
+#   launch-agent.sh <folder> [--bg] <task prompt>
 #   launch-agent.sh --help
 #
 #   <folder>        An absolute path, used as given, or a slug naming one
-#                   directory under the launcher's repository root. A slug
-#                   that names an existing symlink to a directory resolves
-#                   to the link's target, which can sit outside that root.
-#   --name          The display name the job carries in `claude agents` and in
-#                   the terminal title. Defaults to the folder's basename.
-#   --here          Start no agent. Point the calling session's working files at
-#                   the folder instead.
-#   <task prompt>   The rest of the arguments. A single argument that names a
-#                   readable file contributes that file's content instead,
-#                   which is how a long prompt travels without shell quoting.
+#                   directory under the topic root. The topic root is the
+#                   launchAgentDefaultFolder setting when it is set, and the
+#                   launcher's repository root when it is not. A slug that
+#                   names an existing symlink to a directory resolves to the
+#                   link's target, which can sit outside that root.
+#   --bg            Start a background agent. Without it, no agent starts and
+#                   the calling session's working files point at the folder.
+#   <task prompt>   Standard input, when no argument follows the folder and
+#                   the flag and standard input is not a terminal. Otherwise
+#                   the rest of the arguments. A single argument with no
+#                   whitespace that names a readable file contributes that
+#                   file's content instead.
+#
+# Standard input is the main form because the shell changes nothing between a
+# quoted heredoc marker and its end line, so URLs, slash commands, and
+# apostrophes all arrive as typed, and no part of the prompt is an argument
+# that could look like a file path.
 #
 # Two modes, because two different intentions reach this script. The default
-# starts a background agent, and the calling session does not become that
-# agent: it stays where it is while the work runs somewhere else. --here starts
-# no agent at all. It runs every refusal, creates the folder, saves the prompt,
+# starts no agent. It runs every refusal, creates the folder, saves the prompt,
 # and then points the calling session's own working files at the folder, so the
-# session that ran the script is the session that does the work. Use --here when
-# you already sit in the session you want to work in, and the default when the
-# work should run without you.
+# session that ran the script is the session that does the work. --bg starts a
+# background agent, and the calling session does not become that agent: it
+# stays where it is while the work runs somewhere else.
+#
+# The name is always the folder's basename. In the background mode it reaches
+# `claude --bg --name`. In the default mode this script cannot set it: Claude
+# Code gives no documented way for a script or a hook to rename a session, so
+# the script prints the /rename command for the user to type.
 #
 # No claude flag passes through to the child. The child starts with the user's
 # default settings, and wanting a different model or permission mode is a
@@ -49,9 +62,11 @@
 #   Then read <cwd>/CLAUDE.md and follow it. Your launch prompt is already
 #   saved at <folder>/prompt-new-agent-launch.txt, so do not write it again.
 #
-# The CLAUDE.md sentence appears only when that file exists. The display name
-# is passed to set-work-folder.sh explicitly even though the script can read
-# one from the job state file, because the explicit form does not depend on an
+# The saved path is prompt-new-agent-launch.txt on the first launch into a
+# folder, and a dated prompt-new-agent-launch.update-<stamp>.txt on each later
+# one. The CLAUDE.md sentence appears only when that file exists. The name is
+# passed to set-work-folder.sh explicitly even though the script can read one
+# from the job state file, because the explicit form does not depend on an
 # undocumented internal file.
 #
 # Every check that can refuse runs before anything is written, so a refusal
@@ -59,12 +74,13 @@
 # it survives a launch that fails and a child that crashes on its first turn.
 #
 # Output (stdout): the resolved folder first, so a typo shows in the first
-# line, then the prompt file and the display name. The default mode ends with
-# the job id and the attach command; --here ends with one line saying that no
-# agent was started.
+# line, then the prompt file and the name. A launch that repeats the newest
+# prompt adds one Repeat: line before the prompt file. The default mode ends
+# with one line saying that no agent was started and one line with the /rename
+# command; --bg ends with the job id and the attach command.
 #
 # Exit codes:
-#   0  — the agent was dispatched, or --here pointed this session at the folder
+#   0  — this session was pointed at the folder, or --bg dispatched the agent
 #   1  — error (see stderr)
 
 set -euo pipefail
@@ -81,16 +97,19 @@ readonly PROMPT_BASENAME="prompt-new-agent-launch"
 
 usage() {
   cat <<'EOF'
-Usage: launch-agent.sh <folder> [--name <display-name>] [--here] <task prompt>
+Usage: launch-agent.sh <folder> [--bg] <<'LAUNCH_AGENT_PROMPT_END'
+       <task prompt>
+       LAUNCH_AGENT_PROMPT_END
+       launch-agent.sh <folder> [--bg] <task prompt>
        launch-agent.sh --help
 
   <folder>       Absolute path, or a slug naming one directory under the
-                 launcher's repository root
-  --name         Display name for the background job (default: folder basename)
-  --here         Start no agent; point the calling session's working files at
-                 the folder instead
-  <task prompt>  The task for the agent. A single argument naming a readable
-                 file contributes that file's content instead.
+                 launchAgentDefaultFolder setting, else the repository root
+  --bg           Start a background agent; without it, point the calling
+                 session's working files at the folder
+  <task prompt>  Standard input, or the rest of the arguments. A single
+                 argument with no whitespace naming a readable file
+                 contributes that file's content instead.
   --help         Show this help message
 EOF
 }
@@ -98,6 +117,8 @@ EOF
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091 # sourced sibling skill; lint-sh runs shellcheck without -x
 source "$_self_dir/../issue-context/slugify.sh"
+# shellcheck disable=SC1091 # sourced sibling skill; lint-sh runs shellcheck without -x
+source "$_self_dir/../issue-context/issue-settings.sh"
 
 die() {
   echo "launch-agent $1 error: $2" >&2
@@ -116,28 +137,6 @@ _launch_agent_normalize() {
   local norm
   norm="$(_issue_context_slugify "$1")"
   printf '%s' "${norm//-/}"
-}
-
-# _launch_agent_mtime_stamp <file> — print <file>'s modification time as
-# YYYYMMDD-HHMMSS. Returns 1 when neither stat dialect answers.
-#
-# The archived name is stamped from the file being archived rather than from
-# now, so the stamp says when that prompt was written. BSD stat formats the
-# time itself; GNU stat gives epoch seconds and GNU date formats them. The
-# daily driver is macOS and CI is Linux, so both are tried.
-_launch_agent_mtime_stamp() {
-  local file="$1" out epoch
-  if out="$(stat -f '%Sm' -t '%Y%m%d-%H%M%S' "$file" 2>/dev/null)"; then
-    printf '%s' "$out"
-    return 0
-  fi
-  if epoch="$(stat -c '%Y' "$file" 2>/dev/null)"; then
-    if out="$(date -d "@$epoch" +%Y%m%d-%H%M%S 2>/dev/null)"; then
-      printf '%s' "$out"
-      return 0
-    fi
-  fi
-  return 1
 }
 
 # _launch_agent_shquote <value> — print <value> as one single-quoted shell word,
@@ -174,21 +173,21 @@ esac
 folder="$1"
 shift
 
-display_name=""
-here_mode=0
-# A loop rather than one test each: the two flags are independent, and a caller
-# who writes them in the other order means the same thing.
+bg_mode=0
+# One flag remains. --name and --here are refused by name rather than read as
+# the start of the prompt, so a saved command from before their removal fails
+# with a message that says what to do instead.
 while :; do
   case "${1-}" in
+    --bg)
+      bg_mode=1
+      shift
+      ;;
     --name)
-      [ "$#" -ge 2 ] || die "$ERR_USAGE" "--name takes a display name"
-      display_name="$2"
-      [ -n "$display_name" ] || die "$ERR_USAGE" "--name takes a non-empty display name"
-      shift 2
+      die "$ERR_USAGE" "--name was removed; the name is always the folder's basename"
       ;;
     --here)
-      here_mode=1
-      shift
+      die "$ERR_USAGE" "--here was removed; this session adopting the folder is now the default, and --bg starts an agent instead"
       ;;
     *)
       break
@@ -196,14 +195,24 @@ while :; do
   esac
 done
 
-[ "$#" -ge 1 ] || die "$ERR_USAGE" "a task prompt is required"
+# --- Read the prompt from standard input ---
+# Only when no argument is left, so an explicit argument always wins and a
+# terminal is never read. Read here, among the argument checks, so an empty
+# stdin gets the same refusal as no prompt at all, before anything is written.
+prompt_from_stdin=0
+if [ "$#" -eq 0 ] && [ ! -t 0 ]; then
+  prompt="$(cat)"
+  [ -z "$prompt" ] || prompt_from_stdin=1
+fi
 
-# --here adopts the folder for the session that ran this script, and
+[ "$#" -ge 1 ] || [ "$prompt_from_stdin" -eq 1 ] || die "$ERR_USAGE" "a task prompt is required"
+
+# The default mode adopts the folder for the session that ran this script, and
 # set-work-folder.sh identifies that session by CLAUDE_CODE_SESSION_ID. Checked
-# here, among the argument errors, so a --here outside a Claude Code session is
+# here, among the argument errors, so a launch outside a Claude Code session is
 # refused before it creates a folder that nothing would then point at.
-if [ "$here_mode" -eq 1 ] && [ -z "${CLAUDE_CODE_SESSION_ID:-}" ]; then
-  die "$ERR_HERE" "--here needs CLAUDE_CODE_SESSION_ID, and it is not set, so there is no session to point at the folder; run without --here to start an agent instead"
+if [ "$bg_mode" -eq 0 ] && [ -z "${CLAUDE_CODE_SESSION_ID:-}" ]; then
+  die "$ERR_HERE" "this session cannot adopt the folder: CLAUDE_CODE_SESSION_ID is not set, so there is no session to point at it; pass --bg to start an agent instead"
 fi
 
 # Trailing slashes would make the basename this script derives and the path it
@@ -212,8 +221,8 @@ while [ "$folder" != "/" ] && [ "${folder%/}" != "$folder" ]; do
   folder="${folder%/}"
 done
 
-[ -n "$display_name" ] || display_name="${folder##*/}"
-[ -n "$display_name" ] || die "$ERR_USAGE" "'$folder' has no basename to name the job after; pass --name"
+display_name="${folder##*/}"
+[ -n "$display_name" ] || die "$ERR_USAGE" "'$folder' has no basename to name the work after"
 
 # --- Resolve the folder ---
 # An absolute path is an explicit choice: it skips the shape check and the
@@ -232,16 +241,42 @@ case "$folder" in
         die "$ERR_FOLDER" "'$folder' is not a single path component; pass an absolute path to reach a nested directory"
         ;;
       . | ..)
-        die "$ERR_FOLDER" "'$folder' is not a topic name; pass an absolute path to reach a directory outside the repository root"
+        die "$ERR_FOLDER" "'$folder' is not a topic name; pass an absolute path to reach a directory outside the topic root"
         ;;
     esac
 
-    work_root="$("$_self_dir/../issue-context/claude-work-root.sh" 2>/dev/null)" \
-      || die "$ERR_FOLDER" "not inside a git repository, so a slug has no root to resolve against; pass an absolute path instead"
-    # claude-work-root.sh reports <main checkout root>/.claude-work, and it is
-    # used here for the half of its job this needs: finding the main checkout
-    # through a linked worktree. Topic folders sit at that root.
-    root="$(dirname "$work_root")"
+    # The setting wins, so a launch from a session in a code repository still
+    # lands in the topic repository. A bad value refuses rather than falling
+    # back: the fall-back is the git root, which is the code repository this
+    # setting exists to avoid. The value expands nothing, so it is checked
+    # exactly as written. A settings file that could not be read refuses for
+    # the same reason: the loader then reports the setting as empty, and the
+    # setting may well be in the file.
+    if [ "$SETTINGS_LOAD_STATUS" = "failed" ]; then
+      die "$ERR_FOLDER" "the settings file $SETTINGS_FILE could not be read, so launchAgentDefaultFolder is unknown; fix the file, or pass an absolute path as the folder"
+    fi
+    default_folder="$SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER"
+    if [ -n "$default_folder" ]; then
+      case "$default_folder" in
+        /*) ;; # kcov-exclude-line
+        *)
+          die "$ERR_FOLDER" "launchAgentDefaultFolder in $SETTINGS_FILE is '$default_folder', which is not an absolute path; set it to an absolute path, or pass an absolute path as the folder"
+          ;;
+      esac
+      [ -d "$default_folder" ] \
+        || die "$ERR_FOLDER" "launchAgentDefaultFolder in $SETTINGS_FILE is '$default_folder', which is not an existing directory; create it, fix the setting, or pass an absolute path as the folder"
+      while [ "$default_folder" != "/" ] && [ "${default_folder%/}" != "$default_folder" ]; do
+        default_folder="${default_folder%/}"
+      done
+      root="$default_folder"
+    else
+      work_root="$("$_self_dir/../issue-context/claude-work-root.sh" 2>/dev/null)" \
+        || die "$ERR_FOLDER" "not inside a git repository, so a slug has no root to resolve against; set launchAgentDefaultFolder or pass an absolute path instead"
+      # claude-work-root.sh reports <main checkout root>/.claude-work, and it
+      # is used here for the half of its job this needs: finding the main
+      # checkout through a linked worktree. Topic folders sit at that root.
+      root="$(dirname "$work_root")"
+    fi
     target="$root/$folder"
 
     # Catch agent-launch-skill against agent_launch_skill, which mkdir -p
@@ -263,22 +298,36 @@ case "$folder" in
 esac
 
 # --- Resolve the prompt ---
-# One argument naming a readable file carries a long prompt without shell
-# quoting. One argument that looks like a path and names nothing is a typo:
-# without this refusal the launch succeeds and the child's whole prompt is the
-# mistyped path, which is only found out minutes later in its transcript.
-if [ "$#" -eq 1 ]; then
+# A prompt read from standard input is used as read, except that the read
+# drops trailing newlines and the save adds exactly one back. Otherwise one
+# argument with no whitespace that names a readable file carries a long prompt
+# without shell quoting, and one such argument that looks like a path and
+# names nothing is a typo: without this refusal the launch succeeds and the
+# child's whole prompt is the mistyped path, which is only found out minutes
+# later in its transcript. An argument that holds whitespace is prose, never a
+# path, so a sentence that quotes a URL or a slash command passes through. A
+# bare URL as the whole prompt still refuses; standard input is the fix.
+if [ "$prompt_from_stdin" -eq 1 ]; then
+  :
+elif [ "$#" -eq 1 ]; then
   token="$1"
-  if [ -f "$token" ] && [ -r "$token" ]; then
-    prompt="$(cat "$token")"
-  else
-    case "$token" in
-      */* | *.txt | *.md | *.json)
-        die "$ERR_PROMPT" "'$token' looks like a file path but names no readable file"
-        ;;
-    esac
-    prompt="$token"
-  fi
+  case "$token" in
+    *[[:space:]]*)
+      prompt="$token"
+      ;;
+    *)
+      if [ -f "$token" ] && [ -r "$token" ]; then
+        prompt="$(cat "$token")"
+      else
+        case "$token" in
+          */* | *.txt | *.md | *.json)
+            die "$ERR_PROMPT" "'$token' looks like a file path but names no readable file; pass the prompt on standard input if it is prompt text"
+            ;;
+        esac
+        prompt="$token"
+      fi
+      ;;
+  esac
 else
   prompt="$*"
 fi
@@ -304,26 +353,53 @@ folder_abs="$({ cd "$target" && pwd -P; } 2>/dev/null)" \
 printf 'Folder: %s\n' "$folder_abs"
 
 # --- Save the prompt ---
-# Before dispatch, so the file exists even when the launch fails. An existing
-# prompt is archived under its own modification time rather than overwritten:
-# the unsuffixed name always holds the latest launch, and no earlier prompt is
-# lost. Two archives can land on one stamp when their predecessors shared an
-# mtime second, so a collision takes a suffix rather than the earlier file.
-prompt_file="$folder_abs/$PROMPT_BASENAME.txt"
-if [ -f "$prompt_file" ]; then
-  stamp="$(_launch_agent_mtime_stamp "$prompt_file")" \
-    || die "$ERR_PROMPT" "could not read the modification time of $prompt_file"
-  rotated="$folder_abs/$PROMPT_BASENAME.$stamp.txt"
-  collision=1
-  while [ -e "$rotated" ]; do
-    rotated="$(printf '%s/%s.%s-%03d.txt' "$folder_abs" "$PROMPT_BASENAME" "$stamp" "$collision")"
-    collision=$((collision + 1))
+# Before dispatch, so the file exists even when the launch fails. The stable
+# name holds the first launch, because the first prompt is what defines the
+# topic and what readers look for. Each later launch adds a file stamped with
+# the launch time, and no launch renames, rewrites, or deletes a file that
+# exists. The later name continues with "update" so that the "t" of ".txt"
+# sorts the first prompt ahead of it in every locale, and the digits after it
+# sort the later prompts by stamp. A launch that repeats the newest prompt
+# byte for byte adds nothing, so a retry leaves no trace.
+#
+# A taken stamp waits for the next second rather than taking a suffix, because
+# "<stamp>-001.txt" sorts before "<stamp>.txt" and breaks the launch order.
+# noclobber makes each write fail rather than replace a file that appeared
+# after the name check, so a race between two launches cannot break the rule.
+first_prompt="$folder_abs/$PROMPT_BASENAME.txt"
+prompt_file="$first_prompt"
+repeat_of=""
+if [ -f "$first_prompt" ]; then
+  newest="$first_prompt"
+  # With no update file the pattern stays literal, and -f skips it.
+  for candidate in "$folder_abs/$PROMPT_BASENAME".update-*.txt; do
+    [ -f "$candidate" ] && newest="$candidate"
   done
-  mv "$prompt_file" "$rotated" \
-    || die "$ERR_PROMPT" "could not archive $prompt_file, so the earlier prompt would have been overwritten"
+  if printf '%s\n' "$prompt" | cmp -s - "$newest"; then
+    prompt_file="$newest"
+    repeat_of="$newest"
+  else
+    attempt=1
+    while :; do
+      stamp="$(date +%Y%m%d-%H%M%S)" \
+        || die "$ERR_PROMPT" "could not read the clock to name the new prompt file"
+      prompt_file="$folder_abs/$PROMPT_BASENAME.update-$stamp.txt"
+      [ -e "$prompt_file" ] || break
+      [ "$attempt" -lt 3 ] \
+        || die "$ERR_PROMPT" "no free name for a new prompt file in $folder_abs after $attempt tries; launch again in a second"
+      attempt=$((attempt + 1))
+      sleep 1
+    done
+  fi
 fi
-printf '%s\n' "$prompt" > "$prompt_file" \
-  || die "$ERR_PROMPT" "could not write $prompt_file"
+if [ -n "$repeat_of" ]; then
+  printf 'Repeat: the prompt matches %s, so no new file was written.\n' "$repeat_of"
+else
+  (
+    set -o noclobber
+    printf '%s\n' "$prompt" > "$prompt_file"
+  ) || die "$ERR_PROMPT" "could not write $prompt_file"
+fi
 
 printf 'Prompt: %s\n' "$prompt_file"
 printf 'Name: %s\n' "$display_name"
@@ -332,8 +408,8 @@ printf 'Name: %s\n' "$display_name"
 # No child, so no working directory to choose and no preamble to compose. The
 # writer prints the session file on stdout and says what it did on stderr.
 # Its stdout is dropped: this script's stdout is a list of labelled facts, and
-# the fact that matters is the last line printed here.
-if [ "$here_mode" -eq 1 ]; then
+# the facts that matter are the last lines printed here.
+if [ "$bg_mode" -eq 0 ]; then
   set_work_folder="$(cd "$_self_dir/../issue-context" && pwd -P)/set-work-folder.sh"
   if ! "$set_work_folder" "$folder_abs" "$display_name" > /dev/null; then
     {
@@ -345,6 +421,9 @@ if [ "$here_mode" -eq 1 ]; then
     exit 1
   fi
   printf 'Here: no agent was started; this session now writes its working files to %s\n' "$folder_abs"
+  # The session keeps the automatic name Claude Code gave it, and only the
+  # user can change that, so the last line is the command to type.
+  printf 'Type /rename %s to give this session the folder name.\n' "$display_name"
   exit 0
 fi
 
