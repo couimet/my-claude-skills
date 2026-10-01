@@ -1,6 +1,6 @@
 ---
 name: release-article
-version: 2026.09.25@8860b27
+version: 2026.09.28@47953be
 description: Gather release context (changelog, README, prior articles, promotion registry) and draft a dev.to article with promotion copy and cross-repo registration handoff
 argument-hint: <release-version-or-issue-url>
 skill-kind: composite
