@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.10.05
+
+### Fixed
+
+- `/launch-agent --bg` now prints the bare job id in its `Job:` and `Attach:` lines, so the attach command works as printed. When the launch output has a shape it cannot read, it stops with L004, says the agent already runs, and shows the output, in place of a wrong attach command. It never tells you to launch again in that case, because a relaunch starts a second agent. ([issues/282](https://github.com/couimet/my-claude-skills/issues/282))
+
 ## 2026.10.01
 
 ### Fixed

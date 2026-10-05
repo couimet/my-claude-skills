@@ -81,7 +81,7 @@ The default mode adds one line saying that no agent started, and one `Type /rena
 
 `--bg` adds the job id and the attach command. Print both, and say plainly that this session did not become the agent, so the user knows where the work went. `claude agents` lists the agent under the name, so no `/rename` is necessary.
 
-A failed call leaves the folder and the prompt file in place. It prints the exact command on stderr, ready to paste and run by hand. Give the user that command and do not rewrite it. With `--bg` the command carries the composed agent prompt, which is longer than what the user typed.
+A failed call leaves the folder and the prompt file in place. It prints the exact command on stderr, ready to paste and run by hand. Give the user that command unchanged. With `--bg` it carries the composed agent prompt. An L004 that says the agent started means the agent runs: do not launch again or give a `claude --bg` command. Point the user to `claude agents`.
 
 ## Formatting
 
