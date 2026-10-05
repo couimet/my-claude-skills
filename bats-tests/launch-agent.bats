@@ -25,9 +25,13 @@ RESOLVER="$PROJECT_ROOT/skills/issue-context/get-issue-folder-path.sh"
 SESSION_ID="9c1f3e70-2a44-4c8e-9d61-5b0f7a2c8d13"
 
 # claude_stub <dir> — write a stub `claude` that records "$*" to $ARGS_FILE and
-# its working directory to $CWD_FILE, then prints a job id. Set STUB_FAIL=1 in
-# the environment to make it exit non-zero instead, and STUB_SILENT=1 to make
-# it succeed while printing nothing.
+# its working directory to $CWD_FILE, then prints what `claude --bg` prints: a
+# status line carrying the job id between two `·` separators, then four hint
+# lines. The layout is a copy of one real run of Claude Code 2.1.289, with the
+# id replaced, so the parse is tested against the shape it meets, not against a
+# bare id. Set STUB_FAIL=1 in the environment to make it exit non-zero instead,
+# STUB_SILENT=1 to make it succeed while printing nothing, and STUB_OUTPUT to
+# make it succeed while printing that text in place of the real layout.
 claude_stub() {
   cat > "$1/claude" <<'STUB'
 #!/usr/bin/env bash
@@ -37,7 +41,17 @@ if [ "${STUB_FAIL:-0}" = "1" ]; then
   echo "launch refused" >&2
   exit 7
 fi
-[ "${STUB_SILENT:-0}" = "1" ] || echo "bg_deadbeef"
+[ "${STUB_SILENT:-0}" = "1" ] && exit 0
+if [ -n "${STUB_OUTPUT:-}" ]; then
+  printf '%b\n' "$STUB_OUTPUT"
+  exit 0
+fi
+# --bg --name <name> <prompt>, so the name is the third argument.
+printf 'backgrounded · a1b2c3d4 · %s\n' "$3"
+printf '  claude agents             list sessions\n'
+printf '  claude attach a1b2c3d4    open in this terminal\n'
+printf '  claude logs a1b2c3d4      show recent output\n'
+printf '  claude stop a1b2c3d4      stop this session\n'
 STUB
   chmod +x "$1/claude"
 }
@@ -826,11 +840,23 @@ prompt-new-agent-launch.update-20260930-120000.txt"
 # Dispatch
 # ============================================================================
 
-@test "success reports the job id and the attach command" {
+# Whole-line assertions, because the defect these guard against joined the
+# status line and the hint lines into one token that still contained the id.
+@test "success reports the bare job id and the attach command" {
   run_in "$REPO" my-topic --bg "do the thing"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Job: bg_deadbeef"* ]]
-  [[ "$output" == *"Attach: claude attach bg_deadbeef"* ]]
+  [ "${lines[$((${#lines[@]} - 2))]}" = "Job: a1b2c3d4" ]
+  [ "${lines[$((${#lines[@]} - 1))]}" = "Attach: claude attach a1b2c3d4" ]
+}
+
+@test "ANSI color codes around the status line do not reach the job id" {
+  run env PATH="$STUB_PATH" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" \
+    STUB_OUTPUT='\033[1mbackgrounded\033[0m · \033[36ma1b2c3d4\033[39m · \033]8;;https://example.invalid\007my-topic\033]8;;\007\n  claude agents             list sessions' \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" my-topic --bg "do the thing"
+  [ "$status" -eq 0 ]
+  [ "${lines[$((${#lines[@]} - 2))]}" = "Job: a1b2c3d4" ]
+  [ "${lines[$((${#lines[@]} - 1))]}" = "Attach: claude attach a1b2c3d4" ]
 }
 
 @test "the resolved folder is the first line of output" {
@@ -870,13 +896,39 @@ prompt-new-agent-launch.update-20260930-120000.txt"
   _contains "$(cat "$ARGS_FILE")" "set-work-folder.sh '$TEST_TEMP_DIR/Charles'\\'' agent' 'Charles'\\'' agent'"
 }
 
-@test "a launch that prints no id → L004 rather than an attach command for nothing" {
+# The agent already runs when these fail, so the message must name it, point at
+# `claude agents`, and never offer the relaunch command the dispatch failure
+# above prints: that command would start a second agent.
+@test "a launch that prints nothing → L004 that says the agent runs, with no relaunch" {
   run env PATH="$STUB_PATH" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" STUB_SILENT=1 \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" \
     bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" my-topic --bg "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L004"* ]]
-  [[ "$output" == *"reported no job id"* ]]
+  _contains "$output" "L004"
+  _contains "$output" "the agent started as my-topic"
+  _contains "$output" "claude agents"
+  _contains "$output" "do not launch it again"
+  _contains "$output" "claude --bg printed nothing"
+  _lacks "$output" "claude --bg --name"
+  _lacks "$output" "Job:"
+  _lacks "$output" "Attach:"
+}
+
+@test "a status line with no separator → L004 with the cleaned output, and no relaunch" {
+  run env PATH="$STUB_PATH" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" \
+    STUB_OUTPUT='\033[1mbackgrounded a1b2c3d4\033[0m\n  claude agents             list sessions' \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" my-topic --bg "do the thing"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L004"
+  _contains "$output" "the agent started as my-topic"
+  _contains "$output" "claude agents"
+  _contains "$output" "do not launch it again"
+  _contains "$output" "  backgrounded a1b2c3d4"
+  _lacks "$output" $'\033'
+  _lacks "$output" "claude --bg --name"
+  _lacks "$output" "Job:"
+  _lacks "$output" "Attach:"
 }
 
 @test "claude missing from PATH is a dispatch failure, and the prompt survives it" {

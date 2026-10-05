@@ -77,7 +77,10 @@
 # line, then the prompt file and the name. A launch that repeats the newest
 # prompt adds one Repeat: line before the prompt file. The default mode ends
 # with one line saying that no agent was started and one line with the /rename
-# command; --bg ends with the job id and the attach command.
+# command; --bg ends with the job id and the attach command. The job id is the
+# field between the first two `·` separators of the first line claude --bg
+# prints. When that field is not one plain token, the script stops with L004,
+# says the agent already runs, and shows what claude --bg printed.
 #
 # Exit codes:
 #   0  — this session was pointed at the folder, or --bg dispatched the agent
@@ -457,8 +460,44 @@ if ! job_id="$({ cd "$child_cwd" && claude --bg --name "$display_name" "$child_p
   exit 1
 fi
 
-job_id="$(printf '%s' "$job_id" | tr -d '[:space:]')"
-[ -n "$job_id" ] || die "$ERR_DISPATCH" "the launch reported no job id, so there is nothing to attach to"
+# --- Read the job id ---
+# claude --bg prints a status line, `backgrounded · <id> · <name>`, then hint
+# lines, and it can wrap parts of them in ANSI codes even when its output goes
+# into a pipe. The id is the field between the first two separators of the
+# first line once the codes are gone. Both kinds of sequence go: CSI for color,
+# and OSC, which a terminal hyperlink uses. An id that is not one plain token
+# means the layout changed, and a wrong Attach: line is worse than none.
+esc=$'\033'
+bel=$'\007'
+launch_output="$(printf '%s\n' "$job_id" | LC_ALL=C sed -E \
+  -e "s#${esc}[]][^${bel}${esc}]*(${bel}|${esc}\\\\)##g" \
+  -e "s#${esc}[[][0-?]*[ -/]*[@-~]##g")"
+first_line="${launch_output%%$'\n'*}"
+job_id=""
+case "$first_line" in
+  *·*·*)
+    job_id="${first_line#*·}"
+    job_id="${job_id%%·*}"
+    job_id="${job_id#"${job_id%%[![:space:]]*}"}"
+    job_id="${job_id%"${job_id##*[![:space:]]}"}"
+    ;;
+esac
+
+# The agent already runs here, so this failure must not offer the relaunch
+# command the dispatch failure above prints: running it starts a second agent.
+if ! [[ "$job_id" =~ ^[A-Za-z0-9_-]+$ ]]; then
+  {
+    echo "launch-agent $ERR_DISPATCH error: the agent started as $display_name, but its job id could not be read. Run claude agents to find it, and do not launch it again: that starts a second agent."
+    echo
+    if [ -n "$launch_output" ]; then
+      echo "claude --bg printed:"
+      printf '%s\n' "$launch_output" | sed 's/^/  /'
+    else
+      echo "claude --bg printed nothing."
+    fi
+  } >&2 # kcov-exclude-line
+  exit 1
+fi
 
 printf 'Job: %s\n' "$job_id"
 printf 'Attach: claude attach %s\n' "$job_id"
