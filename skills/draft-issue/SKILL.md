@@ -32,6 +32,8 @@ The front-matter field reference, shown commented, is what a scaffolded draft ca
 #   - <url-or-key>
 # is-blocking:               Dependencies this issue unblocks, one per line
 #   - <url-or-key>
+# jira-fields:               Jira fields set by display name, one per line
+#   Components: <name>
 ---
 ```
 
@@ -51,7 +53,7 @@ is-blocking:
 Authoring steps below produce this shape.
 ```
 
-Set a field by writing it as an active line and dropping its comment marker. Values use the target tracker's reference form: full GitHub issue URLs for `/create-github-issue`, Jira keys for `/create-jira-issue`. A list field's entries sit on indented `-` lines under the key, one entry per line. Creation skills read the keys they understand and ignore the rest, then strip the whole front-matter block before filing.
+Set a field by writing it as an active line and dropping its comment marker. Values use the target tracker's reference form: full GitHub issue URLs for `/create-github-issue`, Jira keys for `/create-jira-issue`. A list field's entries sit on indented `-` lines under the key, one entry per line. The `jira-fields` map holds indented `Name: value` lines, one Jira field per line, by display name. Creation skills read the keys they understand and ignore the rest, then strip the whole front-matter block before filing.
 
 ## Step 1: Determine the Input Mode
 
@@ -67,7 +69,7 @@ Check whether `$ARGUMENTS` points to an existing file (any path, any extension o
 - Otherwise, if the file's first non-empty line is a `#` heading, that heading is the title and everything after it is the body.
 - Otherwise the first non-empty line is the title and everything after it is the body.
 
-For a file without front matter, insert the derived title and body under a fresh front-matter block in the standard shape. This keeps drag-dropped scratchpads, markdown files, and older unstandardized drafts usable as issues. Preserve the imported body verbatim; do not reflow or rewrite the author's prose. Either way, continue to Step 3 and grill the imported content like any other draft.
+For a file without front matter, insert the derived title and body under a fresh front-matter block in the standard shape. Preserve the imported body verbatim; do not reflow or rewrite the author's prose. Either way, continue to Step 3 and grill the imported content like any other draft.
 
 ## Step 3: Grill the Draft for Thoroughness
 
@@ -76,15 +78,25 @@ Run `/g2q` on the composed draft, passing the title and body as its topic. The g
 - When it reports no questions raised, the content is thorough enough. Proceed to Step 4.
 - When it reports questions raised, share the returned questions file with the author and collect their answers. Fold each answer into the body so the resolution lives in the draft text itself, then run `/g2q` again over the updated content. Repeat until it reports no questions raised.
 
-The draft note is not written until this grill is clean. The grill judges the issue body. Step 4 collects the machine fields the grill does not see.
+The draft note is not written until this grill is clean. The grill judges the issue body.
 
-## Step 4: Collect Machine Fields
+## Step 4: Infer Machine Fields
 
-Ask whether the author wants to set any machine fields now, using `AskUserQuestion` with two options: set fields now, or fill them in the file later. When the author chooses to set fields now, prompt once for whichever of these they want: target repo or project, issue type, assignee, parent, like ticket, blocked-by dependencies, is-blocking dependencies. Add each answer as an active front-matter field. When the author fills fields later, leave the commented template in place. Either way the body and title from Step 2 stay unchanged.
+Most drafts keep every default, so do not ask by default. Scan the grilled title and body for a non-default value:
+
+- `target-repo`: a statement that the issue lands in another `owner/repo`
+- `blocked-by`: an issue or ticket that the work waits on
+- `is-blocking`: an issue or ticket that the work unblocks
+
+Write an inferred `#123` as its full issue URL, from the inferred `target-repo` or the git remote. When neither gives a repository, ask for the URL.
+
+When the scan finds a value, ask one `AskUserQuestion` that proposes the inferred fields: accept, edit, or drop. Write each accepted or edited field as an active field.
+
+When the scan finds nothing, ask nothing and keep the commented template. An import with active front matter keeps its fields, and the scan proposes only the fields that the import leaves unset.
 
 ## Step 5: Write the Draft
 
-The note content is the composed draft: the front matter (active fields when the author set them, otherwise the commented field-reference block), a blank line, the `# <title>` heading, a blank line, then the grilled body (empty for a bare-title scaffold the author left empty, the folded and imported content otherwise). Never copy the example body text from this skill into a draft. Follow `/note` with description set to the title to persist the draft. `/note` writes the file, resolves the notes directory from the current branch and the shared `.claude-work/` root, and prints the absolute path. Do not print the file contents.
+The note content is the composed draft: the front matter (active fields when Step 4 or the import set them, otherwise the commented field-reference block), a blank line, the `# <title>` heading, a blank line, then the grilled body (empty for a bare-title scaffold the author left empty, the folded and imported content otherwise). Never copy the example body text from this skill into a draft. Follow `/note` with description set to the title to persist the draft. `/note` writes the file, resolves the notes directory from the current branch and the shared `.claude-work/` root, and prints the absolute path. Do not print the file contents.
 
 ## Step 6: Report
 
@@ -92,6 +104,12 @@ Print only the absolute draft path. Then state the next step in one line:
 
 ```text
 Edit the draft to finish the body and fields, then file it by running /create-github-issue <path> or /create-jira-issue <path>.
+```
+
+When the draft has no active field, add:
+
+```text
+All fields are at their defaults; edit the file to add a parent or a dependency.
 ```
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.

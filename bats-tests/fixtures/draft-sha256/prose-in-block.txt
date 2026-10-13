@@ -1,0 +1,7 @@
+---
+This sentence is prose, so the block is not front matter.
+---
+
+# Title after a rule
+
+Body.
