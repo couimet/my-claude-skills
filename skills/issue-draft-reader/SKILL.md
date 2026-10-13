@@ -1,6 +1,6 @@
 ---
 name: issue-draft-reader
-version: 2026.10.01@01f61e4
+version: 2026.10.13@7443674
 user-invocable: false
 description: 'Reads a standardized issue draft into front-matter fields, a title, and a body for /create-github-issue and /create-jira-issue, strips ephemeral local-path references, and asks whether to inline or remove each local-only file reference. Auto-consulted by both creation skills.'
 allowed-tools: Read, Write, Glob, AskUserQuestion, Bash(git ls-files *)
