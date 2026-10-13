@@ -10,6 +10,22 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.10.13
+
+### Added
+
+- `/create-jira-issue <path> --expect-sha256 <hex>` refuses to file a draft that changed after its review. Pass the `SHA256:` value that a review tool, such as the `ticket-writing` plugin's draft mode, printed for the approved text. A mismatch stops before anything is filed. When the hashes match, the skill files the approved text as it is, and stops when a local path in the draft would force a change. ([issues/274](https://github.com/couimet/my-claude-skills/issues/274))
+
+### Changed
+
+- `/create-jira-issue` now reads each new ticket back and reports any difference between the stored title and description and the draft. ([issues/274](https://github.com/couimet/my-claude-skills/issues/274))
+
+- `/create-jira-issue` now finds the required fields of the project and issue type before the payload review, and asks you to pick a value for each one the draft does not set. A missing required field no longer costs a failed create. ([issues/274](https://github.com/couimet/my-claude-skills/issues/274))
+- A draft can set Jira fields by display name in a new `jira-fields` front-matter map, for example `Components: Billing`. `/create-jira-issue` resolves each name and value, and stops with the allowed names or values when one does not match. ([issues/274](https://github.com/couimet/my-claude-skills/issues/274))
+- `/create-jira-issue` now files `- [ ]` and `- [x]` lines as Jira checkboxes, not as escaped text, and checks the stored description after the create. ([issues/274](https://github.com/couimet/my-claude-skills/issues/274))
+- `/create-github-issue` and `/create-jira-issue` now ask whether to inline or remove each reference to a local-only file, such as an absolute path or a file the repository does not track, before filing. Each change prints under a `Changed local file references:` heading. ([issues/274](https://github.com/couimet/my-claude-skills/issues/274))
+- `/draft-issue` no longer asks about machine fields on every draft. It infers a target repository or a dependency from the draft text and asks only when it finds one. When every field keeps its default, the report says so. ([issues/284](https://github.com/couimet/my-claude-skills/issues/284))
+
 ## 2026.10.05
 
 ### Fixed

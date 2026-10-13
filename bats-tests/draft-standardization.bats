@@ -17,7 +17,7 @@ GH="$SKILLS/create-github-issue/SKILL.md"
 JIRA="$SKILLS/create-jira-issue/SKILL.md"
 
 # The canonical front-matter field set shared by writer and reader.
-FIELDS="target-repo target-project issue-type assignee like parent blocked-by is-blocking"
+FIELDS="target-repo target-project issue-type assignee like parent blocked-by is-blocking jira-fields"
 
 # assert_reader_table_field <field> — the reader documents the field as a
 # row in its Front-Matter Fields table.
@@ -96,6 +96,34 @@ assert_draft_template_field() {
 }
 
 # =============================================================
+# /draft-issue — machine fields are inferred, not asked
+# =============================================================
+
+@test "draft-issue: Step 4 infers machine fields" {
+  grep -q '^## Step 4: Infer Machine Fields' "$DRAFT"
+  ! grep -q 'Collect Machine Fields' "$DRAFT"
+}
+
+@test "draft-issue: asks nothing when the scan infers no field" {
+  grep -q 'When the scan finds nothing, ask nothing and keep the commented template' "$DRAFT"
+}
+
+@test "draft-issue: proposes inferred fields in one AskUserQuestion" {
+  grep -q 'ask one `AskUserQuestion` that proposes the inferred fields' "$DRAFT"
+  grep -q '`target-repo`: a statement that the issue lands in another' "$DRAFT"
+  grep -q '`blocked-by`: an issue or ticket that the work waits on' "$DRAFT"
+  grep -q '`is-blocking`: an issue or ticket that the work unblocks' "$DRAFT"
+}
+
+@test "draft-issue: an import with active front matter asks nothing" {
+  grep -q 'An import that already has active front matter keeps its fields, and this step asks nothing' "$DRAFT"
+}
+
+@test "draft-issue: report says when every field is at its default" {
+  grep -q 'All fields are at their defaults; edit the file to add a parent or a dependency.' "$DRAFT"
+}
+
+# =============================================================
 # issue-draft-reader — the reader
 # =============================================================
 
@@ -127,6 +155,32 @@ assert_draft_template_field() {
   ! grep -q '\*\*Parent:\*\*' "$READER"
 }
 
+@test "reader: reads an indented Name: value block as a map" {
+  grep -q 'reads as a map from each name to its value' "$READER"
+}
+
+@test "reader: asks about each local-only file reference" {
+  grep -q 'for each local-only reference, ask the user with `AskUserQuestion`' "$READER"
+  grep -q 'inline the file content as a fenced code block' "$READER"
+}
+
+@test "reader: reports changed local file references under a heading" {
+  grep -q '`Changed local file references:` heading' "$READER"
+  grep -q 'When you change nothing, print nothing' "$READER"
+}
+
+@test "reader: a tracked repo-relative path is not local-only" {
+  grep -q 'git ls-files --error-unmatch "<path>"' "$READER"
+  grep -q 'A repo-relative path that the repository tracks passes' "$READER"
+}
+
+@test "reader and both creation skills declare the local-file prompt tools" {
+  for f in "$READER" "$GH" "$JIRA"; do
+    grep -q '^allowed-tools:.*AskUserQuestion' "$f"
+    grep -q '^allowed-tools:.*Bash(git ls-files \*)' "$f"
+  done
+}
+
 # =============================================================
 # The two creation skills — consumers
 # =============================================================
@@ -148,6 +202,66 @@ assert_draft_template_field() {
 @test "create-jira-issue: project and type resolve from the same fields" {
   grep -q '`target-project`' "$JIRA"
   grep -q '`issue-type`' "$JIRA"
+}
+
+@test "create-jira-issue: fetches required-field metadata for every draft" {
+  grep -q 'Fetch the field metadata for every draft' "$JIRA"
+  grep -q 'Pass `requiredFieldsOnly: true` when the draft has no `like` field and no `jira-fields` field' "$JIRA"
+}
+
+@test "create-jira-issue: asks for each required field that nothing sets" {
+  grep -q 'Ask for each required field that nothing sets' "$JIRA"
+  grep -q 'This check runs before the create call' "$JIRA"
+}
+
+@test "create-jira-issue: resolves jira-fields by display name" {
+  grep -q 'When a `jira-fields` field exists, resolve each entry by display name' "$JIRA"
+  grep -q 'When a name matches no field, STOP and print the field names' "$JIRA"
+}
+
+@test "create-jira-issue: files task lists as ADF and verifies them" {
+  grep -q 'use `contentFormat: "adf"`' "$JIRA"
+  grep -q 'confirm that the description holds a `taskList` node' "$JIRA"
+  grep -q '^allowed-tools:.*mcp__atlassian__editJiraIssue' "$JIRA"
+  ! grep -q 'task-list checkboxes do not carry over' "$JIRA"
+}
+
+@test "create-jira-issue: the expected-hash argument is optional" {
+  grep -q '^argument-hint: <file-path-or-title> \[--expect-sha256 <hex>\]' "$JIRA"
+  grep -q '\*\*No flag:\*\* skip this check' "$JIRA"
+  grep -q '^allowed-tools:.*Bash(\*/skills/create-jira-issue/draft-sha256.sh \*)' "$JIRA"
+}
+
+@test "create-jira-issue: a hash mismatch stops before the reader and the create" {
+  grep -q 'When they differ, STOP before the reader runs' "$JIRA"
+  grep -q 'the draft changed after its review' "$JIRA"
+}
+
+@test "create-jira-issue: an inline title with an expected hash stops" {
+  grep -q '\*\*The flag with an inline title:\*\* STOP' "$JIRA"
+}
+
+@test "create-jira-issue: a matching hash runs the reader in strict mode" {
+  grep -q 'tell the reader to run in strict mode' "$JIRA"
+}
+
+@test "reader: strict mode stops instead of changing approved text" {
+  grep -q 'In strict mode the reader changes nothing in the body' "$READER"
+  grep -q 'The filed text would differ from the approved text' "$READER"
+}
+
+@test "draft-sha256: the documented span matches the plugin rule" {
+  local script="$SKILLS/create-jira-issue/draft-sha256.sh"
+  grep -q 'Skip the front-matter block' "$script"
+  grep -q 'Remove leading lines that hold only spaces and tabs' "$script"
+  grep -q 'Print the SHA-256 of a draft.s filed text: its title and body' "$script"
+  grep -q 'hashes the title line and the body, without the front matter' "$JIRA"
+}
+
+@test "create-jira-issue: reads the ticket back after every create" {
+  grep -q '^## Step 6: Read Back the Ticket' "$JIRA"
+  grep -q 'Run this step after every create, with or without an expected hash' "$JIRA"
+  grep -q 'do not edit or delete the ticket' "$JIRA"
 }
 
 # =============================================================

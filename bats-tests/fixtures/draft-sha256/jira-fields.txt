@@ -1,0 +1,10 @@
+---
+target-project: COUIM
+jira-fields:
+  Components: Billing
+  Team: Platform
+---
+
+# File with Jira fields
+
+Body text.

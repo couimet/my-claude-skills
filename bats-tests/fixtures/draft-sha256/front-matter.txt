@@ -1,0 +1,14 @@
+---
+target-project: COUIM
+issue-type: Story
+# parent: <url-or-key>
+blocked-by:
+  - COUIM-12
+---
+
+# Cache the label query
+
+The label query runs on every call. Cache it for the café team.
+
+- [ ] Add the cache
+- [x] Measure the call
