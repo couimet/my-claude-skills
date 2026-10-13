@@ -71,6 +71,25 @@ _nonl() {
   [[ "$output" == *"D003"* ]]
 }
 
+@test "draft-sha256: uses sha256sum when shasum is not installed" {
+  mkdir -p "$TEST_TEMP_DIR/bin"
+  ln -s "$(command -v cat)" "$TEST_TEMP_DIR/bin/cat"
+  # The stub records its call, then hashes with the host's own tool.
+  local real
+  if real="$(command -v shasum)"; then
+    real="$real -a 256"
+  else
+    real="$(command -v sha256sum)"
+  fi
+  printf '#!/bin/sh\n: > "%s/sha256sum-called"\nexec %s "$@"\n' "$TEST_TEMP_DIR" "$real" > "$TEST_TEMP_DIR/bin/sha256sum"
+  chmod +x "$TEST_TEMP_DIR/bin/sha256sum"
+  # stdout only: a coverage run writes trace lines to stderr.
+  run --separate-stderr env PATH="$TEST_TEMP_DIR/bin" "$BASH" "$SCRIPT" "$FIXTURES/front-matter.txt"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$FM_DIGEST" ]
+  [ -f "$TEST_TEMP_DIR/sha256sum-called" ]
+}
+
 @test "draft-sha256: skips the front matter and hashes the title and body" {
   run "$SCRIPT" "$FIXTURES/front-matter.txt"
   [ "$status" -eq 0 ]

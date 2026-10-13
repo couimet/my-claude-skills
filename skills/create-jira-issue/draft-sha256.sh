@@ -144,11 +144,7 @@ fi
 
 # Remove leading lines of only spaces and tabs. A last line without a newline
 # stays, as in the plugin's \A(?:[ \t]*\n)+ pattern.
-while :; do
-  case "$rest" in
-    *$'\n'*) ;;
-    *) break ;;
-  esac
+while [[ "$rest" == *$'\n'* ]]; do
   first="${rest%%$'\n'*}"
   case "$first" in
     *[!$' \t']*) break ;;
