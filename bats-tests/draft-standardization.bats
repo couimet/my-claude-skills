@@ -115,6 +115,11 @@ assert_draft_template_field() {
   grep -q '`is-blocking`: an issue or ticket that the work unblocks' "$DRAFT"
 }
 
+@test "draft-issue: expands an inferred GitHub issue number to a full URL" {
+  grep -q 'Write an inferred `#123` as its full issue URL' "$DRAFT"
+  grep -q 'When neither gives a repository, ask for the URL' "$DRAFT"
+}
+
 @test "draft-issue: an import with active front matter asks nothing" {
   grep -q 'An import that already has active front matter keeps its fields, and this step asks nothing' "$DRAFT"
 }
@@ -222,6 +227,7 @@ assert_draft_template_field() {
 @test "create-jira-issue: files task lists as ADF and verifies them" {
   grep -q 'use `contentFormat: "adf"`' "$JIRA"
   grep -q 'confirm that the description holds a `taskList` node' "$JIRA"
+  grep -q 'Give each `taskList` and `taskItem` node a unique `attrs.localId`' "$JIRA"
   grep -q '^allowed-tools:.*mcp__atlassian__editJiraIssue' "$JIRA"
   ! grep -q 'task-list checkboxes do not carry over' "$JIRA"
 }

@@ -69,7 +69,7 @@ Check whether `$ARGUMENTS` points to an existing file (any path, any extension o
 - Otherwise, if the file's first non-empty line is a `#` heading, that heading is the title and everything after it is the body.
 - Otherwise the first non-empty line is the title and everything after it is the body.
 
-For a file without front matter, insert the derived title and body under a fresh front-matter block in the standard shape. This keeps drag-dropped scratchpads, markdown files, and older unstandardized drafts usable as issues. Preserve the imported body verbatim; do not reflow or rewrite the author's prose. Either way, continue to Step 3 and grill the imported content like any other draft.
+For a file without front matter, insert the derived title and body under a fresh front-matter block in the standard shape. Preserve the imported body verbatim; do not reflow or rewrite the author's prose. Either way, continue to Step 3 and grill the imported content like any other draft.
 
 ## Step 3: Grill the Draft for Thoroughness
 
@@ -88,9 +88,11 @@ Most drafts keep every default, so do not ask by default. Scan the grilled title
 - `blocked-by`: an issue or ticket that the work waits on
 - `is-blocking`: an issue or ticket that the work unblocks
 
+Write an inferred `#123` as its full issue URL, from the inferred `target-repo` or the git remote. When neither gives a repository, ask for the URL.
+
 When the scan finds a value, ask one `AskUserQuestion` that proposes the inferred fields: accept, edit, or drop. Write each accepted or edited field as an active field.
 
-When the scan finds nothing, ask nothing and keep the commented template. An import that already has active front matter keeps its fields, and this step asks nothing. Every field stays settable by hand.
+When the scan finds nothing, ask nothing and keep the commented template. An import that already has active front matter keeps its fields, and this step asks nothing.
 
 ## Step 5: Write the Draft
 
