@@ -84,6 +84,8 @@ Before the payload note is saved and confirmed, count the assembled description:
 
 ## Step 5: Create the Issue
 
+**Check the hash again when Step 1 checked it.** The author can edit the draft while Step 4 waits for confirmation. Run `draft-sha256.sh` on the file again, immediately before the create. When the digest differs from the expected one, STOP before the create. Print both digests, and say that the draft changed after its check.
+
 Call `createJiraIssue` with the confirmed payload. `summary` and `description` are inline string parameters. `description` caps at 32000 chars. There is no body-file equivalent, so read the description from the note. GitHub `#123` references do not carry over. Pass `parent` inline when a `parent` field was given. The `parent` parameter is set at creation, so no post-hoc sub-issue call is needed.
 
 Choose the description format from the body:

@@ -78,7 +78,7 @@ Run `/g2q` on the composed draft, passing the title and body as its topic. The g
 - When it reports no questions raised, the content is thorough enough. Proceed to Step 4.
 - When it reports questions raised, share the returned questions file with the author and collect their answers. Fold each answer into the body so the resolution lives in the draft text itself, then run `/g2q` again over the updated content. Repeat until it reports no questions raised.
 
-The draft note is not written until this grill is clean. The grill judges the issue body. Step 4 infers the machine fields.
+The draft note is not written until this grill is clean. The grill judges the issue body.
 
 ## Step 4: Infer Machine Fields
 
@@ -92,7 +92,7 @@ Write an inferred `#123` as its full issue URL, from the inferred `target-repo` 
 
 When the scan finds a value, ask one `AskUserQuestion` that proposes the inferred fields: accept, edit, or drop. Write each accepted or edited field as an active field.
 
-When the scan finds nothing, ask nothing and keep the commented template. An import that already has active front matter keeps its fields, and this step asks nothing.
+When the scan finds nothing, ask nothing and keep the commented template. An import with active front matter keeps its fields, and the scan proposes only the fields that the import leaves unset.
 
 ## Step 5: Write the Draft
 

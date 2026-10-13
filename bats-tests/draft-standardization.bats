@@ -120,8 +120,9 @@ assert_draft_template_field() {
   grep -q 'When neither gives a repository, ask for the URL' "$DRAFT"
 }
 
-@test "draft-issue: an import with active front matter asks nothing" {
-  grep -q 'An import that already has active front matter keeps its fields, and this step asks nothing' "$DRAFT"
+@test "draft-issue: an import with active front matter keeps its fields and infers the unset ones" {
+  grep -q 'An import with active front matter keeps its fields, and the scan proposes only the fields that the import leaves unset' "$DRAFT"
+  ! grep -q 'this step asks nothing' "$DRAFT"
 }
 
 @test "draft-issue: report says when every field is at its default" {
@@ -241,6 +242,12 @@ assert_draft_template_field() {
 @test "create-jira-issue: a hash mismatch stops before the reader and the create" {
   grep -q 'When they differ, STOP before the reader runs' "$JIRA"
   grep -q 'the draft changed after its review' "$JIRA"
+}
+
+@test "create-jira-issue: the hash is checked again immediately before the create" {
+  grep -q '\*\*Check the hash again when Step 1 checked it.\*\*' "$JIRA"
+  grep -q 'Run `draft-sha256.sh` on the file again, immediately before the create' "$JIRA"
+  grep -q 'say that the draft changed after its check' "$JIRA"
 }
 
 @test "create-jira-issue: an inline title with an expected hash stops" {
