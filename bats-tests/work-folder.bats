@@ -691,3 +691,165 @@ working_file() {
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"1 working file stays under $branch_folder,"* ]]
 }
+
+# ============================================================================
+# The mode form: {"mode": "require-override"}
+# ============================================================================
+
+TARGET="$PROJECT_ROOT/skills/issue-context/target-path.sh"
+TIER_FOLDERS="$PROJECT_ROOT/skills/issue-context/tier-folders.sh"
+MODE_LINE='{"mode": "require-override"}'
+
+# Every regular file under the test directory, outside .git, one per line.
+# A refusal must leave this list unchanged.
+all_files() {
+  find "$TEST_TEMP_DIR" -path "$TEST_TEMP_DIR/.git" -prune -o -type f -print | LC_ALL=C sort
+}
+
+# target <session-id or ""> — run target-path.sh for a note, with or without
+# a session id.
+target() {
+  if [ -n "$1" ]; then
+    run --separate-stderr "${CLAUDE_ENV_RESET[@]}" MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+      CLAUDE_CODE_SESSION_ID="$1" "$TARGET" --type notes --description "demo"
+  else
+    run --separate-stderr "${CLAUDE_ENV_RESET[@]}" MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+      "$TARGET" --type notes --description "demo"
+  fi
+}
+
+@test "mode: a reader falls through to the branch folder and names the mode" {
+  write_marker "$MODE_LINE"
+  resolve
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
+  [[ "$stderr" == *"holds mode 'require-override'"* ]]
+}
+
+@test "mode: --id gives the branch folder of the identifier and names the mode" {
+  write_marker "$MODE_LINE"
+  resolve --id 42
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/42" ]
+  [[ "$stderr" == *"holds mode 'require-override'"* ]]
+}
+
+@test "mode: the tier is branch, in both forms" {
+  write_marker "$MODE_LINE"
+  tier_of
+  [ "$output" = "branch" ]
+  tier_of --id 42
+  [ "$output" = "branch" ]
+}
+
+@test "mode: tier-folders prints no worktree line" {
+  write_marker "$MODE_LINE"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" MY_CLAUDE_SKILLS_CONFIG="$CFG" "$TIER_FOLDERS"
+  [ "$status" -eq 0 ]
+  [ "$output" = "branch	$TEST_TEMP_DIR/.claude-work" ]
+}
+
+@test "mode: a write with no session folder → T104, the fix named, and no file anywhere" {
+  write_marker "$MODE_LINE"
+  before="$(all_files)"
+  target ""
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"T104"* ]]
+  [[ "$stderr" == *"/set-work-folder <absolute folder>"* ]]
+  [[ "$stderr" == *"/set-work-folder $TEST_TEMP_DIR/.claude-work"* ]]
+  [ "$(all_files)" = "$before" ]
+}
+
+@test "mode: a refused write sweeps no old reservation" {
+  write_marker "$MODE_LINE"
+  local stale="$TEST_TEMP_DIR/.claude-work/notes/20200101-000000-001-old.txt"
+  mkdir -p "$(dirname "$stale")"
+  : > "$stale"
+  touch -t 202001010000 "$stale"
+  target ""
+  [ "$status" -eq 1 ]
+  [ -e "$stale" ]
+}
+
+@test "mode: a write with a session folder goes to that folder" {
+  local sess="$TEST_TEMP_DIR/session-folder"
+  mkdir -p "$sess"
+  write_marker "$MODE_LINE"
+  write_session_file "$sess"
+  target "$SESSION_ID"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "$sess/notes/"* ]]
+  [ -f "$output" ]
+}
+
+@test "mode: a session folder that the resolver refuses does not open the gate" {
+  write_marker "$MODE_LINE"
+  write_session_file "$TEST_TEMP_DIR/gone"
+  before="$(all_files)"
+  target "$SESSION_ID"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"override ignored"* ]]
+  [[ "$stderr" == *"T104"* ]]
+  [ "$(all_files)" = "$before" ]
+}
+
+@test "mode: spaces and a trailing newline still parse" {
+  printf '  { "mode" :  "require-override" }  \n' > "$MARKER"
+  target ""
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"T104"* ]]
+}
+
+@test "mode: an unknown mode → T105, also with a session folder, and no file" {
+  local sess="$TEST_TEMP_DIR/session-folder"
+  mkdir -p "$sess"
+  write_marker '{"mode": "read-session-name"}'
+  write_session_file "$sess"
+  before="$(all_files)"
+  target "$SESSION_ID"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"T105"* ]]
+  [[ "$stderr" == *"'read-session-name'"* ]]
+  [ "$(all_files)" = "$before" ]
+}
+
+@test "mode: a { line that does not parse → T105" {
+  write_marker '{mode: require-override}'
+  before="$(all_files)"
+  target ""
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"T105"* ]]
+  [[ "$stderr" == *"starts with '{'"* ]]
+  [ "$(all_files)" = "$before" ]
+}
+
+@test "mode: a second key does not parse → T105" {
+  write_marker '{"mode": "require-override", "folder": "/tmp"}'
+  target ""
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"T105"* ]]
+}
+
+@test "mode: a path marker writes as before" {
+  write_marker "$TOPIC"
+  target ""
+  [ "$status" -eq 0 ]
+  [[ "$output" == "$TOPIC/notes/"* ]]
+}
+
+@test "mode: --worktree refuses to replace a mode marker → S006, marker unchanged" {
+  write_marker "$MODE_LINE"
+  write_worktree --worktree "$TOPIC"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"S006"* ]]
+  [[ "$stderr" == *"--clear --worktree"* ]]
+  [ "$(cat "$MARKER")" = "$MODE_LINE" ]
+}
+
+@test "mode: --clear --worktree removes a mode marker" {
+  write_marker "$MODE_LINE"
+  write_worktree --clear --worktree
+  [ "$status" -eq 0 ]
+  [ ! -e "$MARKER" ]
+}

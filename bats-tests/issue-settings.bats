@@ -320,6 +320,51 @@ DEFAULT_FOLDER_DUMP='
 }
 
 # ============================================================================
+# launchAgentMaxDepth key handling
+# ============================================================================
+
+# Source the loader and print the depth limit, then the stderr of the load on
+# the next line, so a test sees both the value and the warning.
+MAX_DEPTH_DUMP='
+  warn="$(source "$1" 2>&1 >/dev/null)"
+  source "$1" 2>/dev/null
+  printf "%s\n%s" "$SETTINGS_LAUNCH_AGENT_MAX_DEPTH" "$warn"
+'
+
+max_depth_of() {
+  local cfg="$TEST_TEMP_DIR/settings.json"
+  printf '%s' "$1" > "$cfg"
+  run env MY_CLAUDE_SKILLS_CONFIG="$cfg" bash -c "$MAX_DEPTH_DUMP" _ "$SCRIPT"
+}
+
+@test "absent launchAgentMaxDepth → 2, silently" {
+  max_depth_of '{}'
+  [ "$status" -eq 0 ]
+  [ "$output" = "2" ]
+}
+
+@test "launchAgentMaxDepth reads a non-negative integer" {
+  max_depth_of '{"launchAgentMaxDepth": 3}'
+  [ "$output" = "3" ]
+  max_depth_of '{"launchAgentMaxDepth": 0}'
+  [ "$output" = "0" ]
+}
+
+@test "launchAgentMaxDepth as a string, a negative, or a fraction → 2 with a warning" {
+  local bad
+  for bad in '"3"' '-1' '1.5' 'null' 'true'; do
+    max_depth_of "{\"launchAgentMaxDepth\": $bad}"
+    [ "${lines[0]}" = "2" ]
+    [[ "$output" == *"launchAgentMaxDepth must be a non-negative integer"* ]]
+  done
+}
+
+@test "launchAgentMaxDepth is 2 when the settings file is malformed" {
+  max_depth_of '{not json'
+  [ "${lines[0]}" = "2" ]
+}
+
+# ============================================================================
 # SETTINGS_LOAD_STATUS
 # ============================================================================
 

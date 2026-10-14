@@ -10,6 +10,19 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.10.13.1
+
+### Added
+
+- `/fork-side-item <claim>` moves a side item, such as a defect or a docs gap found outside the current task, to its own `side-<slug>` folder and starts a background worker that owns it. The worker files a ticket, adds to an existing one, sends a message, or drops the item, then records the outcome in the folder. `/fork-side-item list` shows each side folder and its state. A project adds its own rules with a `fork-side-item-hook` skill. ([issues/287](https://github.com/couimet/my-claude-skills/issues/287))
+- `/resume-agent <folder>` makes the session of a topic folder run again under its name, so the next round of work goes to the session that holds the earlier rounds. No shell command is necessary: open the session from the agent view by its name. ([issues/289](https://github.com/couimet/my-claude-skills/issues/289))
+
+### Changed
+
+- A repository can now require a session folder in each session. A `CLAUDE_WORK_FOLDER` whose only line is `{"mode": "require-override"}` makes a working-file write with no session folder stop and name the fix, `/set-work-folder <absolute folder>`, so no note or questions file goes to the wrong folder. ([issues/285](https://github.com/couimet/my-claude-skills/issues/285))
+- Claude can now start `/launch-agent`, and it passes `--bg` when it starts the skill with no request from you. A new `launchAgentMaxDepth` setting, 2 by default, stops a chain of background agents that start agents. ([issues/287](https://github.com/couimet/my-claude-skills/issues/287))
+- `/launch-agent` names a later launch prompt `prompt-new-agent-launch.txt.update-<stamp>.txt`, so the first prompt lists first and the later ones follow in stamp order in every file explorer. Existing files keep their names, and a repeat of the newest prompt still writes nothing. ([issues/288](https://github.com/couimet/my-claude-skills/issues/288))
+
 ## 2026.10.13
 
 ### Added

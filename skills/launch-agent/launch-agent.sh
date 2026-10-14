@@ -48,6 +48,14 @@
 # Code gives no documented way for a script or a hook to rename a session, so
 # the script prints the /rename command for the user to type.
 #
+# A background launch has a depth limit. A session the user started is depth
+# 0, and each background agent sits one level below the session that started
+# it. --bg refuses with L006 when the new agent would go past the
+# launchAgentMaxDepth setting (default 2), because nothing else stops a chain
+# of agents that start agents. The depth travels in a record keyed by the job
+# id, written right after the dispatch; agent-depth.sh says why. The default
+# mode starts no agent, so it has no depth check.
+#
 # No claude flag passes through to the child. The child starts with the user's
 # default settings, and wanting a different model or permission mode is a
 # settings change rather than a launcher argument.
@@ -63,8 +71,8 @@
 #   saved at <folder>/prompt-new-agent-launch.txt, so do not write it again.
 #
 # The saved path is prompt-new-agent-launch.txt on the first launch into a
-# folder, and a dated prompt-new-agent-launch.update-<stamp>.txt on each later
-# one. The CLAUDE.md sentence appears only when that file exists. The name is
+# folder, and a dated prompt-new-agent-launch.txt.update-<stamp>.txt on each
+# later one. The CLAUDE.md sentence appears only when that file exists. The name is
 # passed to set-work-folder.sh explicitly even though the script can read one
 # from the job state file, because the explicit form does not depend on an
 # undocumented internal file.
@@ -93,6 +101,7 @@ readonly ERR_FOLDER="L002"
 readonly ERR_PROMPT="L003"
 readonly ERR_DISPATCH="L004"
 readonly ERR_HERE="L005"
+readonly ERR_DEPTH="L006"
 
 # The one fixed filename this script owns. A launch prompt is found by name
 # rather than by search, so the name does not vary and is not configurable.
@@ -122,6 +131,10 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_self_dir/../issue-context/slugify.sh"
 # shellcheck disable=SC1091 # sourced sibling skill; lint-sh runs shellcheck without -x
 source "$_self_dir/../issue-context/issue-settings.sh"
+# shellcheck disable=SC1091 # sourced sibling skill; lint-sh runs shellcheck without -x
+source "$_self_dir/../issue-context/topic-root.sh"
+# shellcheck disable=SC1091 # sourced sibling skill; lint-sh runs shellcheck without -x
+source "$_self_dir/../issue-context/agent-depth.sh"
 
 die() {
   echo "launch-agent $1 error: $2" >&2
@@ -218,6 +231,19 @@ if [ "$bg_mode" -eq 0 ] && [ -z "${CLAUDE_CODE_SESSION_ID:-}" ]; then
   die "$ERR_HERE" "this session cannot adopt the folder: CLAUDE_CODE_SESSION_ID is not set, so there is no session to point at it; pass --bg to start an agent instead"
 fi
 
+# The depth limit, among the argument checks, so a refused launch leaves no
+# folder and no prompt file. A damaged record refuses too: the limit is the
+# one hard safeguard against a chain of agents, so it never reads as 0.
+if [ "$bg_mode" -eq 1 ]; then
+  max_depth="$SETTINGS_LAUNCH_AGENT_MAX_DEPTH"
+  depth=0
+  _issue_context_agent_depth_read depth \
+    || die "$ERR_DEPTH" "the agent depth record of this session ($(_issue_context_agent_depth_dir 2>/dev/null)/${CLAUDE_CODE_SESSION_ID:0:8}) cannot be read, so its depth is unknown and no background agent can start; fix or remove the record"
+  if [ $((depth + 1)) -gt "$max_depth" ]; then
+    die "$ERR_DEPTH" "this session runs at agent depth $depth, and launchAgentMaxDepth is $max_depth (default 2, set in $SETTINGS_FILE), so it cannot start a background agent; record the work in this session's folder instead, or raise launchAgentMaxDepth"
+  fi
+fi
+
 # Trailing slashes would make the basename this script derives and the path it
 # creates disagree about what they are looking at.
 while [ "$folder" != "/" ] && [ "${folder%/}" != "$folder" ]; do
@@ -251,34 +277,21 @@ case "$folder" in
     # The setting wins, so a launch from a session in a code repository still
     # lands in the topic repository. A bad value refuses rather than falling
     # back: the fall-back is the git root, which is the code repository this
-    # setting exists to avoid. The value expands nothing, so it is checked
-    # exactly as written. A settings file that could not be read refuses for
-    # the same reason: the loader then reports the setting as empty, and the
-    # setting may well be in the file.
-    if [ "$SETTINGS_LOAD_STATUS" = "failed" ]; then
-      die "$ERR_FOLDER" "the settings file $SETTINGS_FILE could not be read, so launchAgentDefaultFolder is unknown; fix the file, or pass an absolute path as the folder"
-    fi
-    default_folder="$SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER"
-    if [ -n "$default_folder" ]; then
-      case "$default_folder" in
-        /*) ;; # kcov-exclude-line
+    # setting exists to avoid. topic-root.sh owns the rule; the messages stay
+    # here, because each caller names its own fix.
+    root=""
+    root_reason=""
+    if ! _issue_context_topic_root root root_reason; then
+      case "$root_reason" in
+        settings)
+          die "$ERR_FOLDER" "the settings file $SETTINGS_FILE could not be read, so launchAgentDefaultFolder is unknown; fix the file, or pass an absolute path as the folder" ;;
+        relative)
+          die "$ERR_FOLDER" "launchAgentDefaultFolder in $SETTINGS_FILE is '$SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER', which is not an absolute path; set it to an absolute path, or pass an absolute path as the folder" ;;
+        missing)
+          die "$ERR_FOLDER" "launchAgentDefaultFolder in $SETTINGS_FILE is '$SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER', which is not an existing directory; create it, fix the setting, or pass an absolute path as the folder" ;;
         *)
-          die "$ERR_FOLDER" "launchAgentDefaultFolder in $SETTINGS_FILE is '$default_folder', which is not an absolute path; set it to an absolute path, or pass an absolute path as the folder"
-          ;;
+          die "$ERR_FOLDER" "not inside a git repository, so a slug has no root to resolve against; set launchAgentDefaultFolder or pass an absolute path instead" ;;
       esac
-      [ -d "$default_folder" ] \
-        || die "$ERR_FOLDER" "launchAgentDefaultFolder in $SETTINGS_FILE is '$default_folder', which is not an existing directory; create it, fix the setting, or pass an absolute path as the folder"
-      while [ "$default_folder" != "/" ] && [ "${default_folder%/}" != "$default_folder" ]; do
-        default_folder="${default_folder%/}"
-      done
-      root="$default_folder"
-    else
-      work_root="$("$_self_dir/../issue-context/claude-work-root.sh" 2>/dev/null)" \
-        || die "$ERR_FOLDER" "not inside a git repository, so a slug has no root to resolve against; set launchAgentDefaultFolder or pass an absolute path instead"
-      # claude-work-root.sh reports <main checkout root>/.claude-work, and it
-      # is used here for the half of its job this needs: finding the main
-      # checkout through a linked worktree. Topic folders sit at that root.
-      root="$(dirname "$work_root")"
     fi
     target="$root/$folder"
 
@@ -360,23 +373,48 @@ printf 'Folder: %s\n' "$folder_abs"
 # name holds the first launch, because the first prompt is what defines the
 # topic and what readers look for. Each later launch adds a file stamped with
 # the launch time, and no launch renames, rewrites, or deletes a file that
-# exists. The later name continues with "update" so that the "t" of ".txt"
-# sorts the first prompt ahead of it in every locale, and the digits after it
-# sort the later prompts by stamp. A launch that repeats the newest prompt
-# byte for byte adds nothing, so a retry leaves no trace.
+# exists. A launch that repeats the newest prompt byte for byte adds nothing,
+# so a retry leaves no trace.
+#
+# A later name starts with the full name of the first prompt, extension
+# included: prompt-new-agent-launch.txt.update-<stamp>.txt. A name sorts before
+# every longer name that starts with it, so the first prompt lists first and
+# the later prompts follow in stamp order, in every locale and explorer. That
+# is one rule for every file that iterates on a source file in its folder.
+# Before this rule the later name was prompt-new-agent-launch.update-<stamp>.txt,
+# which also sorted after the first prompt, but only because "u" sorts after
+# "t". No file of that form is renamed. A folder that holds both forms lists
+# its new-form files before its old-form files, which is the accepted cost.
+#
+# The newest prompt is therefore found by stamp, never by glob order: in a
+# folder with both forms the glob lists the new form first, so its last file
+# is not the newest. A suffix that is not a YYYYMMDD-HHMMSS stamp does not
+# count, so a file a person named by hand is never compared.
 #
 # A taken stamp waits for the next second rather than taking a suffix, because
-# "<stamp>-001.txt" sorts before "<stamp>.txt" and breaks the launch order.
-# noclobber makes each write fail rather than replace a file that appeared
-# after the name check, so a race between two launches cannot break the rule.
+# "<stamp>-001.txt" sorts before "<stamp>.txt" and breaks the launch order. A
+# stamp is taken when a file of either form holds it. noclobber makes each
+# write fail rather than replace a file that appeared after the name check, so
+# a race between two launches cannot break the rule.
 first_prompt="$folder_abs/$PROMPT_BASENAME.txt"
 prompt_file="$first_prompt"
 repeat_of=""
 if [ -f "$first_prompt" ]; then
   newest="$first_prompt"
-  # With no update file the pattern stays literal, and -f skips it.
-  for candidate in "$folder_abs/$PROMPT_BASENAME".update-*.txt; do
-    [ -f "$candidate" ] && newest="$candidate"
+  newest_stamp=""
+  # With no update file a pattern stays literal, and -f skips it.
+  for candidate in "$folder_abs/$PROMPT_BASENAME".update-*.txt \
+    "$folder_abs/$PROMPT_BASENAME".txt.update-*.txt; do
+    [ -f "$candidate" ] || continue
+    candidate_stamp="${candidate##*.update-}"
+    candidate_stamp="${candidate_stamp%.txt}"
+    [[ "$candidate_stamp" =~ ^[0-9]{8}-[0-9]{6}$ ]] || continue
+    # The stamps have one fixed width, so a byte comparison is a time
+    # comparison.
+    if [[ "$candidate_stamp" > "$newest_stamp" ]]; then
+      newest="$candidate"
+      newest_stamp="$candidate_stamp"
+    fi
   done
   if printf '%s\n' "$prompt" | cmp -s - "$newest"; then
     prompt_file="$newest"
@@ -386,8 +424,8 @@ if [ -f "$first_prompt" ]; then
     while :; do
       stamp="$(date +%Y%m%d-%H%M%S)" \
         || die "$ERR_PROMPT" "could not read the clock to name the new prompt file"
-      prompt_file="$folder_abs/$PROMPT_BASENAME.update-$stamp.txt"
-      [ -e "$prompt_file" ] || break
+      prompt_file="$folder_abs/$PROMPT_BASENAME.txt.update-$stamp.txt"
+      [ -e "$prompt_file" ] || [ -e "$folder_abs/$PROMPT_BASENAME.update-$stamp.txt" ] || break
       [ "$attempt" -lt 3 ] \
         || die "$ERR_PROMPT" "no free name for a new prompt file in $folder_abs after $attempt tries; launch again in a second"
       attempt=$((attempt + 1))
@@ -495,6 +533,18 @@ if ! [[ "$job_id" =~ ^[A-Za-z0-9_-]+$ ]]; then
     else
       echo "claude --bg printed nothing."
     fi
+  } >&2 # kcov-exclude-line
+  exit 1
+fi
+
+# --- Record the child's depth ---
+# The job id is the first 8 characters of the child's session id, which is
+# what the child reads its record by. A record that could not be written
+# leaves the child at depth 0 in its own eyes, which lifts the limit for its
+# chain, so the failure says how to stop it.
+if ! _issue_context_agent_depth_write "$job_id" $((depth + 1)); then
+  {
+    echo "launch-agent $ERR_DEPTH error: the agent started as $display_name (job $job_id), but its depth record could not be written under $(_issue_context_agent_depth_dir 2>/dev/null), so the depth limit does not apply to it. Stop it with claude stop $job_id if it must not start agents of its own. Do not launch it again: that starts a second agent."
   } >&2 # kcov-exclude-line
   exit 1
 fi

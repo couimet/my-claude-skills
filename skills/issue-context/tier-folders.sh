@@ -12,7 +12,8 @@
 #   <tier><TAB><folder>
 #
 #   session   the session override set by /set-work-folder
-#   worktree  this worktree's CLAUDE_WORK_FOLDER marker
+#   worktree  this worktree's CLAUDE_WORK_FOLDER marker, in the path form; a
+#             marker in the mode form names no folder and prints no line
 #   branch    <claude-work-root>[/<segment>]/<identifier-from-the-branch>, or
 #             the bare root when the branch matches no pattern
 #

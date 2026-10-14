@@ -24,6 +24,8 @@ Do not use this to redirect one file. An override is a property of a session or 
 
 The bare form sets a **session** folder: it lives until this session ends, and it is the one to reach for when the redirection is for today's work. `--worktree` sets a **worktree** folder: it writes `CLAUDE_WORK_FOLDER` at the root of the checkout you are in, and it lives until you delete it, which is the one to reach for when a checkout always belongs to one topic. A session folder outranks a worktree marker when both are set.
 
+A marker can also hold a rule instead of a folder. A repository that keeps its working files in topic folders can commit a `CLAUDE_WORK_FOLDER` whose only line is `{"mode": "require-override"}`. Each session in that worktree must then set its own session folder before it writes a working file. A write with no session folder stops with error T104, which names the fix: run `/set-work-folder <absolute folder>`. To write to the branch folder on purpose, pass that folder, `<repo>/.claude-work`. `--worktree <folder>` refuses with S006 to replace a mode marker, and `--clear --worktree` removes it. Write a mode marker by hand: this skill sets no mode.
+
 The marker is a plain file at the worktree root and it is deliberately not gitignored. It appears in `git status` until you clear it, which is the point: a setting that outlives your session is one you should be reminded you made. Two worktrees of the same repository can carry different markers, or one can carry none, because the file sits at each worktree's own root rather than in the shared `.claude-work/`.
 
 ## Step 1: Run the Script

@@ -22,12 +22,20 @@
 # paths with it and work-folder-tier.sh answers which tier won with it, so the
 # two can never disagree about precedence.
 #
+# A marker in the mode form (see marker-file.sh) names no folder, so the
+# worktree tier never wins with one, and every reader falls through to the
+# branch tier. Only a writer refuses: _issue_context_write_gate says when, and
+# target-path.sh, which reserves every working file, asks it. A reader that
+# cannot find a file is visible. A writer that puts a file in the wrong folder
+# is not.
+#
 # Functions defined on source:
 #   _issue_context_branch_folder <identifier> <out-folder-var> <out-reason-var>
 #   _issue_context_marker_folder <out-folder-var> <out-report-var>
 #   _issue_context_work_folder <out-folder-var> <out-tier-var> <out-report-var>
+#   _issue_context_write_gate <out-reason-var> <out-mode-var>
 #
-# Neither prints. Both collect what a caller should say into <out-report-var>
+# None prints. Both collect what a caller should say into <out-report-var>
 # as zero or more newline-separated lines, and the caller decides where those
 # go. A resolver that printed from here would put a message on stdout one day,
 # and stdout is a path.
@@ -117,7 +125,7 @@ _issue_context_branch_folder() {
 # setting and the marker is the opposite of ephemeral.
 _issue_context_marker_folder() {
   local _iwfm_out_var="$1" _iwfm_report_var="$2"
-  local _iwfm_raw="" _iwfm_reason="" _iwfm_phys="" _iwfm_rc=0
+  local _iwfm_raw="" _iwfm_reason="" _iwfm_phys="" _iwfm_rc=0 _iwfm_mode=""
 
   eval "$_iwfm_out_var=''"
 
@@ -128,6 +136,10 @@ _issue_context_marker_folder() {
         _iwfa_append "$_iwfm_report_var" "worktree marker ignored: $_ISSUE_CONTEXT_MARKER_NAME could not be read" ;;
       empty)
         _iwfa_append "$_iwfm_report_var" "worktree marker ignored: $_ISSUE_CONTEXT_MARKER_NAME is empty" ;;
+      mode)
+        _iwfm_mode=""
+        _issue_context_marker_mode _iwfm_mode || true
+        _iwfa_append "$_iwfm_report_var" "worktree marker holds mode '$_iwfm_mode': $_ISSUE_CONTEXT_MARKER_NAME names no folder, so this tier gives none" ;;
       relative)
         _iwfa_append "$_iwfm_report_var" "worktree marker ignored: $_ISSUE_CONTEXT_MARKER_NAME must hold an absolute path or one starting with ~/" ;;
       *)
@@ -201,5 +213,49 @@ _issue_context_work_folder() {
     return 0
   fi
 
+  return 1
+}
+
+# The marker modes this reader knows. A mode outside this list refuses every
+# write, also one with a session folder: the marker comes from a newer install
+# or a typo, and this reader cannot know what the mode allows.
+_ISSUE_CONTEXT_KNOWN_MARKER_MODES="require-override"
+
+# _issue_context_write_gate <out-reason-var> <out-mode-var> — decide whether
+# a working file may be written now.
+#
+# Returns 0 when it may: no marker in the mode form, or the mode
+# require-override with a usable session folder. Otherwise returns 1 with the
+# mode read from the marker and one of these reasons:
+#
+#   required  the mode is require-override and the session tier gives no
+#             usable folder (none set, or set and refused)
+#   badmode   the mode is unknown, or the marker line does not parse
+#
+# The session tier is checked the way _issue_context_work_folder checks it, so
+# a session folder that the resolver refuses never opens the gate.
+_issue_context_write_gate() {
+  local _iwfg_reason_var="$1" _iwfg_mode_var="$2"
+  local _iwfg_mode="" _iwfg_raw="" _iwfg_why="" _iwfg_phys=""
+
+  eval "$_iwfg_reason_var=''"
+  eval "$_iwfg_mode_var=''"
+
+  _issue_context_marker_mode _iwfg_mode || return 0
+  eval "$_iwfg_mode_var=\"\$_iwfg_mode\""
+
+  case " $_ISSUE_CONTEXT_KNOWN_MARKER_MODES " in
+    *" $_iwfg_mode "*) ;; # kcov-exclude-line
+    *)
+      eval "$_iwfg_reason_var='badmode'"
+      return 1
+      ;;
+  esac
+
+  if _issue_context_session_file_read _iwfg_raw _iwfg_why \
+      && _iwfu_usable "$_iwfg_raw" _iwfg_phys; then
+    return 0
+  fi
+  eval "$_iwfg_reason_var='required'"
   return 1
 }

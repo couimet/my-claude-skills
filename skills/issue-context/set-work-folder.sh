@@ -60,6 +60,7 @@ readonly ERR_NO_SESSION="S002"
 readonly ERR_FOLDER="S003"
 readonly ERR_NO_JQ="S004"
 readonly ERR_WRITE="S005"
+readonly ERR_MODE="S006"
 
 usage() {
   cat <<'EOF'
@@ -238,6 +239,14 @@ if [ "$worktree_mode" -eq 1 ]; then
   # itself, which is the one way out that never touches what it points at.
   [ ! -L "$marker" ] \
     || die "$ERR_WRITE" "$marker is a symlink, so writing it would write through to its target; remove it first (set-work-folder.sh --clear --worktree)"
+
+  # A marker in the mode form is a rule the repository chose for every
+  # session, often a committed one. Replacing it with a path would remove the
+  # rule with no sign, so the rule is removed only on purpose, by the clear.
+  marker_mode=""
+  if _issue_context_marker_mode marker_mode; then
+    die "$ERR_MODE" "$marker holds the mode '$marker_mode', not a folder, and a path would replace that rule; remove it first (set-work-folder.sh --clear --worktree), or set a session folder instead (set-work-folder.sh <folder>)"
+  fi
 
   # Written canonicalised, so the file says where the folder actually is rather
   # than how it was typed. A hand-authored ~/ still expands on read.

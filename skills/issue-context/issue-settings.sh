@@ -25,6 +25,11 @@
 #                                   resolves under; read as-is, never
 #                                   expanded, and validated by its one
 #                                   consumer, launch-agent.sh
+#   launchAgentMaxDepth  2         how deep a chain of agents that start
+#                                   agents may go: a session at this depth
+#                                   cannot start a background agent; a JSON
+#                                   non-negative integer, else a warning
+#                                   and the default
 #   version          1              schema version
 #
 # Globals set on return:
@@ -35,6 +40,7 @@
 #   SETTINGS_URL_PATTERNS      (array)
 #   SETTINGS_IDENTIFIER_CASE
 #   SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER
+#   SETTINGS_LAUNCH_AGENT_MAX_DEPTH
 #   SETTINGS_FILE              the resolved config path
 #   SETTINGS_LOAD_STATUS       "absent" when no file is at SETTINGS_FILE,
 #                              "loaded" when the file parsed as an object,
@@ -211,6 +217,7 @@ _issue_settings_apply_defaults() {
   SETTINGS_BRANCH_TEMPLATE="issues/{id}"
   SETTINGS_IDENTIFIER_CASE="upper"
   SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER=""
+  SETTINGS_LAUNCH_AGENT_MAX_DEPTH="2"
   SETTINGS_BRANCH_PATTERNS=()
   while IFS= read -r _issue_settings_entry; do
     SETTINGS_BRANCH_PATTERNS+=("$_issue_settings_entry")
@@ -274,6 +281,22 @@ if [ -f "$_issue_settings_file" ] && [ -r "$_issue_settings_file" ]; then
       # owns that check.
       # shellcheck disable=SC2034
       SETTINGS_LAUNCH_AGENT_DEFAULT_FOLDER="$(_issue_settings_read_scalar "$_issue_settings_json" launchAgentDefaultFolder '')"
+      # A JSON number and not a string, so the value reads as what it is. A
+      # bad value falls back to the default with a warning, as every other
+      # key does: the fall-back is a bounded limit, so it can never remove
+      # the limit. Absent is the ordinary case and says nothing.
+      # shellcheck disable=SC2034
+      SETTINGS_LAUNCH_AGENT_MAX_DEPTH="$(printf '%s' "$_issue_settings_json" | jq -r '
+        if has("launchAgentMaxDepth") | not then "2"
+        elif (.launchAgentMaxDepth | type == "number")
+          and .launchAgentMaxDepth >= 0
+          and (.launchAgentMaxDepth | floor) == .launchAgentMaxDepth
+        then (.launchAgentMaxDepth | tostring)
+        else "invalid" end')"
+      if [ "$SETTINGS_LAUNCH_AGENT_MAX_DEPTH" = "invalid" ]; then
+        echo "issue-settings: warning: launchAgentMaxDepth must be a non-negative integer; using default launchAgentMaxDepth 2" >&2
+        SETTINGS_LAUNCH_AGENT_MAX_DEPTH="2"
+      fi
       SETTINGS_BRANCH_PATTERNS=()
       while IFS= read -r _issue_settings_entry; do
         SETTINGS_BRANCH_PATTERNS+=("$_issue_settings_entry")

@@ -8,7 +8,10 @@
 #
 #   1. The current session's folder override, when one is set and valid. See
 #      session-file.sh for where that file lives and what makes it valid.
-#   2. This worktree's CLAUDE_WORK_FOLDER marker. See marker-file.sh.
+#   2. This worktree's CLAUDE_WORK_FOLDER marker. See marker-file.sh. A
+#      marker in the mode form names no folder, so resolution falls through
+#      to level 3 and stderr names the mode. Only target-path.sh refuses a
+#      write under a mode; this script is also every reader's resolver.
 #   3. <claude-work-root>[/<segment>]/<identifier>, where the root comes from
 #      claude-work-root.sh, the segment from the configured settings (an empty
 #      segment omits the directory), and the identifier from the current

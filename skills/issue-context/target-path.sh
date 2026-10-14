@@ -40,6 +40,13 @@
 #   override or a worktree marker may name any folder, and the sentinel
 #   protects nothing there.
 #
+#   A worktree marker in the mode form can forbid the write. With the mode
+#   require-override and no usable session folder, the script exits with T104
+#   and names /set-work-folder as the fix. With a mode it does not know, or a
+#   mode line it cannot parse, it exits with T105 also when a session folder
+#   is set (fail closed). Both refusals come before the sweep and the
+#   reservation, so a refused call leaves no file and removes none.
+#
 # Exit codes:
 #   0  — success
 #   1  — error (see stderr)
@@ -64,6 +71,8 @@ readonly ERR_INVALID_TYPE="T100"
 readonly ERR_BRANCH_DETECT="T101"
 readonly ERR_INVALID_EXT="T102"
 readonly ERR_ORDINAL_EXHAUSTED="T103"
+readonly ERR_OVERRIDE_REQUIRED="T104"
+readonly ERR_MARKER_MODE="T105"
 
 # --- Defaults ---
 type_arg=""
@@ -133,6 +142,17 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck disable=SC1091 # sourced sibling; lint-sh runs shellcheck without -x
 source "$script_dir/slugify.sh"
+# The write gate below reads the session tier and the marker with the same
+# helpers the resolver uses. The settings warnings are the resolver's to give,
+# so they are not printed twice.
+# shellcheck disable=SC1091 # sourced sibling; lint-sh runs shellcheck without -x
+source "$script_dir/issue-settings.sh" 2>/dev/null
+# shellcheck disable=SC1091 # sourced sibling; lint-sh runs shellcheck without -x
+source "$script_dir/session-file.sh"
+# shellcheck disable=SC1091 # sourced sibling; lint-sh runs shellcheck without -x
+source "$script_dir/marker-file.sh"
+# shellcheck disable=SC1091 # sourced sibling; lint-sh runs shellcheck without -x
+source "$script_dir/work-folder.sh"
 
 # --- Resolve the work-item folder (branch detection delegated to the gate) ---
 # get-issue-folder-path.sh infers the identifier from the current branch and
@@ -144,6 +164,31 @@ folder_root="$("${script_dir}/get-issue-folder-path.sh")" || {
   echo "target-path $ERR_BRANCH_DETECT error: claude-work-root.sh failed" >&2
   exit 1
 }
+
+# --- Refuse a write that the worktree marker forbids ---
+# After the resolution, so its stderr report (which names the mode) comes
+# first, and before the sweep and the reservation, so a refusal changes no
+# file. Only a writer refuses: get-issue-folder-path.sh falls through to the
+# branch tier for its readers, and this is the script every writer calls.
+gate_reason=""
+gate_mode=""
+if ! _issue_context_write_gate gate_reason gate_mode; then
+  marker_file="$(_issue_context_marker_path 2>/dev/null || true)"
+  case "$gate_reason" in
+    required)
+      branch_root="$("${script_dir}/claude-work-root.sh" 2>/dev/null || printf '<repo>/.claude-work')"
+      echo "target-path $ERR_OVERRIDE_REQUIRED error: $marker_file holds the mode require-override, so each session must set its own work folder before it writes a working file. Run /set-work-folder <absolute folder>, or /set-work-folder $branch_root to write to the branch folder. No file was written." >&2
+      ;;
+    *)
+      if [ "$gate_mode" = "$_ISSUE_CONTEXT_MARKER_MODE_INVALID" ]; then
+        echo "target-path $ERR_MARKER_MODE error: $marker_file starts with '{' but is not {\"mode\": \"<mode>\"}, so its rule is unknown and no working file may be written. Fix the marker, or remove it with set-work-folder.sh --clear --worktree. No file was written." >&2
+      else
+        echo "target-path $ERR_MARKER_MODE error: $marker_file holds the mode '$gate_mode', which this install does not know, so no working file may be written. Update the skills, or fix the marker. No file was written." >&2
+      fi
+      ;;
+  esac
+  exit 1
+fi
 
 # --- Sweep abandoned reservations ---
 # A path is claimed as an empty file before it is printed, and nothing releases

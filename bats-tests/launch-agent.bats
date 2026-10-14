@@ -637,7 +637,7 @@ PROMPT
   clock_stub 20260930-120000
   run_in "$REPO" my-topic --bg "a later prompt"
   [ "$status" -eq 0 ]
-  update="$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt"
+  update="$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt"
   printf 'a later prompt\n' | cmp -s - "$update"
   _contains "$output" "Prompt: $update"
   _lacks "$output" "Repeat:"
@@ -652,26 +652,26 @@ PROMPT
   run_in "$REPO" my-topic --bg "the third prompt"
   [ "$status" -eq 0 ]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "the first prompt" ]
-  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt")" = "the second prompt" ]
-  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.update-20260930-130000.txt")" = "the third prompt" ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt")" = "the second prompt" ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-130000.txt")" = "the third prompt" ]
 }
 
 @test "a taken update name waits one second and takes the next stamp" {
   mkdir -p "$REPO/my-topic"
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
-  printf 'a launch in the same second\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt"
+  printf 'a launch in the same second\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt"
   clock_stub 20260930-120000 20260930-120001
   run_in "$REPO" my-topic --bg "a later prompt"
   [ "$status" -eq 0 ]
-  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt")" = "a launch in the same second" ]
-  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120001.txt")" = "a later prompt" ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt")" = "a launch in the same second" ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120001.txt")" = "a later prompt" ]
   [ "$(wc -l < "$SLEEP_LOG" | tr -d ' ')" -eq 1 ]
 }
 
 @test "a clock that stays on a taken second → L003 after three reads, nothing written" {
   mkdir -p "$REPO/my-topic"
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
-  printf 'a launch in the same second\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt"
+  printf 'a launch in the same second\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt"
   before="$(_prompt_files "$REPO/my-topic")"
   clock_stub 20260930-120000
   run_in "$REPO" my-topic --bg "a later prompt"
@@ -698,24 +698,105 @@ PROMPT
 @test "a repeat of the newest update file writes nothing and names that file" {
   mkdir -p "$REPO/my-topic"
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  printf 'the second prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-100000.txt"
+  before="$(_prompt_files "$REPO/my-topic")"
+  run_in "$REPO" my-topic --bg "the second prompt"
+  [ "$status" -eq 0 ]
+  _contains "$output" "Prompt: $REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-100000.txt"
+  _contains "$output" "Repeat:"
+  [ "$(_prompt_files "$REPO/my-topic")" = "$before" ]
+}
+
+@test "a repeat of the newest old-form update file writes nothing" {
+  mkdir -p "$REPO/my-topic"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
   printf 'the second prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260930-100000.txt"
   before="$(_prompt_files "$REPO/my-topic")"
   run_in "$REPO" my-topic --bg "the second prompt"
   [ "$status" -eq 0 ]
-  _contains "$output" "Prompt: $REPO/my-topic/prompt-new-agent-launch.update-20260930-100000.txt"
-  _contains "$output" "Repeat:"
+  _contains "$output" "Repeat: the prompt matches $REPO/my-topic/prompt-new-agent-launch.update-20260930-100000.txt"
   [ "$(_prompt_files "$REPO/my-topic")" = "$before" ]
+}
+
+@test "with both forms, the repeat check compares the highest stamp, not the last file of the glob" {
+  mkdir -p "$REPO/my-topic"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  printf 'the older prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260929-090000.txt"
+  printf 'the newest prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260930-100000.txt"
+  before="$(_prompt_files "$REPO/my-topic")"
+  run_in "$REPO" my-topic --bg "the newest prompt"
+  [ "$status" -eq 0 ]
+  _contains "$output" "Repeat: the prompt matches $REPO/my-topic/prompt-new-agent-launch.update-20260930-100000.txt"
+  [ "$(_prompt_files "$REPO/my-topic")" = "$before" ]
+}
+
+@test "with both forms, a repeat of the newest new-form file writes nothing" {
+  mkdir -p "$REPO/my-topic"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  printf 'the older prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260929-090000.txt"
+  printf 'the newest prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-100000.txt"
+  before="$(_prompt_files "$REPO/my-topic")"
+  run_in "$REPO" my-topic --bg "the newest prompt"
+  [ "$status" -eq 0 ]
+  _contains "$output" "Repeat: the prompt matches $REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-100000.txt"
+  [ "$(_prompt_files "$REPO/my-topic")" = "$before" ]
+}
+
+@test "with both forms, a prompt that matches the older file is a new update file" {
+  mkdir -p "$REPO/my-topic"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  printf 'the older prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260929-090000.txt"
+  printf 'the newest prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260930-100000.txt"
+  clock_stub 20260930-120000
+  run_in "$REPO" my-topic --bg "the older prompt"
+  [ "$status" -eq 0 ]
+  _lacks "$output" "Repeat:"
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt")" = "the older prompt" ]
+}
+
+@test "a stamp that an old-form file holds is taken, so the launch waits for the next second" {
+  mkdir -p "$REPO/my-topic"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  printf 'an old-form launch\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt"
+  clock_stub 20260930-120000 20260930-120001
+  run_in "$REPO" my-topic --bg "a later prompt"
+  [ "$status" -eq 0 ]
+  [ ! -e "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt" ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120001.txt")" = "a later prompt" ]
+  [ "$(wc -l < "$SLEEP_LOG" | tr -d ' ')" -eq 1 ]
+}
+
+@test "a hand-named update file with a dot before the stamp never counts as the newest prompt" {
+  mkdir -p "$REPO/my-topic"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  printf 'a hand-named prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.update.20260930-100000.txt"
+  clock_stub 20260930-120000
+  run_in "$REPO" my-topic --bg "a hand-named prompt"
+  [ "$status" -eq 0 ]
+  _lacks "$output" "Repeat:"
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt")" = "a hand-named prompt" ]
+}
+
+@test "an update file whose suffix is not a stamp never counts as the newest prompt" {
+  mkdir -p "$REPO/my-topic"
+  printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
+  printf 'a draft\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-draft.txt"
+  clock_stub 20260930-120000
+  run_in "$REPO" my-topic --bg "a draft"
+  [ "$status" -eq 0 ]
+  _lacks "$output" "Repeat:"
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt")" = "a draft" ]
 }
 
 @test "a prompt that matches an older file but not the newest is a new update file" {
   mkdir -p "$REPO/my-topic"
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
-  printf 'the second prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260930-100000.txt"
+  printf 'the second prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-100000.txt"
   clock_stub 20260930-120000
   run_in "$REPO" my-topic --bg "the first prompt"
   [ "$status" -eq 0 ]
   _lacks "$output" "Repeat:"
-  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt")" = "the first prompt" ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt")" = "the first prompt" ]
 }
 
 @test "an old archive keeps its name and bytes, and is never taken as the newest prompt" {
@@ -727,7 +808,7 @@ PROMPT
   [ "$status" -eq 0 ]
   _lacks "$output" "Repeat:"
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.20200102-153045.txt")" = "an archived prompt" ]
-  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt")" = "an archived prompt" ]
+  [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt")" = "an archived prompt" ]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "the first prompt" ]
 }
 
@@ -737,7 +818,7 @@ PROMPT
   clock_stub 20260930-120000
   run_in "$REPO" my-topic --bg "a later prompt"
   [ "$status" -eq 0 ]
-  _contains "$(cat "$ARGS_FILE")" "already saved at $REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt"
+  _contains "$(cat "$ARGS_FILE")" "already saved at $REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt"
 }
 
 @test "--bg on a repeat names the matched file in the preamble" {
@@ -754,7 +835,7 @@ PROMPT
   clock_stub 20260930-120000
   run_here "$REPO" my-topic "a later prompt"
   [ "$status" -eq 0 ]
-  _contains "$output" "Prompt: $REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt"
+  _contains "$output" "Prompt: $REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt"
   _contains "$output" "Here: no agent was started"
   [ "$(wc -l < "$DATE_LOG" | tr -d ' ')" -eq 1 ]
 }
@@ -762,12 +843,12 @@ PROMPT
 @test "the first prompt lists first and the update files follow in stamp order (C locale)" {
   dir="$TEST_TEMP_DIR/order"
   mkdir -p "$dir"
-  touch "$dir/prompt-new-agent-launch.update-20260930-120000.txt" \
+  touch "$dir/prompt-new-agent-launch.txt.update-20260930-120000.txt" \
     "$dir/prompt-new-agent-launch.txt" \
-    "$dir/prompt-new-agent-launch.update-20260929-090000.txt"
+    "$dir/prompt-new-agent-launch.txt.update-20260929-090000.txt"
   expected="prompt-new-agent-launch.txt
-prompt-new-agent-launch.update-20260929-090000.txt
-prompt-new-agent-launch.update-20260930-120000.txt"
+prompt-new-agent-launch.txt.update-20260929-090000.txt
+prompt-new-agent-launch.txt.update-20260930-120000.txt"
   [ "$(cd "$dir" && LC_ALL=C ls -1)" = "$expected" ]
 }
 
@@ -776,12 +857,12 @@ prompt-new-agent-launch.update-20260930-120000.txt"
   [ -n "$locale_name" ] || skip "en_US.UTF-8 is not installed"
   dir="$TEST_TEMP_DIR/order"
   mkdir -p "$dir"
-  touch "$dir/prompt-new-agent-launch.update-20260930-120000.txt" \
+  touch "$dir/prompt-new-agent-launch.txt.update-20260930-120000.txt" \
     "$dir/prompt-new-agent-launch.txt" \
-    "$dir/prompt-new-agent-launch.update-20260929-090000.txt"
+    "$dir/prompt-new-agent-launch.txt.update-20260929-090000.txt"
   expected="prompt-new-agent-launch.txt
-prompt-new-agent-launch.update-20260929-090000.txt
-prompt-new-agent-launch.update-20260930-120000.txt"
+prompt-new-agent-launch.txt.update-20260929-090000.txt
+prompt-new-agent-launch.txt.update-20260930-120000.txt"
   [ "$(cd "$dir" && LC_ALL="$locale_name" ls -1)" = "$expected" ]
 }
 
@@ -1044,4 +1125,103 @@ prompt-new-agent-launch.update-20260930-120000.txt"
   # closing quote of the first word rather than part of the name.
   _contains "$output" "set-work-folder.sh' '$TEST_TEMP_DIR/Charles'\\'' topics/Ann'\\''s run' 'Ann'\\''s run'"
   [ "$(cat "$topic/prompt-new-agent-launch.txt")" = "do the thing" ]
+}
+
+# ============================================================================
+# The depth limit
+# ============================================================================
+
+DEPTH_DIR_NAME="agent-depth"
+
+# run_bg_as <session-id> <args...> — run the script from $REPO with --bg as the
+# session <session-id>, so the depth check reads that session's record.
+run_bg_as() {
+  local sid="$1"
+  shift
+  run env -u CLAUDE_JOB_DIR -u CLAUDE_CODE_AGENT -u CLAUDE_PID \
+    -u CLAUDE_CODE_CHILD_SESSION \
+    PATH="$STUB_PATH" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$sid" \
+    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" "$@"
+}
+
+# depth_record <job-id> <depth> — write a depth record, as a parent would.
+depth_record() {
+  mkdir -p "$TEST_TEMP_DIR/$DEPTH_DIR_NAME"
+  printf '%s\n' "$2" > "$TEST_TEMP_DIR/$DEPTH_DIR_NAME/$1"
+}
+
+@test "depth: a launch from a session with no record writes depth 1 for the child's job id" {
+  run_bg_as "$SESSION_ID" my-topic --bg "do the thing"
+  [ "$status" -eq 0 ]
+  # The stub prints job id a1b2c3d4.
+  [ "$(cat "$TEST_TEMP_DIR/$DEPTH_DIR_NAME/a1b2c3d4")" = "1" ]
+}
+
+@test "depth: a launch from a plain shell is depth 0, so the child is depth 1" {
+  run_in "$REPO" my-topic --bg "do the thing"
+  [ "$status" -eq 0 ]
+  [ "$(cat "$TEST_TEMP_DIR/$DEPTH_DIR_NAME/a1b2c3d4")" = "1" ]
+}
+
+@test "depth: a session at depth 1 starts a child at depth 2" {
+  depth_record "${SESSION_ID:0:8}" 1
+  run_bg_as "$SESSION_ID" my-topic --bg "do the thing"
+  [ "$status" -eq 0 ]
+  [ "$(cat "$TEST_TEMP_DIR/$DEPTH_DIR_NAME/a1b2c3d4")" = "2" ]
+}
+
+@test "depth: a session at the default limit → L006 naming the limit and the setting, nothing created" {
+  depth_record "${SESSION_ID:0:8}" 2
+  run_bg_as "$SESSION_ID" my-topic --bg "do the thing"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L006"
+  _contains "$output" "depth 2"
+  _contains "$output" "launchAgentMaxDepth is 2"
+  [ ! -e "$REPO/my-topic" ]
+  [ ! -e "$ARGS_FILE" ]
+}
+
+@test "depth: launchAgentMaxDepth raises the limit" {
+  printf '%s' '{"launchAgentMaxDepth": 3}' > "$CFG"
+  depth_record "${SESSION_ID:0:8}" 2
+  run_bg_as "$SESSION_ID" my-topic --bg "do the thing"
+  [ "$status" -eq 0 ]
+  [ "$(cat "$TEST_TEMP_DIR/$DEPTH_DIR_NAME/a1b2c3d4")" = "3" ]
+}
+
+@test "depth: launchAgentMaxDepth 0 refuses every background launch" {
+  printf '%s' '{"launchAgentMaxDepth": 0}' > "$CFG"
+  run_bg_as "$SESSION_ID" my-topic --bg "do the thing"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L006"
+  _contains "$output" "launchAgentMaxDepth is 0"
+}
+
+@test "depth: a damaged record refuses rather than reading as 0" {
+  depth_record "${SESSION_ID:0:8}" "two"
+  run_bg_as "$SESSION_ID" my-topic --bg "do the thing"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L006"
+  _contains "$output" "cannot be read"
+  [ ! -e "$REPO/my-topic" ]
+}
+
+@test "depth: the default mode neither reads nor writes a record" {
+  depth_record "${SESSION_ID:0:8}" 9
+  run_here "$REPO" my-topic "do the thing"
+  [ "$status" -eq 0 ]
+  [ "$(ls "$TEST_TEMP_DIR/$DEPTH_DIR_NAME")" = "${SESSION_ID:0:8}" ]
+}
+
+@test "depth: a record that cannot be written → L006 naming claude stop, and no relaunch" {
+  _require_enforced_permission_bits
+  mkdir -p "$TEST_TEMP_DIR/$DEPTH_DIR_NAME"
+  chmod 500 "$TEST_TEMP_DIR/$DEPTH_DIR_NAME"
+  run_bg_as "$SESSION_ID" my-topic --bg "do the thing"
+  chmod 700 "$TEST_TEMP_DIR/$DEPTH_DIR_NAME"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L006"
+  _contains "$output" "claude stop a1b2c3d4"
+  _lacks "$output" "claude --bg --name"
 }
