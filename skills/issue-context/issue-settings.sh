@@ -284,7 +284,10 @@ if [ -f "$_issue_settings_file" ] && [ -r "$_issue_settings_file" ]; then
       # A JSON number and not a string, so the value reads as what it is. A
       # bad value falls back to the default with a warning, as every other
       # key does: the fall-back is a bounded limit, so it can never remove
-      # the limit. Absent is the ordinary case and says nothing.
+      # the limit. Absent is the ordinary case and says nothing. The upper
+      # bound keeps the value inside the integers that Bash compares: jq
+      # prints 1e300 as 1e+300, and a failed comparison in launch-agent.sh
+      # reads as false, which removes the limit.
       # shellcheck disable=SC2034
       # The markers sit inside the jq program, so they are jq comments. kcov
       # counts the statement on its closing line, which stays measured.
@@ -292,12 +295,13 @@ if [ -f "$_issue_settings_file" ] && [ -r "$_issue_settings_file" ]; then
         if has("launchAgentMaxDepth") | not then "2"
         elif (.launchAgentMaxDepth | type == "number")
           and .launchAgentMaxDepth >= 0
+          and .launchAgentMaxDepth <= 999999999
           and (.launchAgentMaxDepth | floor) == .launchAgentMaxDepth
         then (.launchAgentMaxDepth | tostring)
         # kcov-exclude-end
         else "invalid" end')"
       if [ "$SETTINGS_LAUNCH_AGENT_MAX_DEPTH" = "invalid" ]; then
-        echo "issue-settings: warning: launchAgentMaxDepth must be a non-negative integer; using default launchAgentMaxDepth 2" >&2
+        echo "issue-settings: warning: launchAgentMaxDepth must be an integer from 0 to 999999999; using default launchAgentMaxDepth 2" >&2
         SETTINGS_LAUNCH_AGENT_MAX_DEPTH="2"
       fi
       SETTINGS_BRANCH_PATTERNS=()

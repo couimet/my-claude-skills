@@ -13,7 +13,7 @@ Move one side item out of this session at the moment you find it. A side item is
 
 ## When to Use
 
-Use this when you find a problem that does not belong to your task and that needs more than one line to handle. Claude can start this skill with no request from the user. The user can also type `/fork-side-item`.
+Use this when you find a problem that does not belong to your task and that needs more than one line to handle. Claude can start this skill with no request from the user.
 
 Do not use it for a problem inside your task: fix that problem as part of the task. Do not use it when you are a side worker: a side worker records its own side items in its folder and reports them.
 
@@ -84,14 +84,14 @@ Do these steps in order:
 1. Check the claim again on the latest default branch. A side item is often found against an older commit.
 2. For the mode enrich, compare the evidence with the ticket, and list only what the ticket does not have.
 3. Choose one outcome: ticket (file a new ticket), enrich (add to the existing ticket), message (send a message to the owner), or drop (the claim is false or not worth the work; give the reason).
-4. Do the outcome. File a ticket through /draft-issue. Add to a ticket with a comment.
+4. Do the outcome. For a ticket, draft it with /draft-issue, file it with /create-github-issue or /create-jira-issue, and keep the link. Add to a ticket with a comment.
 5. Close the folder. Write one line to <side folder>/side-outcome.txt: the outcome, a TAB, then the link of the ticket or comment, or the reason for a drop.
 6. When Return is ticket-link, append one line to <origin folder>/side-items.txt: side.closed: <side folder>, a TAB, the outcome, a TAB, the link. Only append; never change other lines in that file.
 
 Do not fork side items of your own and do not start agents. When you find another side item, record it in your folder and report it.
 ```
 
-`<side folder>` is `<topic root>/side-<slug>`. When you do not know the topic root, run the list mode first: each line starts with it.
+When you do not know the topic root, run the list mode first: each line starts with it.
 
 ## Step 4: Run the Script
 

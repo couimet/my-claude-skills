@@ -66,6 +66,13 @@ depth_write() {
   [ "${output%%|*}" = "1" ]
 }
 
+@test "a record of more than nine digits refuses, so it cannot overflow" {
+  mkdir -p "$DEPTH_DIR"
+  printf '18446744073709551617\n' > "$DEPTH_DIR/${SESSION_ID:0:8}"
+  depth_read "$SESSION_ID"
+  [ "${output%%|*}" = "1" ]
+}
+
 @test "a record that is a directory refuses" {
   mkdir -p "$DEPTH_DIR/${SESSION_ID:0:8}"
   depth_read "$SESSION_ID"
@@ -81,6 +88,8 @@ depth_write() {
   depth_write "../a" 1
   [ "$output" = "1" ]
   depth_write "abcd1234" "-1"
+  [ "$output" = "1" ]
+  depth_write "abcd1234" "1000000000"
   [ "$output" = "1" ]
   [ ! -e "$DEPTH_DIR/abcd1234" ]
 }

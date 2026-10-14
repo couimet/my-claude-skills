@@ -176,8 +176,10 @@ if ! _issue_context_write_gate gate_reason gate_mode; then
   marker_file="$(_issue_context_marker_path 2>/dev/null || true)"
   case "$gate_reason" in
     required)
-      branch_root="$("${script_dir}/claude-work-root.sh" 2>/dev/null || printf '<repo>/.claude-work')"
-      echo "target-path $ERR_OVERRIDE_REQUIRED error: $marker_file holds the mode require-override, so each session must set its own work folder before it writes a working file. Run /set-work-folder <absolute folder>, or /set-work-folder $branch_root to write to the branch folder. No file was written." >&2
+      # folder_root is the branch folder here: the gate refused, so no
+      # session folder applied, and the resolver falls through to the branch
+      # tier past a mode marker.
+      echo "target-path $ERR_OVERRIDE_REQUIRED error: $marker_file holds the mode require-override, so each session must set its own work folder before it writes a working file. Run /set-work-folder <absolute folder>, or /set-work-folder $folder_root to write to the branch folder. No file was written." >&2
       ;;
     *)
       if [ "$gate_mode" = "$_ISSUE_CONTEXT_MARKER_MODE_INVALID" ]; then

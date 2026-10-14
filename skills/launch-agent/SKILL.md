@@ -34,7 +34,7 @@ To point this session at a folder without starting a topic, see `/set-work-folde
 
 ## The Depth Limit
 
-`--bg` refuses with L006 when the new agent would go past the `launchAgentMaxDepth` setting (default 2). A session the user started is depth 0. See `/issue-context-internals`. On L006, do not retry in another form: record the work in the folder of this session, and tell the user.
+`--bg` refuses with L006 when the new agent would go past the `launchAgentMaxDepth` setting (default 2). A session the user started is depth 0. See `/issue-context-internals`. On an L006 refusal, do not retry in another form: record the work in the folder of this session, and tell the user.
 
 ## The Folder
 
@@ -84,7 +84,7 @@ The default mode adds one line saying that no agent started, and one `Type /rena
 
 `--bg` adds the job id and the attach command. Print both, and say plainly that this session did not become the agent, so the user knows where the work went. `claude agents` lists the agent under the name, so no `/rename` is necessary.
 
-A failed call leaves the folder and the prompt file in place. It prints the exact command on stderr, ready to paste and run by hand. Give the user that command unchanged. With `--bg` it carries the composed agent prompt. An L004 that says the agent started means the agent runs: do not launch again or give a `claude --bg` command. Point the user to `claude agents`.
+A failed call leaves the folder and the prompt file in place. It prints the exact command on stderr, ready to paste and run by hand. Give the user that command unchanged. With `--bg` it carries the composed agent prompt. An L004 or L006 that says the agent started means the agent runs: do not launch again, record the work here, or give a `claude --bg` command. Point the user to `claude agents` and to the L006 `claude stop` command.
 
 ## Formatting
 

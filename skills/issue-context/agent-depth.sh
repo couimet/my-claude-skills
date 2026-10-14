@@ -78,7 +78,9 @@ _issue_context_agent_depth_read() {
   [ -e "$_iad_file" ] || return 0
   [ -f "$_iad_file" ] && [ -r "$_iad_file" ] || return 1
   IFS= read -r _iad_line < "$_iad_file" || _iad_line="${_iad_line:-}"
-  [[ "$_iad_line" =~ ^[0-9]+$ ]] || return 1
+  # Nine digits at most, so the arithmetic below cannot overflow into a
+  # small depth.
+  [[ "$_iad_line" =~ ^[0-9]{1,9}$ ]] || return 1
   # 10# keeps a leading zero from reading as octal.
   eval "$_iad_out_var=\$((10#\$_iad_line))"
   return 0
@@ -90,7 +92,7 @@ _issue_context_agent_depth_read() {
 _issue_context_agent_depth_write() {
   local _iaw_key="$1" _iaw_depth="$2" _iaw_dir _iaw_tmp
   _issue_context_agent_depth_key_ok "$_iaw_key" || return 1
-  [[ "$_iaw_depth" =~ ^[0-9]+$ ]] || return 1
+  [[ "$_iaw_depth" =~ ^[0-9]{1,9}$ ]] || return 1
   _iaw_dir="$(_issue_context_agent_depth_dir)" || return 1
   mkdir -p "$_iaw_dir" 2>/dev/null || return 1
   _iaw_tmp="$(mktemp "$_iaw_dir/.tmp-XXXXXX" 2>/dev/null)" || return 1

@@ -761,6 +761,15 @@ target() {
   [ "$(all_files)" = "$before" ]
 }
 
+@test "mode: on a work-item branch, T104 names the branch folder, not the .claude-work root" {
+  git checkout -q -b issues/42
+  write_marker "$MODE_LINE"
+  target ""
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"T104"* ]] || false
+  [[ "$stderr" == *"/set-work-folder $TEST_TEMP_DIR/.claude-work/42 to write"* ]] || false
+}
+
 @test "mode: a refused write sweeps no old reservation" {
   write_marker "$MODE_LINE"
   local stale="$TEST_TEMP_DIR/.claude-work/notes/20200101-000000-001-old.txt"

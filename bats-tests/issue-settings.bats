@@ -355,8 +355,19 @@ max_depth_of() {
   for bad in '"3"' '-1' '1.5' 'null' 'true'; do
     max_depth_of "{\"launchAgentMaxDepth\": $bad}"
     [ "${lines[0]}" = "2" ]
-    [[ "$output" == *"launchAgentMaxDepth must be a non-negative integer"* ]] || false
+    [[ "$output" == *"launchAgentMaxDepth must be an integer from 0 to 999999999"* ]] || false
   done
+}
+
+@test "launchAgentMaxDepth above 999999999 → 2 with a warning, so the limit stays" {
+  local big
+  for big in '1000000000' '1e300'; do
+    max_depth_of "{\"launchAgentMaxDepth\": $big}"
+    [ "${lines[0]}" = "2" ]
+    [[ "$output" == *"launchAgentMaxDepth must be an integer from 0 to 999999999"* ]] || false
+  done
+  max_depth_of '{"launchAgentMaxDepth": 999999999}'
+  [ "$output" = "999999999" ]
 }
 
 @test "launchAgentMaxDepth is 2 when the settings file is malformed" {
