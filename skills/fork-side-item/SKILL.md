@@ -107,7 +107,7 @@ Keep the quotes around the first marker, so the shell expands nothing in the pro
 
 The script refuses with these codes:
 
-- **F002:** the side folder exists, and the message gives its state. When it holds this item, do not fork again. When the item is different, reword the claim and run the script again.
+- **F002:** the side folder exists, and the message gives its state. When it holds this item, do not fork again. When the item is different, reword the claim and run the script again. When the state is `open` and the worker ended, `/resume-agent` wakes it.
 - **F004:** `/launch-agent` refused or failed, and its own error comes first. An L006 means that this session is at the depth limit: record the item in your own folder, tell the user, and continue.
 - **F001** and **F003:** usage and topic-root errors. Give the message to the user.
 
@@ -123,7 +123,7 @@ Copy the `side.forked: <folder>` line the script printed into your active workin
 ~/.claude/skills/fork-side-item/fork-side-item.sh list
 ```
 
-The script prints one line for each `side-*` folder under the topic root: the folder, a TAB, and its state. The state is the outcome in `side-outcome.txt`, or `open` when the worker has not closed the folder. Give the lines to the user as printed.
+The script prints one line for each `side-*` folder under the topic root: the folder, a TAB, and its state. The state is the outcome in `side-outcome.txt`, or `open` when the worker has not closed the folder. Give the lines to the user as printed. When a folder is open, stderr adds one line: `/resume-agent <folder>` wakes a worker that ended.
 
 ## Formatting
 

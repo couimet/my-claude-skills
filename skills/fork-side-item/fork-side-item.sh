@@ -25,6 +25,8 @@
 #   list   Print one "<folder><TAB><state>" line for each side-* directory
 #          under the topic root. The state is the outcome in the folder's
 #          side-outcome.txt, or "open" when the worker has not closed it.
+#          When a folder is open, one stderr line says that /resume-agent
+#          wakes a worker that ended; F002 says the same for an open folder.
 #
 # The fixed prefix side- lets one glob find every side item. It is a one-way
 # door: notes cite a side folder by its path, so a later rename breaks each
@@ -127,10 +129,17 @@ case "${1-}" in
   list)
     [ "$#" -eq 1 ] || die "$ERR_USAGE" "list takes no other arguments"
     resolve_root
+    any_open=0
     for dir in "$root/$SIDE_PREFIX"*; do
       [ -d "$dir" ] || continue
-      printf '%s\t%s\n' "$dir" "$(state_of "$dir")"
+      dir_state="$(state_of "$dir")"
+      [ "$dir_state" != "open" ] || any_open=1
+      printf '%s\t%s\n' "$dir" "$dir_state"
     done
+    # On stderr, so the list lines stay one format for callers that parse them.
+    if [ "$any_open" -eq 1 ]; then
+      echo "fork-side-item: when the worker of an open side folder ended, run /resume-agent <folder> to wake it" >&2
+    fi
     exit 0
     ;;
   fork)
@@ -160,7 +169,11 @@ name="$SIDE_PREFIX$slug"
 resolve_root
 side_folder="$root/$name"
 if [ -e "$side_folder" ]; then
-  die "$ERR_EXISTS" "$side_folder exists already (state: $(state_of "$side_folder")); if it holds this item, do not fork it again; if the item differs, reword the claim"
+  existing_state="$(state_of "$side_folder")"
+  wake_hint=""
+  [ "$existing_state" != "open" ] \
+    || wake_hint="; when its worker ended, run /resume-agent $side_folder to wake it"
+  die "$ERR_EXISTS" "$side_folder exists already (state: $existing_state); if it holds this item, do not fork it again; if the item differs, reword the claim$wake_hint"
 fi
 
 if ! launch_output="$(printf '%s\n' "$prompt" | "$_self_dir/../launch-agent/launch-agent.sh" "$name" --bg)"; then

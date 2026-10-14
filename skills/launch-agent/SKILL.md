@@ -78,7 +78,7 @@ Every refusal happens before the script writes anything, in both modes. A reject
 
 ## Step 2: Report
 
-Give the user the lines the script printed, as it printed them: the resolved folder, the prompt file, and the name. Give the `Repeat:` line too, when the script prints it.
+Give the user the lines the script printed, as it printed them: the resolved folder, the prompt file, and the name. Give the `Repeat:` line and the `/resume-agent` hint for an earlier session too, when printed.
 
 The default mode adds one line saying that no agent started, and one `Type /rename <name> ...` line. Print both. Claude Code gives a script no way to rename a session, so only the user can type that command. This session now owns the folder, so do the task the user gave you. Then repeat the `/rename` line, unchanged, as the last line of your first reply that gives control back to the user: a finished result, a question, or a stop for approval. Repeat it only that once.
 

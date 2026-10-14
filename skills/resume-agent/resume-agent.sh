@@ -30,19 +30,42 @@
 #               a copy under a new id instead of the session. The script then
 #               reads the list again and checks that the session is there.
 #
-# The script sends no prompt and attaches nothing. A caller sends its own
-# prompt to the printed name, and a person opens the session from the agent
-# view.
+# Right after a restart, `claude agents` lists the session under its short id
+# until the session loads its saved name. A name read at that moment sent a
+# person to search the agent view for a string it did not show. So the name
+# comes from the "backgrounded · <id> · <name>" line of the restart output
+# when that line has one, and otherwise from the list, read again every
+# second for up to RESUME_AGENT_NAME_WAIT seconds (default 15). A name that
+# is still the short id after that is reported as not loaded, never as a
+# different name.
 #
-# Output (stdout), one labelled line each:
+# The script sends no prompt and attaches nothing. A caller sends its own
+# prompt, and a person opens the session from the agent view or with the
+# attach command.
+#
+# The Address line is the cross-session address of the session's process,
+# uds:<socket dir>/<pid>.sock. A short id is not a SendMessage address, and
+# two live sessions can share a name, so this is the one address that always
+# names exactly this session. No Claude Code doc defines the socket dir
+# (RESUME_AGENT_SOCKET_DIR, default /tmp/cc-socks), so the line is printed
+# only when that socket exists, and stderr says so when it does not.
+#
+# Output (stdout), one labelled line each, in this order:
 #   Folder:   the resolved folder
 #   Session:  the full session id
 #   Id:       the short id, the first 8 characters of the session id
-#   Name:     the name `claude agents` lists the session under
-#   State:    the state `claude agents` reports, such as working, blocked,
-#             idle, or done
+#   Name:     the name the session runs under, or "not loaded yet"
+#   Status:   the status `claude agents` reports: idle (at the prompt), busy
+#             (a turn runs), waiting (a permission answer), or unknown
+#   State:    the state `claude agents` reports, such as blocked or done, or
+#             unknown
 #   Action:   restarted, or already running
-#   Open:     how a person opens the session with no shell command
+#   Pid:      the process id of the session, or none
+#   Address:  uds:<socket dir>/<pid>.sock, only when that socket exists
+#   Attach:   claude attach <short id>
+#   Open:     how a person opens the session with no shell command, only
+#             when the name is loaded
+#   Note:     do not run claude --bg --resume, because that starts a copy
 #
 # Exit codes:
 #   0  — the session runs (it ran already, or it restarted)
@@ -140,21 +163,9 @@ folder_name="${folder_abs##*/}"
 sessions_dir="$(_issue_context_sessions_dir)" \
   || die "$ERR_NO_SESSION" "could not resolve the sessions directory from the settings path"
 
-# One "<written_at><TAB><session_id>" line for each session file that names
-# the folder, newest first. A file that does not parse is skipped: it names no
-# folder this script can trust.
-matches=""
-if [ -d "$sessions_dir" ]; then
-  for file in "$sessions_dir"/*.json; do
-    [ -f "$file" ] || continue
-    line="$(jq -r --arg f "$folder_abs" \
-      'select(type == "object" and .folder == $f and (.session_id | type == "string"))
-       | "\(.written_at // "")\t\(.session_id)"' "$file" 2>/dev/null || true)"
-    [ -n "$line" ] || continue
-    matches="${matches}${line}"$'\n'
-  done
-fi
-matches="$(printf '%s' "$matches" | LC_ALL=C sort -r)"
+[ -d "$sessions_dir" ] || die "$ERR_NO_SESSION" "no session has its working files in $folder_abs, so there is no session to resume; start one with /launch-agent"
+matches="$(_issue_context_sessions_of_folder "$folder_abs")" \
+  || die "$ERR_NO_SESSION" "could not read the session files in $sessions_dir"
 
 self_id="${CLAUDE_CODE_SESSION_ID:-}"
 session_id=""
@@ -182,20 +193,40 @@ for other in ${others[@]+"${others[@]}"}; do
 done
 
 # --- Read the live sessions ---
-# agents_entry — print the `claude agents --json` entry of the session as one
-# JSON line, or nothing when it is not listed. Returns 1 when the command
-# fails or prints no JSON array.
-agents_entry() {
-  local list
-  list="$(claude agents --json 2>/dev/null)" || return 1
-  printf '%s' "$list" | jq -e 'type == "array"' >/dev/null 2>&1 || return 1
-  printf '%s' "$list" | jq -c --arg id "$session_id" \
+readonly NAME_WAIT="${RESUME_AGENT_NAME_WAIT:-15}"
+readonly SOCKET_DIR="${RESUME_AGENT_SOCKET_DIR:-/tmp/cc-socks}"
+
+# read_list — set `agents_list` to the `claude agents --json` array. Returns 1
+# when the command fails or prints no JSON array.
+agents_list=""
+read_list() {
+  agents_list="$(claude agents --json 2>/dev/null)" || return 1
+  printf '%s' "$agents_list" | jq -e 'type == "array"' >/dev/null 2>&1
+}
+
+# entry_of — print the list entry of the session as one JSON line, or nothing
+# when it is not listed.
+entry_of() {
+  printf '%s' "$agents_list" | jq -c --arg id "$session_id" \
     '[.[] | select(.sessionId == $id)] | first // empty'
 }
 
-entry="$(agents_entry)" \
-  || die "$ERR_AGENTS" "claude agents --json failed, so the state of session $session_id is unknown; nothing was restarted"
+# field <name> — print one field of `entry`, or nothing when it is null.
+field() {
+  printf '%s' "$entry" | jq -r --arg k "$1" '.[$k] // empty'
+}
 
+short_id="${session_id:0:8}"
+# loaded <name> — 0 when <name> is a real name, not empty and not the short id.
+loaded() {
+  [ -n "$1" ] && [ "$1" != "$short_id" ]
+}
+
+read_list \
+  || die "$ERR_AGENTS" "claude agents --json failed, so the state of session $session_id is unknown; nothing was restarted"
+entry="$(entry_of)"
+
+restart_name=""
 if [ -n "$entry" ]; then
   action="already running"
 else
@@ -216,27 +247,72 @@ else
       exit 1
       ;;
   esac
-  entry="$(agents_entry)" \
-    || die "$ERR_AGENTS" "claude agents --json failed after the restart, so it is not known whether session $session_id runs"
+  restart_name="$(printf '%s\n' "$restart_output" \
+    | sed -n 's/^backgrounded · [^ ]* · \(.*\)$/\1/p' | head -n 1)"
+  restart_name="${restart_name% (*}"
+  loaded "$restart_name" || restart_name=""
+
+  waited=0
+  while :; do
+    read_list \
+      || die "$ERR_AGENTS" "claude agents --json failed after the restart, so it is not known whether session $session_id runs"
+    entry="$(entry_of)"
+    if [ -n "$entry" ] && { [ -n "$restart_name" ] || loaded "$(field name)"; }; then
+      break
+    fi
+    [ "$waited" -lt "$NAME_WAIT" ] || break
+    sleep 1
+    waited=$((waited + 1))
+  done
   [ -n "$entry" ] \
     || die "$ERR_RESTART" "claude --bg --resume $session_id returned, but claude agents does not list the session"
   action="restarted"
 fi
 
-short_id="$(printf '%s' "$entry" | jq -r '.id // empty')"
-[ -n "$short_id" ] || short_id="${session_id:0:8}"
-name="$(printf '%s' "$entry" | jq -r '.name // empty')"
-state="$(printf '%s' "$entry" | jq -r '.state // .status // "unknown"')"
+listed_id="$(field id)"
+[ -z "$listed_id" ] || short_id="$listed_id"
+name="$(field name)"
+loaded "$name" || name="$restart_name"
+status="$(field status)"
+state="$(field state)"
+pid="$(field pid)"
 
-if [ "$name" != "$folder_name" ]; then
-  echo "resume-agent: the session runs under the name '${name:-<none>}', not '$folder_name'; address it by its id, $short_id" >&2
+if loaded "$name"; then
+  if [ "$name" != "$folder_name" ]; then
+    echo "resume-agent: the session runs under the name '$name', not '$folder_name'" >&2
+  fi
+  # Another live session with the same name makes a send by name ambiguous.
+  # The usual cause is a manual `claude --bg --resume`, which starts a copy.
+  printf '%s' "$agents_list" | jq -r --arg n "$name" --arg id "$session_id" \
+    '.[] | select(.name == $n and .sessionId != $id)
+     | "\(.id // .sessionId[0:8])\t\(.pid // "none")"' \
+    | while IFS=$'\t' read -r dup_id dup_pid; do
+        echo "resume-agent: another live session also has the name '$name': $dup_id (pid $dup_pid); if it is a copy, stop it with claude stop $dup_id" >&2
+      done
+else
+  name=""
 fi
-open_name="${name:-$short_id}"
+
+address=""
+if [ -n "$pid" ]; then
+  if [ -S "$SOCKET_DIR/$pid.sock" ]; then
+    address="uds:$SOCKET_DIR/$pid.sock"
+  else
+    echo "resume-agent: no socket at $SOCKET_DIR/$pid.sock, so no Address line; send to the name, or ask the person" >&2
+  fi
+fi
 
 printf 'Folder: %s\n' "$folder_abs"
 printf 'Session: %s\n' "$session_id"
 printf 'Id: %s\n' "$short_id"
-printf 'Name: %s\n' "${name:-<none>}"
-printf 'State: %s\n' "$state"
+printf 'Name: %s\n' "${name:-not loaded yet}"
+printf 'Status: %s\n' "${status:-unknown}"
+printf 'State: %s\n' "${state:-unknown}"
 printf 'Action: %s\n' "$action"
-printf 'Open: in the agent view (claude agents), press Ctrl+F, type %s, and press Enter\n' "$open_name"
+printf 'Pid: %s\n' "${pid:-none}"
+[ -z "$address" ] || printf 'Address: %s\n' "$address"
+printf 'Attach: claude attach %s\n' "$short_id"
+if [ -n "$name" ]; then
+  printf 'Open: in the agent view (claude agents), press Ctrl+F, type %s, and press Enter\n' "$name"
+fi
+printf 'Note: do not run claude --bg --resume %s: the session runs, and a resume starts a copy\n' "$short_id"

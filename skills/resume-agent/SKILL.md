@@ -36,11 +36,13 @@ The script finds the session of the folder in the session files that `/set-work-
 - **Listed:** the session runs. The script restarts nothing, because a resume of a running session starts a copy.
 - **Not listed:** the session ended. The script runs `claude --bg --resume <session id>` with no prompt and no flag, so the session wakes idle under the name it was saved with. A flag such as `--name` makes Claude Code start a copy under a new id, which is why the script passes none.
 
+Right after a restart, the list shows the session under its short id until the session loads its name. So the script takes the name from the restart output, or reads the list again for up to 15 seconds. When the name does not load in that time, the script prints `Name: not loaded yet`.
+
 ## Step 2: Report
 
-Give the user the lines the script printed: `Folder:`, `Session:`, `Id:`, `Name:`, `State:`, `Action:`, and `Open:`. Give the stderr lines too, when the script prints them: the other sessions of the folder, and a name that is not the folder name.
+Give the user the lines the script printed, in order: `Folder:`, `Session:`, `Id:`, `Name:`, `Status:`, `State:`, `Action:`, `Pid:`, `Address:` (only when the socket exists), `Attach:`, `Open:` (only when the name loaded), and `Note:`. Give the stderr lines too, when the script prints them: the other sessions of the folder, a name that is not the folder name, another live session with the same name and its `claude stop` command, and a missing socket.
 
-Tell the user how to open the session: in the agent view, press `Ctrl+F`, type the name, and press Enter.
+Tell the user how to open the session: with the `Attach:` command, or, when an `Open:` line is there, in the agent view: press `Ctrl+F`, type the name, and press Enter. Tell the user not to run `claude --bg --resume` for the session: it runs, and a resume starts a copy.
 
 An error names its code. R001 is a usage error. R002 means that the folder does not resolve or does not exist. R003 means that no other session wrote to the folder. R004 means that `claude agents --json` failed, so the script restarted nothing. R005 means that the restart failed, or that it started a copy: give the user the output the script printed, which names the copy to stop.
 
@@ -60,9 +62,11 @@ A skill that prepares the next round calls the script directly, as callers of `l
 
 1. Save the prompt in the topic folder first, so that the message is never the only copy.
 2. Run `resume-agent.sh "<folder>"`.
-3. Send the prompt with `SendMessage` to the name the script printed. When the name is not the folder name, use the id from the `Id:` line.
+3. Choose the address. Use the name from the `Name:` line only when it loaded and stderr names no other live session with that name. Otherwise use the `Address:` line. A short id is not a `SendMessage` address. With no usable name and no `Address:` line, ask the person.
+4. Read the `Status:` line. When it is `idle`, the session waits at its prompt: send. After a restart it is `idle`, because the script sent no prompt. For each other status, ask the person before you send. `busy` means a turn runs, and a prompt can change work that is half done. `waiting` means a permission prompt, and a prompt does not answer it. `unknown` means the list gave no status.
+5. Send the prompt with `SendMessage` to the address from step 3.
 
-When the state is `working` or `blocked`, ask the person before you send. A prompt that joins a turn in progress can change work that is half done. A blocked session waits for a permission answer, and a prompt does not give that answer.
+The `State:` value does not decide anything: a session at its prompt can show `blocked`.
 
 ## Formatting
 

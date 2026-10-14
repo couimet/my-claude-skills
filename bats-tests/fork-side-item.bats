@@ -81,6 +81,7 @@ run_fork() {
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"F002"* ]]
   [[ "$stderr" == *"state: open"* ]]
+  [[ "$stderr" == *"run /resume-agent $REPO/side-a-claim to wake it"* ]]
   [ ! -e "$ARGS_FILE" ]
 }
 
@@ -90,6 +91,7 @@ run_fork() {
   run_fork "$REPO" "prompt" fork "a claim"
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"state: ticket"* ]]
+  [[ "$stderr" != *"/resume-agent"* ]]
 }
 
 @test "the side folder lands under launchAgentDefaultFolder when it is set" {
@@ -118,6 +120,15 @@ run_fork() {
   [ "$status" -eq 0 ]
   [ "$output" = "$REPO/side-closed-one	drop
 $REPO/side-open-one	open" ]
+  [[ "$stderr" == *"run /resume-agent <folder> to wake it"* ]]
+}
+
+@test "list with only closed side folders prints no wake hint" {
+  mkdir -p "$REPO/side-closed-one"
+  printf 'drop\tthe claim is false\n' > "$REPO/side-closed-one/side-outcome.txt"
+  run_fork "$REPO" "" list
+  [ "$status" -eq 0 ]
+  [ -z "$stderr" ]
 }
 
 @test "list with no side folder prints nothing" {

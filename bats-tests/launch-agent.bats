@@ -829,6 +829,34 @@ PROMPT
   _contains "$(cat "$ARGS_FILE")" "already saved at $REPO/my-topic/prompt-new-agent-launch.txt,"
 }
 
+@test "a session file of another session for the folder → a hint to /resume-agent, and the launch goes on" {
+  mkdir -p "$REPO/my-topic" "$SESSIONS_DIR"
+  printf '{"version":1,"folder":"%s","session_id":"7fa0c639-1111-4222-8333-944455556666","slug":"t","written_at":"2026-10-13T10:00:00Z"}' \
+    "$REPO/my-topic" > "$SESSIONS_DIR/7fa0c639-1111-4222-8333-944455556666--t.json"
+  run_in "$REPO" my-topic --bg "a later prompt"
+  [ "$status" -eq 0 ]
+  _contains "$output" "launch-agent: session 7fa0c639 used this folder before; to continue that session rather than start with no context, use /resume-agent $REPO/my-topic"
+  [ -e "$ARGS_FILE" ]
+}
+
+@test "the session file of the calling session gives no hint" {
+  mkdir -p "$REPO/my-topic" "$SESSIONS_DIR"
+  printf '{"version":1,"folder":"%s","session_id":"%s","slug":"t","written_at":"2026-10-13T10:00:00Z"}' \
+    "$REPO/my-topic" "$SESSION_ID" > "$SESSIONS_DIR/$SESSION_ID--t.json"
+  run_here "$REPO" my-topic "a later prompt"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"/resume-agent"* ]]
+}
+
+@test "a session file for another folder gives no hint" {
+  mkdir -p "$REPO/my-topic" "$REPO/elsewhere" "$SESSIONS_DIR"
+  printf '{"version":1,"folder":"%s","session_id":"7fa0c639-1111-4222-8333-944455556666","slug":"t","written_at":"2026-10-13T10:00:00Z"}' \
+    "$REPO/elsewhere" > "$SESSIONS_DIR/7fa0c639-1111-4222-8333-944455556666--t.json"
+  run_in "$REPO" my-topic --bg "a prompt"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"/resume-agent"* ]]
+}
+
 @test "the default mode on a later launch adopts the folder and reports the update file" {
   mkdir -p "$REPO/my-topic"
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"

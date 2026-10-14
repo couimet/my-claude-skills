@@ -15,7 +15,7 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 ### Added
 
 - `/fork-side-item <claim>` moves a side item, such as a defect or a docs gap found outside the current task, to its own `side-<slug>` folder and starts a background worker that owns it. The worker files a ticket, adds to an existing one, sends a message, or drops the item, then records the outcome in the folder. `/fork-side-item list` shows each side folder and its state. A project adds its own rules with a `fork-side-item-hook` skill. ([issues/287](https://github.com/couimet/my-claude-skills/issues/287))
-- `/resume-agent <folder>` makes the session of a topic folder run again under its name, so the next round of work goes to the session that holds the earlier rounds. No shell command is necessary: open the session from the agent view by its name. ([issues/289](https://github.com/couimet/my-claude-skills/issues/289))
+- `/resume-agent <folder>` makes the session of a topic folder run again under its name, so the next round of work goes to the session that holds the earlier rounds. No shell command is necessary: open the session from the agent view by its name, or use the `claude attach` command it prints. It says whether the session waits at its prompt or for a permission answer, and it names any copy that shares the name. `/launch-agent` and `/fork-side-item` point to it when a folder already has a session. ([issues/289](https://github.com/couimet/my-claude-skills/issues/289))
 
 ### Changed
 

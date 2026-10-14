@@ -82,7 +82,8 @@
 # it survives a launch that fails and a child that crashes on its first turn.
 #
 # Output (stdout): the resolved folder first, so a typo shows in the first
-# line, then the prompt file and the name. A launch that repeats the newest
+# line, then the prompt file and the name. When a session file of another
+# session names the folder, one stderr line points to /resume-agent. A launch that repeats the newest
 # prompt adds one Repeat: line before the prompt file. The default mode ends
 # with one line saying that no agent was started and one line with the /rename
 # command; --bg ends with the job id and the attach command. The job id is the
@@ -133,6 +134,8 @@ source "$_self_dir/../issue-context/slugify.sh"
 source "$_self_dir/../issue-context/issue-settings.sh"
 # shellcheck disable=SC1091 # sourced sibling skill; lint-sh runs shellcheck without -x
 source "$_self_dir/../issue-context/topic-root.sh"
+# shellcheck disable=SC1091 # sourced sibling skill; lint-sh runs shellcheck without -x
+source "$_self_dir/../issue-context/session-file.sh"
 # shellcheck disable=SC1091 # sourced sibling skill; lint-sh runs shellcheck without -x
 source "$_self_dir/../issue-context/agent-depth.sh"
 
@@ -367,6 +370,23 @@ folder_abs="$({ cd "$target" && pwd -P; } 2>/dev/null)" \
   || die "$ERR_FOLDER" "'$target' could not be resolved"
 
 printf 'Folder: %s\n' "$folder_abs"
+
+# --- Point to an earlier session of the folder ---
+# A hint, never a refusal. Another session that wrote to this folder holds the
+# chat context of the earlier rounds, and /resume-agent continues it, where
+# this launch starts with none. This script cannot tell whether that session
+# ended or why a new one is wanted, so it says so once and goes on. Only the
+# newest one is named; /resume-agent picks the same one.
+if earlier="$(_issue_context_sessions_of_folder "$folder_abs")"; then
+  while IFS=$'\t' read -r _written earlier_id; do
+    [ -n "$earlier_id" ] || continue
+    [ "$earlier_id" != "${CLAUDE_CODE_SESSION_ID:-}" ] || continue
+    echo "launch-agent: session ${earlier_id:0:8} used this folder before; to continue that session rather than start with no context, use /resume-agent $folder_abs" >&2
+    break
+  done <<EOF
+$earlier
+EOF
+fi
 
 # --- Save the prompt ---
 # Before dispatch, so the file exists even when the launch fails. The stable
