@@ -30,6 +30,24 @@
 #               a copy under a new id instead of the session. The script then
 #               reads the list again and checks that the session is there.
 #
+# Claude Code starts a resumed session in the directory of the command, and it
+# reads the project .claude/settings.json and CLAUDE.md from that directory
+# only. A restart from the shell directory of the caller lost the settings of
+# the repository. So a restart runs in the start directory of the session: the
+# first cwd field of its transcript,
+# RESUME_AGENT_PROJECTS_DIR/*/<session id>.jsonl (default
+# ${CLAUDE_CONFIG_DIR:-~/.claude}/projects). A session can start in another
+# repository than the one of its folder, so the folder alone does not give
+# this directory. When the transcript gives no existing directory, the restart
+# runs in the git top-level of the folder, or in the folder itself when it is
+# in no repository: the rule of launch-agent.sh. stderr says so.
+#
+# The script then compares the cwd that `claude agents --json` reports with
+# that directory. After a restart, a different cwd is R007: a check that
+# Claude Code still starts the session there. For a session that already
+# runs, a different cwd is a warning on stderr, because nothing restarted. A
+# missing cwd is a warning in both cases, because the session runs.
+#
 # Right after a restart, `claude agents` lists the session under its short id
 # until the session loads its saved name. Until then, the agent view search
 # and a send by name cannot find the session by its name. So the script reads
@@ -73,7 +91,8 @@
 #   1  — error (see stderr): R001 usage, R002 folder, R003 no session file,
 #        R004 `claude agents --json` failed and nothing restarted, R005
 #        restart failed, R006 the restart ran but `claude agents --json` then
-#        failed, so the state of the session is unknown
+#        failed, so the state of the session is unknown, R007 the session
+#        restarted in another directory than the one the script used
 
 set -euo pipefail
 
@@ -83,6 +102,7 @@ readonly ERR_NO_SESSION="R003"
 readonly ERR_AGENTS="R004"
 readonly ERR_RESTART="R005"
 readonly ERR_UNKNOWN="R006"
+readonly ERR_CWD="R007"
 
 usage() {
   cat <<'EOF'
@@ -196,6 +216,35 @@ for other in ${others[@]+"${others[@]}"}; do
   echo "resume-agent: another session also used this folder: $other (not resumed; the newest one wins)" >&2
 done
 
+# --- Choose the directory of the session ---
+# See the header for why it is the start directory, and not the directory of
+# the caller.
+readonly PROJECTS_DIR="${RESUME_AGENT_PROJECTS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects}"
+transcript=""
+for candidate in "$PROJECTS_DIR"/*/"$session_id.jsonl"; do
+  [ -f "$candidate" ] && { transcript="$candidate"; break; }
+done
+start_cwd=""
+if [ -n "$transcript" ]; then
+  # first() stops at the first match, so a long transcript is not read to
+  # its end.
+  start_cwd="$(jq -n -r 'first(inputs | objects | .cwd | strings)' "$transcript" 2>/dev/null || true)"
+fi
+resume_dir=""
+case "$start_cwd" in
+  /*) resume_dir="$({ cd "$start_cwd" && pwd -P; } 2>/dev/null || true)" ;;
+esac
+if [ -z "$resume_dir" ]; then
+  resume_dir="$(git -C "$folder_abs" rev-parse --show-toplevel 2>/dev/null || true)"
+  [ -n "$resume_dir" ] || resume_dir="$folder_abs"
+  resume_dir="$({ cd "$resume_dir" && pwd -P; } 2>/dev/null)" || resume_dir="$folder_abs"
+  if [ -z "$transcript" ]; then
+    echo "resume-agent: no transcript of session $session_id in $PROJECTS_DIR, so its start directory is unknown; the script uses $resume_dir" >&2
+  else
+    echo "resume-agent: the transcript $transcript gives no existing start directory${start_cwd:+ ($start_cwd)}; the script uses $resume_dir" >&2
+  fi
+fi
+
 # --- Read the live sessions ---
 readonly NAME_WAIT="${RESUME_AGENT_NAME_WAIT:-15}"
 readonly SOCKET_DIR="${RESUME_AGENT_SOCKET_DIR:-/tmp/cc-socks}"
@@ -235,7 +284,7 @@ if [ -n "$entry" ]; then
   action="already running"
 else
   # No prompt, and no flag. See the header for why --name is not passed.
-  restart_output="$(claude --bg --resume "$session_id" 2>&1)" || {
+  restart_output="$({ cd "$resume_dir" && claude --bg --resume "$session_id"; } 2>&1)" || {
     {
       echo "resume-agent $ERR_RESTART error: claude --bg --resume $session_id failed:"
       printf '%s\n' "$restart_output" | sed 's/^/  /'
@@ -271,6 +320,19 @@ else
   [ -n "$entry" ] \
     || die "$ERR_RESTART" "claude --bg --resume $session_id returned, but claude agents does not list the session"
   action="restarted"
+fi
+
+# --- Check the directory of the session ---
+listed_cwd="$(field cwd)"
+if [ -z "$listed_cwd" ]; then
+  echo "resume-agent: claude agents gives no cwd for session $session_id, so the script could not check that it runs in $resume_dir" >&2
+else
+  listed_cwd_abs="$({ cd "$listed_cwd" && pwd -P; } 2>/dev/null)" || listed_cwd_abs="$listed_cwd"
+  if [ "$listed_cwd_abs" != "$resume_dir" ]; then
+    [ "$action" != "restarted" ] \
+      || die "$ERR_CWD" "session $session_id restarted in $listed_cwd, not in $resume_dir, so the project settings and CLAUDE.md of $resume_dir do not apply to it; the session runs: do not run claude --bg --resume, because that starts a copy; stop it with claude stop ${session_id:0:8}, or attach to it and type /cd $resume_dir"
+    echo "resume-agent: session $session_id runs in $listed_cwd, not in $resume_dir, so the project settings and CLAUDE.md of $resume_dir do not apply to it; attach to it and type /cd $resume_dir" >&2
+  fi
 fi
 
 listed_id="$(field id)"

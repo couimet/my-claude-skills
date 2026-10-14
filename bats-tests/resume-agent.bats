@@ -4,14 +4,16 @@
 # topic folder and making it run again.
 #
 # `claude` is replaced by a stub first on PATH. `claude agents --json` prints
-# the file $AGENTS_FILE, and `claude --bg --resume` records its arguments,
+# the file $AGENTS_FILE, and `claude --bg --resume` records its arguments and
+# its directory,
 # prints what Claude Code 2.1.296 printed in a real restart with no flags,
 # and then swaps $AGENTS_FILE for $AGENTS_AFTER, so a test sees the list before
 # and after the restart. A read of the list after the restart that finds
 # $AGENTS_NEXT swaps it in once, so a later read can show a name that the
 # session loaded late. The sessions directory sits beside a temp settings
-# file, and the socket dir is a temp directory, so a developer's real sessions
-# never change an outcome.
+# file, and the socket dir and the transcript dir are temp directories, so a
+# developer's real sessions never change an outcome. Each test starts with a
+# transcript of $TOPIC_SESSION that started in $REPO.
 
 bats_require_minimum_version 1.7.0
 
@@ -37,6 +39,7 @@ if [ "${1-}" = "agents" ] && [ "${2-}" = "--json" ]; then
 fi
 if [ "${1-}" = "--bg" ] && [ "${2-}" = "--resume" ]; then
   printf '%s\n' "$*" > "$RESUME_ARGS"
+  pwd -P > "$RESUME_CWD"
   [ "${STUB_RESUME_FAIL:-0}" = "1" ] && { echo "resume refused" >&2; exit 5; }
   if [ "${STUB_RESUME_COPY:-0}" = "1" ]; then
     echo "note: background session ${3:0:8} keeps its own saved options, so the flags you passed started a copy as cfc8ea00. Without flags, the same command continues ${3:0:8} itself."
@@ -76,11 +79,14 @@ setup() {
   AGENTS_AFTER="$TEST_TEMP_DIR/agents-after.json"
   AGENTS_NEXT="$TEST_TEMP_DIR/agents-next.json"
   RESUME_ARGS="$TEST_TEMP_DIR/resume-args.txt"
+  RESUME_CWD="$TEST_TEMP_DIR/resume-cwd.txt"
   SOCKET_DIR="$TEST_TEMP_DIR/socks"
   mkdir -p "$SOCKET_DIR"
+  PROJECTS_DIR="$TEST_TEMP_DIR/projects"
+  transcript "$TOPIC_SESSION" "$REPO"
   printf '[]' > "$AGENTS_FILE"
   : > "$AGENTS_AFTER"
-  export AGENTS_FILE AGENTS_NEXT RESUME_ARGS
+  export AGENTS_FILE AGENTS_NEXT RESUME_ARGS RESUME_CWD
 }
 
 teardown() {
@@ -112,15 +118,30 @@ session_file() {
     "$2" "$1" "$3" > "$SESSIONS_DIR/$1--t.json"
 }
 
-# agent_entry <session-id> <name> <state> [status] [pid] — one entry of
-# claude agents --json, with the keys of a real run. The status defaults to
-# idle and the pid to 99897; the pid "null" gives an entry with no process.
-agent_entry() {
-  printf '{"pid":%s,"id":"%s","cwd":"%s","kind":"background","startedAt":1791926226508,"sessionId":"%s","name":"%s","status":"%s","state":"%s"}' \
-    "${5:-99897}" "${1:0:8}" "$REPO" "$1" "$2" "${4:-idle}" "$3"
+# transcript <session-id> <start-dir> [later-dir] — write a transcript the way
+# Claude Code does: a first line with no cwd, then one line for each cwd.
+transcript() {
+  mkdir -p "$PROJECTS_DIR/-proj"
+  {
+    printf '{"type":"permission-mode","sessionId":"%s"}\n' "$1"
+    printf '{"type":"user","cwd":"%s","sessionId":"%s"}\n' "$2" "$1"
+    [ -z "${3-}" ] || printf '{"type":"user","cwd":"%s","sessionId":"%s"}\n' "$3" "$1"
+  } > "$PROJECTS_DIR/-proj/$1.jsonl"
 }
 
-# run_resume [self-session] <args...> — run the script from $REPO.
+# agent_entry <session-id> <name> <state> [status] [pid] [cwd] — one entry of
+# claude agents --json, with the keys of a real run. The status defaults to
+# idle, the pid to 99897, and the cwd to $REPO; the pid "null" gives an entry
+# with no process, and the cwd "null" an entry with no cwd.
+agent_entry() {
+  local cwd="\"${6:-$REPO}\""
+  [ "${6-}" != "null" ] || cwd="null"
+  printf '{"pid":%s,"id":"%s","cwd":%s,"kind":"background","startedAt":1791926226508,"sessionId":"%s","name":"%s","status":"%s","state":"%s"}' \
+    "${5:-99897}" "${1:0:8}" "$cwd" "$1" "$2" "${4:-idle}" "$3"
+}
+
+# run_resume [self-session] <args...> — run the script from $RUN_DIR, which
+# defaults to $REPO.
 run_resume() {
   local self="$1"
   shift
@@ -132,7 +153,8 @@ run_resume() {
     STUB_AGENTS_FAIL="${STUB_AGENTS_FAIL:-0}" STUB_RESUME_FAIL="${STUB_RESUME_FAIL:-0}" \
     STUB_RESUME_COPY="${STUB_RESUME_COPY:-0}" STUB_NAME="${STUB_NAME-my-topic}" \
     RESUME_AGENT_NAME_WAIT="${NAME_WAIT:-0}" RESUME_AGENT_SOCKET_DIR="$SOCKET_DIR" \
-    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" "$@"
+    RESUME_AGENT_PROJECTS_DIR="$PROJECTS_DIR" \
+    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "${RUN_DIR:-$REPO}" "$SCRIPT" "$@"
 }
 
 @test "an ended session restarts with no flag and is reported idle under the folder name" {
@@ -153,6 +175,90 @@ run_resume() {
   [ "${lines[9]}" = "Open: in the agent view (claude agents), press Ctrl+F, type my-topic, and press Enter" ]
   [ "${lines[10]}" = "Note: do not run claude --bg --resume ${TOPIC_SESSION:0:8}: the session runs, and a resume starts a copy" ]
   [ "$stderr" = "resume-agent: no socket at $SOCKET_DIR/99897.sock, so no Address line; send to the name, or ask the person" ]
+}
+
+@test "a restart runs in the start directory of the session, not in the directory of the caller" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done)" > "$AGENTS_AFTER"
+  RUN_DIR="$REPO/my-topic" AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  [ "$(cat "$RESUME_CWD")" = "$REPO" ]
+  [[ "$output" == *"Action: restarted"* ]] || false
+}
+
+@test "a session that started outside the repository of its folder restarts where it started" {
+  local other="$TEST_TEMP_DIR/other-repo"
+  mkdir -p "$other"
+  git -C "$other" init -q
+  transcript "$TOPIC_SESSION" "$other" "$REPO/my-topic"
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle 99897 "$other")" > "$AGENTS_AFTER"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  [ "$(cat "$RESUME_CWD")" = "$other" ]
+  [[ "$stderr" != *"the script uses"* ]] || false
+}
+
+@test "with no transcript, a restart runs in the git top-level of the folder, and stderr says so" {
+  rm "$PROJECTS_DIR/-proj/$TOPIC_SESSION.jsonl"
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done)" > "$AGENTS_AFTER"
+  RUN_DIR="$REPO/my-topic" AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  [ "$(cat "$RESUME_CWD")" = "$REPO" ]
+  [[ "$stderr" == *"no transcript of session $TOPIC_SESSION in $PROJECTS_DIR, so its start directory is unknown; the script uses $REPO"* ]] || false
+}
+
+@test "a start directory that no longer exists falls back to the git top-level of the folder" {
+  transcript "$TOPIC_SESSION" "$TEST_TEMP_DIR/gone"
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done)" > "$AGENTS_AFTER"
+  RUN_DIR="$REPO/my-topic" AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  [ "$(cat "$RESUME_CWD")" = "$REPO" ]
+  [[ "$stderr" == *"gives no existing start directory ($TEST_TEMP_DIR/gone); the script uses $REPO"* ]] || false
+}
+
+@test "with no transcript, a folder in no repository restarts in the folder itself" {
+  rm "$PROJECTS_DIR/-proj/$TOPIC_SESSION.jsonl"
+  local loose="$TEST_TEMP_DIR/loose"
+  mkdir -p "$loose"
+  session_file "$TOPIC_SESSION" "$loose" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" loose done idle 99897 "$loose")" > "$AGENTS_AFTER"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" "$loose"
+  [ "$status" -eq 0 ]
+  [ "$(cat "$RESUME_CWD")" = "$loose" ]
+}
+
+@test "a restart that the list shows in another directory → R007 that says the session runs" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle 99897 "$REPO/my-topic")" > "$AGENTS_AFTER"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"R007"* ]] || false
+  [[ "$stderr" == *"restarted in $REPO/my-topic, not in $REPO"* ]] || false
+  [[ "$stderr" == *"claude stop ${TOPIC_SESSION:0:8}"* ]] || false
+}
+
+@test "a restart that the list shows with no cwd warns and succeeds" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle 99897 null)" > "$AGENTS_AFTER"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Action: restarted"* ]] || false
+  [[ "$stderr" == *"gives no cwd for session $TOPIC_SESSION, so the script could not check that it runs in $REPO"* ]] || false
+}
+
+@test "a running session in another directory restarts nothing and gives a warning" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle 99897 "$REPO/my-topic")" > "$AGENTS_FILE"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [[ "$output" == *"Action: already running"* ]] || false
+  [[ "$stderr" == *"session $TOPIC_SESSION runs in $REPO/my-topic, not in $REPO"* ]] || false
+  [[ "$stderr" == *"type /cd $REPO"* ]] || false
 }
 
 @test "a running session restarts nothing and reports its state" {
