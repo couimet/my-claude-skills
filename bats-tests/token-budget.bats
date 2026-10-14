@@ -50,14 +50,14 @@ _skill() {
   _skill big 9000
   run "$BUDGET" --check --skills-dir "$SKILLS"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"big"* ]]
+  [[ "$output" == *"big"* ]] || false
 }
 
 @test "token-budget: a foundation skill is capped at 4000, not 8000" {
   _skill found 5000 "user-invocable: false"
   run "$BUDGET" --check --skills-dir "$SKILLS"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"found"* ]]
+  [[ "$output" == *"found"* ]] || false
 }
 
 @test "token-budget: a composite skill is capped at 12000, not 8000" {
@@ -113,15 +113,15 @@ _skill() {
   _skill big 9000
   run "$BUDGET" --skills-dir "$SKILLS"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"OVER"* ]]
+  [[ "$output" == *"OVER"* ]] || false
 }
 
 @test "token-budget: report names both the file total and the session floor" {
   _skill small 100
   run "$BUDGET" --skills-dir "$SKILLS"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Files:"* ]]
-  [[ "$output" == *"Descriptions:"* ]]
+  [[ "$output" == *"Files:"* ]] || false
+  [[ "$output" == *"Descriptions:"* ]] || false
 }
 
 @test "token-budget: B001 on an unknown argument" {
@@ -137,7 +137,7 @@ _skill() {
 @test "token-budget: B001 with exit 2 when --skills-dir has no value" {
   run "$BUDGET" --skills-dir
   [ "$status" -eq 2 ]
-  [[ "$output" == *"B001"* ]]
+  [[ "$output" == *"B001"* ]] || false
 }
 
 @test "token-budget: a non-ASCII description is measured in bytes" {
@@ -185,7 +185,7 @@ _skill() {
   printf '#!/usr/bin/env bash\necho hi\n' > "$TEST_TEMP_DIR/s/bare.sh"
   run "$HEADERS" "$TEST_TEMP_DIR/s"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"bare.sh"* ]]
+  [[ "$output" == *"bare.sh"* ]] || false
 }
 
 @test "check-script-headers: a .bash script with no header fails" {
@@ -193,7 +193,7 @@ _skill() {
   printf '#!/usr/bin/env bash\necho hi\n' > "$TEST_TEMP_DIR/s/bare.bash"
   run "$HEADERS" "$TEST_TEMP_DIR/s"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"bare.bash"* ]]
+  [[ "$output" == *"bare.bash"* ]] || false
 }
 
 @test "check-script-headers: a script with a header passes" {

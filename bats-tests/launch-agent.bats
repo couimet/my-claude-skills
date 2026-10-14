@@ -228,43 +228,43 @@ set_default_folder() {
 @test "--help prints usage and exits 0" {
   run_in "$REPO" --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Usage: launch-agent.sh"* ]]
+  [[ "$output" == *"Usage: launch-agent.sh"* ]] || false
 }
 
 @test "no arguments → L001, usage on stderr" {
   run_in "$REPO"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L001"* ]]
-  [[ "$output" == *"a folder is required"* ]]
+  [[ "$output" == *"L001"* ]] || false
+  [[ "$output" == *"a folder is required"* ]] || false
 }
 
 @test "folder but no prompt → L001" {
   run_in "$REPO" topic
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L001"* ]]
-  [[ "$output" == *"a task prompt is required"* ]]
+  [[ "$output" == *"L001"* ]] || false
+  [[ "$output" == *"a task prompt is required"* ]] || false
 }
 
 @test "leading flag instead of a folder → L001" {
   run_in "$REPO" --bg thing "do it"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L001"* ]]
-  [[ "$output" == *"the folder comes first"* ]]
+  [[ "$output" == *"L001"* ]] || false
+  [[ "$output" == *"the folder comes first"* ]] || false
 }
 
 @test "--name → L001 saying it was removed, nothing created" {
   run_here "$REPO" my-topic --name thing "do it"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L001"* ]]
-  [[ "$output" == *"--name was removed"* ]]
+  [[ "$output" == *"L001"* ]] || false
+  [[ "$output" == *"--name was removed"* ]] || false
   [ ! -d "$REPO/my-topic" ]
 }
 
 @test "--here → L001 saying it was removed, nothing created" {
   run_here "$REPO" my-topic --here "do it"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L001"* ]]
-  [[ "$output" == *"--here was removed"* ]]
+  [[ "$output" == *"L001"* ]] || false
+  [[ "$output" == *"--here was removed"* ]] || false
   [ ! -d "$REPO/my-topic" ]
 }
 
@@ -272,7 +272,7 @@ set_default_folder() {
   : > "$TEST_TEMP_DIR/empty.txt"
   run_here_stdin "$REPO" "$TEST_TEMP_DIR/empty.txt" my-topic
   [ "$status" -eq 1 ]
-  [[ "$output" == *"a task prompt is required"* ]]
+  [[ "$output" == *"a task prompt is required"* ]] || false
   [ ! -d "$REPO/my-topic" ]
 }
 
@@ -283,7 +283,7 @@ set_default_folder() {
 @test "slug resolves to <repo-root>/<slug>, not into .claude-work" {
   run_in "$REPO" my-topic --bg "do the thing"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Folder: $REPO/my-topic"* ]]
+  [[ "$output" == *"Folder: $REPO/my-topic"* ]] || false
   [ -d "$REPO/my-topic" ]
   [ ! -d "$REPO/.claude-work/my-topic" ]
 }
@@ -292,14 +292,14 @@ set_default_folder() {
   mkdir -p "$REPO/src/deep"
   run_in "$REPO/src/deep" my-topic --bg "do the thing"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Folder: $REPO/my-topic"* ]]
+  [[ "$output" == *"Folder: $REPO/my-topic"* ]] || false
 }
 
 @test "absolute path is used as given, outside any repository" {
   target="$TEST_TEMP_DIR/elsewhere/topic"
   run_in "$REPO" "$target" --bg "do the thing"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Folder: $target"* ]]
+  [[ "$output" == *"Folder: $target"* ]] || false
   [ -d "$target" ]
 }
 
@@ -307,22 +307,22 @@ set_default_folder() {
   target="$TEST_TEMP_DIR/elsewhere/topic"
   run_in "$REPO" "$target/" --bg "do the thing"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Name: topic"* ]]
+  [[ "$output" == *"Name: topic"* ]] || false
 }
 
 @test "existing folder is reused, not refused" {
   mkdir -p "$REPO/my-topic"
   run_in "$REPO" my-topic --bg "do the thing"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Folder: $REPO/my-topic"* ]]
+  [[ "$output" == *"Folder: $REPO/my-topic"* ]] || false
 }
 
 @test "folder path that exists as a regular file → L002, nothing written" {
   : > "$TEST_TEMP_DIR/afile"
   run_in "$REPO" "$TEST_TEMP_DIR/afile" --bg "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L002"* ]]
-  [[ "$output" == *"is not a directory"* ]]
+  [[ "$output" == *"L002"* ]] || false
+  [[ "$output" == *"is not a directory"* ]] || false
   [ ! -f "$ARGS_FILE" ]
 }
 
@@ -331,24 +331,24 @@ set_default_folder() {
   mkdir -p "$outside"
   run_in "$outside" my-topic --bg "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L002"* ]]
-  [[ "$output" == *"pass an absolute path instead"* ]]
+  [[ "$output" == *"L002"* ]] || false
+  [[ "$output" == *"pass an absolute path instead"* ]] || false
   [ ! -d "$outside/my-topic" ]
 }
 
 @test "slug containing a separator → L002, nothing created" {
   run_in "$REPO" team/onboarding --bg "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L002"* ]]
-  [[ "$output" == *"is not a single path component"* ]]
+  [[ "$output" == *"L002"* ]] || false
+  [[ "$output" == *"is not a single path component"* ]] || false
   [ ! -d "$REPO/team" ]
 }
 
 @test "slug of .. → L002, nothing created outside the root" {
   run_in "$REPO" .. --bg "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L002"* ]]
-  [[ "$output" == *"is not a topic name"* ]]
+  [[ "$output" == *"L002"* ]] || false
+  [[ "$output" == *"is not a topic name"* ]] || false
 }
 
 @test "slug naming a symlink to a directory resolves to the link's target" {
@@ -389,10 +389,10 @@ set_default_folder() {
   set_default_folder "$TEST_TEMP_DIR/not-there"
   run_here "$REPO" my-topic "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L002"* ]]
-  [[ "$output" == *"launchAgentDefaultFolder"* ]]
-  [[ "$output" == *"'$TEST_TEMP_DIR/not-there'"* ]]
-  [[ "$output" == *"not an existing directory"* ]]
+  [[ "$output" == *"L002"* ]] || false
+  [[ "$output" == *"launchAgentDefaultFolder"* ]] || false
+  [[ "$output" == *"'$TEST_TEMP_DIR/not-there'"* ]] || false
+  [[ "$output" == *"not an existing directory"* ]] || false
   [ ! -d "$TEST_TEMP_DIR/not-there" ]
   [ ! -d "$REPO/my-topic" ]
 }
@@ -401,8 +401,8 @@ set_default_folder() {
   set_default_folder "topics"
   run_here "$REPO" my-topic "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L002"* ]]
-  [[ "$output" == *"'topics', which is not an absolute path"* ]]
+  [[ "$output" == *"L002"* ]] || false
+  [[ "$output" == *"'topics', which is not an absolute path"* ]] || false
   [ ! -d "$REPO/topics" ]
   [ ! -d "$REPO/my-topic" ]
 }
@@ -411,7 +411,7 @@ set_default_folder() {
   set_default_folder "~/topics"
   run_here "$REPO" my-topic "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"'~/topics', which is not an absolute path"* ]]
+  [[ "$output" == *"'~/topics', which is not an absolute path"* ]] || false
 }
 
 @test "the near-match guard runs against the setting's directory" {
@@ -420,7 +420,7 @@ set_default_folder() {
   set_default_folder "$topics"
   run_here "$REPO" my-topic "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"nearly matches the existing 'my_topic' in $topics"* ]]
+  [[ "$output" == *"nearly matches the existing 'my_topic' in $topics"* ]] || false
   [ ! -d "$topics/my-topic" ]
 }
 
@@ -448,8 +448,8 @@ set_default_folder() {
   printf '%s' '{"launchAgentDefaultFolder":' > "$CFG"
   run_in "$REPO" my-topic --bg "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L002"* ]]
-  [[ "$output" == *"$CFG could not be read"* ]]
+  [[ "$output" == *"L002"* ]] || false
+  [[ "$output" == *"$CFG could not be read"* ]] || false
   [ ! -d "$REPO/my-topic" ]
   [ ! -f "$ARGS_FILE" ]
 }
@@ -461,8 +461,8 @@ set_default_folder() {
   run_in "$REPO" my-topic --bg "do the thing"
   chmod 644 "$CFG"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L002"* ]]
-  [[ "$output" == *"could not be read"* ]]
+  [[ "$output" == *"L002"* ]] || false
+  [[ "$output" == *"could not be read"* ]] || false
   [ ! -d "$REPO/my-topic" ]
 }
 
@@ -473,7 +473,7 @@ set_default_folder() {
   [ "$status" -eq 0 ]
   # The loader's warning comes first in the merged output, so match the line
   # anywhere rather than at lines[0].
-  [[ "$output" == *"Folder: $target"* ]]
+  [[ "$output" == *"Folder: $target"* ]] || false
   [ -f "$target/prompt-new-agent-launch.txt" ]
 }
 
@@ -493,8 +493,8 @@ set_default_folder() {
   mkdir -p "$REPO/agent_launch_skill"
   run_in "$REPO" agent-launch-skill --bg "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L002"* ]]
-  [[ "$output" == *"nearly matches the existing 'agent_launch_skill'"* ]]
+  [[ "$output" == *"L002"* ]] || false
+  [[ "$output" == *"nearly matches the existing 'agent_launch_skill'"* ]] || false
   [ ! -d "$REPO/agent-launch-skill" ]
 }
 
@@ -502,7 +502,7 @@ set_default_folder() {
   mkdir -p "$REPO/MyTopic"
   run_in "$REPO" mytopic --bg "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"nearly matches the existing 'MyTopic'"* ]]
+  [[ "$output" == *"nearly matches the existing 'MyTopic'"* ]] || false
 }
 
 @test "exact match is not a refusal: a second agent joins an existing topic" {
@@ -540,14 +540,14 @@ set_default_folder() {
   run_in "$REPO" my-topic --bg "$TEST_TEMP_DIR/prompt.txt"
   [ "$status" -eq 0 ]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "$(printf 'line one\nline two')" ]
-  [[ "$(cat "$ARGS_FILE")" == *"line two"* ]]
+  [[ "$(cat "$ARGS_FILE")" == *"line two"* ]] || false
 }
 
 @test "path-shaped single token naming nothing → L003, nothing written" {
   run_in "$REPO" my-topic --bg ./plans/lanch-prompt.txt
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L003"* ]]
-  [[ "$output" == *"looks like a file path but names no readable file"* ]]
+  [[ "$output" == *"L003"* ]] || false
+  [[ "$output" == *"looks like a file path but names no readable file"* ]] || false
   [ ! -d "$REPO/my-topic" ]
   [ ! -f "$ARGS_FILE" ]
 }
@@ -559,7 +559,7 @@ set_default_folder() {
   run_in "$REPO" my-topic --bg "$TEST_TEMP_DIR/prompt.md"
   chmod 644 "$TEST_TEMP_DIR/prompt.md"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L003"* ]]
+  [[ "$output" == *"L003"* ]] || false
 }
 
 @test "a prompt on stdin is saved byte for byte" {
@@ -611,7 +611,7 @@ PROMPT
 @test "empty prompt → L003, nothing created" {
   run_in "$REPO" my-topic --bg ""
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L003"* ]]
+  [[ "$output" == *"L003"* ]] || false
   [ ! -d "$REPO/my-topic" ]
 }
 
@@ -845,7 +845,7 @@ PROMPT
     "$REPO/my-topic" "$SESSION_ID" > "$SESSIONS_DIR/$SESSION_ID--t.json"
   run_here "$REPO" my-topic "a later prompt"
   [ "$status" -eq 0 ]
-  [[ "$output" != *"/resume-agent"* ]]
+  [[ "$output" != *"/resume-agent"* ]] || false
 }
 
 @test "a session file for another folder gives no hint" {
@@ -854,7 +854,7 @@ PROMPT
     "$REPO/elsewhere" > "$SESSIONS_DIR/7fa0c639-1111-4222-8333-944455556666--t.json"
   run_in "$REPO" my-topic --bg "a prompt"
   [ "$status" -eq 0 ]
-  [[ "$output" != *"/resume-agent"* ]]
+  [[ "$output" != *"/resume-agent"* ]] || false
 }
 
 @test "the default mode on a later launch adopts the folder and reports the update file" {
@@ -901,8 +901,8 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
 @test "display name defaults to the folder basename and reaches claude" {
   run_in "$REPO" my-topic --bg "do the thing"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Name: my-topic"* ]]
-  [[ "$(cat "$ARGS_FILE")" == *"--name my-topic"* ]]
+  [[ "$output" == *"Name: my-topic"* ]] || false
+  [[ "$(cat "$ARGS_FILE")" == *"--name my-topic"* ]] || false
 }
 
 # ============================================================================
@@ -926,23 +926,23 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
   run_in "$REPO" my-topic --bg "do the thing"
   [ "$status" -eq 0 ]
   args="$(cat "$ARGS_FILE")"
-  [[ "$args" == *"Your work folder is $REPO/my-topic."* ]]
+  [[ "$args" == *"Your work folder is $REPO/my-topic."* ]] || false
   _contains "$args" "set-work-folder.sh '$REPO/my-topic' 'my-topic'"
-  [[ "$args" == *"already saved at $REPO/my-topic/prompt-new-agent-launch.txt"* ]]
-  [[ "$args" == *"do the thing"* ]]
+  [[ "$args" == *"already saved at $REPO/my-topic/prompt-new-agent-launch.txt"* ]] || false
+  [[ "$args" == *"do the thing"* ]] || false
 }
 
 @test "CLAUDE.md sentence appears when the child's working directory has one" {
   printf 'repo rules\n' > "$REPO/CLAUDE.md"
   run_in "$REPO" my-topic --bg "do the thing"
   [ "$status" -eq 0 ]
-  [[ "$(cat "$ARGS_FILE")" == *"Then read $REPO/CLAUDE.md and follow it."* ]]
+  [[ "$(cat "$ARGS_FILE")" == *"Then read $REPO/CLAUDE.md and follow it."* ]] || false
 }
 
 @test "CLAUDE.md sentence is absent when there is no such file" {
   run_in "$REPO" my-topic --bg "do the thing"
   [ "$status" -eq 0 ]
-  [[ "$(cat "$ARGS_FILE")" != *"and follow it"* ]]
+  [[ "$(cat "$ARGS_FILE")" != *"and follow it"* ]] || false
 }
 
 # ============================================================================
@@ -979,8 +979,8 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
     MY_CLAUDE_SKILLS_CONFIG="$CFG" \
     bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" my-topic --bg "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L004"* ]]
-  [[ "$output" == *"claude --bg --name 'my-topic'"* ]]
+  [[ "$output" == *"L004"* ]] || false
+  [[ "$output" == *"claude --bg --name 'my-topic'"* ]] || false
   [ -d "$REPO/my-topic" ]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "do the thing" ]
 }
@@ -997,7 +997,7 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
     bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" "$topic" \
     --bg "Fix the user's bug"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L004"* ]]
+  [[ "$output" == *"L004"* ]] || false
   _contains "$output" "--name 'Charles'\\'' agent'"
   _contains "$output" "Fix the user'\\''s bug'"
   # The child prompt the stub recorded is the unescaped original, so the quoted
@@ -1047,7 +1047,7 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
     MY_CLAUDE_SKILLS_CONFIG="$CFG" \
     bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" my-topic --bg "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L004"* ]]
+  [[ "$output" == *"L004"* ]] || false
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "do the thing" ]
 }
 
@@ -1058,9 +1058,9 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
 @test "the default mode starts no agent and says so" {
   run_here "$REPO" my-topic "do the thing"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Here: no agent was started"* ]]
-  [[ "$output" != *"Job:"* ]]
-  [[ "$output" != *"Attach:"* ]]
+  [[ "$output" == *"Here: no agent was started"* ]] || false
+  [[ "$output" != *"Job:"* ]] || false
+  [[ "$output" != *"Attach:"* ]] || false
   [ ! -f "$ARGS_FILE" ]
 }
 
@@ -1085,7 +1085,7 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
     MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
     bash -c 'cd "$1" && shift && exec "$@"' _ "$REPO" "$RESOLVER"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"$REPO/my-topic"* ]]
+  [[ "$output" == *"$REPO/my-topic"* ]] || false
 }
 
 @test "the default mode ends with the /rename line for the folder name" {
@@ -1108,9 +1108,9 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
     PATH="$STUB_PATH" MY_CLAUDE_SKILLS_CONFIG="$CFG" \
     bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" my-topic "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L005"* ]]
-  [[ "$output" == *"CLAUDE_CODE_SESSION_ID"* ]]
-  [[ "$output" == *"pass --bg"* ]]
+  [[ "$output" == *"L005"* ]] || false
+  [[ "$output" == *"CLAUDE_CODE_SESSION_ID"* ]] || false
+  [[ "$output" == *"pass --bg"* ]] || false
   [ ! -d "$REPO/my-topic" ]
 }
 
@@ -1118,7 +1118,7 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
   mkdir -p "$REPO/my_topic"
   run_here "$REPO" my-topic "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L002"* ]]
+  [[ "$output" == *"L002"* ]] || false
   [ ! -d "$REPO/my-topic" ]
 }
 
@@ -1133,8 +1133,8 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
     CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
     bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" "$REPO/my-topic" "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L005"* ]]
-  [[ "$output" == *"set-work-folder.sh' '$REPO/my-topic' 'my-topic'"* ]]
+  [[ "$output" == *"L005"* ]] || false
+  [[ "$output" == *"set-work-folder.sh' '$REPO/my-topic' 'my-topic'"* ]] || false
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "do the thing" ]
 }
 
@@ -1148,7 +1148,7 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
     CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
     bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" "$topic" "do the thing"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"L005"* ]]
+  [[ "$output" == *"L005"* ]] || false
   # The script's own path is quoted too, so the apostrophe after .sh is the
   # closing quote of the first word rather than part of the name.
   _contains "$output" "set-work-folder.sh' '$TEST_TEMP_DIR/Charles'\\'' topics/Ann'\\''s run' 'Ann'\\''s run'"

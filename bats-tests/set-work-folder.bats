@@ -86,7 +86,7 @@ session_file_count() {
   [ "$output" = "$SESSIONS_DIR/${SESSION_ID}.json" ]
   [ "${#lines[@]}" -eq 1 ]
   [ -f "$SESSIONS_DIR/${SESSION_ID}.json" ]
-  [[ "$stderr" == *"$TOPIC"* ]]
+  [[ "$stderr" == *"$TOPIC"* ]] || false
 }
 
 @test "name given → file carries the slugified name" {
@@ -103,7 +103,7 @@ session_file_count() {
   local slug="${output##*--}"
   slug="${slug%.json}"
   [ "${#slug}" -le 60 ]
-  [[ "$slug" != *- ]]
+  [[ "$slug" != *- ]] || false
 }
 
 @test "the document carries the fields the reader and a human need" {
@@ -125,10 +125,10 @@ session_file_count() {
   [ "$status" -eq 0 ]
   run jq -r '[.written_at, .written_by.agent, (.written_by.pid|tostring), (.written_by.child_session|tostring)] | @tsv' \
     "$SESSIONS_DIR/${SESSION_ID}.json"
-  [[ "$output" == *"Z"* ]]
-  [[ "$output" == *"explorer"* ]]
-  [[ "$output" == *"4242"* ]]
-  [[ "$output" == *"true"* ]]
+  [[ "$output" == *"Z"* ]] || false
+  [[ "$output" == *"explorer"* ]] || false
+  [[ "$output" == *"4242"* ]] || false
+  [[ "$output" == *"true"* ]] || false
 }
 
 @test "absent agent and pid are recorded as null rather than empty strings" {
@@ -276,8 +276,8 @@ STUB
     MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
     "$SCRIPT" "$TOPIC" "second name"
   [ "$status" -ne 0 ]
-  [[ "$stderr" == *"$ERR_WRITE_CODE"* ]]
-  [[ "$stderr" == *"did not survive"* ]]
+  [[ "$stderr" == *"$ERR_WRITE_CODE"* ]] || false
+  [[ "$stderr" == *"did not survive"* ]] || false
   [ "$(session_file_count)" -eq 0 ]
 }
 
@@ -296,7 +296,7 @@ STUB
   set_folder --clear
   [ "$status" -eq 0 ]
   [ "$(session_file_count)" -eq 0 ]
-  [[ "$stderr" == *"cleared"* ]]
+  [[ "$stderr" == *"cleared"* ]] || false
 }
 
 @test "--clear prints nothing on stdout" {
@@ -308,7 +308,7 @@ STUB
 @test "--clear with nothing set succeeds and says so" {
   set_folder --clear
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"no folder override was set"* ]]
+  [[ "$stderr" == *"no folder override was set"* ]] || false
 }
 
 @test "--clear twice still succeeds" {
@@ -337,17 +337,17 @@ STUB
   local clear_status="$status" clear_stderr="$stderr"
   chmod u+w "$SESSIONS_DIR"
   [ "$clear_status" -ne 0 ]
-  [[ "$clear_stderr" == *"$ERR_WRITE_CODE"* ]]
+  [[ "$clear_stderr" == *"$ERR_WRITE_CODE"* ]] || false
   # The old message is the whole point: the override survived and is still
   # routing this session's files, so saying none was set would be a lie.
-  [[ "$clear_stderr" != *"no folder override was set"* ]]
+  [[ "$clear_stderr" != *"no folder override was set"* ]] || false
   [ "$(session_file_count)" -eq 1 ]
 }
 
 @test "--clear rejects a second argument" {
   set_folder --clear "$TOPIC"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"S001"* ]]
+  [[ "$stderr" == *"S001"* ]] || false
 }
 
 # ============================================================================
@@ -357,43 +357,43 @@ STUB
 @test "a folder that does not exist is refused, and nothing is written" {
   set_folder "$TEST_TEMP_DIR/not-here"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"S003"* ]]
-  [[ "$stderr" == *"not an existing directory"* ]]
+  [[ "$stderr" == *"S003"* ]] || false
+  [[ "$stderr" == *"not an existing directory"* ]] || false
   [ "$(session_file_count)" -eq 0 ]
 }
 
 @test "a relative path is refused" {
   set_folder "my-topic"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"S003"* ]]
-  [[ "$stderr" == *"not an absolute path"* ]]
+  [[ "$stderr" == *"S003"* ]] || false
+  [[ "$stderr" == *"not an absolute path"* ]] || false
 }
 
 @test "a path naming a file rather than a directory is refused" {
   printf '%s' 'x' > "$TEST_TEMP_DIR/a-file"
   set_folder "$TEST_TEMP_DIR/a-file"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"not an existing directory"* ]]
+  [[ "$stderr" == *"not an existing directory"* ]] || false
 }
 
 @test "no arguments prints usage and errors" {
   set_folder
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"S001"* ]]
-  [[ "$stderr" == *"Usage:"* ]]
+  [[ "$stderr" == *"S001"* ]] || false
+  [[ "$stderr" == *"Usage:"* ]] || false
 }
 
 @test "too many arguments errors" {
   set_folder "$TOPIC" "a name" "extra"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"S001"* ]]
+  [[ "$stderr" == *"S001"* ]] || false
 }
 
 @test "an unknown flag errors" {
   set_folder --wat
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"S001"* ]]
-  [[ "$stderr" == *"unknown flag"* ]]
+  [[ "$stderr" == *"S001"* ]] || false
+  [[ "$stderr" == *"unknown flag"* ]] || false
 }
 
 @test "no session id errors rather than writing an unowned file" {
@@ -401,8 +401,8 @@ STUB
     MY_CLAUDE_SKILLS_CONFIG="$CFG" \
     "$SCRIPT" "$TOPIC"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"S002"* ]]
-  [[ "$stderr" == *"CLAUDE_CODE_SESSION_ID"* ]]
+  [[ "$stderr" == *"S002"* ]] || false
+  [[ "$stderr" == *"CLAUDE_CODE_SESSION_ID"* ]] || false
 }
 
 @test "a session id that could not be a filename is refused, and nothing beside the sessions directory is touched" {
@@ -416,8 +416,8 @@ STUB
     CLAUDE_CODE_SESSION_ID="../settings" \
     "$SCRIPT" "$TOPIC"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"S002"* ]]
-  [[ "$stderr" == *"filename component"* ]]
+  [[ "$stderr" == *"S002"* ]] || false
+  [[ "$stderr" == *"filename component"* ]] || false
   [ "$(cat "$CFG")" = "$before" ]
 }
 
@@ -433,7 +433,7 @@ STUB
     CLAUDE_CODE_SESSION_ID="../settings" \
     "$SCRIPT" --clear
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"S002"* ]]
+  [[ "$stderr" == *"S002"* ]] || false
   [ -f "$CFG" ]
   [ "$(cat "$CFG")" = "$before" ]
 }
@@ -441,7 +441,7 @@ STUB
 @test "--help prints usage on stdout and exits 0" {
   set_folder --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Usage:"* ]]
+  [[ "$output" == *"Usage:"* ]] || false
 }
 
 # ============================================================================
@@ -463,8 +463,8 @@ STUB
   local st="$status" err="$stderr"
   chmod 755 "$locked"
   [ "$st" -ne 0 ]
-  [[ "$err" == *"S003"* ]]
-  [[ "$err" == *"could not be resolved"* ]]
+  [[ "$err" == *"S003"* ]] || false
+  [[ "$err" == *"could not be resolved"* ]] || false
 }
 
 @test "jq absent is refused rather than writing an unescaped file" {
@@ -474,7 +474,7 @@ STUB
     MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
     "$SCRIPT" "$TOPIC"
   [ "$status" -ne 0 ]
-  [[ "$stderr" == *"S004"* ]]
+  [[ "$stderr" == *"S004"* ]] || false
   [ "$(session_file_count)" -eq 0 ]
 }
 
@@ -490,10 +490,10 @@ STUB
   local st="$status" err="$stderr"
   chmod u+w "$ro"
   [ "$st" -ne 0 ]
-  [[ "$err" == *"$ERR_WRITE_CODE"* ]]
+  [[ "$err" == *"$ERR_WRITE_CODE"* ]] || false
   # Naming the directory, not just "could not create": the mktemp failure
   # below carries a message this would otherwise match too.
-  [[ "$err" == *"could not create $ro/sessions"* ]]
+  [[ "$err" == *"could not create $ro/sessions"* ]] || false
 }
 
 @test "a temporary file that cannot be created is reported" {
@@ -506,8 +506,8 @@ STUB
   local st="$status" err="$stderr"
   chmod u+w "$SESSIONS_DIR"
   [ "$st" -ne 0 ]
-  [[ "$err" == *"$ERR_WRITE_CODE"* ]]
-  [[ "$err" == *"temporary file"* ]]
+  [[ "$err" == *"$ERR_WRITE_CODE"* ]] || false
+  [[ "$err" == *"temporary file"* ]] || false
 }
 
 @test "a document that cannot be composed is reported" {
@@ -526,8 +526,8 @@ STUB
     MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
     "$SCRIPT" "$TOPIC"
   [ "$status" -ne 0 ]
-  [[ "$stderr" == *"$ERR_WRITE_CODE"* ]]
-  [[ "$stderr" == *"compose"* ]]
+  [[ "$stderr" == *"$ERR_WRITE_CODE"* ]] || false
+  [[ "$stderr" == *"compose"* ]] || false
   [ "$(session_file_count)" -eq 0 ]
 }
 
@@ -538,8 +538,8 @@ STUB
     MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
     "$SCRIPT" "$TOPIC"
   [ "$status" -ne 0 ]
-  [[ "$stderr" == *"$ERR_WRITE_CODE"* ]]
-  [[ "$stderr" == *"could not write"* ]]
+  [[ "$stderr" == *"$ERR_WRITE_CODE"* ]] || false
+  [[ "$stderr" == *"could not write"* ]] || false
   [ "$(session_file_count)" -eq 0 ]
 }
 
@@ -555,8 +555,8 @@ STUB
     MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
     "$SCRIPT" "$TOPIC" "second name"
   [ "$status" -ne 0 ]
-  [[ "$stderr" == *"$ERR_WRITE_CODE"* ]]
-  [[ "$stderr" == *"could not remove an older session file"* ]]
+  [[ "$stderr" == *"$ERR_WRITE_CODE"* ]] || false
+  [[ "$stderr" == *"could not remove an older session file"* ]] || false
   # Both files are on disk: the write landed, the cleanup did not.
   [ "$(session_file_count)" -eq 2 ]
 }
@@ -627,7 +627,7 @@ working_file() {
   set_folder "$TOPIC"
   [ "$status" -eq 0 ]
   [ "$(session_file_count)" -eq 1 ]
-  [[ "$stderr" == *"2 working files stay under $branch_folder, where readers no longer look; move them to $TOPIC or undo this change"* ]]
+  [[ "$stderr" == *"2 working files stay under $branch_folder, where readers no longer look; move them to $TOPIC or undo this change"* ]] || false
 }
 
 @test "left behind: --clear over a session folder with files names that folder" {
@@ -636,14 +636,14 @@ working_file() {
   working_file "$TOPIC" "questions/20260901-100000-001-q-wave-1.txt"
   set_folder --clear
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"1 working file stays under $TOPIC, where readers no longer look; move it to $TEST_TEMP_DIR/.claude-work/issues/42 or set the folder again"* ]]
+  [[ "$stderr" == *"1 working file stays under $TOPIC, where readers no longer look; move it to $TEST_TEMP_DIR/.claude-work/issues/42 or set the folder again"* ]] || false
 }
 
 @test "left behind: a session set over an empty folder says nothing about files" {
   git checkout -q -b issues/42
   set_folder "$TOPIC"
   [ "$status" -eq 0 ]
-  [[ "$stderr" != *"under $TEST_TEMP_DIR/.claude-work"* ]]
+  [[ "$stderr" != *"under $TEST_TEMP_DIR/.claude-work"* ]] || false
 }
 
 @test "left behind: a session rewrite to the same folder says nothing" {
@@ -651,7 +651,7 @@ working_file() {
   working_file "$TOPIC" "notes/20260901-100000-001-plan.txt"
   set_folder "$TOPIC" renamed
   [ "$status" -eq 0 ]
-  [[ "$stderr" != *"stays under"* ]]
+  [[ "$stderr" != *"stays under"* ]] || false
 }
 
 @test "left behind: --clear with nothing set says nothing about files" {
@@ -659,5 +659,5 @@ working_file() {
   working_file "$TEST_TEMP_DIR/.claude-work/issues/42" "notes/20260901-100000-001-plan.txt"
   set_folder --clear
   [ "$status" -eq 0 ]
-  [[ "$stderr" != *"stays under"* ]]
+  [[ "$stderr" != *"stays under"* ]] || false
 }

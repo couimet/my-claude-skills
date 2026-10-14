@@ -178,7 +178,9 @@ fi
 
 if ! launch_output="$(printf '%s\n' "$prompt" | "$_self_dir/../launch-agent/launch-agent.sh" "$name" --bg)"; then
   [ -z "$launch_output" ] || printf '%s\n' "$launch_output"
-  die "$ERR_LAUNCH" "launch-agent.sh did not start the worker for $name; its error is above"
+  # Not "did not start": launch-agent.sh can fail after the worker started,
+  # with L004 or L006, and its own error says which case it is.
+  die "$ERR_LAUNCH" "launch-agent.sh failed for $name; its error above says whether the worker started, and when it did, do not fork the item again"
 fi
 
 printf '%s\n' "$launch_output"

@@ -142,7 +142,7 @@ extract_json() {
 
 @test "finish-issue PR desc: title starts with branch name in brackets" {
   first_line="$(head -1 "$FIXTURES/eval-finish-pr-desc.txt")"
-  [[ "$first_line" =~ ^\[issues/[0-9]+\] ]]
+  [[ "$first_line" =~ ^\[issues/[0-9]+\] ]] || false
 }
 
 @test "finish-issue PR desc: does not reference .claude-work/ paths" {

@@ -7,10 +7,11 @@
 # the file $AGENTS_FILE, and `claude --bg --resume` records its arguments,
 # prints what Claude Code 2.1.296 printed in a real restart with no flags,
 # and then swaps $AGENTS_FILE for $AGENTS_AFTER, so a test sees the list before
-# and after the restart. A read of the list that finds $AGENTS_NEXT swaps it
-# in once, so a later read can show a name that the session loaded late. The
-# sessions directory sits beside a temp settings file, and the socket dir is a
-# temp directory, so a developer's real sessions never change an outcome.
+# and after the restart. A read of the list after the restart that finds
+# $AGENTS_NEXT swaps it in once, so a later read can show a name that the
+# session loaded late. The sessions directory sits beside a temp settings
+# file, and the socket dir is a temp directory, so a developer's real sessions
+# never change an outcome.
 
 bats_require_minimum_version 1.7.0
 
@@ -27,8 +28,9 @@ claude_stub() {
 #!/usr/bin/env bash
 if [ "${1-}" = "agents" ] && [ "${2-}" = "--json" ]; then
   [ "${STUB_AGENTS_FAIL:-0}" = "1" ] && { echo "agents failed" >&2; exit 3; }
+  [ "${STUB_AGENTS_FAIL:-0}" = "after-resume" ] && [ -e "$RESUME_ARGS" ] && { echo "agents failed" >&2; exit 3; }
   cat "$AGENTS_FILE"
-  if [ -n "${AGENTS_NEXT:-}" ] && [ -s "$AGENTS_NEXT" ]; then
+  if [ -e "$RESUME_ARGS" ] && [ -n "${AGENTS_NEXT:-}" ] && [ -s "$AGENTS_NEXT" ]; then
     mv "$AGENTS_NEXT" "$AGENTS_FILE"
   fi
   exit 0
@@ -159,8 +161,8 @@ run_resume() {
   run_resume "$SELF_SESSION" my-topic
   [ "$status" -eq 0 ]
   [ ! -e "$RESUME_ARGS" ]
-  [[ "$output" == *"State: working"* ]]
-  [[ "$output" == *"Action: already running"* ]]
+  [[ "$output" == *"State: working"* ]] || false
+  [[ "$output" == *"Action: already running"* ]] || false
 }
 
 @test "a running session under another name is reported with its id" {
@@ -168,19 +170,32 @@ run_resume() {
   printf '[%s]' "$(agent_entry "$TOPIC_SESSION" other-name idle)" > "$AGENTS_FILE"
   run_resume "$SELF_SESSION" my-topic
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Name: other-name"* ]]
-  [[ "$stderr" == *"runs under the name 'other-name', not 'my-topic'"* ]]
-  [[ "$output" == *"Attach: claude attach ${TOPIC_SESSION:0:8}"* ]]
+  [[ "$output" == *"Name: other-name"* ]] || false
+  [[ "$stderr" == *"runs under the name 'other-name', not 'my-topic'"* ]] || false
+  [[ "$output" == *"Attach: claude attach ${TOPIC_SESSION:0:8}"* ]] || false
 }
 
-@test "the name comes from the restart line while the list still shows the short id" {
+@test "with a name in the restart line, the list is still read again until the name loads" {
   session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
   printf '[%s]' "$(agent_entry "$TOPIC_SESSION" "${TOPIC_SESSION:0:8}" blocked)" > "$AGENTS_AFTER"
-  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" my-topic
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic blocked)" > "$AGENTS_NEXT"
+  NAME_WAIT=3 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" my-topic
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Name: my-topic"* ]]
-  [[ "$output" == *"type my-topic, and press Enter"* ]]
-  [[ "$stderr" != *"runs under the name"* ]]
+  [ ! -e "$AGENTS_NEXT" ]
+  [[ "$output" == *"Name: my-topic"* ]] || false
+  [[ "$output" == *"type my-topic, and press Enter"* ]] || false
+  [[ "$stderr" != *"runs under the name"* ]] || false
+  [[ "$stderr" != *"did not show that name"* ]] || false
+}
+
+@test "a restart-line name that the list never shows is not reported as loaded" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" "${TOPIC_SESSION:0:8}" blocked)" > "$AGENTS_AFTER"
+  NAME_WAIT=1 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" my-topic
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Name: not loaded yet"* ]] || false
+  [[ "$output" != *"Open:"* ]] || false
+  [[ "$stderr" == *"the restart named the session 'my-topic', but claude agents did not show that name within 1 seconds"* ]] || false
 }
 
 @test "with no name in the restart line, the list is read again until the name loads" {
@@ -189,8 +204,8 @@ run_resume() {
   printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic blocked)" > "$AGENTS_NEXT"
   STUB_NAME="" NAME_WAIT=3 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" my-topic
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Name: my-topic"* ]]
-  [[ "$stderr" != *"runs under the name"* ]]
+  [[ "$output" == *"Name: my-topic"* ]] || false
+  [[ "$stderr" != *"runs under the name"* ]] || false
 }
 
 @test "a name that never loads is reported as not loaded, with no Open line and no name warning" {
@@ -198,10 +213,11 @@ run_resume() {
   printf '[%s]' "$(agent_entry "$TOPIC_SESSION" "${TOPIC_SESSION:0:8}" blocked)" > "$AGENTS_AFTER"
   STUB_NAME="" NAME_WAIT=1 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" my-topic
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Name: not loaded yet"* ]]
-  [[ "$output" == *"Attach: claude attach ${TOPIC_SESSION:0:8}"* ]]
-  [[ "$output" != *"Open:"* ]]
-  [[ "$stderr" != *"runs under the name"* ]]
+  [[ "$output" == *"Name: not loaded yet"* ]] || false
+  [[ "$output" == *"Attach: claude attach ${TOPIC_SESSION:0:8}"* ]] || false
+  [[ "$output" != *"Open:"* ]] || false
+  [[ "$stderr" != *"runs under the name"* ]] || false
+  [[ "$stderr" != *"the restart named the session"* ]] || false
 }
 
 @test "a running session with a socket gets an Address line, and no socket warning" {
@@ -210,8 +226,8 @@ run_resume() {
   make_socket 4242
   run_resume "" my-topic
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Pid: 4242"* ]]
-  [[ "$output" == *"Address: uds:$SOCKET_DIR/4242.sock"* ]]
+  [[ "$output" == *"Pid: 4242"* ]] || false
+  [[ "$output" == *"Address: uds:$SOCKET_DIR/4242.sock"* ]] || false
   [ -z "$stderr" ]
 }
 
@@ -221,10 +237,10 @@ run_resume() {
   run_resume "" my-topic
   [ "$status" -eq 0 ]
   [ ! -e "$RESUME_ARGS" ]
-  [[ "$output" == *"Status: unknown"* ]]
-  [[ "$output" == *"Pid: none"* ]]
-  [[ "$output" != *"Address:"* ]]
-  [[ "$stderr" != *"no socket"* ]]
+  [[ "$output" == *"Status: unknown"* ]] || false
+  [[ "$output" == *"Pid: none"* ]] || false
+  [[ "$output" != *"Address:"* ]] || false
+  [[ "$stderr" != *"no socket"* ]] || false
 }
 
 @test "a permission wait shows as Status: waiting" {
@@ -232,8 +248,8 @@ run_resume() {
   printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic blocked waiting)" > "$AGENTS_FILE"
   run_resume "" my-topic
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Status: waiting"* ]]
-  [[ "$output" == *"State: blocked"* ]]
+  [[ "$output" == *"Status: waiting"* ]] || false
+  [[ "$output" == *"State: blocked"* ]] || false
 }
 
 @test "another live session with the same name is named on stderr with its stop command" {
@@ -242,8 +258,8 @@ run_resume() {
     "$(agent_entry "$OTHER_SESSION" my-topic blocked idle 5151)" > "$AGENTS_FILE"
   run_resume "" my-topic
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"another live session also has the name 'my-topic': ${OTHER_SESSION:0:8} (pid 5151); if it is a copy, stop it with claude stop ${OTHER_SESSION:0:8}"* ]]
-  [[ "$output" == *"Session: $TOPIC_SESSION"* ]]
+  [[ "$stderr" == *"another live session also has the name 'my-topic': ${OTHER_SESSION:0:8} (pid 5151); if it is a copy, stop it with claude stop ${OTHER_SESSION:0:8}"* ]] || false
+  [[ "$output" == *"Session: $TOPIC_SESSION"* ]] || false
 }
 
 @test "an absolute folder works, with a trailing slash" {
@@ -270,7 +286,7 @@ run_resume() {
   printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic idle)" > "$AGENTS_FILE"
   run_resume "$SELF_SESSION" my-topic
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Session: $TOPIC_SESSION"* ]]
+  [[ "$output" == *"Session: $TOPIC_SESSION"* ]] || false
 }
 
 @test "with two sessions, the newest written_at wins and the other is named" {
@@ -279,8 +295,8 @@ run_resume() {
   printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic idle)" > "$AGENTS_FILE"
   run_resume "" my-topic
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Session: $TOPIC_SESSION"* ]]
-  [[ "$stderr" == *"another session also used this folder: $OTHER_SESSION"* ]]
+  [[ "$output" == *"Session: $TOPIC_SESSION"* ]] || false
+  [[ "$stderr" == *"another session also used this folder: $OTHER_SESSION"* ]] || false
 }
 
 @test "a session file for another folder does not count" {
@@ -288,68 +304,110 @@ run_resume() {
   session_file "$TOPIC_SESSION" "$REPO/elsewhere" "2026-10-13T10:00:00Z"
   run_resume "" my-topic
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"R003"* ]]
+  [[ "$stderr" == *"R003"* ]] || false
 }
 
 @test "no argument → R001" {
   run_resume ""
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"R001"* ]]
+  [[ "$stderr" == *"R001"* ]] || false
 }
 
 @test "two arguments → R001" {
   run_resume "" my-topic extra
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"R001"* ]]
+  [[ "$stderr" == *"R001"* ]] || false
 }
 
 @test "--help prints the usage" {
   run_resume "" --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Usage: resume-agent.sh <folder>"* ]]
+  [[ "$output" == *"Usage: resume-agent.sh <folder>"* ]] || false
 }
 
 @test "a folder that does not exist → R002, and nothing is created" {
   run_resume "" no-such-topic
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"R002"* ]]
+  [[ "$stderr" == *"R002"* ]] || false
   [ ! -e "$REPO/no-such-topic" ]
 }
 
 @test "a slug with a slash → R002" {
   run_resume "" a/b
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"R002"* ]]
+  [[ "$stderr" == *"R002"* ]] || false
+}
+
+@test "an unknown flag → R001" {
+  run_resume "" --verbose
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"R001"* ]] || false
+  [[ "$stderr" == *"unknown flag '--verbose'"* ]] || false
+}
+
+@test "a slug with a settings file that cannot be read → R002 that names the file" {
+  printf '{ not json\n' > "$CFG"
+  run_resume "" my-topic
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"R002"* ]] || false
+  [[ "$stderr" == *"the settings file $CFG could not be read"* ]] || false
+}
+
+@test "a slug with a relative launchAgentDefaultFolder → R002 that names the setting" {
+  printf '%s' '{"launchAgentDefaultFolder":"topics"}' > "$CFG"
+  run_resume "" my-topic
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"R002"* ]] || false
+  [[ "$stderr" == *"launchAgentDefaultFolder in $CFG is 'topics'"* ]] || false
+}
+
+@test "a slug outside a repository with no setting → R002" {
+  REPO="$TEST_TEMP_DIR/plain"
+  mkdir -p "$REPO/my-topic"
+  run_resume "" my-topic
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"R002"* ]] || false
+  [[ "$stderr" == *"not inside a git repository"* ]] || false
 }
 
 @test "no session file for the folder → R003" {
   run_resume "" my-topic
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"R003"* ]]
+  [[ "$stderr" == *"R003"* ]] || false
 }
 
 @test "claude agents --json fails → R004, and nothing restarts" {
   session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
   STUB_AGENTS_FAIL=1 run_resume "" my-topic
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"R004"* ]]
+  [[ "$stderr" == *"R004"* ]] || false
   [ ! -e "$RESUME_ARGS" ]
+}
+
+@test "claude agents --json fails after the restart → R006, not R004" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  STUB_AGENTS_FAIL=after-resume run_resume "" my-topic
+  [ "$status" -eq 1 ]
+  [ -e "$RESUME_ARGS" ]
+  [[ "$stderr" == *"R006"* ]] || false
+  [[ "$stderr" != *"R004"* ]] || false
+  [[ "$stderr" == *"do not run claude --bg --resume"* ]] || false
 }
 
 @test "the restart fails → R005 with what claude printed" {
   session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
   STUB_RESUME_FAIL=1 run_resume "" my-topic
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"R005"* ]]
-  [[ "$stderr" == *"resume refused"* ]]
+  [[ "$stderr" == *"R005"* ]] || false
+  [[ "$stderr" == *"resume refused"* ]] || false
 }
 
 @test "a restart that starts a copy → R005 that names the copy" {
   session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
   STUB_RESUME_COPY=1 run_resume "" my-topic
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"R005"* ]]
-  [[ "$stderr" == *"started a copy as cfc8ea00"* ]]
+  [[ "$stderr" == *"R005"* ]] || false
+  [[ "$stderr" == *"started a copy as cfc8ea00"* ]] || false
 }
 
 @test "a restart after which the session is not listed → R005" {
@@ -357,6 +415,6 @@ run_resume() {
   printf '[]' > "$AGENTS_AFTER"
   AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" my-topic
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"R005"* ]]
-  [[ "$stderr" == *"does not list the session"* ]]
+  [[ "$stderr" == *"R005"* ]] || false
+  [[ "$stderr" == *"does not list the session"* ]] || false
 }

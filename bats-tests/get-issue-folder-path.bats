@@ -92,7 +92,7 @@ folder_with_config() {
 @test "--id with an unsafe identifier errors" {
   folder_with_config "$CFG" --id ".hidden"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"not usable"* ]]
+  [[ "$stderr" == *"not usable"* ]] || false
 }
 
 # ============================================================================
@@ -147,7 +147,7 @@ folder_with_config() {
   printf '%s' '{"segment":' > "$cfg"
   folder_with_config "$cfg" --id 42
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"warning"* ]]
+  [[ "$stderr" == *"warning"* ]] || false
   [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
 }
 
@@ -160,9 +160,9 @@ folder_with_config() {
   printf '%s' '{"segment":"work/../x"}' > "$cfg"
   folder_with_config "$cfg" --id 42
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"warning"* ]]
+  [[ "$stderr" == *"warning"* ]] || false
   [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
-  [[ "$output" != *"/work/../x/"* ]]
+  [[ "$output" != *"/work/../x/"* ]] || false
 }
 
 @test "dotdot segment falls back to default and cannot escape" {
@@ -170,7 +170,7 @@ folder_with_config() {
   printf '%s' '{"segment":".."}' > "$cfg"
   folder_with_config "$cfg" --id 42
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"warning"* ]]
+  [[ "$stderr" == *"warning"* ]] || false
   [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
 }
 
@@ -244,8 +244,8 @@ write_session_file() {
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
   [ "${#lines[@]}" -eq 1 ]
-  [[ "$stderr" == *"using $TEST_TEMP_DIR/.claude-work/issues/42"* ]]
-  [[ "$stderr" != *"override"* ]]
+  [[ "$stderr" == *"using $TEST_TEMP_DIR/.claude-work/issues/42"* ]] || false
+  [[ "$stderr" != *"override"* ]] || false
 }
 
 @test "override: valid session file wins over the branch" {
@@ -256,7 +256,7 @@ write_session_file() {
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR/my-topic" ]
   [ "${#lines[@]}" -eq 1 ]
-  [[ "$stderr" == *"using $TEST_TEMP_DIR/my-topic"* ]]
+  [[ "$stderr" == *"using $TEST_TEMP_DIR/my-topic"* ]] || false
 }
 
 @test "override: valid session file also wins over flat placement" {
@@ -279,7 +279,7 @@ write_session_file() {
   write_session_file "$TEST_TEMP_DIR/my-topic" "some-other-session.json"
   folder_with_session "$CFG" "$SESSION_ID"
   [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
-  [[ "$stderr" != *"override"* ]]
+  [[ "$stderr" != *"override"* ]] || false
 }
 
 @test "override: --id bypasses it and says so" {
@@ -289,8 +289,8 @@ write_session_file() {
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
   [ "${#lines[@]}" -eq 1 ]
-  [[ "$stderr" == *"bypassed"* ]]
-  [[ "$stderr" == *"--id names a work item explicitly"* ]]
+  [[ "$stderr" == *"bypassed"* ]] || false
+  [[ "$stderr" == *"--id names a work item explicitly"* ]] || false
 }
 
 @test "override: a folder that no longer exists is ignored and reported" {
@@ -300,7 +300,7 @@ write_session_file() {
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
   [ "${#lines[@]}" -eq 1 ]
-  [[ "$stderr" == *"not an existing directory"* ]]
+  [[ "$stderr" == *"not an existing directory"* ]] || false
 }
 
 @test "override: a relative path is refused" {
@@ -308,7 +308,7 @@ write_session_file() {
   folder_with_session "$CFG" "$SESSION_ID"
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
-  [[ "$stderr" == *"not an absolute path"* ]]
+  [[ "$stderr" == *"not an absolute path"* ]] || false
 }
 
 @test "override: a path outside the repository is honoured" {
@@ -335,7 +335,7 @@ write_session_file() {
   folder_with_session "$CFG" "$SESSION_ID"
   [ "$status" -eq 0 ]
   [ "$output" = "$(cd "$escaping" && pwd -P)" ]
-  [[ "$output" != *".."* ]]
+  [[ "$output" != *".."* ]] || false
   rm -rf "$escaping"
 }
 
@@ -346,7 +346,7 @@ write_session_file() {
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
   [ "${#lines[@]}" -eq 1 ]
-  [[ "$stderr" == *"unreadable or malformed"* ]]
+  [[ "$stderr" == *"unreadable or malformed"* ]] || false
 }
 
 @test "override: an unrecognised version is ignored and reported" {
@@ -356,7 +356,7 @@ write_session_file() {
   folder_with_session "$CFG" "$SESSION_ID"
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
-  [[ "$stderr" == *"unrecognised version"* ]]
+  [[ "$stderr" == *"unrecognised version"* ]] || false
 }
 
 @test "override: two files for one session are refused and reported" {
@@ -367,7 +367,7 @@ write_session_file() {
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
   [ "${#lines[@]}" -eq 1 ]
-  [[ "$stderr" == *"more than one session file"* ]]
+  [[ "$stderr" == *"more than one session file"* ]] || false
 }
 
 @test "override: jq absent is ignored and reported, not fatal" {
@@ -386,8 +386,8 @@ write_session_file() {
   [ "$status" -eq 0 ]
   [ "$output" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
   [ "${#lines[@]}" -eq 1 ]
-  [[ "$stderr" == *"override ignored"* ]]
-  [[ "$stderr" == *"jq not found"* ]]
+  [[ "$stderr" == *"override ignored"* ]] || false
+  [[ "$stderr" == *"jq not found"* ]] || false
 }
 
 @test "override: a folder that cannot be entered is ignored and reported" {
@@ -404,8 +404,8 @@ write_session_file() {
   chmod 755 "$TEST_TEMP_DIR/locked-topic"
   [ "$st" -eq 0 ]
   [ "$out" = "$TEST_TEMP_DIR/.claude-work/issues/42" ]
-  [[ "$err" == *"override ignored"* ]]
-  [[ "$err" == *"could not be resolved"* ]]
+  [[ "$err" == *"override ignored"* ]] || false
+  [[ "$err" == *"could not be resolved"* ]] || false
 }
 
 @test "override: outside a git repository it still wins" {
@@ -434,7 +434,7 @@ write_session_file() {
   folder_with_config "$CFG" --id
   [ "$status" -eq 1 ]
   [ -z "$output" ]
-  [[ "$stderr" == *"usage: get-issue-folder-path.sh"* ]]
+  [[ "$stderr" == *"usage: get-issue-folder-path.sh"* ]] || false
 }
 
 @test "override: the sessions directory follows MY_CLAUDE_SKILLS_CONFIG" {
@@ -446,7 +446,7 @@ write_session_file() {
   printf '%s' '{}' > "$other"
   folder_with_session "$other" "$SESSION_ID"
   [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
-  [[ "$stderr" != *"override"* ]]
+  [[ "$stderr" != *"override"* ]] || false
 }
 
 @test "override: the folder is not created by resolving it" {

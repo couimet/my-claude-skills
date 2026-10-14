@@ -108,7 +108,7 @@ Keep the quotes around the first marker, so the shell expands nothing in the pro
 The script refuses with these codes:
 
 - **F002:** the side folder exists, and the message gives its state. When it holds this item, do not fork again. When the item is different, reword the claim and run the script again. When the state is `open` and the worker ended, `/resume-agent` wakes it.
-- **F004:** `/launch-agent` refused or failed, and its own error comes first. An L006 means that this session is at the depth limit: record the item in your own folder, tell the user, and continue.
+- **F004:** `/launch-agent` refused or failed, and its own error comes first. Read that error before you act, because some failures come after the worker started. An L004 or L006 that says the agent started means that the worker runs: do not fork the item again, and give the user the error, which says how to stop the worker. Any other L006 means that this session is at the depth limit: record the item in your own folder, tell the user, and continue.
 - **F001** and **F003:** usage and topic-root errors. Give the message to the user.
 
 ## Step 5: After the Fork

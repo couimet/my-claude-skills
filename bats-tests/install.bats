@@ -53,7 +53,7 @@ run_install() {
   run_install
   run_install
   [ "$status" -eq 0 ]
-  [[ "$output" == *"2 unchanged"* ]]
+  [[ "$output" == *"2 unchanged"* ]] || false
 }
 
 # ============================================================================
@@ -72,10 +72,10 @@ run_install() {
   [ -L "$FAKE_HOME/.claude/skills/alpha" ]
   [ -e "$FAKE_HOME/.claude/skills/alpha" ]
   [ "$(readlink "$FAKE_HOME/.claude/skills/alpha")" = "$FAKE_REPO/skills/alpha" ]
-  [[ "$output" == *"relinked"* ]]
+  [[ "$output" == *"relinked"* ]] || false
   # Ownership of a dangling link is unknowable, so the reclaim names what it
   # discarded and the user can put it back.
-  [[ "$output" == *"/nonexistent/old-checkout/skills/alpha"* ]]
+  [[ "$output" == *"/nonexistent/old-checkout/skills/alpha"* ]] || false
 }
 
 @test "dangling link does not abort before later skills are linked" {
@@ -95,8 +95,8 @@ run_install() {
   run_install
   [ "$status" -eq 0 ]
   [ ! -L "$FAKE_HOME/.claude/skills/removed" ]
-  [[ "$output" == *"pruned"* ]]
-  [[ "$output" == *"1 pruned"* ]]
+  [[ "$output" == *"pruned"* ]] || false
+  [[ "$output" == *"1 pruned"* ]] || false
 }
 
 @test "dangling link pointing outside this checkout is left alone" {
@@ -105,7 +105,7 @@ run_install() {
   [ "$status" -eq 0 ]
   # Equally broken, but not ours to remove.
   [ -L "$FAKE_HOME/.claude/skills/foreign" ]
-  [[ "$output" == *"0 pruned"* ]]
+  [[ "$output" == *"0 pruned"* ]] || false
 }
 
 @test "broken link whose target escapes through .. is left alone" {
@@ -116,7 +116,7 @@ run_install() {
   run_install
   [ "$status" -eq 0 ]
   [ -L "$FAKE_HOME/.claude/skills/escaped" ]
-  [[ "$output" == *"0 pruned"* ]]
+  [[ "$output" == *"0 pruned"* ]] || false
 }
 
 @test "broken link reaching outside through a symlink component is left alone" {
@@ -129,7 +129,7 @@ run_install() {
   run_install
   [ "$status" -eq 0 ]
   [ -L "$FAKE_HOME/.claude/skills/removed" ]
-  [[ "$output" == *"0 pruned"* ]]
+  [[ "$output" == *"0 pruned"* ]] || false
 }
 
 @test "live link into this checkout is never pruned" {
@@ -138,7 +138,7 @@ run_install() {
   [ "$status" -eq 0 ]
   [ -L "$FAKE_HOME/.claude/skills/alpha" ]
   [ -e "$FAKE_HOME/.claude/skills/alpha" ]
-  [[ "$output" == *"0 pruned"* ]]
+  [[ "$output" == *"0 pruned"* ]] || false
 }
 
 @test "real directory under skills/ is not treated as a prunable link" {
@@ -148,7 +148,7 @@ run_install() {
   [ "$status" -eq 0 ]
   [ -d "$FAKE_HOME/.claude/skills/handwritten" ]
   [ -f "$FAKE_HOME/.claude/skills/handwritten/SKILL.md" ]
-  [[ "$output" == *"0 pruned"* ]]
+  [[ "$output" == *"0 pruned"* ]] || false
 }
 
 # ============================================================================
@@ -163,7 +163,7 @@ run_install() {
   run_install
   [ "$status" -eq 0 ]
   [ "$(readlink "$FAKE_HOME/.claude/skills/alpha")" = "$FAKE_REPO/skills/alpha" ]
-  [[ "$output" == *"1 updated"* ]]
+  [[ "$output" == *"1 updated"* ]] || false
 }
 
 @test "regular file occupying a shipped skill name is left alone and flagged" {
@@ -172,9 +172,9 @@ run_install() {
   [ "$status" -eq 0 ]
   [ -f "$FAKE_HOME/.claude/skills/alpha" ]
   [ ! -L "$FAKE_HOME/.claude/skills/alpha" ]
-  [[ "$output" == *"WARNING"* ]]
-  [[ "$output" == *"regular file"* ]]
-  [[ "$output" == *"1 conflict"* ]]
+  [[ "$output" == *"WARNING"* ]] || false
+  [[ "$output" == *"regular file"* ]] || false
+  [[ "$output" == *"1 conflict"* ]] || false
   # The conflict must not stop the rest of the run.
   [ -L "$FAKE_HOME/.claude/skills/beta" ]
 }
@@ -186,7 +186,7 @@ run_install() {
   [ "$status" -eq 0 ]
   [ -d "$FAKE_HOME/.claude/skills/alpha" ]
   [ -f "$FAKE_HOME/.claude/skills/alpha/SKILL.md" ]
-  [[ "$output" == *"real directory"* ]]
-  [[ "$output" == *"1 conflict"* ]]
+  [[ "$output" == *"real directory"* ]] || false
+  [[ "$output" == *"1 conflict"* ]] || false
   [ -L "$FAKE_HOME/.claude/skills/beta" ]
 }

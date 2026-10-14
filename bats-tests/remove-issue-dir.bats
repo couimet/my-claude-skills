@@ -33,13 +33,13 @@ teardown() {
 @test "missing arguments prints usage error" {
   run "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R002"* ]]
+  [[ "$output" == *"R002"* ]] || false
 }
 
 @test "single argument prints usage error" {
   run "$SCRIPT" "$BASE/issues/42"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R002"* ]]
+  [[ "$output" == *"R002"* ]] || false
 }
 
 @test "the old <base> <id> form is a usage error, not a deletion" {
@@ -48,14 +48,14 @@ teardown() {
   mkdir -p "$BASE/issues/42"
   run "$SCRIPT" "$BASE" "42"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R002"* ]]
+  [[ "$output" == *"R002"* ]] || false
   [ -d "$BASE/issues/42" ]
 }
 
 @test "a third argument that is not --id is a usage error" {
   run "$SCRIPT" "$BASE/issues/42" "--identifier" "42"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R002"* ]]
+  [[ "$output" == *"R002"* ]] || false
 }
 
 # ============================================================================
@@ -67,14 +67,14 @@ teardown() {
   cd "$TEST_TEMP_DIR"
   run "$SCRIPT" "42" --id "42"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R002"* ]]
+  [[ "$output" == *"R002"* ]] || false
 }
 
 @test "rejects a folder whose last component is not the ID" {
   mkdir -p "$BASE/issues/42"
   run "$SCRIPT" "$BASE/issues" --id "42"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R001"* ]]
+  [[ "$output" == *"R001"* ]] || false
   [ -d "$BASE/issues/42" ]
 }
 
@@ -93,43 +93,43 @@ teardown() {
 @test "rejects dot-only ID (.)" {
   run "$SCRIPT" "$BASE/issues/." --id "."
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R001"* ]]
+  [[ "$output" == *"R001"* ]] || false
 }
 
 @test "rejects dot-dot ID (..)" {
   run "$SCRIPT" "$BASE/issues/.." --id ".."
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R001"* ]]
+  [[ "$output" == *"R001"* ]] || false
 }
 
 @test "rejects ID with slash" {
   run "$SCRIPT" "$BASE/issues/foo/bar" --id "foo/bar"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R001"* ]]
+  [[ "$output" == *"R001"* ]] || false
 }
 
 @test "rejects ID with space" {
   run "$SCRIPT" "$BASE/issues/foo bar" --id "foo bar"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R001"* ]]
+  [[ "$output" == *"R001"* ]] || false
 }
 
 @test "rejects ID starting with hyphen" {
   run "$SCRIPT" "$BASE/issues/-foo" --id "-foo"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R001"* ]]
+  [[ "$output" == *"R001"* ]] || false
 }
 
 @test "rejects ID with shell metacharacters" {
   run "$SCRIPT" "$BASE/issues/x" --id '$(whoami)'
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R001"* ]]
+  [[ "$output" == *"R001"* ]] || false
 }
 
 @test "rejects empty ID" {
   run "$SCRIPT" "$BASE/issues/x" --id ""
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R001"* ]]
+  [[ "$output" == *"R001"* ]] || false
 }
 
 # ============================================================================
@@ -142,7 +142,7 @@ teardown() {
   mkdir -p "$BASE/issues/notes"
   run "$SCRIPT" "$BASE/issues/notes" --id "notes"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R001"* ]]
+  [[ "$output" == *"R001"* ]] || false
   [ -d "$BASE/issues/notes" ]
 }
 
@@ -235,7 +235,7 @@ teardown() {
 
   run "$SCRIPT" "$BASE/issues/escape-hatch" --id "escape-hatch"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R002"* ]]
+  [[ "$output" == *"R002"* ]] || false
   [ -f "$TEST_TEMP_DIR/outside/keep-me" ]
 }
 
@@ -250,7 +250,7 @@ teardown() {
 
   run "$SCRIPT" "$BASE/issues/42" --id "42"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R002"* ]]
+  [[ "$output" == *"R002"* ]] || false
   [ -L "$BASE/issues/42" ]
   [ -f "$TEST_TEMP_DIR/outside/42/keep-me" ]
 }
@@ -263,7 +263,7 @@ teardown() {
 
   run "$SCRIPT" "$BASE/issues/42" --id "42"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"R002"* ]]
+  [[ "$output" == *"R002"* ]] || false
   [ -L "$BASE/issues/42" ]
 }
 
@@ -291,8 +291,8 @@ teardown() {
 
   run env PATH="$stub_path" "$SCRIPT" "$BASE/issues/42" --id "42"
   [ "$status" -eq 2 ]
-  [[ "$output" == *"R003"* ]]
-  [[ "$output" == *"failed to remove"* ]]
+  [[ "$output" == *"R003"* ]] || false
+  [[ "$output" == *"failed to remove"* ]] || false
   # Still on disk. A caller reading the printed path as "this is gone" would be
   # wrong, which is why the branch exits non-zero instead of falling through to
   # the print.

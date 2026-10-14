@@ -34,31 +34,31 @@ _fake_install() {
 @test "skill-version: --help exits 0" {
   run "$SCRIPT" --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Usage: skill-version.sh"* ]]
+  [[ "$output" == *"Usage: skill-version.sh"* ]] || false
 }
 
 @test "skill-version: V001 when given no argument" {
   run "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"V001"* ]]
+  [[ "$output" == *"V001"* ]] || false
 }
 
 @test "skill-version: V001 when given two arguments" {
   run "$SCRIPT" a b
   [ "$status" -eq 1 ]
-  [[ "$output" == *"V001"* ]]
+  [[ "$output" == *"V001"* ]] || false
 }
 
 @test "skill-version: V002 refuses a name that is not one path segment" {
   run "$SCRIPT" "../secrets"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"V002"* ]]
+  [[ "$output" == *"V002"* ]] || false
 }
 
 @test "skill-version: V003 when the skill has no SKILL.md" {
   run "$SCRIPT" "no-such-skill-anywhere"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"V003"* ]]
+  [[ "$output" == *"V003"* ]] || false
 }
 
 # The plugin-install case: the skills root is wherever the plugin unpacked to,
@@ -91,11 +91,11 @@ _fake_install() {
   run env HOME="$TEST_TEMP_DIR/empty-home" \
     "$root/issue-context/skill-version.sh" bodyonly
   [ "$status" -eq 1 ]
-  [[ "$output" == *"V004"* ]]
+  [[ "$output" == *"V004"* ]] || false
 }
 
 @test "skill-version: prints the real version of a stamped skill in this repo" {
   run "$SCRIPT" commit-msg
   [ "$status" -eq 0 ]
-  [[ "$output" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}.*@ ]]
+  [[ "$output" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}.*@ ]] || false
 }

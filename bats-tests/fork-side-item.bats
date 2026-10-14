@@ -59,9 +59,9 @@ run_fork() {
   local folder="$REPO/side-the-readme-links-a-dead-page"
   [ -d "$folder" ]
   [ "$(cat "$folder/prompt-new-agent-launch.txt")" = "check the claim" ]
-  [[ "$(cat "$ARGS_FILE")" == "--bg --name side-the-readme-links-a-dead-page "* ]]
-  [[ "$output" == *"Folder: $folder"* ]]
-  [[ "$output" == *"Job: a1b2c3d4"* ]]
+  [[ "$(cat "$ARGS_FILE")" == "--bg --name side-the-readme-links-a-dead-page "* ]] || false
+  [[ "$output" == *"Folder: $folder"* ]] || false
+  [[ "$output" == *"Job: a1b2c3d4"* ]] || false
   [ "${lines[${#lines[@]}-1]}" = "side.forked: $folder" ]
 }
 
@@ -79,9 +79,9 @@ run_fork() {
   mkdir -p "$REPO/side-a-claim"
   run_fork "$REPO" "prompt" fork "a claim"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"F002"* ]]
-  [[ "$stderr" == *"state: open"* ]]
-  [[ "$stderr" == *"run /resume-agent $REPO/side-a-claim to wake it"* ]]
+  [[ "$stderr" == *"F002"* ]] || false
+  [[ "$stderr" == *"state: open"* ]] || false
+  [[ "$stderr" == *"run /resume-agent $REPO/side-a-claim to wake it"* ]] || false
   [ ! -e "$ARGS_FILE" ]
 }
 
@@ -90,8 +90,8 @@ run_fork() {
   printf 'ticket\thttps://example.com/1\n' > "$REPO/side-a-claim/side-outcome.txt"
   run_fork "$REPO" "prompt" fork "a claim"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"state: ticket"* ]]
-  [[ "$stderr" != *"/resume-agent"* ]]
+  [[ "$stderr" == *"state: ticket"* ]] || false
+  [[ "$stderr" != *"/resume-agent"* ]] || false
 }
 
 @test "the side folder lands under launchAgentDefaultFolder when it is set" {
@@ -107,8 +107,10 @@ run_fork() {
   printf '%s' '{"launchAgentMaxDepth": 0}' > "$CFG"
   run_fork "$REPO" "prompt" fork "a claim"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"L006"* ]]
-  [[ "$stderr" == *"F004"* ]]
+  [[ "$stderr" == *"L006"* ]] || false
+  [[ "$stderr" == *"F004"* ]] || false
+  [[ "$stderr" == *"its error above says whether the worker started"* ]] || false
+  [[ "$stderr" != *"did not start"* ]] || false
   [ ! -e "$REPO/side-a-claim" ]
 }
 
@@ -120,7 +122,7 @@ run_fork() {
   [ "$status" -eq 0 ]
   [ "$output" = "$REPO/side-closed-one	drop
 $REPO/side-open-one	open" ]
-  [[ "$stderr" == *"run /resume-agent <folder> to wake it"* ]]
+  [[ "$stderr" == *"run /resume-agent <folder> to wake it"* ]] || false
 }
 
 @test "list with only closed side folders prints no wake hint" {
@@ -140,43 +142,51 @@ $REPO/side-open-one	open" ]
 @test "an empty prompt → F001, nothing created" {
   run_fork "$REPO" "   " fork "a claim"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"F001"* ]]
+  [[ "$stderr" == *"F001"* ]] || false
   [ ! -e "$REPO/side-a-claim" ]
 }
 
 @test "an empty claim → F001" {
   run_fork "$REPO" "prompt" fork "  "
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"F001"* ]]
+  [[ "$stderr" == *"F001"* ]] || false
 }
 
 @test "no mode, an unknown mode, and extra arguments → F001" {
   run_fork "$REPO" "prompt"
-  [[ "$stderr" == *"F001"* ]]
+  [[ "$stderr" == *"F001"* ]] || false
   run_fork "$REPO" "prompt" launch "a claim"
-  [[ "$stderr" == *"F001"* ]]
+  [[ "$stderr" == *"F001"* ]] || false
   run_fork "$REPO" "prompt" fork "a claim" extra
-  [[ "$stderr" == *"F001"* ]]
+  [[ "$stderr" == *"F001"* ]] || false
   run_fork "$REPO" "" list extra
-  [[ "$stderr" == *"F001"* ]]
+  [[ "$stderr" == *"F001"* ]] || false
 }
 
 @test "--help prints the usage" {
   run_fork "$REPO" "" --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"fork-side-item.sh list"* ]]
+  [[ "$output" == *"fork-side-item.sh list"* ]] || false
 }
 
 @test "no repository and no setting → F003" {
   mkdir -p "$TEST_TEMP_DIR/plain"
   run_fork "$TEST_TEMP_DIR/plain" "prompt" fork "a claim"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"F003"* ]]
+  [[ "$stderr" == *"F003"* ]] || false
+}
+
+@test "a settings file that cannot be read → F003 that names the file" {
+  printf '{ not json\n' > "$CFG"
+  run_fork "$REPO" "" list
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"F003"* ]] || false
+  [[ "$stderr" == *"the settings file $CFG could not be read"* ]] || false
 }
 
 @test "a relative launchAgentDefaultFolder → F003" {
   printf '%s' '{"launchAgentDefaultFolder":"topics"}' > "$CFG"
   run_fork "$REPO" "" list
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"F003"* ]]
+  [[ "$stderr" == *"F003"* ]] || false
 }

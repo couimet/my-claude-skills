@@ -72,34 +72,34 @@ setup_remote_with_branch() {
 @test "no arguments → error T001" {
   run --separate-stderr "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T001"* ]]
-  [[ "$stderr" == *"expected 1-2 arguments, got 0"* ]]
+  [[ "$stderr" == *"T001"* ]] || false
+  [[ "$stderr" == *"expected 1-2 arguments, got 0"* ]] || false
 }
 
 @test "three arguments → error T001" {
   run --separate-stderr "$SCRIPT" "42" "origin/main" "extra"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T001"* ]]
+  [[ "$stderr" == *"T001"* ]] || false
 }
 
 @test "empty issue number → error T002" {
   run --separate-stderr "$SCRIPT" "" "origin/main"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T002"* ]]
-  [[ "$stderr" == *"invalid issue number"* ]]
+  [[ "$stderr" == *"T002"* ]] || false
+  [[ "$stderr" == *"invalid issue number"* ]] || false
 }
 
 @test "issue number with slash → error T002" {
   run --separate-stderr "$SCRIPT" "42/evil" "origin/main"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T002"* ]]
-  [[ "$stderr" == *"invalid issue number"* ]]
+  [[ "$stderr" == *"T002"* ]] || false
+  [[ "$stderr" == *"invalid issue number"* ]] || false
 }
 
 @test "usage text printed on argument error" {
   run --separate-stderr "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"Usage:"* ]]
+  [[ "$stderr" == *"Usage:"* ]] || false
 }
 
 @test "claude-work-root.sh not found → error T003" {
@@ -115,7 +115,7 @@ setup_remote_with_branch() {
   mv "${claude_root_script}.bak" "$claude_root_script"
 
   [ "$actual_status" -eq 1 ]
-  [[ "$stderr" == *"T003"* ]]
+  [[ "$stderr" == *"T003"* ]] || false
 }
 
 # ============================================================================
@@ -125,19 +125,19 @@ setup_remote_with_branch() {
 @test "explicit target is used verbatim" {
   run --separate-stderr "$SCRIPT" "42" "origin/main"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=origin/main"* ]]
+  [[ "$output" == *"TARGET=origin/main"* ]] || false
 }
 
 @test "explicit target with issues/ prefix is preserved" {
   run --separate-stderr "$SCRIPT" "42" "issues/200"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=issues/200"* ]]
+  [[ "$output" == *"TARGET=issues/200"* ]] || false
 }
 
 @test "explicit target with short ref is preserved" {
   run --separate-stderr "$SCRIPT" "42" "main"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=main"* ]]
+  [[ "$output" == *"TARGET=main"* ]] || false
 }
 
 @test "explicit target wins over base-branch marker" {
@@ -146,7 +146,7 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42" "origin/main"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=origin/main"* ]]
+  [[ "$output" == *"TARGET=origin/main"* ]] || false
 }
 
 @test "explicit empty target treated as unset → falls back to marker" {
@@ -158,7 +158,7 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42" ""
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=issues/100"* ]]
+  [[ "$output" == *"TARGET=issues/100"* ]] || false
 }
 
 # ============================================================================
@@ -168,54 +168,54 @@ setup_remote_with_branch() {
 @test "explicit issues/200 → MODE=stacked" {
   run --separate-stderr "$SCRIPT" "42" "issues/200"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"MODE=stacked"* ]] || false
 }
 
 @test "explicit issues/123-some-feature → MODE=stacked" {
   run --separate-stderr "$SCRIPT" "42" "issues/123-some-feature"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"MODE=stacked"* ]] || false
 }
 
 @test "explicit origin/main → MODE=normal" {
   run --separate-stderr "$SCRIPT" "42" "origin/main"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"MODE=normal"* ]]
+  [[ "$output" == *"MODE=normal"* ]] || false
 }
 
 @test "explicit main → MODE=normal" {
   run --separate-stderr "$SCRIPT" "42" "main"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"MODE=normal"* ]]
+  [[ "$output" == *"MODE=normal"* ]] || false
 }
 
 @test "issues/foo (non-numeric) → MODE=stacked" {
   run --separate-stderr "$SCRIPT" "42" "issues/foo"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"MODE=stacked"* ]] || false
 }
 
 @test "feature/issues/200 → MODE=stacked (any non-main/master target is stacked)" {
   run --separate-stderr "$SCRIPT" "42" "feature/issues/200"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"MODE=stacked"* ]] || false
 }
 @test "origin/issues/200 → MODE=stacked" {
   run --separate-stderr "$SCRIPT" "42" "origin/issues/200"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"MODE=stacked"* ]] || false
 }
 
 @test "origin/issues/123-some-feature → MODE=stacked" {
   run --separate-stderr "$SCRIPT" "42" "origin/issues/123-some-feature"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"MODE=stacked"* ]] || false
 }
 
 @test "origin/issues/side-quest (non-numeric) → MODE=stacked" {
   run --separate-stderr "$SCRIPT" "42" "origin/issues/side-quest"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"MODE=stacked"* ]] || false
 }
 
 # ============================================================================
@@ -234,8 +234,8 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=origin/issues/233-layer-one"* ]]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"TARGET=origin/issues/233-layer-one"* ]] || false
+  [[ "$output" == *"MODE=stacked"* ]] || false
 
   local marker_file="$TEST_TEMP_DIR/.claude-work/issues/42/base-branch"
   [ -f "$marker_file" ]
@@ -258,7 +258,7 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=origin/issues/233-layer-one"* ]]
+  [[ "$output" == *"TARGET=origin/issues/233-layer-one"* ]] || false
 
   local marker_file="$TEST_TEMP_DIR/.claude-work/work/42/base-branch"
   [ -f "$marker_file" ]
@@ -277,8 +277,8 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=origin/issues/233-layer-one"* ]]
-  [[ "$output" != *"origin/origin/"* ]]
+  [[ "$output" == *"TARGET=origin/issues/233-layer-one"* ]] || false
+  [[ "$output" != *"origin/origin/"* ]] || false
 }
 
 @test "gh pr list returns empty → falls through to marker" {
@@ -294,8 +294,8 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=issues/100"* ]]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"TARGET=issues/100"* ]] || false
+  [[ "$output" == *"MODE=stacked"* ]] || false
 }
 
 @test "gh pr list returns literal null → falls through to marker" {
@@ -311,8 +311,8 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=issues/100"* ]]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"TARGET=issues/100"* ]] || false
+  [[ "$output" == *"MODE=stacked"* ]] || false
 }
 
 @test "gh pr list not available → falls through to marker" {
@@ -323,8 +323,8 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=issues/100"* ]]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"TARGET=issues/100"* ]] || false
+  [[ "$output" == *"MODE=stacked"* ]] || false
 }
 
 # ============================================================================
@@ -334,15 +334,15 @@ setup_remote_with_branch() {
 @test "no marker and no explicit target → fallback to origin/main with MODE=normal" {
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=origin/main"* ]]
-  [[ "$output" == *"MODE=normal"* ]]
+  [[ "$output" == *"TARGET=origin/main"* ]] || false
+  [[ "$output" == *"MODE=normal"* ]] || false
 }
 
 @test "marker file missing → fallback to origin/main" {
   run --separate-stderr "$SCRIPT" "99"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=origin/main"* ]]
-  [[ "$output" == *"MODE=normal"* ]]
+  [[ "$output" == *"TARGET=origin/main"* ]] || false
+  [[ "$output" == *"MODE=normal"* ]] || false
 }
 
 @test "marker file empty → fallback to origin/main" {
@@ -351,7 +351,7 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=origin/main"* ]]
+  [[ "$output" == *"TARGET=origin/main"* ]] || false
 }
 
 @test "marker has issues/ branch, remote ref exists → use base-branch, MODE=stacked" {
@@ -362,8 +362,8 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=issues/100"* ]]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"TARGET=issues/100"* ]] || false
+  [[ "$output" == *"MODE=stacked"* ]] || false
 }
 
 @test "with segment 'work', marker under <root>/work/42/ is honored" {
@@ -378,8 +378,8 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=issues/100"* ]]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"TARGET=issues/100"* ]] || false
+  [[ "$output" == *"MODE=stacked"* ]] || false
 }
 
 @test "marker has origin/issues/100, remote ref exists → TARGET=origin/issues/100, MODE=stacked" {
@@ -390,8 +390,8 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=origin/issues/100"* ]]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"TARGET=origin/issues/100"* ]] || false
+  [[ "$output" == *"MODE=stacked"* ]] || false
 }
 
 @test "marker has issues/ branch, no remote → error T004" {
@@ -402,8 +402,8 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T004"* ]]
-  [[ "$stderr" == *"no longer exists on remote"* ]]
+  [[ "$stderr" == *"T004"* ]] || false
+  [[ "$stderr" == *"no longer exists on remote"* ]] || false
 }
 
 @test "marker has issues/ branch, remote exists but ref absent → error T004" {
@@ -416,8 +416,8 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T004"* ]]
-  [[ "$stderr" == *"no longer exists on remote"* ]]
+  [[ "$stderr" == *"T004"* ]] || false
+  [[ "$stderr" == *"no longer exists on remote"* ]] || false
 }
 
 @test "marker has origin/main base → MODE=normal (not an issues/ ref)" {
@@ -429,8 +429,8 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=origin/main"* ]]
-  [[ "$output" == *"MODE=normal"* ]]
+  [[ "$output" == *"TARGET=origin/main"* ]] || false
+  [[ "$output" == *"MODE=normal"* ]] || false
 }
 
 @test "marker has origin/feature-branch, remote ref exists → use base-branch, MODE=stacked" {
@@ -443,8 +443,8 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=origin/my-feature"* ]]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"TARGET=origin/my-feature"* ]] || false
+  [[ "$output" == *"MODE=stacked"* ]] || false
 }
 
 @test "marker has origin/feature-branch, remote ref absent → error T004" {
@@ -456,8 +456,8 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T004"* ]]
-  [[ "$stderr" == *"no longer exists on remote"* ]]
+  [[ "$stderr" == *"T004"* ]] || false
+  [[ "$stderr" == *"no longer exists on remote"* ]] || false
 }
 
 @test "marker ref matches a tag but not a branch → error T004" {
@@ -474,8 +474,8 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T004"* ]]
-  [[ "$stderr" == *"no longer exists on remote"* ]]
+  [[ "$stderr" == *"T004"* ]] || false
+  [[ "$stderr" == *"no longer exists on remote"* ]] || false
 }
 
 # ============================================================================
@@ -498,7 +498,7 @@ setup_remote_with_branch() {
 
   local first_line
   first_line="$(echo "$output" | head -n1)"
-  [[ "$first_line" == "TARGET="* ]]
+  [[ "$first_line" == "TARGET="* ]] || false
 }
 
 # ============================================================================
@@ -508,8 +508,8 @@ setup_remote_with_branch() {
 @test "non-numeric issue identifier works" {
   run --separate-stderr "$SCRIPT" "rfc-auth" "origin/main"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=origin/main"* ]]
-  [[ "$output" == *"MODE=normal"* ]]
+  [[ "$output" == *"TARGET=origin/main"* ]] || false
+  [[ "$output" == *"MODE=normal"* ]] || false
 }
 
 @test "marker file with trailing newline is handled" {
@@ -520,6 +520,6 @@ setup_remote_with_branch() {
 
   run --separate-stderr "$SCRIPT" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"TARGET=issues/100"* ]]
-  [[ "$output" == *"MODE=stacked"* ]]
+  [[ "$output" == *"TARGET=issues/100"* ]] || false
+  [[ "$output" == *"MODE=stacked"* ]] || false
 }

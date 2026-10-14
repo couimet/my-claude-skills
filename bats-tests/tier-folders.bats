@@ -152,5 +152,5 @@ write_session_file() {
   folders --bogus
   [ "$status" -eq 1 ]
   [ -z "$output" ]
-  [[ "$stderr" == *usage* ]]
+  [[ "$stderr" == *usage* ]] || false
 }

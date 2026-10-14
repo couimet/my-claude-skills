@@ -286,12 +286,15 @@ if [ -f "$_issue_settings_file" ] && [ -r "$_issue_settings_file" ]; then
       # key does: the fall-back is a bounded limit, so it can never remove
       # the limit. Absent is the ordinary case and says nothing.
       # shellcheck disable=SC2034
-      SETTINGS_LAUNCH_AGENT_MAX_DEPTH="$(printf '%s' "$_issue_settings_json" | jq -r '
+      # The markers sit inside the jq program, so they are jq comments. kcov
+      # counts the statement on its closing line, which stays measured.
+      SETTINGS_LAUNCH_AGENT_MAX_DEPTH="$(printf '%s' "$_issue_settings_json" | jq -r ' # kcov-exclude-start
         if has("launchAgentMaxDepth") | not then "2"
         elif (.launchAgentMaxDepth | type == "number")
           and .launchAgentMaxDepth >= 0
           and (.launchAgentMaxDepth | floor) == .launchAgentMaxDepth
         then (.launchAgentMaxDepth | tostring)
+        # kcov-exclude-end
         else "invalid" end')"
       if [ "$SETTINGS_LAUNCH_AGENT_MAX_DEPTH" = "invalid" ]; then
         echo "issue-settings: warning: launchAgentMaxDepth must be a non-negative integer; using default launchAgentMaxDepth 2" >&2

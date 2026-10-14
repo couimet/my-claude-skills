@@ -91,3 +91,20 @@ depth_write() {
   [ "$(cat "$DEPTH_DIR/abcd1234")" = "2" ]
   [ "$(ls -A "$DEPTH_DIR")" = "abcd1234" ]
 }
+
+@test "a settings file name with no directory puts the records under ./agent-depth" {
+  run bash -c 'cd "$2" && source "$1/agent-depth.sh" && SETTINGS_FILE=settings.json _issue_context_agent_depth_dir' \
+    _ "$HELPERS" "$TEST_TEMP_DIR"
+  [ "$status" -eq 0 ]
+  [ "$output" = "./agent-depth" ]
+}
+
+@test "a write whose rename fails returns 1 and removes its temporary file" {
+  run env MY_CLAUDE_SKILLS_CONFIG="$CFG" bash -c '
+    source "$1/issue-settings.sh" 2>/dev/null && source "$1/agent-depth.sh"
+    mv() { return 1; }
+    _issue_context_agent_depth_write abcd1234 1 && echo 0 || echo $?' _ "$HELPERS"
+  [ "$output" = "1" ]
+  [ ! -e "$DEPTH_DIR/abcd1234" ]
+  [ -z "$(ls -A "$DEPTH_DIR")" ]
+}

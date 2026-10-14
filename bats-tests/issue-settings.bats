@@ -355,7 +355,7 @@ max_depth_of() {
   for bad in '"3"' '-1' '1.5' 'null' 'true'; do
     max_depth_of "{\"launchAgentMaxDepth\": $bad}"
     [ "${lines[0]}" = "2" ]
-    [[ "$output" == *"launchAgentMaxDepth must be a non-negative integer"* ]]
+    [[ "$output" == *"launchAgentMaxDepth must be a non-negative integer"* ]] || false
   done
 }
 

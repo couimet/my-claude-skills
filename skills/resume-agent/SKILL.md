@@ -36,15 +36,15 @@ The script finds the session of the folder in the session files that `/set-work-
 - **Listed:** the session runs. The script restarts nothing, because a resume of a running session starts a copy.
 - **Not listed:** the session ended. The script runs `claude --bg --resume <session id>` with no prompt and no flag, so the session wakes idle under the name it was saved with. A flag such as `--name` makes Claude Code start a copy under a new id, which is why the script passes none.
 
-Right after a restart, the list shows the session under its short id until the session loads its name. So the script takes the name from the restart output, or reads the list again for up to 15 seconds. When the name does not load in that time, the script prints `Name: not loaded yet`.
+Right after a restart, the list shows the session under its short id until the session loads its name. Until then, a search in the agent view and a send by name cannot find the session. So the script reads the list again for up to 15 seconds, and the `Name:` line gives only a name that the list shows. When the name does not load in that time, the script prints `Name: not loaded yet`, and stderr gives the name from the restart output when it has one.
 
 ## Step 2: Report
 
-Give the user the lines the script printed, in order: `Folder:`, `Session:`, `Id:`, `Name:`, `Status:`, `State:`, `Action:`, `Pid:`, `Address:` (only when the socket exists), `Attach:`, `Open:` (only when the name loaded), and `Note:`. Give the stderr lines too, when the script prints them: the other sessions of the folder, a name that is not the folder name, another live session with the same name and its `claude stop` command, and a missing socket.
+Give the user the lines the script printed, in order: `Folder:`, `Session:`, `Id:`, `Name:`, `Status:`, `State:`, `Action:`, `Pid:`, `Address:` (only when the socket exists), `Attach:`, `Open:` (only when the name loaded), and `Note:`. Give the stderr lines too, when the script prints them: the other sessions of the folder, a name that is not the folder name, a name from the restart that did not load in time, another live session with the same name and its `claude stop` command, and a missing socket.
 
 Tell the user how to open the session: with the `Attach:` command, or, when an `Open:` line is there, in the agent view: press `Ctrl+F`, type the name, and press Enter. Tell the user not to run `claude --bg --resume` for the session: it runs, and a resume starts a copy.
 
-An error names its code. R001 is a usage error. R002 means that the folder does not resolve or does not exist. R003 means that no other session wrote to the folder. R004 means that `claude agents --json` failed, so the script restarted nothing. R005 means that the restart failed, or that it started a copy: give the user the output the script printed, which names the copy to stop.
+An error names its code. R001 is a usage error. R002 means that the folder does not resolve or does not exist. R003 means that no other session wrote to the folder. R004 means that `claude agents --json` failed, so the script restarted nothing. R005 means that the restart failed, or that it started a copy: give the user the output the script printed, which names the copy to stop. R006 means that the restart ran, but the list read after it failed, so the script does not know whether the session runs. Do not run `claude --bg --resume` for the session, because a resume of a running session starts a copy. Run the skill again: it restarts nothing when the list shows the session.
 
 ## Step 3: Stop the Helper Session
 

@@ -88,8 +88,8 @@ teardown() {
   # argument is passed, exercising the ${1:-<repo>/coverage} default expansion.
   run env PATH="/usr/bin:/bin" "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"C001"* ]]
-  [[ "$output" == *"required tool 'kcov' not found on PATH"* ]]
+  [[ "$output" == *"C001"* ]] || false
+  [[ "$output" == *"required tool 'kcov' not found on PATH"* ]] || false
 }
 
 @test "missing bats → C001, exit 1, names the missing tool" {
@@ -98,8 +98,8 @@ teardown() {
   kcov_stub "$kcov_only"
   run env PATH="$kcov_only:/usr/bin:/bin" "$SCRIPT" "$TEST_TEMP_DIR/out"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"C001"* ]]
-  [[ "$output" == *"required tool 'bats' not found on PATH"* ]]
+  [[ "$output" == *"C001"* ]] || false
+  [[ "$output" == *"required tool 'bats' not found on PATH"* ]] || false
 }
 
 # ============================================================================
@@ -120,14 +120,14 @@ teardown() {
   [ "$output" = "$outdir/cobertura.xml" ]
   [ -f "$outdir/cobertura.xml" ]
   # The consolidated file is a copy of the produced Cobertura report.
-  [[ "$(cat "$outdir/cobertura.xml")" == *"<coverage/>"* ]]
+  [[ "$(cat "$outdir/cobertura.xml")" == *"<coverage/>"* ]] || false
   # kcov was invoked with the include/exclude filters and traced `bats` over
   # the default test directory.
   args="$(cat "$args_file")"
-  [[ "$args" == *"--clean"* ]]
-  [[ "$args" == *"--include-path="* ]]
-  [[ "$args" == *"--exclude-pattern="* ]]
-  [[ "$args" == *"$outdir bats bats-tests/"* ]]
+  [[ "$args" == *"--clean"* ]] || false
+  [[ "$args" == *"--include-path="* ]] || false
+  [[ "$args" == *"--exclude-pattern="* ]] || false
+  [[ "$args" == *"$outdir bats bats-tests/"* ]] || false
 }
 
 @test "repeat run with same outdir succeeds and re-consolidates (regression)" {
@@ -143,7 +143,7 @@ teardown() {
   [ "$status" -eq 0 ]
   [ "$output" = "$outdir/cobertura.xml" ]
   [ -f "$outdir/cobertura.xml" ]
-  [[ "$(cat "$outdir/cobertura.xml")" == *"<coverage/>"* ]]
+  [[ "$(cat "$outdir/cobertura.xml")" == *"<coverage/>"* ]] || false
 }
 
 @test "outdir does not exist → created before the run, success" {
@@ -166,7 +166,7 @@ teardown() {
   run env PATH="$BIN:/usr/bin:/bin" KCOV_BEHAVIOR=write-one "$SCRIPT" "$outdir"
   chmod u+w "$outdir"
   [ "$status" -eq 2 ]
-  [[ "$output" == *"C001"* ]]
+  [[ "$output" == *"C001"* ]] || false
 }
 
 @test "kcov run failure → exit 2, last log lines surfaced" {
@@ -174,8 +174,8 @@ teardown() {
   mkdir -p "$outdir"
   run env PATH="$BIN:/usr/bin:/bin" KCOV_BEHAVIOR=fail "$SCRIPT" "$outdir"
   [ "$status" -eq 2 ]
-  [[ "$output" == *"C001"* ]]
-  [[ "$output" == *"kcov exploded"* ]]
+  [[ "$output" == *"C001"* ]] || false
+  [[ "$output" == *"kcov exploded"* ]] || false
 }
 
 @test "no report produced → C002, exit 2, no consolidated file" {
@@ -183,8 +183,8 @@ teardown() {
   mkdir -p "$outdir"
   run env PATH="$BIN:/usr/bin:/bin" KCOV_BEHAVIOR=write-none "$SCRIPT" "$outdir"
   [ "$status" -eq 2 ]
-  [[ "$output" == *"C002"* ]]
-  [[ "$output" == *"no cobertura.xml"* ]]
+  [[ "$output" == *"C002"* ]] || false
+  [[ "$output" == *"no cobertura.xml"* ]] || false
   [ ! -f "$outdir/cobertura.xml" ]
 }
 
@@ -193,7 +193,7 @@ teardown() {
   mkdir -p "$outdir"
   run env PATH="$BIN:/usr/bin:/bin" KCOV_BEHAVIOR=write-two "$SCRIPT" "$outdir"
   [ "$status" -eq 2 ]
-  [[ "$output" == *"C002"* ]]
-  [[ "$output" == *"expected one cobertura.xml but found 2"* ]]
+  [[ "$output" == *"C002"* ]] || false
+  [[ "$output" == *"expected one cobertura.xml but found 2"* ]] || false
   [ ! -f "$outdir/cobertura.xml" ]
 }

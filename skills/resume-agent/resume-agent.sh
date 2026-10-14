@@ -31,13 +31,14 @@
 #               reads the list again and checks that the session is there.
 #
 # Right after a restart, `claude agents` lists the session under its short id
-# until the session loads its saved name. A name read at that moment sent a
-# person to search the agent view for a string it did not show. So the name
-# comes from the "backgrounded · <id> · <name>" line of the restart output
-# when that line has one, and otherwise from the list, read again every
-# second for up to RESUME_AGENT_NAME_WAIT seconds (default 15). A name that
-# is still the short id after that is reported as not loaded, never as a
-# different name.
+# until the session loads its saved name. Until then, the agent view search
+# and a send by name cannot find the session by its name. So the script reads
+# the list again every second for up to RESUME_AGENT_NAME_WAIT seconds
+# (default 15), and the Name line gives only a name that the list shows. A
+# name that is still the short id after that is reported as not loaded, never
+# as a different name. When the "backgrounded · <id> · <name>" line of the
+# restart output has a name, stderr gives it as the name the session will
+# load.
 #
 # The script sends no prompt and attaches nothing. A caller sends its own
 # prompt, and a person opens the session from the agent view or with the
@@ -70,7 +71,9 @@
 # Exit codes:
 #   0  — the session runs (it ran already, or it restarted)
 #   1  — error (see stderr): R001 usage, R002 folder, R003 no session file,
-#        R004 `claude agents --json` failed, R005 restart failed
+#        R004 `claude agents --json` failed and nothing restarted, R005
+#        restart failed, R006 the restart ran but `claude agents --json` then
+#        failed, so the state of the session is unknown
 
 set -euo pipefail
 
@@ -79,6 +82,7 @@ readonly ERR_FOLDER="R002"
 readonly ERR_NO_SESSION="R003"
 readonly ERR_AGENTS="R004"
 readonly ERR_RESTART="R005"
+readonly ERR_UNKNOWN="R006"
 
 usage() {
   cat <<'EOF'
@@ -255,9 +259,9 @@ else
   waited=0
   while :; do
     read_list \
-      || die "$ERR_AGENTS" "claude agents --json failed after the restart, so it is not known whether session $session_id runs"
+      || die "$ERR_UNKNOWN" "claude --bg --resume $session_id ran, but claude agents --json then failed, so it is not known whether the session runs; do not run claude --bg --resume, because a resume of a running session starts a copy; run this skill again, which restarts nothing when the session is listed"
     entry="$(entry_of)"
-    if [ -n "$entry" ] && { [ -n "$restart_name" ] || loaded "$(field name)"; }; then
+    if [ -n "$entry" ] && loaded "$(field name)"; then
       break
     fi
     [ "$waited" -lt "$NAME_WAIT" ] || break
@@ -272,7 +276,9 @@ fi
 listed_id="$(field id)"
 [ -z "$listed_id" ] || short_id="$listed_id"
 name="$(field name)"
-loaded "$name" || name="$restart_name"
+if ! loaded "$name" && [ -n "$restart_name" ]; then
+  echo "resume-agent: the restart named the session '$restart_name', but claude agents did not show that name within $NAME_WAIT seconds; run the skill again to read the name" >&2
+fi
 status="$(field status)"
 state="$(field state)"
 pid="$(field pid)"
