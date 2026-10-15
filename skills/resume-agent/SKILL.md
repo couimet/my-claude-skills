@@ -1,5 +1,6 @@
 ---
 name: resume-agent
+version: 2026.10.13.1@5bbb5f3
 description: Make the session of a topic folder run again under its name, so the next round of work goes to the session that holds the earlier rounds. No shell command is necessary.
 argument-hint: '<folder>'
 allowed-tools: Bash(*/skills/resume-agent/resume-agent.sh *), Bash(claude stop *)

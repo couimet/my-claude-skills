@@ -1,5 +1,6 @@
 ---
 name: fork-side-item
+version: 2026.10.13.1@5bbb5f3
 description: Move a side item (a defect, a smell, or a docs gap found outside the current task) to its own side-<slug> folder with a background worker that owns it, then continue the task. A list mode shows the side folders and their state.
 argument-hint: '<claim> | list'
 allowed-tools: Read, Write, Edit, Bash(*/skills/fork-side-item/fork-side-item.sh *), Bash(gh issue list *), Bash(git remote *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/prose-style/check-prose.sh *)
