@@ -57,8 +57,8 @@ write_file() {
 @test "missing all arguments prints error with C001" {
   run --separate-stderr "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"C001"* ]]
-  [[ "$stderr" == *"expected 2 arguments, got 0"* ]]
+  [[ "$stderr" == *"C001"* ]] || false
+  [[ "$stderr" == *"expected 2 arguments, got 0"* ]] || false
 }
 
 @test "missing target argument prints error with C001" {
@@ -69,31 +69,31 @@ write_file() {
 @test "missing issue-number argument prints error with C001" {
   run --separate-stderr "$SCRIPT" "origin/main"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"C001"* ]]
+  [[ "$stderr" == *"C001"* ]] || false
 }
 
 @test "too many arguments prints error with C001" {
   run --separate-stderr "$SCRIPT" "origin/main" "42" "extra"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"C001"* ]]
+  [[ "$stderr" == *"C001"* ]] || false
 }
 
 @test "empty issue number prints error with C001" {
   run --separate-stderr "$SCRIPT" "origin/main" ""
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"C001"* ]]
+  [[ "$stderr" == *"C001"* ]] || false
 }
 
 @test "issue number with slash prints error with C001" {
   run --separate-stderr "$SCRIPT" "origin/main" "42/evil"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"C001"* ]]
+  [[ "$stderr" == *"C001"* ]] || false
 }
 
 @test "usage text is printed on argument error" {
   run --separate-stderr "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"Usage:"* ]]
+  [[ "$stderr" == *"Usage:"* ]] || false
 }
 
 # ============================================================================
@@ -218,7 +218,7 @@ write_file() {
 
   run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"commit message from git log"* ]]
+  [[ "$output" == *"commit message from git log"* ]] || false
 }
 
 @test "notes directory does not exist → falls through to source 3" {
@@ -227,7 +227,7 @@ write_file() {
 
   run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"commit from git log"* ]]
+  [[ "$output" == *"commit from git log"* ]] || false
 }
 
 @test "empty notes directory → falls through to source 3" {
@@ -239,7 +239,7 @@ write_file() {
 
   run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"commit from git log"* ]]
+  [[ "$output" == *"commit from git log"* ]] || false
 }
 
 # ============================================================================
@@ -252,7 +252,7 @@ write_file() {
 
   run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"issue work commit"* ]]
+  [[ "$output" == *"issue work commit"* ]] || false
 }
 
 @test "git log includes multi-paragraph commit messages" {
@@ -263,8 +263,8 @@ Second paragraph of the commit message."
 
   run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"First line of commit"* ]]
-  [[ "$output" == *"Second paragraph"* ]]
+  [[ "$output" == *"First line of commit"* ]] || false
+  [[ "$output" == *"Second paragraph"* ]] || false
 }
 
 @test "git log captures multiple commits on branch" {
@@ -274,15 +274,15 @@ Second paragraph of the commit message."
 
   run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"first issue commit"* ]]
-  [[ "$output" == *"second issue commit"* ]]
+  [[ "$output" == *"first issue commit"* ]] || false
+  [[ "$output" == *"second issue commit"* ]] || false
 }
 
 @test "git log with no divergence → all sources empty" {
   run --separate-stderr "$SCRIPT" "main" "42"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"C004"* ]]
-  [[ "$stderr" == *"all commit message sources are empty"* ]]
+  [[ "$stderr" == *"C004"* ]] || false
+  [[ "$stderr" == *"all commit message sources are empty"* ]] || false
 }
 
 # ============================================================================
@@ -292,7 +292,7 @@ Second paragraph of the commit message."
 @test "all sources empty → exits 1 with C004" {
   run --separate-stderr "$SCRIPT" "origin/main" "99"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"C004"* ]]
+  [[ "$stderr" == *"C004"* ]] || false
 }
 
 @test "non-numeric issue number works (e.g., rfc-auth)" {
@@ -347,7 +347,7 @@ Second paragraph of the commit message."
 @test "target ref that does not exist → git log skipped, falls to C004" {
   run --separate-stderr "$SCRIPT" "nonexistent-ref" "42"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"C004"* ]]
+  [[ "$stderr" == *"C004"* ]] || false
 }
 
 # ============================================================================

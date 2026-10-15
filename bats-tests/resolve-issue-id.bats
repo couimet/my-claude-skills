@@ -72,7 +72,7 @@ resolve_with_config() {
   printf '%s' '{"urlPatterns":["/tickets/([0-9]+)"]}' > "$cfg"
   resolve_with_config "$cfg" "https://github.com/couimet/my-claude-skills/issues/248"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"no url pattern matched"* ]]
+  [[ "$output" == *"no url pattern matched"* ]] || false
 }
 
 # ============================================================================
@@ -82,37 +82,37 @@ resolve_with_config() {
 @test "URL-shaped value matching no pattern errors" {
   resolve_with_config "$CFG" "https://example.com/tickets/123"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"no url pattern matched"* ]]
+  [[ "$output" == *"no url pattern matched"* ]] || false
 }
 
 @test "bare identifier with leading dot errors" {
   resolve_with_config "$CFG" ".hidden"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"not usable"* ]]
+  [[ "$output" == *"not usable"* ]] || false
 }
 
 @test "bare identifier with whitespace errors" {
   resolve_with_config "$CFG" "foo bar"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"not usable"* ]]
+  [[ "$output" == *"not usable"* ]] || false
 }
 
 @test "bare identifier with an internal slash errors" {
   resolve_with_config "$CFG" "foo/bar/baz"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"not usable"* ]]
+  [[ "$output" == *"not usable"* ]] || false
 }
 
 @test "bare dotdot traversal errors" {
   resolve_with_config "$CFG" "foo/../../outside"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"not usable"* ]]
+  [[ "$output" == *"not usable"* ]] || false
 }
 
 @test "bare dotdot alone errors" {
   resolve_with_config "$CFG" ".."
   [ "$status" -eq 1 ]
-  [[ "$output" == *"not usable"* ]]
+  [[ "$output" == *"not usable"* ]] || false
 }
 
 @test "URL capture containing a slash is refused, not printed" {
@@ -121,13 +121,13 @@ resolve_with_config() {
   # Capture group one is "foo/bar", which is not a single path component.
   resolve_with_config "$cfg" "https://tracker.example.com/items/foo/bar"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"no url pattern matched"* ]]
+  [[ "$output" == *"no url pattern matched"* ]] || false
 }
 
 @test "missing argument prints usage and errors" {
   resolve_with_config "$CFG"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"usage"* ]]
+  [[ "$output" == *"usage"* ]] || false
 }
 
 # ============================================================================

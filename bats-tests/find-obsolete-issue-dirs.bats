@@ -80,32 +80,32 @@ count_deletable() {
 @test "no arguments → F001, exit 1" {
   run "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"F001"* ]]
+  [[ "$output" == *"F001"* ]] || false
 }
 
 @test "two arguments → F001, exit 1" {
   run "$SCRIPT" "$BASE" "extra"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"F001"* ]]
+  [[ "$output" == *"F001"* ]] || false
 }
 
 @test "relative base → F002, exit 1" {
   run "$SCRIPT" ".claude-work"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"F002"* ]]
+  [[ "$output" == *"F002"* ]] || false
 }
 
 @test "base not ending in /.claude-work → F002, exit 1" {
   mkdir -p "$TEST_TEMP_DIR/somewhere"
   run "$SCRIPT" "$TEST_TEMP_DIR/somewhere"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"F002"* ]]
+  [[ "$output" == *"F002"* ]] || false
 }
 
 @test "nonexistent base → F002, exit 1" {
   run "$SCRIPT" "$TEST_TEMP_DIR/does-not-exist"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"F002"* ]]
+  [[ "$output" == *"F002"* ]] || false
 }
 
 # ============================================================================
@@ -122,7 +122,7 @@ count_deletable() {
   [ "$status" -eq 0 ]
   local expected
   expected="$(printf 'DELETABLE\t%s/issues/42\t%s' "$BASE" "merged PR into main (PR #42)")"
-  [[ "$output" == *"$expected"* ]]
+  [[ "$output" == *"$expected"* ]] || false
   [ "$(count_deletable)" -eq 1 ]
 }
 
@@ -134,7 +134,7 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 # ============================================================================
@@ -151,7 +151,7 @@ count_deletable() {
   [ "$status" -eq 0 ]
   local expected
   expected="$(printf 'DELETABLE\t%s/issues/42\t%s' "$BASE" "issue closed, no open PR, no local branch")"
-  [[ "$output" == *"$expected"* ]]
+  [[ "$output" == *"$expected"* ]] || false
   [ "$(count_deletable)" -eq 1 ]
 }
 
@@ -164,7 +164,7 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 # ============================================================================
@@ -178,7 +178,7 @@ count_deletable() {
   mock_gh
   run "$SCRIPT" "$BASE"
   [ "$status" -eq 0 ]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 @test "closed issue with open PR head issues/42_fix → not deletable" {
@@ -188,7 +188,7 @@ count_deletable() {
   mock_gh
   run "$SCRIPT" "$BASE"
   [ "$status" -eq 0 ]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 @test "closed issue with local branch issues/42-fix → not deletable" {
@@ -198,7 +198,7 @@ count_deletable() {
   mock_gh
   run "$SCRIPT" "$BASE"
   [ "$status" -eq 0 ]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 @test "closed issue with local branch issues/42_fix → not deletable" {
@@ -208,7 +208,7 @@ count_deletable() {
   mock_gh
   run "$SCRIPT" "$BASE"
   [ "$status" -eq 0 ]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 @test "closed issue with unrelated branch issues/42x → still deletable" {
@@ -218,7 +218,7 @@ count_deletable() {
   mock_gh
   run "$SCRIPT" "$BASE"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"DELETABLE"* ]]
+  [[ "$output" == *"DELETABLE"* ]] || false
 }
 
 # ============================================================================
@@ -232,7 +232,7 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 @test "open PR exists → not deletable" {
@@ -244,7 +244,7 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 @test "merged PR plus open PR on same issue → not deletable (open PR blocks)" {
@@ -258,7 +258,7 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 @test "matching open PR beyond the first 100 rows → not deletable" {
@@ -281,8 +281,8 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" != *"DELETABLE"* ]]
-  [[ "$output" != *"gh pulls query failed"* ]]
+  [[ "$output" != *"DELETABLE"* ]] || false
+  [[ "$output" != *"gh pulls query failed"* ]] || false
 }
 
 @test "closed issue beyond the first 100 records → DELETABLE" {
@@ -300,7 +300,7 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"DELETABLE"* ]]
+  [[ "$output" == *"DELETABLE"* ]] || false
 }
 
 # ============================================================================
@@ -317,8 +317,8 @@ count_deletable() {
   [ "$status" -eq 0 ]
   local expected
   expected="$(printf 'DELETABLE\t%s/issues/PROJ-123\t%s' "$BASE" "merged PR into main (PR #77)")"
-  [[ "$output" == *"$expected"* ]]
-  [[ "$output" != *"Skipped"* ]]
+  [[ "$output" == *"$expected"* ]] || false
+  [[ "$output" != *"Skipped"* ]] || false
 }
 
 @test "open PR on slug head blocks deletion of slug folder" {
@@ -329,8 +329,8 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" != *"DELETABLE"* ]]
-  [[ "$output" != *"Skipped"* ]]
+  [[ "$output" != *"DELETABLE"* ]] || false
+  [[ "$output" != *"Skipped"* ]] || false
 }
 
 @test "hidden entry under issues/ → Skipped line, no DELETABLE, exit 0" {
@@ -340,8 +340,8 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Skipped: .hidden (not a valid work-item identifier, not checked)"* ]]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" == *"Skipped: .hidden (not a valid work-item identifier, not checked)"* ]] || false
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 @test "entry with an invalid character under issues/ → Skipped, not DELETABLE" {
@@ -355,8 +355,8 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Skipped: foo@bar (not a valid work-item identifier, not checked)"* ]]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" == *"Skipped: foo@bar (not a valid work-item identifier, not checked)"* ]] || false
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 # ============================================================================
@@ -374,7 +374,7 @@ count_deletable() {
   [ "$status" -eq 0 ]
   local expected
   expected="$(printf 'DELETABLE\t%s/work/42\t%s' "$BASE" "merged PR into main (PR #42)")"
-  [[ "$output" == *"$expected"* ]]
+  [[ "$output" == *"$expected"* ]] || false
 }
 
 @test "empty segment → classifies folders under <base>, never the category dirs" {
@@ -388,9 +388,9 @@ count_deletable() {
   [ "$status" -eq 0 ]
   local expected
   expected="$(printf 'DELETABLE\t%s/42\t%s' "$BASE" "merged PR into main (PR #42)")"
-  [[ "$output" == *"$expected"* ]]
-  [[ "$output" != *"/notes"* ]]
-  [[ "$output" != *"/questions"* ]]
+  [[ "$output" == *"$expected"* ]] || false
+  [[ "$output" != *"/notes"* ]] || false
+  [[ "$output" != *"/questions"* ]] || false
 }
 
 # ============================================================================
@@ -415,8 +415,8 @@ count_deletable() {
   run env "PATH=$path_bin" "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"gh not available"* ]]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" == *"gh not available"* ]] || false
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 @test "gh invocation fails → exit 0, no DELETABLE lines" {
@@ -430,7 +430,7 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 @test "gh pulls query fails while closed-issue fixture reports 42 → exit 0, no DELETABLE lines" {
@@ -449,8 +449,8 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"gh pulls query failed"* ]]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" == *"gh pulls query failed"* ]] || false
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 @test "gh issues query fails while merged-PR fixture exists → exit 0, no DELETABLE lines" {
@@ -469,8 +469,8 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"gh issues query failed"* ]]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" == *"gh issues query failed"* ]] || false
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 @test "git branch fails while closed-issue fixture reports 42 → exit 0, no DELETABLE lines" {
@@ -486,8 +486,8 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"git branch failed"* ]]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" == *"git branch failed"* ]] || false
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 # ============================================================================
@@ -539,8 +539,8 @@ count_deletable() {
   [ "$status" -eq 0 ]
   local folded
   folded="$(printf 'DELETABLE\t%s/issues/PROJ-123\t%s' "$BASE" "merged PR into main (PR #77)")"
-  [[ "$output" == *"$folded"* ]]
-  [[ "$output" != *"$BASE/issues/proj-123"$'\t'"merged PR"* ]]
+  [[ "$output" == *"$folded"* ]] || false
+  [[ "$output" != *"$BASE/issues/proj-123"$'\t'"merged PR"* ]] || false
 }
 
 @test "open PR on a lowercase head still blocks the folded folder" {
@@ -551,7 +551,7 @@ count_deletable() {
   run "$SCRIPT" "$BASE"
 
   [ "$status" -eq 0 ]
-  [[ "$output" != *"DELETABLE"* ]]
+  [[ "$output" != *"DELETABLE"* ]] || false
 }
 
 @test "under preserve the sweep matches the unfolded folder" {
@@ -565,7 +565,7 @@ count_deletable() {
   [ "$status" -eq 0 ]
   local expected
   expected="$(printf 'DELETABLE\t%s/issues/proj-123\t%s' "$BASE" "merged PR into main (PR #77)")"
-  [[ "$output" == *"$expected"* ]]
+  [[ "$output" == *"$expected"* ]] || false
 }
 
 @test "numeric folders are unaffected by the shared matcher" {
@@ -578,5 +578,5 @@ count_deletable() {
   [ "$status" -eq 0 ]
   local expected
   expected="$(printf 'DELETABLE\t%s/issues/42\t%s' "$BASE" "merged PR into main (PR #77)")"
-  [[ "$output" == *"$expected"* ]]
+  [[ "$output" == *"$expected"* ]] || false
 }

@@ -22,7 +22,7 @@ extract_json() {
   json="$(extract_json "$FIXTURES/scratchpad-valid.txt")"
   ids="$(echo "$json" | jq -r '.steps[].id')"
   for id in $ids; do
-    [[ "$id" =~ ^S[0-9]{3}$ ]]
+    [[ "$id" =~ ^S[0-9]{3}$ ]] || false
   done
 }
 
@@ -30,7 +30,7 @@ extract_json() {
   json="$(extract_json "$FIXTURES/scratchpad-valid.txt")"
   statuses="$(echo "$json" | jq -r '.steps[].status')"
   for status in $statuses; do
-    [[ "$status" =~ ^(pending|in_progress|done|blocked)$ ]]
+    [[ "$status" =~ ^(pending|in_progress|done|blocked)$ ]] || false
   done
 }
 
@@ -39,7 +39,7 @@ extract_json() {
   all_ids="$(echo "$json" | jq -r '.steps[].id' | tr '\n' ' ')"
   deps="$(echo "$json" | jq -r '.steps[].depends_on[]?' 2>/dev/null)"
   for dep in $deps; do
-    [[ " $all_ids " == *" $dep "* ]]
+    [[ " $all_ids " == *" $dep "* ]] || false
   done
 }
 
@@ -107,7 +107,7 @@ COMMIT_SUBJECT_RE='^\[[a-z][a-z0-9 _-]*\] .+'
 
 @test "commit-msg: first line matches [type] pattern" {
   first_line="$(head -1 "$FIXTURES/commit-msg-valid.txt")"
-  [[ "$first_line" =~ $COMMIT_SUBJECT_RE ]]
+  [[ "$first_line" =~ $COMMIT_SUBJECT_RE ]] || false
 }
 
 @test "commit-msg: substantial fixture has Benefits section" {
@@ -116,7 +116,7 @@ COMMIT_SUBJECT_RE='^\[[a-z][a-z0-9 _-]*\] .+'
 
 @test "commit-msg: trivial fixture has [type] prefix" {
   first_line="$(head -1 "$FIXTURES/commit-msg-trivial.txt")"
-  [[ "$first_line" =~ $COMMIT_SUBJECT_RE ]]
+  [[ "$first_line" =~ $COMMIT_SUBJECT_RE ]] || false
 }
 
 @test "commit-msg: trivial fixture has no Benefits section" {
@@ -125,7 +125,7 @@ COMMIT_SUBJECT_RE='^\[[a-z][a-z0-9 _-]*\] .+'
 
 @test "commit-msg: moderate fixture has [type] prefix" {
   first_line="$(head -1 "$FIXTURES/commit-msg-moderate.txt")"
-  [[ "$first_line" =~ $COMMIT_SUBJECT_RE ]]
+  [[ "$first_line" =~ $COMMIT_SUBJECT_RE ]] || false
 }
 
 @test "commit-msg: moderate fixture has no Benefits section" {

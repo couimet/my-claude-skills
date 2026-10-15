@@ -52,8 +52,8 @@ fixture() {
 ```'
   run "$SCRIPT" "$TEST_TEMP_DIR/skills"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"target-path.sh"* ]]
-  [[ "$output" == *"does not declare it"* ]]
+  [[ "$output" == *"target-path.sh"* ]] || false
+  [[ "$output" == *"does not declare it"* ]] || false
 }
 
 @test "a fenced call with the matching permission passes" {
@@ -157,7 +157,7 @@ allowed-tools: Read,
 ```'
   run "$SCRIPT" "$TEST_TEMP_DIR/skills"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"target-path.sh"* ]]
+  [[ "$output" == *"target-path.sh"* ]] || false
 }
 
 @test "a later front matter key is not read as part of the declaration" {
@@ -186,7 +186,7 @@ argument-hint: pass it to */skills/issue-context/target-path.sh *
 ```'
   run "$SCRIPT" "$TEST_TEMP_DIR/skills"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"skills/issue-context/target-path.sh"* ]]
+  [[ "$output" == *"skills/issue-context/target-path.sh"* ]] || false
 }
 
 @test "a permission for a near-miss filename is a gap" {
@@ -198,7 +198,7 @@ argument-hint: pass it to */skills/issue-context/target-path.sh *
 ```'
   run "$SCRIPT" "$TEST_TEMP_DIR/skills"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"skills/issue-context/target-path.sh"* ]]
+  [[ "$output" == *"skills/issue-context/target-path.sh"* ]] || false
 }
 
 @test "a permission whose path only ends on the called one is a gap" {
@@ -209,7 +209,7 @@ argument-hint: pass it to */skills/issue-context/target-path.sh *
 ```'
   run "$SCRIPT" "$TEST_TEMP_DIR/skills"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"skills/issue-context/target-path.sh"* ]]
+  [[ "$output" == *"skills/issue-context/target-path.sh"* ]] || false
 }
 
 @test "a permission declaring the call with no glob prefix passes" {
@@ -246,5 +246,5 @@ argument-hint: pass it to */skills/issue-context/target-path.sh *
 @test "a missing skills root errors" {
   run "$SCRIPT" "$TEST_TEMP_DIR/not-there"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"skills root not found"* ]]
+  [[ "$output" == *"skills root not found"* ]] || false
 }

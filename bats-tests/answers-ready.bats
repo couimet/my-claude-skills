@@ -72,7 +72,7 @@ _wave() {
   run "$SCRIPT" "$QDIR"
   [ "$status" -eq 0 ]
   [ "$(printf '%s\n' "$output" | wc -l | tr -d ' ')" -eq 1 ]
-  [[ "$output" == *"plan-wave-2.txt"* ]]
+  [[ "$output" == *"plan-wave-2.txt"* ]] || false
 }
 
 @test "find-waves: does not return a sequence whose newest wave is fully answered" {
@@ -90,8 +90,8 @@ _wave() {
   _wave "20260917-092934-001-signalling-wave-2.txt" "A001: E"
   run "$SCRIPT" "$QDIR"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"plan-wave-2.txt"* ]]
-  [[ "$output" != *"signalling"* ]]
+  [[ "$output" == *"plan-wave-2.txt"* ]] || false
+  [[ "$output" != *"signalling"* ]] || false
 }
 
 @test "find-waves: lists every sequence when more than one is unanswered" {
@@ -100,8 +100,8 @@ _wave() {
   run "$SCRIPT" "$QDIR"
   [ "$status" -eq 0 ]
   [ "$(printf '%s\n' "$output" | wc -l | tr -d ' ')" -eq 2 ]
-  [[ "$output" == *"plan"* ]]
-  [[ "$output" == *"signalling"* ]]
+  [[ "$output" == *"plan"* ]] || false
+  [[ "$output" == *"signalling"* ]] || false
 }
 
 @test "find-waves: picks the highest wave number, not the newest timestamp" {
@@ -116,7 +116,7 @@ _wave() {
   _wave "20260917-072350-001-standalone-topic.txt" "A001: [RECOMMENDED] A"
   run "$SCRIPT" "$QDIR"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"standalone-topic"* ]]
+  [[ "$output" == *"standalone-topic"* ]] || false
 }
 
 @test "find-waves: skips an empty file, which is an unwritten reservation" {
@@ -124,8 +124,8 @@ _wave() {
   _wave "20260917-084535-001-plan-wave-2.txt" "A001: [RECOMMENDED] A"
   run "$SCRIPT" "$QDIR"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"plan-wave-2.txt"* ]]
-  [[ "$output" != *"wave-3"* ]]
+  [[ "$output" == *"plan-wave-2.txt"* ]] || false
+  [[ "$output" != *"wave-3"* ]] || false
 }
 
 @test "find-waves: reports the count of answers still marked" {
@@ -133,7 +133,7 @@ _wave() {
     > "$QDIR/20260917-084535-001-plan-wave-1.txt"
   run "$SCRIPT" "$QDIR"
   [ "$status" -eq 0 ]
-  [[ "$output" == *$'\t2' ]]
+  [[ "$output" == *$'\t2' ]] || false
 }
 
 # The marker also appears in prose whenever a wave file discusses the
@@ -168,13 +168,13 @@ _wave() {
 @test "find-waves: W001 when given too many arguments" {
   run "$SCRIPT" a b
   [ "$status" -eq 1 ]
-  [[ "$output" == *"W001"* ]]
+  [[ "$output" == *"W001"* ]] || false
 }
 
 @test "find-waves: W002 when the questions directory does not exist" {
   run "$SCRIPT" "$TEST_TEMP_DIR/absent"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"W002"* ]]
+  [[ "$output" == *"W002"* ]] || false
 }
 
 # =============================================================
@@ -217,8 +217,8 @@ _find_waves_in_repo() {
   printf '%s\n' "$TOPIC" > "$REPO/CLAUDE_WORK_FOLDER"
   _find_waves_in_repo
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"W002"* ]]
-  [[ "$stderr" == *"2 questions files are under $BRANCH_FOLDER/questions, where the branch tier points, but the worktree tier outranks it"* ]]
+  [[ "$stderr" == *"W002"* ]] || false
+  [[ "$stderr" == *"2 questions files are under $BRANCH_FOLDER/questions, where the branch tier points, but the worktree tier outranks it"* ]] || false
 }
 
 @test "find-waves: W002 under a session override names every outranked tier" {
@@ -232,8 +232,8 @@ _find_waves_in_repo() {
   printf '%s\n' "$TOPIC" > "$REPO/CLAUDE_WORK_FOLDER"
   run --separate-stderr env CLAUDE_CODE_SESSION_ID="$sid" MY_CLAUDE_SKILLS_CONFIG="$CFG" "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"1 questions file is under $TOPIC/questions, where the worktree tier points, but the session tier outranks it"* ]]
-  [[ "$stderr" == *"1 questions file is under $BRANCH_FOLDER/questions, where the branch tier points, but the session tier outranks it"* ]]
+  [[ "$stderr" == *"1 questions file is under $TOPIC/questions, where the worktree tier points, but the session tier outranks it"* ]] || false
+  [[ "$stderr" == *"1 questions file is under $BRANCH_FOLDER/questions, where the branch tier points, but the session tier outranks it"* ]] || false
 }
 
 @test "find-waves: W002 with nothing hidden below the winner prints only the error" {
@@ -244,7 +244,7 @@ _find_waves_in_repo() {
   _find_waves_in_repo
   [ "$status" -eq 1 ]
   [ "$(printf '%s\n' "$stderr" | wc -l | tr -d ' ')" -eq 1 ]
-  [[ "$stderr" == *"W002"* ]]
+  [[ "$stderr" == *"W002"* ]] || false
 }
 
 @test "find-waves: an unreadable outranked questions directory still ends in W002" {
@@ -258,7 +258,7 @@ _find_waves_in_repo() {
   local rc="$status" err="$stderr"
   chmod 755 "$BRANCH_FOLDER/questions"
   [ "$rc" -eq 1 ]
-  [[ "$err" == *"W002"* ]]
+  [[ "$err" == *"W002"* ]] || false
 }
 
 @test "find-waves: an explicit directory argument prints only W002" {
@@ -268,8 +268,8 @@ _find_waves_in_repo() {
   printf '%s\n' "$TOPIC" > "$REPO/CLAUDE_WORK_FOLDER"
   _find_waves_in_repo "$TOPIC/questions"
   [ "$status" -eq 1 ]
-  [[ "$stderr" != *"branch tier"* ]]
-  [[ "$stderr" == *"W002"* ]]
+  [[ "$stderr" != *"branch tier"* ]] || false
+  [[ "$stderr" == *"W002"* ]] || false
 }
 
 # =============================================================
@@ -294,14 +294,14 @@ _doc() {
   _wave "w.txt" "A001: [RECOMMENDED] A"
   run "$CLASSIFY" "$QDIR/w.txt"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"KIND: wave"* ]]
+  [[ "$output" == *"KIND: wave"* ]] || false
 }
 
 @test "classify-ack: a terminal wave with only a Retired section is KIND: wave" {
   printf '# Wave 3\n\nRetired:\n\n- A retired question? - A004 settled it.\n' > "$QDIR/t.txt"
   run "$CLASSIFY" "$QDIR/t.txt"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"KIND: wave"* ]]
+  [[ "$output" == *"KIND: wave"* ]] || false
 }
 
 @test "classify-ack: a working document is KIND: document" {
@@ -312,8 +312,8 @@ _doc() {
 Decision:  ACCEPT"
   run "$CLASSIFY" "$QDIR/d.txt"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"KIND: document"* ]]
-  [[ "$output" == *"UNACKNOWLEDGED: 0"* ]]
+  [[ "$output" == *"KIND: document"* ]] || false
+  [[ "$output" == *"UNACKNOWLEDGED: 0"* ]] || false
 }
 
 @test "classify-ack: a standing marker is counted and its item named" {
@@ -328,10 +328,10 @@ Decision: [RECOMMENDED] ACCEPT
 Decision:  IGNORE"
   run "$CLASSIFY" "$QDIR/d.txt"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"DECISIONS: 2"* ]]
-  [[ "$output" == *"UNACKNOWLEDGED: 1"* ]]
-  [[ "$output" == *"Feedback A - ACCEPT"* ]]
-  [[ "$output" != *"Feedback B"* ]]
+  [[ "$output" == *"DECISIONS: 2"* ]] || false
+  [[ "$output" == *"UNACKNOWLEDGED: 1"* ]] || false
+  [[ "$output" == *"Feedback A - ACCEPT"* ]] || false
+  [[ "$output" != *"Feedback B"* ]] || false
 }
 
 # Same rule as the closer and the wave marker: a token quoted in prose while
@@ -346,7 +346,7 @@ The user clears [RECOMMENDED] to acknowledge a decision.
 Decision:  ACCEPT"
   run "$CLASSIFY" "$QDIR/d.txt"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"UNACKNOWLEDGED: 0"* ]]
+  [[ "$output" == *"UNACKNOWLEDGED: 0"* ]] || false
 }
 
 @test "classify-ack: C003 when the file is neither shape" {
@@ -355,16 +355,16 @@ Decision:  ACCEPT"
 Nothing to acknowledge here."
   run "$CLASSIFY" "$QDIR/d.txt"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"C003"* ]]
+  [[ "$output" == *"C003"* ]] || false
 }
 
 @test "classify-ack: C001 with no argument, C002 on a missing file" {
   run "$CLASSIFY"
   [ "$status" -eq 2 ]
-  [[ "$output" == *"C001"* ]]
+  [[ "$output" == *"C001"* ]] || false
   run "$CLASSIFY" "$QDIR/nope.txt"
   [ "$status" -eq 2 ]
-  [[ "$output" == *"C002"* ]]
+  [[ "$output" == *"C002"* ]] || false
 }
 
 @test "classify-ack: --help exits 0" {

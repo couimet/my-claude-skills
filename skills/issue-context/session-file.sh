@@ -28,6 +28,7 @@
 #   _issue_context_session_id_ok
 #   _issue_context_session_file_read <out-folder-var> <out-reason-var>
 #   _issue_context_session_file_matches <out-array-var>
+#   _issue_context_sessions_of_folder <folder>
 #
 # Reading never exits and never prints. Every failure returns non-zero and
 # writes a short reason into the caller's variable, so the caller composes its
@@ -194,4 +195,31 @@ _issue_context_session_file_read() {
   eval "$_isf_out_folder_var=\"\$_isf_folder\""
   eval "$_isf_out_reason_var=''"
   return 0
+}
+
+# _issue_context_sessions_of_folder <folder> — print one
+# "<written_at><TAB><session_id>" line for each session file that names
+# <folder>, newest first. <folder> must be canonical (pwd -P), because the
+# writer stores it that way and the two compare as strings. The file of the
+# current session is included; the caller skips it when it must.
+#
+# A file that does not parse is skipped: it names no folder a reader can
+# trust. Returns 1 when jq is missing or there is no sessions directory, so a
+# caller that only gives a hint can skip it quietly.
+_issue_context_sessions_of_folder() {
+  local _isf_folder="$1" _isf_dir _isf_file _isf_line _isf_all=""
+
+  command -v jq >/dev/null 2>&1 || return 1
+  _isf_dir="$(_issue_context_sessions_dir)" || return 1
+  [ -d "$_isf_dir" ] || return 1
+
+  for _isf_file in "$_isf_dir"/*.json; do
+    [ -f "$_isf_file" ] || continue
+    _isf_line="$(jq -r --arg f "$_isf_folder" \
+      'select(type == "object" and .folder == $f and (.session_id | type == "string"))
+       | "\(.written_at // "")\t\(.session_id)"' "$_isf_file" 2>/dev/null || true)"
+    [ -n "$_isf_line" ] || continue
+    _isf_all="${_isf_all}${_isf_line}"$'\n'
+  done
+  printf '%s' "$_isf_all" | LC_ALL=C sort -r
 }

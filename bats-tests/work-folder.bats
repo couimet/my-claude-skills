@@ -79,7 +79,7 @@ write_session_file() {
   [ "$status" -eq 0 ]
   [ "$output" = "$TOPIC" ]
   [ "${#lines[@]}" -eq 1 ]
-  [[ "$stderr" == *"using $TOPIC"* ]]
+  [[ "$stderr" == *"using $TOPIC"* ]] || false
 }
 
 @test "a trailing newline and surrounding spaces are trimmed" {
@@ -108,7 +108,7 @@ write_session_file() {
   write_marker "$TOPIC/../topic"
   resolve
   [ "$output" = "$TOPIC" ]
-  [[ "$output" != *".."* ]]
+  [[ "$output" != *".."* ]] || false
 }
 
 @test "a marker outside the repository is honoured" {
@@ -134,47 +134,47 @@ write_session_file() {
 @test "no marker resolves the branch, silently" {
   resolve
   [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
-  [[ "$stderr" != *"marker"* ]]
+  [[ "$stderr" != *"marker"* ]] || false
 }
 
 @test "an empty marker is ignored and reported" {
   write_marker ""
   resolve
   [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
-  [[ "$stderr" == *"$MARKER_NAME is empty"* ]]
+  [[ "$stderr" == *"$MARKER_NAME is empty"* ]] || false
 }
 
 @test "a whitespace-only marker is ignored and reported" {
   printf '   \n' > "$MARKER"
   resolve
-  [[ "$stderr" == *"$MARKER_NAME is empty"* ]]
+  [[ "$stderr" == *"$MARKER_NAME is empty"* ]] || false
 }
 
 @test "a relative path is ignored and reported" {
   write_marker "topic"
   resolve
   [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
-  [[ "$stderr" == *"absolute path"* ]]
+  [[ "$stderr" == *"absolute path"* ]] || false
 }
 
 @test "a bare ~ without a slash is not expanded, so it is refused" {
   write_marker "~topic"
   resolve
-  [[ "$stderr" == *"absolute path"* ]]
+  [[ "$stderr" == *"absolute path"* ]] || false
 }
 
 @test "a folder that does not exist is ignored and reported" {
   write_marker "$TEST_TEMP_DIR/not-there"
   resolve
   [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
-  [[ "$stderr" == *"is not an existing directory"* ]]
+  [[ "$stderr" == *"is not an existing directory"* ]] || false
 }
 
 @test "a path naming a file rather than a directory is ignored" {
   printf 'x' > "$TEST_TEMP_DIR/a-file"
   write_marker "$TEST_TEMP_DIR/a-file"
   resolve
-  [[ "$stderr" == *"is not an existing directory"* ]]
+  [[ "$stderr" == *"is not an existing directory"* ]] || false
 }
 
 @test "an unreadable marker is ignored and reported" {
@@ -184,7 +184,7 @@ write_session_file() {
   resolve
   local err="$stderr"
   chmod u+r "$MARKER"
-  [[ "$err" == *"could not be read"* ]]
+  [[ "$err" == *"could not be read"* ]] || false
 }
 
 @test "a marker naming a directory that cannot be entered is ignored, and nothing leaks to stderr" {
@@ -199,10 +199,10 @@ write_session_file() {
   resolve
   local err="$stderr"
   chmod 755 "$closed"
-  [[ "$err" == *"could not be resolved"* ]]
+  [[ "$err" == *"could not be resolved"* ]] || false
   # The resolver prefixes every line it writes with its own name, so stderr
   # naming work-folder.sh at all means cd reported from underneath it.
-  [[ "$err" != *"work-folder.sh"* ]]
+  [[ "$err" != *"work-folder.sh"* ]] || false
 }
 
 @test "a marker in a sibling worktree's root is not read" {
@@ -236,8 +236,8 @@ write_session_file() {
   run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" "$RESOLVER"
   [ "$output" = "$TOPIC" ]
-  [[ "$stderr" == *"override ignored"* ]]
-  [[ "$stderr" == *"using $TOPIC"* ]]
+  [[ "$stderr" == *"override ignored"* ]] || false
+  [[ "$stderr" == *"using $TOPIC"* ]] || false
 }
 
 @test "a refused marker falls through to the branch" {
@@ -271,7 +271,7 @@ write_session_file() {
   run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" "$RESOLVER" --id 42
   [ "$output" = "$TOPIC/42" ]
-  [[ "$stderr" == *"bypassed"* ]]
+  [[ "$stderr" == *"bypassed"* ]] || false
 }
 
 @test "--id with no marker is the branch-derived folder, unchanged" {
@@ -373,13 +373,13 @@ write_session_file() {
   tier_of --id
   [ "$status" -eq 1 ]
   [ -z "$output" ]
-  [[ "$stderr" == *"usage"* ]]
+  [[ "$stderr" == *"usage"* ]] || false
 }
 
 @test "tier: an unknown flag is a usage error" {
   tier_of --nope 42
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"usage"* ]]
+  [[ "$stderr" == *"usage"* ]] || false
 }
 
 # ============================================================================
@@ -392,7 +392,7 @@ write_session_file() {
   [ "$status" -eq 0 ]
   [ "$output" = "$MARKER" ]
   [ "$(cat "$MARKER")" = "$TOPIC" ]
-  [[ "$stderr" == *"$TOPIC"* ]]
+  [[ "$stderr" == *"$TOPIC"* ]] || false
 }
 
 @test "--worktree needs no session id" {
@@ -411,7 +411,7 @@ write_session_file() {
   run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" "$WRITER" --worktree "topic"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"not an absolute path"* ]]
+  [[ "$stderr" == *"not an absolute path"* ]] || false
   [ ! -e "$MARKER" ]
 }
 
@@ -419,7 +419,7 @@ write_session_file() {
   run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" "$WRITER" --worktree "$TEST_TEMP_DIR/not-there"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"not an existing directory"* ]]
+  [[ "$stderr" == *"not an existing directory"* ]] || false
   [ ! -e "$MARKER" ]
 }
 
@@ -433,14 +433,14 @@ write_session_file() {
   cd "$TEST_TEMP_DIR"
   rm -rf "$outside"
   [ "$st" -eq 1 ]
-  [[ "$err" == *"worktree root"* ]]
+  [[ "$err" == *"worktree root"* ]] || false
 }
 
 @test "--worktree takes exactly one folder" {
   run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" "$WRITER" --worktree "$TOPIC" extra
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"exactly one folder"* ]]
+  [[ "$stderr" == *"exactly one folder"* ]] || false
 }
 
 @test "--worktree with no folder errors" {
@@ -459,8 +459,8 @@ write_session_file() {
   run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" "$WRITER" --worktree "$TOPIC"
   [ "$status" -ne 0 ]
-  [[ "$stderr" == *"S005"* ]]
-  [[ "$stderr" == *"symlink"* ]]
+  [[ "$stderr" == *"S005"* ]] || false
+  [[ "$stderr" == *"symlink"* ]] || false
   [ "$(cat "$victim")" = "do not touch" ]
   [ -L "$MARKER" ]
 }
@@ -513,14 +513,14 @@ write_session_file() {
     MY_CLAUDE_SKILLS_CONFIG="$CFG" "$WRITER" --clear --worktree
   [ "$status" -eq 0 ]
   [ ! -e "$MARKER" ]
-  [[ "$stderr" == *"cleared"* ]]
+  [[ "$stderr" == *"cleared"* ]] || false
 }
 
 @test "--clear --worktree with nothing set succeeds and says so" {
   run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" "$WRITER" --clear --worktree
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"no folder marker"* ]]
+  [[ "$stderr" == *"no folder marker"* ]] || false
 }
 
 @test "--clear --worktree leaves the session override alone" {
@@ -552,8 +552,8 @@ write_session_file() {
 @test "--help names both modes" {
   run --separate-stderr "${CLAUDE_ENV_RESET[@]}" "$WRITER" --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"--worktree"* ]]
-  [[ "$output" == *"--clear"* ]]
+  [[ "$output" == *"--worktree"* ]] || false
+  [[ "$output" == *"--clear"* ]] || false
 }
 
 # ============================================================================
@@ -570,7 +570,7 @@ write_session_file() {
       "$PROJECT_ROOT/skills/issue-context/target-path.sh" --type "$t" --description "demo"
     [ "$status" -eq 0 ]
     [ "${#lines[@]}" -eq 1 ]
-    [[ "$output" == "$TOPIC/$t/"* ]]
+    [[ "$output" == "$TOPIC/$t/"* ]] || false
   done
 }
 
@@ -599,8 +599,8 @@ working_file() {
   write_worktree --worktree "$TOPIC"
   [ "$status" -eq 0 ]
   [ "$output" = "$MARKER" ]
-  [[ "$stderr" == *"3 working files stay under $branch_folder"* ]]
-  [[ "$stderr" == *"move them to $TOPIC"* ]]
+  [[ "$stderr" == *"3 working files stay under $branch_folder"* ]] || false
+  [[ "$stderr" == *"move them to $TOPIC"* ]] || false
   # Nothing moved.
   [ -f "$branch_folder/active-plan" ]
   [ ! -e "$TOPIC/notes" ]
@@ -611,15 +611,15 @@ working_file() {
   working_file "$TEST_TEMP_DIR/.claude-work/42" "notes/20260901-100000-001-plan.txt"
   write_worktree --worktree "$TOPIC"
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"1 working file stays under"* ]]
+  [[ "$stderr" == *"1 working file stays under"* ]] || false
 }
 
 @test "left behind: --worktree over an absent branch folder says nothing about files" {
   git checkout -q -b issues/42
   write_worktree --worktree "$TOPIC"
   [ "$status" -eq 0 ]
-  [[ "$stderr" != *"stay under"* ]]
-  [[ "$stderr" != *"stays under"* ]]
+  [[ "$stderr" != *"stay under"* ]] || false
+  [[ "$stderr" != *"stays under"* ]] || false
 }
 
 @test "left behind: empty reservation files are not counted" {
@@ -628,7 +628,7 @@ working_file() {
   : > "$TEST_TEMP_DIR/.claude-work/42/notes/20260901-100000-001-reserved.txt"
   write_worktree --worktree "$TOPIC"
   [ "$status" -eq 0 ]
-  [[ "$stderr" != *"under $TEST_TEMP_DIR/.claude-work/42"* ]]
+  [[ "$stderr" != *"under $TEST_TEMP_DIR/.claude-work/42"* ]] || false
 }
 
 @test "left behind: off a work branch only the root's working-file directories count" {
@@ -636,7 +636,7 @@ working_file() {
   working_file "$TEST_TEMP_DIR/.claude-work" "77/notes/20260901-100000-001-other-item.txt"
   write_worktree --worktree "$TOPIC"
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"1 working file stays under $TEST_TEMP_DIR/.claude-work,"* ]]
+  [[ "$stderr" == *"1 working file stays under $TEST_TEMP_DIR/.claude-work,"* ]] || false
 }
 
 @test "left behind: marker A replaced by marker B names A" {
@@ -648,8 +648,8 @@ working_file() {
   write_worktree --worktree "$other"
   [ "$status" -eq 0 ]
   # README.md is topic content, not a working file.
-  [[ "$stderr" == *"1 working file stays under $TOPIC,"* ]]
-  [[ "$stderr" == *"move it to $other"* ]]
+  [[ "$stderr" == *"1 working file stays under $TOPIC,"* ]] || false
+  [[ "$stderr" == *"move it to $other"* ]] || false
 }
 
 @test "left behind: pointer files under <marker>/<identifier> are counted" {
@@ -660,16 +660,16 @@ working_file() {
   working_file "$TOPIC" "42/breadcrumb.md"
   write_worktree --clear --worktree
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"3 working files stay under $TOPIC,"* ]]
-  [[ "$stderr" == *"move them to $TEST_TEMP_DIR/.claude-work/42 or set the folder again"* ]]
+  [[ "$stderr" == *"3 working files stay under $TOPIC,"* ]] || false
+  [[ "$stderr" == *"move them to $TEST_TEMP_DIR/.claude-work/42 or set the folder again"* ]] || false
 }
 
 @test "left behind: --clear --worktree over an empty marker folder says nothing about files" {
   write_marker "$TOPIC"
   write_worktree --clear --worktree
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"cleared"* ]]
-  [[ "$stderr" != *"under $TOPIC"* ]]
+  [[ "$stderr" == *"cleared"* ]] || false
+  [[ "$stderr" != *"under $TOPIC"* ]] || false
 }
 
 @test "left behind: a rewrite to the same folder says nothing" {
@@ -677,7 +677,7 @@ working_file() {
   working_file "$TOPIC" "notes/20260901-100000-001-plan.txt"
   write_worktree --worktree "$TOPIC"
   [ "$status" -eq 0 ]
-  [[ "$stderr" != *"stays under"* ]]
+  [[ "$stderr" != *"stays under"* ]] || false
 }
 
 @test "left behind: a session override does not change what the worktree form measures" {
@@ -689,5 +689,176 @@ working_file() {
   run --separate-stderr "${CLAUDE_ENV_RESET[@]}" MY_CLAUDE_SKILLS_CONFIG="$CFG" \
     CLAUDE_CODE_SESSION_ID="$SESSION_ID" "$WRITER" --worktree "$TOPIC"
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"1 working file stays under $branch_folder,"* ]]
+  [[ "$stderr" == *"1 working file stays under $branch_folder,"* ]] || false
+}
+
+# ============================================================================
+# The mode form: {"mode": "require-override"}
+# ============================================================================
+
+TARGET="$PROJECT_ROOT/skills/issue-context/target-path.sh"
+TIER_FOLDERS="$PROJECT_ROOT/skills/issue-context/tier-folders.sh"
+MODE_LINE='{"mode": "require-override"}'
+
+# Every regular file under the test directory, outside .git, one per line.
+# A refusal must leave this list unchanged.
+all_files() {
+  find "$TEST_TEMP_DIR" -path "$TEST_TEMP_DIR/.git" -prune -o -type f -print | LC_ALL=C sort
+}
+
+# target <session-id or ""> — run target-path.sh for a note, with or without
+# a session id.
+target() {
+  if [ -n "$1" ]; then
+    run --separate-stderr "${CLAUDE_ENV_RESET[@]}" MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+      CLAUDE_CODE_SESSION_ID="$1" "$TARGET" --type notes --description "demo"
+  else
+    run --separate-stderr "${CLAUDE_ENV_RESET[@]}" MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+      "$TARGET" --type notes --description "demo"
+  fi
+}
+
+@test "mode: a reader falls through to the branch folder and names the mode" {
+  write_marker "$MODE_LINE"
+  resolve
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work" ]
+  [[ "$stderr" == *"holds mode 'require-override'"* ]] || false
+}
+
+@test "mode: --id gives the branch folder of the identifier and names the mode" {
+  write_marker "$MODE_LINE"
+  resolve --id 42
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/.claude-work/42" ]
+  [[ "$stderr" == *"holds mode 'require-override'"* ]] || false
+}
+
+@test "mode: the tier is branch, in both forms" {
+  write_marker "$MODE_LINE"
+  tier_of
+  [ "$output" = "branch" ]
+  tier_of --id 42
+  [ "$output" = "branch" ]
+}
+
+@test "mode: tier-folders prints no worktree line" {
+  write_marker "$MODE_LINE"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" MY_CLAUDE_SKILLS_CONFIG="$CFG" "$TIER_FOLDERS"
+  [ "$status" -eq 0 ]
+  [ "$output" = "branch	$TEST_TEMP_DIR/.claude-work" ]
+}
+
+@test "mode: a write with no session folder → T104, the fix named, and no file anywhere" {
+  write_marker "$MODE_LINE"
+  before="$(all_files)"
+  target ""
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"T104"* ]] || false
+  [[ "$stderr" == *"/set-work-folder <absolute folder>"* ]] || false
+  [[ "$stderr" == *"/set-work-folder $TEST_TEMP_DIR/.claude-work"* ]] || false
+  [ "$(all_files)" = "$before" ]
+}
+
+@test "mode: on a work-item branch, T104 names the branch folder, not the .claude-work root" {
+  git checkout -q -b issues/42
+  write_marker "$MODE_LINE"
+  target ""
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"T104"* ]] || false
+  [[ "$stderr" == *"/set-work-folder $TEST_TEMP_DIR/.claude-work/42 to write"* ]] || false
+}
+
+@test "mode: a refused write sweeps no old reservation" {
+  write_marker "$MODE_LINE"
+  local stale="$TEST_TEMP_DIR/.claude-work/notes/20200101-000000-001-old.txt"
+  mkdir -p "$(dirname "$stale")"
+  : > "$stale"
+  touch -t 202001010000 "$stale"
+  target ""
+  [ "$status" -eq 1 ]
+  [ -e "$stale" ]
+}
+
+@test "mode: a write with a session folder goes to that folder" {
+  local sess="$TEST_TEMP_DIR/session-folder"
+  mkdir -p "$sess"
+  write_marker "$MODE_LINE"
+  write_session_file "$sess"
+  target "$SESSION_ID"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "$sess/notes/"* ]] || false
+  [ -f "$output" ]
+}
+
+@test "mode: a session folder that the resolver refuses does not open the gate" {
+  write_marker "$MODE_LINE"
+  write_session_file "$TEST_TEMP_DIR/gone"
+  before="$(all_files)"
+  target "$SESSION_ID"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"override ignored"* ]] || false
+  [[ "$stderr" == *"T104"* ]] || false
+  [ "$(all_files)" = "$before" ]
+}
+
+@test "mode: spaces and a trailing newline still parse" {
+  printf '  { "mode" :  "require-override" }  \n' > "$MARKER"
+  target ""
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"T104"* ]] || false
+}
+
+@test "mode: an unknown mode → T105, also with a session folder, and no file" {
+  local sess="$TEST_TEMP_DIR/session-folder"
+  mkdir -p "$sess"
+  write_marker '{"mode": "read-session-name"}'
+  write_session_file "$sess"
+  before="$(all_files)"
+  target "$SESSION_ID"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"T105"* ]] || false
+  [[ "$stderr" == *"'read-session-name'"* ]] || false
+  [ "$(all_files)" = "$before" ]
+}
+
+@test "mode: a { line that does not parse → T105" {
+  write_marker '{mode: require-override}'
+  before="$(all_files)"
+  target ""
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"T105"* ]] || false
+  [[ "$stderr" == *"starts with '{'"* ]] || false
+  [ "$(all_files)" = "$before" ]
+}
+
+@test "mode: a second key does not parse → T105" {
+  write_marker '{"mode": "require-override", "folder": "/tmp"}'
+  target ""
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"T105"* ]] || false
+}
+
+@test "mode: a path marker writes as before" {
+  write_marker "$TOPIC"
+  target ""
+  [ "$status" -eq 0 ]
+  [[ "$output" == "$TOPIC/notes/"* ]] || false
+}
+
+@test "mode: --worktree refuses to replace a mode marker → S006, marker unchanged" {
+  write_marker "$MODE_LINE"
+  write_worktree --worktree "$TOPIC"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"S006"* ]] || false
+  [[ "$stderr" == *"--clear --worktree"* ]] || false
+  [ "$(cat "$MARKER")" = "$MODE_LINE" ]
+}
+
+@test "mode: --clear --worktree removes a mode marker" {
+  write_marker "$MODE_LINE"
+  write_worktree --clear --worktree
+  [ "$status" -eq 0 ]
+  [ ! -e "$MARKER" ]
 }

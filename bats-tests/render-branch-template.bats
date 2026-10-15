@@ -79,7 +79,7 @@ render_with_config() {
   # /start-issue and then treated as a non-work branch by branch-issue-id.sh.
   render_with_config "$cfg" 42
   [ "$status" -eq 1 ]
-  [[ "$output" == *"paired configuration"* ]]
+  [[ "$output" == *"paired configuration"* ]] || false
 }
 
 @test "branch that re-parses to a different id → rejected as unpaired" {
@@ -88,7 +88,7 @@ render_with_config() {
   # round-trip and must not render.
   render_with_config "$CFG" 123-rfc
   [ "$status" -eq 1 ]
-  [[ "$output" == *"paired configuration"* ]]
+  [[ "$output" == *"paired configuration"* ]] || false
 }
 
 @test "paired branchTemplate + branchPatterns renders and round-trips" {
@@ -122,13 +122,13 @@ render_with_config() {
 @test "unsafe identifier → error on stderr, exit 1" {
   render_with_config "$CFG" ".hidden"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"not usable"* ]]
+  [[ "$output" == *"not usable"* ]] || false
 }
 
 @test "identifier with an internal slash → error, exit 1" {
   render_with_config "$CFG" "foo/bar"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"not usable"* ]]
+  [[ "$output" == *"not usable"* ]] || false
 }
 
 # ============================================================================
@@ -138,13 +138,13 @@ render_with_config() {
 @test "no arguments → usage on stderr, exit 1" {
   render_with_config "$CFG"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"usage"* ]]
+  [[ "$output" == *"usage"* ]] || false
 }
 
 @test "two arguments → usage on stderr, exit 1" {
   render_with_config "$CFG" 42 extra
   [ "$status" -eq 1 ]
-  [[ "$output" == *"usage"* ]]
+  [[ "$output" == *"usage"* ]] || false
 }
 
 # ============================================================================
@@ -191,5 +191,5 @@ render_with_config() {
 @test "unsafe identifier is still rejected and reported as given" {
   render_with_config "$CFG" "../evil"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"'../evil' is not usable as a work-item identifier"* ]]
+  [[ "$output" == *"'../evil' is not usable as a work-item identifier"* ]] || false
 }

@@ -29,7 +29,7 @@ teardown() {
 @test "check-prose: --help exits 0 and names the usage" {
   run "$SCRIPT" --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Usage: check-prose.sh"* ]]
+  [[ "$output" == *"Usage: check-prose.sh"* ]] || false
 }
 
 @test "check-prose: P000 when given no argument" {
@@ -61,35 +61,35 @@ teardown() {
   printf '# Title\n\nThis paragraph was wrapped by an editor\nand continues on a second line.\n' > "$FILE"
   run "$SCRIPT" "$FILE"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"P001"* ]]
+  [[ "$output" == *"P001"* ]] || false
 }
 
 @test "check-prose: P002 flags a backtick-wrapped code reference" {
   printf '# Title\n\nSee `src/parser.ts#L42` for the detail.\n' > "$FILE"
   run "$SCRIPT" "$FILE"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"P002"* ]]
+  [[ "$output" == *"P002"* ]] || false
 }
 
 @test "check-prose: P003 flags a plain-text line reference" {
   printf '# Title\n\nThat regressed in lines 26-37 of the parser.\n' > "$FILE"
   run "$SCRIPT" "$FILE"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"P003"* ]]
+  [[ "$output" == *"P003"* ]] || false
 }
 
 @test "check-prose: P004 flags a short-form GitHub reference" {
   printf '# Title\n\nFixed by PR #42 last week.\n' > "$FILE"
   run "$SCRIPT" "$FILE"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"P004"* ]]
+  [[ "$output" == *"P004"* ]] || false
 }
 
 @test "check-prose: P005 flags a relative .claude-work path" {
   printf '# Title\n\nThe file landed in .claude-work/notes/thing.txt for review.\n' > "$FILE"
   run "$SCRIPT" "$FILE"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"P005"* ]]
+  [[ "$output" == *"P005"* ]] || false
 }
 
 # =============================================================
@@ -154,7 +154,7 @@ teardown() {
   printf '# Title\n\n**Related:** PR #42 carries the change.\n' > "$FILE"
   run "$SCRIPT" "$FILE"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"P004"* ]]
+  [[ "$output" == *"P004"* ]] || false
 }
 
 @test "check-prose: a bare thematic break is exempt from the wrap rule" {
@@ -191,7 +191,7 @@ teardown() {
   printf -- 'Intro sentence.\n\n---\nfirst field line\nsecond field line\n---\n' > "$FILE"
   run "$SCRIPT" "$FILE"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"4: P001"* ]]
+  [[ "$output" == *"4: P001"* ]] || false
 }
 
 @test "check-prose: consecutive bold-label lines are a header block, not a wrap" {

@@ -29,6 +29,8 @@ You never release a path you decide not to use. The script sweeps an abandoned r
 
 Placement resolves through three tiers, in order: the current session's folder override, this worktree's `CLAUDE_WORK_FOLDER` marker, then the branch context. A caller writes a working file the same way in every case, and the override and the marker are invisible to it. ADR 003 records why the tiers are ordered that way.
 
+A marker can hold a mode instead: under `{"mode": "require-override"}`, a write with no session folder exits with T104 and reserves no file. The error names the fix: set a session folder. Tell the user. Do not write the file elsewhere by hand.
+
 The next line is an example, not a specification. Read the filename format from `target-path.sh`. Do not read it from prose:
 
 ```text

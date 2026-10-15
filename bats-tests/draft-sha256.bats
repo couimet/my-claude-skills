@@ -47,19 +47,19 @@ _nonl() {
 @test "draft-sha256: --help exits 0" {
   run "$SCRIPT" --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Usage: draft-sha256.sh"* ]]
+  [[ "$output" == *"Usage: draft-sha256.sh"* ]] || false
 }
 
 @test "draft-sha256: D001 when given no argument" {
   run "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"D001"* ]]
+  [[ "$output" == *"D001"* ]] || false
 }
 
 @test "draft-sha256: D002 when the file does not exist" {
   run "$SCRIPT" "$TEST_TEMP_DIR/missing.txt"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"D002"* ]]
+  [[ "$output" == *"D002"* ]] || false
 }
 
 @test "draft-sha256: D003 when no SHA-256 tool is installed" {
@@ -68,7 +68,7 @@ _nonl() {
   printf 'x\n' > "$TEST_TEMP_DIR/draft.txt"
   PATH="$TEST_TEMP_DIR/bin" run "$BASH" "$SCRIPT" "$TEST_TEMP_DIR/draft.txt"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"D003"* ]]
+  [[ "$output" == *"D003"* ]] || false
 }
 
 @test "draft-sha256: uses sha256sum when shasum is not installed" {

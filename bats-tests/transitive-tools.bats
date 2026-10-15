@@ -54,7 +54,7 @@ create_manifest_skills() {
   run "$PROJECT_ROOT/scripts/check-transitive-tools.sh" "$root"
 
   [ "$status" -eq 1 ]
-  [[ "$output" == *"missing Bash(date *)"* ]]
+  [[ "$output" == *"missing Bash(date *)"* ]] || false
 }
 
 @test "transitive-tools: base mode passes when permissions are covered" {
@@ -94,7 +94,7 @@ create_manifest_skills() {
   run "$PROJECT_ROOT/scripts/check-transitive-tools.sh" --diff HEAD~1..HEAD "$repo"
 
   [ "$status" -eq 1 ]
-  [[ "$output" == *"missing Bash(date *)"* ]]
+  [[ "$output" == *"missing Bash(date *)"* ]] || false
 }
 
 @test "transitive-tools: diff mode is clean without new invocations" {
@@ -114,5 +114,5 @@ create_manifest_skills() {
   run "$PROJECT_ROOT/scripts/check-transitive-tools.sh" --diff HEAD~1..HEAD "$repo"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"no new gaps"* ]]
+  [[ "$output" == *"no new gaps"* ]] || false
 }

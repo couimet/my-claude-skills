@@ -210,7 +210,7 @@ teardown() {
   touch ".claude-work/issues/42/scratchpads/$STAMP-999-taken.txt"
   run_target_path --type scratchpads --description "One too many"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T103"* ]]
+  [[ "$stderr" == *"T103"* ]] || false
 }
 
 # ============================================================================
@@ -284,37 +284,37 @@ teardown() {
 @test "--ext with dots (..) errors with T102" {
   run_target_path --type scratchpads --description "x" --ext ".."
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T102"* ]]
+  [[ "$stderr" == *"T102"* ]] || false
 }
 
 @test "--ext with path separator errors with T102" {
   run_target_path --type scratchpads --description "x" --ext "foo/bar"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T102"* ]]
+  [[ "$stderr" == *"T102"* ]] || false
 }
 
 @test "--ext with whitespace errors with T102" {
   run_target_path --type scratchpads --description "x" --ext "foo bar"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T102"* ]]
+  [[ "$stderr" == *"T102"* ]] || false
 }
 
 @test "--ext with glob character errors with T102" {
   run_target_path --type scratchpads --description "x" --ext "*"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T102"* ]]
+  [[ "$stderr" == *"T102"* ]] || false
 }
 
 @test "--ext with shell metacharacter errors with T102" {
   run_target_path --type scratchpads --description "x" --ext '$(whoami)'
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T102"* ]]
+  [[ "$stderr" == *"T102"* ]] || false
 }
 
 @test "--ext with hyphen (not alphanumeric) errors with T102" {
   run_target_path --type scratchpads --description "x" --ext "tar-gz"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T102"* ]]
+  [[ "$stderr" == *"T102"* ]] || false
 }
 
 # ============================================================================
@@ -336,13 +336,13 @@ teardown() {
 @test "missing --type errors with T001" {
   run_target_path --description "test"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T001"* ]]
+  [[ "$stderr" == *"T001"* ]] || false
 }
 
 @test "missing --description errors with T001" {
   run_target_path --type scratchpads
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T001"* ]]
+  [[ "$stderr" == *"T001"* ]] || false
 }
 
 @test "notes type on issue branch → issue-scoped notes path" {
@@ -362,13 +362,13 @@ teardown() {
 @test "invalid --type errors with T100" {
   run_target_path --type bogus --description "test"
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T100"* ]]
+  [[ "$stderr" == *"T100"* ]] || false
 }
 
 @test "unknown flag errors with T002" {
   run_target_path --type scratchpads --description "test" --nonsense
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"T002"* ]]
+  [[ "$stderr" == *"T002"* ]] || false
 }
 
 # ============================================================================
@@ -582,9 +582,9 @@ _stale() {
   run --separate-stderr "$SCRIPT" --type notes --description "first note"
   [ "$status" -eq 0 ]
   [ "$(printf '%s' "$output" | wc -l | tr -d ' ')" -eq 0 ]
-  [[ "$output" != *present* ]]
-  [[ "$output" != *added* ]]
-  [[ "$output" == /* ]]
+  [[ "$output" != *present* ]] || false
+  [[ "$output" != *added* ]] || false
+  [[ "$output" == /* ]] || false
 }
 
 # A session override or a worktree marker names a folder anywhere, and a trim

@@ -36,7 +36,7 @@ A branch matching no pattern, and no branch at all (detached HEAD, non-repositor
 ~/.claude/skills/issue-context/get-issue-folder-path.sh [--id <identifier>]
 ```
 
-Prints the folder that holds a work item's files. Without `--id` it walks the three tiers in order: the session override, this worktree's `CLAUDE_WORK_FOLDER` marker, then branch-derived placement, printing just the root when the branch matches no pattern. With `--id` the identifier is validated, **the session override is never consulted**, and the marker is honoured as `<marker>/<identifier>` with no segment between. Naming a work item is an explicit request that an ambient session setting must not retarget.
+Prints the folder that holds a work item's files. Without `--id` it walks the three tiers in order: the session override, this worktree's `CLAUDE_WORK_FOLDER` marker, then branch-derived placement, printing just the root when the branch matches no pattern. A marker in the mode form (`{"mode": "require-override"}`) names no folder, so both forms fall through to the branch tier and stderr names the mode. Only `target-path.sh` refuses a write under a mode; a reader never does. With `--id` the identifier is validated, **the session override is never consulted**, and the marker is honoured as `<marker>/<identifier>` with no segment between. Naming a work item is an explicit request that an ambient session setting must not retarget.
 
 The folder is NOT created. Errors print to stderr and exit 1.
 
@@ -77,11 +77,13 @@ Prints one `<tier><TAB><folder>` line for each tier that resolves right now, in 
 
 Writes or removes this session's folder override. `<folder>` must be an absolute path to an existing directory; a relative path and a missing directory are both refused rather than created. `[name]` is a cosmetic label for the stored file's name and is never looked up, so it may go stale. The folder need not sit inside any repository.
 
-The `--worktree` forms write and remove this worktree's marker instead of the session override. They need no session id, because a marker belongs to a checkout rather than a conversation, and they refuse to run outside a git repository.
+The `--worktree` forms write and remove this worktree's marker instead of the session override. They need no session id, because a marker belongs to a checkout rather than a conversation, and they refuse to run outside a git repository. `--worktree <folder>` refuses with S006 to replace a marker in the mode form, because that would remove a rule the repository chose; `--clear --worktree` removes it.
 
 Every form says on stderr when the change leaves working files behind: the count, the folder they stay under, and where readers look now. It compares the winning folder before and after the change, and the worktree forms leave the session tier out of that comparison. Nothing moves, and a change over an empty or absent folder says nothing.
 
 A session keeps exactly one override file; a second write replaces the first, even under a different label. Every refusal falls back to the next tier and says so on stderr: a folder that is gone, a non-absolute path, more than one file matching the session, an unreadable or malformed file, an unknown version, or a missing `jq`. A marker is refused on the same terms, plus when it is empty or unreadable.
+
+The marker has two forms, read from its first line. A path names the folder. A line that starts with `{` holds a mode, parsed without `jq`: `{"mode": "require-override"}` means that each session must set a session folder before it writes. Under that mode `target-path.sh` exits with T104 when the session tier gives no usable folder, and with T105 for an unknown mode or a `{` line that does not parse, also when a session folder is set. Neither refusal sweeps or reserves a file. `work-folder-tier.sh` prints `branch` and `tier-folders.sh` prints no `worktree` line under a mode marker.
 
 ## Settings: issue-settings.sh
 
@@ -93,4 +95,5 @@ The path convention is configurable through `~/.my-claude-skills/settings.json`,
 - `urlPatterns` — ordered EREs matched against tracker URLs; first match wins, capture group one is the identifier.
 - `identifierCase` — `upper` (default), `lower`, or `preserve`. Only tracker-key-shaped identifiers are folded, so numeric identifiers and free-form slugs pass through untouched. An unrecognized value warns and falls back to `upper`.
 - `launchAgentDefaultFolder` — the absolute directory that a `/launch-agent` slug resolves under; default unset, which resolves a slug at the repository root. The value is read as given: no `~` and no environment variable expands. This key is the one exception to the fall-back rule above: `launch-agent.sh` refuses a relative value or a directory that does not exist, and writes nothing, because a fall-back to the repository root puts the topic folder in a code repository. It also refuses a slug when the settings file is there but cannot be read, for the same reason. `issue-settings.sh` sets `SETTINGS_LOAD_STATUS` to `absent`, `loaded`, or `failed` so that a consumer can tell no file from a file that did not apply.
+- `launchAgentMaxDepth` — how deep a chain of background agents that start agents may go; default `2`. A session the user started is depth 0. `launch-agent.sh --bg` refuses with L006 when the new agent would go past the limit, so a session at the limit cannot start a background agent, and `0` refuses every background launch. The value is a JSON integer from 0 to 999999999; any other value warns and falls back to `2`, because the fall-back keeps a limit in place. The depth of a background session is a record keyed by its job id, the first 8 characters of its session id, under `agent-depth/` beside the settings file (`agent-depth.sh`). A restart keeps the session id, so the depth survives `/resume-agent`.
 - `version` — settings schema version; default `1`.

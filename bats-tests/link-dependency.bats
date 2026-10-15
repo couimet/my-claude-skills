@@ -74,22 +74,22 @@ teardown() {
 @test "missing all parameters prints error with E001" {
   run "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E001"* ]]
-  [[ "$output" == *"--subject-owner"* ]]
-  [[ "$output" == *"--subject-repo"* ]]
-  [[ "$output" == *"--subject-number"* ]]
-  [[ "$output" == *"--target-owner"* ]]
-  [[ "$output" == *"--target-repo"* ]]
-  [[ "$output" == *"--target-number"* ]]
-  [[ "$output" == *"--relationship"* ]]
+  [[ "$output" == *"E001"* ]] || false
+  [[ "$output" == *"--subject-owner"* ]] || false
+  [[ "$output" == *"--subject-repo"* ]] || false
+  [[ "$output" == *"--subject-number"* ]] || false
+  [[ "$output" == *"--target-owner"* ]] || false
+  [[ "$output" == *"--target-repo"* ]] || false
+  [[ "$output" == *"--target-number"* ]] || false
+  [[ "$output" == *"--relationship"* ]] || false
 }
 
 @test "missing --relationship parameter prints error with E001" {
   run "$SCRIPT" --subject-owner couimet --subject-repo my-repo --subject-number 10 \
                 --target-owner other --target-repo other-repo --target-number 5
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E001"* ]]
-  [[ "$output" == *"--relationship"* ]]
+  [[ "$output" == *"E001"* ]] || false
+  [[ "$output" == *"--relationship"* ]] || false
 }
 
 @test "missing --subject-number parameter prints error with E001" {
@@ -97,8 +97,8 @@ teardown() {
                 --target-owner other --target-repo other-repo --target-number 5 \
                 --relationship blocked-by
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E001"* ]]
-  [[ "$output" == *"--subject-number"* ]]
+  [[ "$output" == *"E001"* ]] || false
+  [[ "$output" == *"--subject-number"* ]] || false
 }
 
 @test "missing --target-number parameter prints error with E001" {
@@ -106,8 +106,8 @@ teardown() {
                 --target-owner other --target-repo other-repo \
                 --relationship is-blocking
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E001"* ]]
-  [[ "$output" == *"--target-number"* ]]
+  [[ "$output" == *"E001"* ]] || false
+  [[ "$output" == *"--target-number"* ]] || false
 }
 
 # --- Invalid numbers ---
@@ -117,8 +117,8 @@ teardown() {
                 --target-owner other --target-repo other-repo --target-number 5 \
                 --relationship blocked-by
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E102"* ]]
-  [[ "$output" == *"--subject-number"* ]]
+  [[ "$output" == *"E102"* ]] || false
+  [[ "$output" == *"--subject-number"* ]] || false
 }
 
 @test "non-numeric --target-number prints error with E105" {
@@ -126,8 +126,8 @@ teardown() {
                 --target-owner other --target-repo other-repo --target-number xyz \
                 --relationship blocked-by
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E105"* ]]
-  [[ "$output" == *"--target-number"* ]]
+  [[ "$output" == *"E105"* ]] || false
+  [[ "$output" == *"--target-number"* ]] || false
 }
 
 # --- Invalid relationship ---
@@ -137,9 +137,9 @@ teardown() {
                 --target-owner other --target-repo other-repo --target-number 5 \
                 --relationship depends-on
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E106"* ]]
-  [[ "$output" == *"--relationship"* ]]
-  [[ "$output" == *"depends-on"* ]]
+  [[ "$output" == *"E106"* ]] || false
+  [[ "$output" == *"--relationship"* ]] || false
+  [[ "$output" == *"depends-on"* ]] || false
 }
 
 @test "empty relationship value treated as missing (E001)" {
@@ -147,8 +147,8 @@ teardown() {
                 --target-owner other --target-repo other-repo --target-number 5 \
                 --relationship ""
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E001"* ]]
-  [[ "$output" == *"--relationship"* ]]
+  [[ "$output" == *"E001"* ]] || false
+  [[ "$output" == *"--relationship"* ]] || false
 }
 
 # --- Unknown parameters ---
@@ -158,14 +158,14 @@ teardown() {
                 --target-owner other --target-repo other-repo --target-number 5 \
                 --relationship blocked-by --verbose
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E002"* ]]
-  [[ "$output" == *"--verbose"* ]]
+  [[ "$output" == *"E002"* ]] || false
+  [[ "$output" == *"--verbose"* ]] || false
 }
 
 @test "positional parameter prints error with E002" {
   run "$SCRIPT" couimet
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E002"* ]]
+  [[ "$output" == *"E002"* ]] || false
 }
 
 # --- Parameter value missing ---
@@ -173,29 +173,29 @@ teardown() {
 @test "--subject-owner without value prints error with E100" {
   run "$SCRIPT" --subject-owner
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E100"* ]]
-  [[ "$output" == *"--subject-owner"* ]]
+  [[ "$output" == *"E100"* ]] || false
+  [[ "$output" == *"--subject-owner"* ]] || false
 }
 
 @test "--subject-repo without value prints error with E101" {
   run "$SCRIPT" --subject-owner couimet --subject-repo
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E101"* ]]
-  [[ "$output" == *"--subject-repo"* ]]
+  [[ "$output" == *"E101"* ]] || false
+  [[ "$output" == *"--subject-repo"* ]] || false
 }
 
 @test "--target-owner without value prints error with E103" {
   run "$SCRIPT" --subject-owner couimet --target-owner
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E103"* ]]
-  [[ "$output" == *"--target-owner"* ]]
+  [[ "$output" == *"E103"* ]] || false
+  [[ "$output" == *"--target-owner"* ]] || false
 }
 
 @test "--target-repo without value prints error with E104" {
   run "$SCRIPT" --subject-owner couimet --target-owner other --target-repo
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E104"* ]]
-  [[ "$output" == *"--target-repo"* ]]
+  [[ "$output" == *"E104"* ]] || false
+  [[ "$output" == *"--target-repo"* ]] || false
 }
 
 @test "--relationship without value prints error with E106" {
@@ -203,8 +203,8 @@ teardown() {
                 --target-owner other --target-repo other-repo --target-number 5 \
                 --relationship
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E106"* ]]
-  [[ "$output" == *"--relationship"* ]]
+  [[ "$output" == *"E106"* ]] || false
+  [[ "$output" == *"--relationship"* ]] || false
 }
 
 # --- Self-dependency ---
@@ -214,8 +214,8 @@ teardown() {
                 --target-owner couimet --target-repo my-repo --target-number 10 \
                 --relationship blocked-by
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E107"* ]]
-  [[ "$output" == *"same issue"* ]]
+  [[ "$output" == *"E107"* ]] || false
+  [[ "$output" == *"same issue"* ]] || false
 }
 
 # --- Runtime: subject node lookup failure (E200) ---
@@ -226,8 +226,8 @@ teardown() {
                 --target-owner other --target-repo other-repo --target-number 5 \
                 --relationship blocked-by
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E200"* ]]
-  [[ "$output" == *"subject node ID lookup failed"* ]]
+  [[ "$output" == *"E200"* ]] || false
+  [[ "$output" == *"subject node ID lookup failed"* ]] || false
 }
 
 # --- Runtime: target node lookup failure (E201) ---
@@ -238,8 +238,8 @@ teardown() {
                 --target-owner other --target-repo other-repo --target-number 5 \
                 --relationship blocked-by
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E201"* ]]
-  [[ "$output" == *"target node ID lookup failed"* ]]
+  [[ "$output" == *"E201"* ]] || false
+  [[ "$output" == *"target node ID lookup failed"* ]] || false
 }
 
 # --- Runtime: empty subject node ID (E202) ---
@@ -250,8 +250,8 @@ teardown() {
                 --target-owner other --target-repo other-repo --target-number 5 \
                 --relationship blocked-by
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E202"* ]]
-  [[ "$output" == *"could not resolve node ID for subject issue"* ]]
+  [[ "$output" == *"E202"* ]] || false
+  [[ "$output" == *"could not resolve node ID for subject issue"* ]] || false
 }
 
 # --- Runtime: empty target node ID (E203) ---
@@ -262,8 +262,8 @@ teardown() {
                 --target-owner other --target-repo other-repo --target-number 5 \
                 --relationship blocked-by
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E203"* ]]
-  [[ "$output" == *"could not resolve node ID for target issue"* ]]
+  [[ "$output" == *"E203"* ]] || false
+  [[ "$output" == *"could not resolve node ID for target issue"* ]] || false
 }
 
 # --- Runtime: mutation failure (E204) ---
@@ -274,8 +274,8 @@ teardown() {
                 --target-owner other --target-repo other-repo --target-number 5 \
                 --relationship blocked-by
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E204"* ]]
-  [[ "$output" == *"addBlockedBy mutation failed"* ]]
+  [[ "$output" == *"E204"* ]] || false
+  [[ "$output" == *"addBlockedBy mutation failed"* ]] || false
 }
 
 @test "mutation GraphQL errors prints error with E204" {
@@ -284,8 +284,8 @@ teardown() {
                 --target-owner other --target-repo other-repo --target-number 5 \
                 --relationship blocked-by
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E204"* ]]
-  [[ "$output" == *"Dependency already exists"* ]]
+  [[ "$output" == *"E204"* ]] || false
+  [[ "$output" == *"Dependency already exists"* ]] || false
 }
 
 # --- Success: blocked-by (same repo) ---
@@ -295,7 +295,7 @@ teardown() {
                 --target-owner couimet --target-repo my-repo --target-number 5 \
                 --relationship blocked-by
   [ "$status" -eq 0 ]
-  [[ "$output" == "blocked #10 ← #5" ]]
+  [[ "$output" == "blocked #10 ← #5" ]] || false
 }
 
 # --- Success: is-blocking (cross-repo) ---
@@ -305,7 +305,7 @@ teardown() {
                 --target-owner other --target-repo other-repo --target-number 5 \
                 --relationship is-blocking
   [ "$status" -eq 0 ]
-  [[ "$output" == "blocking #10 → #5" ]]
+  [[ "$output" == "blocking #10 → #5" ]] || false
 }
 
 # --- Help ---
@@ -313,8 +313,8 @@ teardown() {
 @test "--help prints usage and exits 0" {
   run "$SCRIPT" --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Usage:"* ]]
-  [[ "$output" == *"--subject-owner"* ]]
-  [[ "$output" == *"--target-owner"* ]]
-  [[ "$output" == *"--relationship"* ]]
+  [[ "$output" == *"Usage:"* ]] || false
+  [[ "$output" == *"--subject-owner"* ]] || false
+  [[ "$output" == *"--target-owner"* ]] || false
+  [[ "$output" == *"--relationship"* ]] || false
 }

@@ -49,20 +49,20 @@ commit_file() {
 @test "no arguments → error A001" {
   run "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"A001"* ]]
-  [[ "$output" == *"expected 1 argument, got 0"* ]]
+  [[ "$output" == *"A001"* ]] || false
+  [[ "$output" == *"expected 1 argument, got 0"* ]] || false
 }
 
 @test "two arguments → error A001" {
   run "$SCRIPT" "main" "extra"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"A001"* ]]
+  [[ "$output" == *"A001"* ]] || false
 }
 
 @test "usage text printed on argument error" {
   run "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"Usage:"* ]]
+  [[ "$output" == *"Usage:"* ]] || false
 }
 
 # ============================================================================
@@ -72,8 +72,8 @@ commit_file() {
 @test "target ref does not exist → error A002" {
   run "$SCRIPT" "nonexistent-ref"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"A002"* ]]
-  [[ "$output" == *"does not exist"* ]]
+  [[ "$output" == *"A002"* ]] || false
+  [[ "$output" == *"does not exist"* ]] || false
 }
 
 # ============================================================================
@@ -83,8 +83,8 @@ commit_file() {
 @test "HEAD equals target → error A003 (no unique changes)" {
   run "$SCRIPT" "main"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"A003"* ]]
-  [[ "$output" == *"no unique changes"* ]]
+  [[ "$output" == *"A003"* ]] || false
+  [[ "$output" == *"no unique changes"* ]] || false
 }
 
 # ============================================================================
@@ -101,7 +101,7 @@ commit_file() {
   run "$SCRIPT" "main"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"applied and staged successfully"* ]]
+  [[ "$output" == *"applied and staged successfully"* ]] || false
 
   # Verify the change was applied: we are now at main + our change.
   [ "$(cat a.txt)" = "$(printf 'line1\nline2-modified\nline3\n')" ]
@@ -127,7 +127,7 @@ commit_file() {
   run "$SCRIPT" "main"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"applied and staged successfully"* ]]
+  [[ "$output" == *"applied and staged successfully"* ]] || false
   [ "$(cat a.txt)" = "modified a" ]
   [ "$(cat b.txt)" = "new file b" ]
   [ -n "$(git diff --cached --stat)" ]
@@ -143,7 +143,7 @@ commit_file() {
   run "$SCRIPT" "main"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"applied and staged successfully"* ]]
+  [[ "$output" == *"applied and staged successfully"* ]] || false
   [ "$(cat newfile.txt)" = "brand new file" ]
 }
 
@@ -156,7 +156,7 @@ commit_file() {
   run "$SCRIPT" "main"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"applied and staged successfully"* ]]
+  [[ "$output" == *"applied and staged successfully"* ]] || false
   [ ! -f a.txt ]
 }
 
@@ -174,7 +174,7 @@ commit_file() {
   run "$SCRIPT" "main"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"applied and staged successfully"* ]]
+  [[ "$output" == *"applied and staged successfully"* ]] || false
   [ "$(cat a.txt)" = "commit 1 plus more" ]
 }
 
@@ -232,7 +232,7 @@ commit_file() {
   run "$SCRIPT" "base-branch"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"applied and staged successfully"* ]]
+  [[ "$output" == *"applied and staged successfully"* ]] || false
   [ "$(cat base.txt)" = "stacked change" ]
 }
 
@@ -247,7 +247,7 @@ commit_file() {
   run "$SCRIPT" "main"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"applied and staged successfully"* ]]
+  [[ "$output" == *"applied and staged successfully"* ]] || false
   [ "$(cat subdir/nested.txt)" = "nested content" ]
 }
 
@@ -267,7 +267,7 @@ commit_file() {
   run "$SCRIPT" "issues/100"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"applied and staged successfully"* ]]
+  [[ "$output" == *"applied and staged successfully"* ]] || false
   [ "$(cat a.txt)" = "changed a" ]
   [ "$(cat b.txt)" = "new file 1" ]
   [ "$(cat c.txt)" = "new file 2" ]
@@ -293,7 +293,7 @@ commit_file() {
   run "$SCRIPT" "base-branch"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"applied and staged successfully"* ]]
+  [[ "$output" == *"applied and staged successfully"* ]] || false
 
   # Both the new upstream commit and the stacked change should be present
   [ -f new-base.txt ]

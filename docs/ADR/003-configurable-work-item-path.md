@@ -5,6 +5,7 @@
 - **Issue:** <https://github.com/couimet/my-claude-skills/issues/248>
 - **Amended:** 2026-09-08 by <https://github.com/couimet/my-claude-skills/issues/262> (identifier case)
 - **Amended:** 2026-09-14 by <https://github.com/couimet/my-claude-skills/issues/267> (session folder override)
+- **Amended:** 2026-10-13 by <https://github.com/couimet/my-claude-skills/issues/285> (required session folder)
 
 ## Context
 
@@ -72,7 +73,7 @@ The file sits at the worktree root and not under `.claude-work/`, which is the p
 
 It is deliberately not gitignored. It appears in `git status` until it is cleared, which is the property being bought: a setting that outlives the session that made it should be one the user cannot forget. The failure it invites, an accidental commit, is self-limiting, because a path from one machine is not a directory on another and the resolver refuses a folder that does not exist and says so.
 
-It holds one line rather than JSON. The resolver already treats a missing `jq` as a reason to ignore the session override, and a marker that needed `jq` would let one absent tool take out two tiers at once. A file holding one path has nothing to version, and a leading `{` is enough to tell the formats apart if fields are ever wanted.
+It holds one line rather than JSON. The resolver already treats a missing `jq` as a reason to ignore the session override, and a marker that needed `jq` would let one absent tool take out two tiers at once. A file holding one path has nothing to version, and a leading `{` is enough to tell the formats apart if fields are ever wanted. Used for reservation mode, described below.
 
 **Resolution has three tiers: session, worktree, branch.** The order lives in `work-folder.sh` and nowhere else, sourced by the resolver and by `work-folder-tier.sh`, so which tier wins and the path it produces cannot drift apart. Session before worktree because an explicit, just-typed setting should beat a standing one. Both before branch because naming a folder is a statement and inferring one from a branch is a default.
 
@@ -83,6 +84,16 @@ It holds one line rather than JSON. The resolver already treats a missing `jq` a
 The consequence is that `/cleanup-issue` under a marker removes the pointers and the breadcrumb and not the work item's notes and questions, which are flat and mixed across work items. That is inherent to flat placement rather than a fault in the bypass rule, and the skill says so at its confirmation prompt: a destructive command whose scope shrank must not let a completed run read as more than it was. `work-folder-tier.sh` exists for that sentence, because a skill cannot tell the tiers apart from a resolved path and must not guess from the marker file's presence, which the session tier can outrank.
 
 **The `active-plan` pointer holds an absolute path.** It was specified as project-root-relative, which never worked in a linked worktree: the project root is the worktree while `.claude-work/` is in the main checkout, so the path resolved to a file that was not there. Dropping containment adds a second way for it to be inexpressible, since a folder outside the repository has no project-root-relative form at all. Absolute also deletes work rather than adding it, because `/note` and `/scratchpad` already return absolute paths, so both writers were converting a path they had been handed and the reader was converting it back. `last-finish-issue`, written into the same folder, was already absolute.
+
+### A marker that requires a session folder (amendment, issue 285)
+
+**The marker gets a second form, a mode.** Some repositories keep their working files in topic folders, one for each piece of work. A session with no session folder there wrote to the branch folder and nothing told it, and a path marker cannot help, because it sends every session of the worktree to one folder. A marker whose first line starts with `{` holds a mode instead of a path, and the one mode today is `{"mode": "require-override"}`: each session must set its own session folder. The leading `{` was already reserved for this in the marker's header, and an older reader treated it as a relative path and ignored it.
+
+**Writers refuse, readers do not.** `target-path.sh`, which reserves every working file, stops with T104 when the mode is in force and the session tier gives no usable folder, and it names `/set-work-folder` as the fix. The refusal comes before the sweep and the reservation, so a refused call leaves no empty file in the wrong folder. Every reader falls through to the branch tier and names the mode on stderr. A reader that cannot find a file is visible; a writer that puts a file in the wrong folder is not. A warning was rejected because it reads the current directory, and the session that started this ran at the repository root, which tells nothing about the topic.
+
+**The mode is an enum, and an unknown value fails closed.** A later mode, such as one that reads the session name, extends the set, and the earlier modes keep their meaning. A mode that a reader does not know, or a `{` line it cannot parse, refuses every write with T105, also with a session folder, because ignoring the marker is exactly the failure the mode exists to prevent. The mode form is matched without `jq`, for the reason the path form is: an absent tool must not disable a tier.
+
+**`/set-work-folder --worktree <folder>` refuses to replace a mode marker.** A mode is a rule a repository chose, often a committed one, and replacing it with a path would remove that rule with no sign. `--clear --worktree` removes it on purpose.
 
 ## Consequences
 

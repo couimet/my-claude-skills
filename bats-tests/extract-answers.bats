@@ -69,16 +69,16 @@ EOF
   _wave wave.txt
   run "$SCRIPT" wave.txt
   [ "$status" -eq 0 ]
-  [[ "$output" == *"A001: A | Always emit it"* ]]
-  [[ "$output" == *"A002: [RECOMMENDED] E | Before Held and after the last answer"* ]]
+  [[ "$output" == *"A001: A | Always emit it"* ]] || false
+  [[ "$output" == *"A002: [RECOMMENDED] E | Before Held and after the last answer"* ]] || false
 }
 
 @test "extract-answers: counts acknowledged answers and names the unanswered" {
   _wave wave.txt
   run "$SCRIPT" wave.txt
   [ "$status" -eq 0 ]
-  [[ "$output" == *"ACKNOWLEDGED: 1 of 2"* ]]
-  [[ "$output" == *"UNANSWERED: A002"* ]]
+  [[ "$output" == *"ACKNOWLEDGED: 1 of 2"* ]] || false
+  [[ "$output" == *"UNANSWERED: A002"* ]] || false
 }
 
 @test "extract-answers: omits the UNANSWERED line when every marker is cleared" {
@@ -86,8 +86,8 @@ EOF
   sed -i.bak 's/^A002: \[RECOMMENDED\] E$/A002: E/' wave.txt
   run "$SCRIPT" wave.txt
   [ "$status" -eq 0 ]
-  [[ "$output" == *"ACKNOWLEDGED: 2 of 2"* ]]
-  [[ "$output" != *"UNANSWERED:"* ]]
+  [[ "$output" == *"ACKNOWLEDGED: 2 of 2"* ]] || false
+  [[ "$output" != *"UNANSWERED:"* ]] || false
 }
 
 @test "extract-answers: the output is far smaller than the file it reads" {
@@ -101,7 +101,7 @@ EOF
   _wave wave.txt
   run "$SCRIPT" wave.txt
   [ "$status" -eq 0 ]
-  [[ "$output" != *"answers-ready"* ]]
+  [[ "$output" != *"answers-ready"* ]] || false
 }
 
 # =============================================================
@@ -130,9 +130,9 @@ A fresh session does not hold them.
 EOF
   run "$SCRIPT" wave.txt
   [ "$status" -eq 0 ]
-  [[ "$output" == *"A001: B | Second option"* ]]
-  [[ "$output" == *"I switched because the first option assumes the caller holds the questions."* ]]
-  [[ "$output" == *"A fresh session does not hold them."* ]]
+  [[ "$output" == *"A001: B | Second option"* ]] || false
+  [[ "$output" == *"I switched because the first option assumes the caller holds the questions."* ]] || false
+  [[ "$output" == *"A fresh session does not hold them."* ]] || false
 }
 
 @test "extract-answers: an indented closer is answer content, not a delimiter" {
@@ -155,8 +155,8 @@ and that line is content.
 EOF
   run "$SCRIPT" wave.txt
   [ "$status" -eq 0 ]
-  [[ "$output" == *"and that line is content."* ]]
-  [[ "$output" == *"ACKNOWLEDGED: 1 of 1"* ]]
+  [[ "$output" == *"and that line is content."* ]] || false
+  [[ "$output" == *"ACKNOWLEDGED: 1 of 1"* ]] || false
 }
 
 # =============================================================
@@ -178,16 +178,16 @@ Retired:
 EOF
   run "$SCRIPT" wave.txt
   [ "$status" -eq 0 ]
-  [[ "$output" == *"HELD: 2"* ]]
-  [[ "$output" == *"RETIRED: 1"* ]]
+  [[ "$output" == *"HELD: 2"* ]] || false
+  [[ "$output" == *"RETIRED: 1"* ]] || false
 }
 
 @test "extract-answers: reports zero held and retired when neither section exists" {
   _wave wave.txt
   run "$SCRIPT" wave.txt
   [ "$status" -eq 0 ]
-  [[ "$output" == *"HELD: 0"* ]]
-  [[ "$output" == *"RETIRED: 0"* ]]
+  [[ "$output" == *"HELD: 0"* ]] || false
+  [[ "$output" == *"RETIRED: 0"* ]] || false
 }
 
 # =============================================================
@@ -197,20 +197,20 @@ EOF
 @test "extract-answers: X001 when the argument count is wrong" {
   run "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"X001"* ]]
+  [[ "$output" == *"X001"* ]] || false
 }
 
 @test "extract-answers: X002 when the file does not exist" {
   run "$SCRIPT" "$TEST_TEMP_DIR/absent.txt"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"X002"* ]]
+  [[ "$output" == *"X002"* ]] || false
 }
 
 @test "extract-answers: X003 when the file is empty" {
   : > empty.txt
   run "$SCRIPT" empty.txt
   [ "$status" -eq 1 ]
-  [[ "$output" == *"X003"* ]]
+  [[ "$output" == *"X003"* ]] || false
 }
 
 @test "extract-answers: X004 when an answer has no closer" {
@@ -223,8 +223,8 @@ A001: A
 EOF
   run "$SCRIPT" wave.txt
   [ "$status" -eq 1 ]
-  [[ "$output" == *"X004"* ]]
-  [[ "$output" == *"A001"* ]]
+  [[ "$output" == *"X004"* ]] || false
+  [[ "$output" == *"A001"* ]] || false
 }
 
 @test "extract-answers: X004 when a second answer opens before the first closes" {
@@ -237,7 +237,7 @@ A002: B
 EOF
   run "$SCRIPT" wave.txt
   [ "$status" -eq 1 ]
-  [[ "$output" == *"X004"* ]]
+  [[ "$output" == *"X004"* ]] || false
 }
 
 @test "extract-answers: X005 when a closer has no opener" {
@@ -250,7 +250,7 @@ A001: A
 EOF
   run "$SCRIPT" wave.txt
   [ "$status" -eq 1 ]
-  [[ "$output" == *"X005"* ]]
+  [[ "$output" == *"X005"* ]] || false
 }
 
 @test "extract-answers: X006 when a closer's id does not match its opener" {
@@ -262,14 +262,14 @@ A001: A
 EOF
   run "$SCRIPT" wave.txt
   [ "$status" -eq 1 ]
-  [[ "$output" == *"X006"* ]]
+  [[ "$output" == *"X006"* ]] || false
 }
 
 @test "extract-answers: X007 when the file holds no answers" {
   printf '# Test Wave\n\nNo answers here.\n' > wave.txt
   run "$SCRIPT" wave.txt
   [ "$status" -eq 1 ]
-  [[ "$output" == *"X007"* ]]
+  [[ "$output" == *"X007"* ]] || false
 }
 
 # =============================================================
@@ -290,9 +290,9 @@ Held:
 FIXTURE
   run "$SCRIPT" wave.txt
   [ "$status" -eq 0 ]
-  [[ "$output" == *"HELD: 2"* ]]
-  [[ "$output" == *"First held question? Waits on A001."* ]]
-  [[ "$output" == *"Second held question? Waits on A001."* ]]
+  [[ "$output" == *"HELD: 2"* ]] || false
+  [[ "$output" == *"First held question? Waits on A001."* ]] || false
+  [[ "$output" == *"Second held question? Waits on A001."* ]] || false
 }
 
 @test "extract-answers: prints the text of each retired question" {
@@ -308,8 +308,8 @@ Retired:
 FIXTURE
   run "$SCRIPT" wave.txt
   [ "$status" -eq 0 ]
-  [[ "$output" == *"RETIRED: 1"* ]]
-  [[ "$output" == *"A retired question - settled elsewhere."* ]]
+  [[ "$output" == *"RETIRED: 1"* ]] || false
+  [[ "$output" == *"A retired question - settled elsewhere."* ]] || false
 }
 
 @test "extract-answers: a bullet inside an answer region is answer text, not a held entry" {
@@ -323,8 +323,8 @@ A001: A
 FIXTURE
   run "$SCRIPT" wave.txt
   [ "$status" -eq 0 ]
-  [[ "$output" == *"HELD: 0"* ]]
-  [[ "$output" == *"this bullet is part of my answer"* ]]
+  [[ "$output" == *"HELD: 0"* ]] || false
+  [[ "$output" == *"this bullet is part of my answer"* ]] || false
 }
 
 # =============================================================
@@ -342,18 +342,18 @@ Retired:
 FIXTURE
   run "$SCRIPT" wave.txt
   [ "$status" -eq 0 ]
-  [[ "$output" == *"ACKNOWLEDGED: 0 of 0"* ]]
-  [[ "$output" == *"HELD: 0"* ]]
-  [[ "$output" == *"RETIRED: 2"* ]]
-  [[ "$output" == *"First retired question? - A004 settled it."* ]]
-  [[ "$output" == *"Second retired question? - A004 settled it."* ]]
+  [[ "$output" == *"ACKNOWLEDGED: 0 of 0"* ]] || false
+  [[ "$output" == *"HELD: 0"* ]] || false
+  [[ "$output" == *"RETIRED: 2"* ]] || false
+  [[ "$output" == *"First retired question? - A004 settled it."* ]] || false
+  [[ "$output" == *"Second retired question? - A004 settled it."* ]] || false
 }
 
 @test "extract-answers: X007 when the file holds only held entries" {
   printf '# Wave\n\nHeld:\n\n- A held question? Waits on A001.\n' > wave.txt
   run "$SCRIPT" wave.txt
   [ "$status" -eq 1 ]
-  [[ "$output" == *"X007"* ]]
+  [[ "$output" == *"X007"* ]] || false
 }
 
 @test "extract-answers: the terminal-wave example in /question-format parses as written" {
@@ -367,6 +367,6 @@ FIXTURE
   [ -s wave.txt ]
   run "$SCRIPT" wave.txt
   [ "$status" -eq 0 ]
-  [[ "$output" == *"ACKNOWLEDGED: 0 of 0"* ]]
-  [[ "$output" == *"RETIRED: 2"* ]]
+  [[ "$output" == *"ACKNOWLEDGED: 0 of 0"* ]] || false
+  [[ "$output" == *"RETIRED: 2"* ]] || false
 }

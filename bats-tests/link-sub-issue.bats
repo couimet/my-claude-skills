@@ -82,25 +82,25 @@ teardown() {
 @test "missing all parameters prints error with E001" {
   run "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E001"* ]]
-  [[ "$output" == *"--owner"* ]]
-  [[ "$output" == *"--repo"* ]]
-  [[ "$output" == *"--parent"* ]]
-  [[ "$output" == *"--child"* ]]
+  [[ "$output" == *"E001"* ]] || false
+  [[ "$output" == *"--owner"* ]] || false
+  [[ "$output" == *"--repo"* ]] || false
+  [[ "$output" == *"--parent"* ]] || false
+  [[ "$output" == *"--child"* ]] || false
 }
 
 @test "missing --parent parameter prints error with E001" {
   run "$SCRIPT" --owner couimet --repo my-repo --child 10
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E001"* ]]
-  [[ "$output" == *"--parent"* ]]
+  [[ "$output" == *"E001"* ]] || false
+  [[ "$output" == *"--parent"* ]] || false
 }
 
 @test "missing --child parameter prints error with E001" {
   run "$SCRIPT" --owner couimet --repo my-repo --parent 5
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E001"* ]]
-  [[ "$output" == *"--child"* ]]
+  [[ "$output" == *"E001"* ]] || false
+  [[ "$output" == *"--child"* ]] || false
 }
 
 # --- Invalid numbers ---
@@ -108,15 +108,15 @@ teardown() {
 @test "non-numeric --parent prints error with E102" {
   run "$SCRIPT" --owner couimet --repo my-repo --parent abc --child 10
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E102"* ]]
-  [[ "$output" == *"--parent"* ]]
+  [[ "$output" == *"E102"* ]] || false
+  [[ "$output" == *"--parent"* ]] || false
 }
 
 @test "non-numeric --child prints error with E103" {
   run "$SCRIPT" --owner couimet --repo my-repo --parent 5 --child xyz
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E103"* ]]
-  [[ "$output" == *"--child"* ]]
+  [[ "$output" == *"E103"* ]] || false
+  [[ "$output" == *"--child"* ]] || false
 }
 
 # --- Unknown parameters ---
@@ -124,14 +124,14 @@ teardown() {
 @test "unknown parameter prints error with E002" {
   run "$SCRIPT" --owner couimet --repo my-repo --parent 5 --child 10 --verbose
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E002"* ]]
-  [[ "$output" == *"--verbose"* ]]
+  [[ "$output" == *"E002"* ]] || false
+  [[ "$output" == *"--verbose"* ]] || false
 }
 
 @test "positional parameter prints error with E002" {
   run "$SCRIPT" couimet
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E002"* ]]
+  [[ "$output" == *"E002"* ]] || false
 }
 
 # --- Parameter value missing ---
@@ -139,29 +139,29 @@ teardown() {
 @test "--owner without value prints error with E100" {
   run "$SCRIPT" --owner
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E100"* ]]
-  [[ "$output" == *"--owner"* ]]
+  [[ "$output" == *"E100"* ]] || false
+  [[ "$output" == *"--owner"* ]] || false
 }
 
 @test "--repo without value prints error with E101" {
   run "$SCRIPT" --owner couimet --repo
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E101"* ]]
-  [[ "$output" == *"--repo"* ]]
+  [[ "$output" == *"E101"* ]] || false
+  [[ "$output" == *"--repo"* ]] || false
 }
 
 @test "--parent without value prints error with E102" {
   run "$SCRIPT" --owner couimet --repo my-repo --parent
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E102"* ]]
-  [[ "$output" == *"--parent"* ]]
+  [[ "$output" == *"E102"* ]] || false
+  [[ "$output" == *"--parent"* ]] || false
 }
 
 @test "--child without value prints error with E103" {
   run "$SCRIPT" --owner couimet --repo my-repo --parent 5 --child
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E103"* ]]
-  [[ "$output" == *"--child"* ]]
+  [[ "$output" == *"E103"* ]] || false
+  [[ "$output" == *"--child"* ]] || false
 }
 
 # --- Help ---
@@ -169,10 +169,10 @@ teardown() {
 @test "--help prints usage and exits 0" {
   run "$SCRIPT" --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Usage:"* ]]
-  [[ "$output" == *"--owner"* ]]
-  [[ "$output" == *"--parent"* ]]
-  [[ "$output" == *"--child"* ]]
+  [[ "$output" == *"Usage:"* ]] || false
+  [[ "$output" == *"--owner"* ]] || false
+  [[ "$output" == *"--parent"* ]] || false
+  [[ "$output" == *"--child"* ]] || false
 }
 
 # --- Success paths ---
@@ -180,22 +180,22 @@ teardown() {
 @test "child missing value error prints E104 for --child-owner" {
   run "$SCRIPT" --owner couimet --repo my-repo --parent 5 --child 10 --child-owner
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E104"* ]]
-  [[ "$output" == *"--child-owner"* ]]
+  [[ "$output" == *"E104"* ]] || false
+  [[ "$output" == *"--child-owner"* ]] || false
 }
 
 @test "child missing value error prints E105 for --child-repo" {
   run "$SCRIPT" --owner couimet --repo my-repo --parent 5 --child 10 --child-repo
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E105"* ]]
-  [[ "$output" == *"--child-repo"* ]]
+  [[ "$output" == *"E105"* ]] || false
+  [[ "$output" == *"--child-repo"* ]] || false
 }
 
 @test "cross-repository child is resolved in the child's own repo" {
   run "$SCRIPT" --owner couimet --repo parent-repo --parent 5 \
                 --child-owner other-org --child-repo child-repo --child 10
   [ "$status" -eq 0 ]
-  [[ "$output" == *"linked #10 → #5"* ]]
+  [[ "$output" == *"linked #10 → #5"* ]] || false
 
   # The node-lookup payload must ask for the parent in the parent repo and
   # the child in the child repo — not resolve both against the parent's.
@@ -213,7 +213,7 @@ teardown() {
 @test "child repo defaults to the parent repo when child flags are omitted" {
   run "$SCRIPT" --owner couimet --repo my-repo --parent 5 --child 10
   [ "$status" -eq 0 ]
-  [[ "$output" == *"linked #10 → #5"* ]]
+  [[ "$output" == *"linked #10 → #5"* ]] || false
 
   local child_owner child_repo
   child_owner="$(jq -r '.variables.childOwner // empty' "$MOCK_DIR/call-1.json")"
@@ -226,14 +226,14 @@ teardown() {
   export GH_EMPTY_CHILD_ID=true
   run "$SCRIPT" --owner couimet --repo my-repo --parent 5 --child 10
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E201"* ]]
-  [[ "$output" == *"child issue #10"* ]]
+  [[ "$output" == *"E201"* ]] || false
+  [[ "$output" == *"child issue #10"* ]] || false
 }
 
 @test "GraphQL mutation error reports E202" {
   export GH_GRAPHQL_ERRORS=true
   run "$SCRIPT" --owner couimet --repo my-repo --parent 5 --child 10
   [ "$status" -eq 1 ]
-  [[ "$output" == *"E202"* ]]
-  [[ "$output" == *"already a sub-issue"* ]]
+  [[ "$output" == *"E202"* ]] || false
+  [[ "$output" == *"already a sub-issue"* ]] || false
 }

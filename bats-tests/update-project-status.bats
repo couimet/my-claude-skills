@@ -105,7 +105,7 @@ teardown() {
   run "$SCRIPT" owner repo 123
   [ "$status" -eq 0 ]
   # Should print summary line
-  [[ "$output" == *'moved Status from "Todo" to "In Progress"'* ]]
+  [[ "$output" == *'moved Status from "Todo" to "In Progress"'* ]] || false
   # Mutation and comment should have fired
   grep -q "updateProjectV2ItemFieldValue" "$GH_CALLS"
   grep -q "issue comment" "$GH_CALLS"
@@ -120,8 +120,8 @@ teardown() {
   run "$SCRIPT" owner repo 123
   [ "$status" -eq 0 ]
   # Both projects should appear in output
-  [[ "$output" == *"Roadmap"* ]]
-  [[ "$output" == *"Sprint Board"* ]]
+  [[ "$output" == *"Roadmap"* ]] || false
+  [[ "$output" == *"Sprint Board"* ]] || false
   # Two mutations
   mutation_count=$(grep -c "updateProjectV2ItemFieldValue" "$GH_CALLS" || true)
   [ "$mutation_count" -eq 2 ]
@@ -197,5 +197,5 @@ teardown() {
   [ "$status" -eq 0 ]
   # Mutation should still have fired
   grep -q "updateProjectV2ItemFieldValue" "$GH_CALLS"
-  [[ "$output" == *'moved Status'* ]]
+  [[ "$output" == *'moved Status'* ]] || false
 }
