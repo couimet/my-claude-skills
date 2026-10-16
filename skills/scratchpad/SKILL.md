@@ -1,6 +1,6 @@
 ---
 name: scratchpad
-version: 2026.10.13.1@5bbb5f3
+version: 2026.10.16@0c25292
 description: "Create a working document in .claude-work/scratchpads/: implementation plans, PR descriptions, analysis notes, architecture decisions, issue drafts."
 argument-hint: <description>
 allowed-tools: Read, Write, Glob, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/question/extract-answers.sh *), Bash(*/skills/prose-style/check-prose.sh *)
