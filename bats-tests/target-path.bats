@@ -637,3 +637,110 @@ _stale() {
   [ ! -e "$TEST_TEMP_DIR/.claude-work-old/.gitignore" ]
   [ ! -e "$topic/.gitignore" ]
 }
+
+# --- --folder: write for a folder that is not the folder of this session ---
+# A relay writes its note in the folder of another session. Without the
+# option, the caller copies the name format, and a copy drifts from this one.
+
+@test "--folder: the file goes to <folder>/<type>, not to the folder of this session" {
+  local other="$TEST_TEMP_DIR/topics/other"
+  mkdir -p "$other"
+  run_target_path --type notes --description "relay note" --folder "$other"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$other/notes/$STAMP-001-relay-note.txt" ]
+  [ -f "$output" ]
+  [ ! -s "$output" ]
+  [ ! -e "$TEST_TEMP_DIR/.claude-work" ]
+}
+
+@test "--folder: a work-item branch does not change the folder" {
+  local other="$TEST_TEMP_DIR/topics/other"
+  mkdir -p "$other"
+  git checkout -q -b issues/42
+  run_target_path --type questions --description "q" --folder "$other"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$other/questions/$STAMP-001-q.txt" ]
+  [ ! -e "$TEST_TEMP_DIR/.claude-work/issues/42" ]
+}
+
+@test "--folder: a trailing slash does not double in the path" {
+  local other="$TEST_TEMP_DIR/topics/other"
+  mkdir -p "$other"
+  run_target_path --type notes --description "slash" --folder "$other//"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$other/notes/$STAMP-001-slash.txt" ]
+}
+
+@test "--folder: the ordinal advances inside the given folder" {
+  local other="$TEST_TEMP_DIR/topics/other"
+  mkdir -p "$other/notes"
+  : > "$other/notes/$STAMP-001-first.txt"
+  run_target_path --type notes --description "second" --folder "$other"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$other/notes/$STAMP-002-second.txt" ]
+}
+
+@test "--folder: the sweep runs in the given folder" {
+  local other="$TEST_TEMP_DIR/topics/other"
+  local stale="$other/notes/20200101-000000-001-old.txt"
+  mkdir -p "$other/notes"
+  : > "$stale"
+  touch -t 202001010000 "$stale"
+  run_target_path --type notes --description "new" --folder "$other"
+  [ "$status" -eq 0 ]
+  [ ! -e "$stale" ]
+}
+
+@test "--folder: a relative path errors with T106 and writes nothing" {
+  mkdir -p "$TEST_TEMP_DIR/topics/other"
+  run_target_path --type notes --description "x" --folder "topics/other"
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"T106"* ]] || false
+  [[ "$stderr" == *"no file was written"* ]] || false
+  [ ! -e "$TEST_TEMP_DIR/topics/other/notes" ]
+}
+
+@test "--folder: a missing directory errors with T106 and is not created" {
+  run_target_path --type notes --description "x" --folder "$TEST_TEMP_DIR/topics/typo"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"T106"* ]] || false
+  [ ! -e "$TEST_TEMP_DIR/topics/typo" ]
+}
+
+@test "--folder: a file in place of a directory errors with T106" {
+  : > "$TEST_TEMP_DIR/plain-file"
+  run_target_path --type notes --description "x" --folder "$TEST_TEMP_DIR/plain-file"
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"T106"* ]] || false
+  [ ! -e "$TEST_TEMP_DIR/.claude-work" ]
+}
+
+@test "--folder with no value errors with T001" {
+  run_target_path --type notes --description "x" --folder
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"T001"* ]] || false
+  [ ! -e "$TEST_TEMP_DIR/.claude-work" ]
+}
+
+@test "--folder: require-override lets a named folder write with no session folder" {
+  local other="$TEST_TEMP_DIR/topics/other"
+  mkdir -p "$other"
+  printf '{"mode": "require-override"}\n' > "$TEST_TEMP_DIR/CLAUDE_WORK_FOLDER"
+  run --separate-stderr env -u CLAUDE_CODE_SESSION_ID PATH="$STUB_BIN:$PATH" \
+    "$SCRIPT" --type notes --description "gated" --folder "$other"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$other/notes/$STAMP-001-gated.txt" ]
+}
+
+@test "--folder: an unknown marker mode still refuses with T105 and writes nothing" {
+  local other="$TEST_TEMP_DIR/topics/other"
+  mkdir -p "$other"
+  printf '{"mode": "read-session-name"}\n' > "$TEST_TEMP_DIR/CLAUDE_WORK_FOLDER"
+  run_target_path --type notes --description "x" --folder "$other"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"T105"* ]] || false
+  [ ! -e "$other/notes" ]
+}

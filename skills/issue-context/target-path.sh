@@ -5,12 +5,18 @@
 # timestamp stamping into one deterministic call.
 #
 # Usage: target-path.sh --type <type> --description <text> [--ext <ext>]
+#                       [--folder <absolute directory>]
 #
 #   --type         "scratchpads", "questions", "commit-msgs", or "notes" (required)
 #   --description  Free-form text for the slug (required; will be lowercased +
 #                  hyphenated)
 #   --ext          File extension without the dot. Alphanumeric only (e.g.
 #                  txt, md, json). Default: txt
+#   --folder       An existing absolute directory to write to, in place of the
+#                  folder of this session. A caller that writes a file for
+#                  another folder, such as a relay to the folder of another
+#                  session, names that folder here. The script never creates
+#                  the folder, so a typo fails and writes nothing.
 #
 # Output (single line on stdout):
 #   The full path of the next working file for the current branch context,
@@ -21,6 +27,9 @@
 #     .claude-work[/<segment>]/<identifier>/<type>/YYYYMMDD-HHMMSS-NNN-<slug>.<ext>
 #   Otherwise:
 #     .claude-work/<type>/YYYYMMDD-HHMMSS-NNN-<slug>.<ext>
+#
+#   With --folder:
+#     <folder>/<type>/YYYYMMDD-HHMMSS-NNN-<slug>.<ext>
 #
 #   NNN orders the files created within one second, so a byte-order sort of the
 #   directory is creation order. The path is reserved as an empty file before
@@ -47,6 +56,11 @@
 #   is set (fail closed). Both refusals come before the sweep and the
 #   reservation, so a refused call leaves no file and removes none.
 #
+#   --folder names the folder as deliberately as a session folder does, so
+#   require-override lets it write. An unknown mode still refuses it with
+#   T105. A folder that is not absolute, or is not an existing directory,
+#   exits with T106 before the sweep and the reservation.
+#
 # Exit codes:
 #   0  — success
 #   1  — error (see stderr)
@@ -55,11 +69,13 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: target-path.sh --type <scratchpads|questions|commit-msgs|notes> --description <text> [--ext <ext>]
+Usage: target-path.sh --type <scratchpads|questions|commit-msgs|notes> --description <text> [--ext <ext>] [--folder <dir>]
 
   --type         File category (required)
   --description  Free-form text for the slug (required)
   --ext          File extension without the dot. Default: txt
+  --folder       Existing absolute directory to write to, in place of the
+                 folder of this session
   --help         Show this help message
 EOF
 }
@@ -73,11 +89,14 @@ readonly ERR_INVALID_EXT="T102"
 readonly ERR_ORDINAL_EXHAUSTED="T103"
 readonly ERR_OVERRIDE_REQUIRED="T104"
 readonly ERR_MARKER_MODE="T105"
+readonly ERR_INVALID_FOLDER="T106"
 
 # --- Defaults ---
 type_arg=""
 description=""
 ext="txt"
+folder_arg=""
+folder_given=0
 
 # --- Parse arguments ---
 while [ $# -gt 0 ]; do
@@ -95,6 +114,12 @@ while [ $# -gt 0 ]; do
     --ext)
       [ $# -ge 2 ] || { echo "target-path $ERR_MISSING_ARG error: --ext requires a value" >&2; exit 1; }
       ext="$2"
+      shift 2
+      ;;
+    --folder)
+      [ $# -ge 2 ] || { echo "target-path $ERR_MISSING_ARG error: --folder requires a value" >&2; exit 1; }
+      folder_arg="$2"
+      folder_given=1
       shift 2
       ;;
     --help)
@@ -137,6 +162,27 @@ if ! [[ "$ext" =~ ^[A-Za-z0-9]+$ ]]; then
   exit 1
 fi
 
+# --- Validate folder ---
+# Absolute and existing, with no other change: the caller named this folder,
+# and a folder created here from a typo would hold a file nobody reads.
+if [ "$folder_given" -eq 1 ]; then
+  case "$folder_arg" in
+    /*) ;; # kcov-exclude-line
+    *)
+      echo "target-path $ERR_INVALID_FOLDER error: --folder '$folder_arg' is not an absolute path; no file was written" >&2
+      exit 1
+      ;;
+  esac
+  if [ ! -d "$folder_arg" ]; then
+    echo "target-path $ERR_INVALID_FOLDER error: --folder '$folder_arg' is not an existing directory; no file was written" >&2
+    exit 1
+  fi
+  # One trailing slash at most would double in the emitted path.
+  while [ "${folder_arg%/}" != "$folder_arg" ] && [ "$folder_arg" != "/" ]; do
+    folder_arg="${folder_arg%/}"
+  done
+fi
+
 # --- Resolve script directory early (needed for sibling scripts) ---
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -160,10 +206,14 @@ source "$script_dir/work-folder.sh"
 # branch matching no branchPatterns entry (flat placement). It errors only
 # when the .claude-work root cannot be resolved, which was the branch the
 # old claude-work-root.sh call guarded.
-folder_root="$("${script_dir}/get-issue-folder-path.sh")" || {
-  echo "target-path $ERR_BRANCH_DETECT error: claude-work-root.sh failed" >&2
-  exit 1
-}
+if [ "$folder_given" -eq 1 ]; then
+  folder_root="$folder_arg"
+else
+  folder_root="$("${script_dir}/get-issue-folder-path.sh")" || {
+    echo "target-path $ERR_BRANCH_DETECT error: claude-work-root.sh failed" >&2
+    exit 1
+  }
+fi
 
 # --- Refuse a write that the worktree marker forbids ---
 # After the resolution, so its stderr report (which names the mode) comes
@@ -172,7 +222,10 @@ folder_root="$("${script_dir}/get-issue-folder-path.sh")" || {
 # branch tier for its readers, and this is the script every writer calls.
 gate_reason=""
 gate_mode=""
-if ! _issue_context_write_gate gate_reason gate_mode; then
+# --folder names the folder as a session folder does, so the require-override
+# refusal does not apply to it. An unknown mode still refuses (fail closed).
+if ! _issue_context_write_gate gate_reason gate_mode \
+  && ! { [ "$folder_given" -eq 1 ] && [ "$gate_reason" = "required" ]; }; then
   marker_file="$(_issue_context_marker_path 2>/dev/null || true)"
   case "$gate_reason" in
     required)

@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.10.16
+
+### Changed
+
+- `target-path.sh` takes `--folder <absolute directory>` to reserve a working file in another existing folder, such as the folder of another session that receives a handoff note. The file gets the same name format, order, and reservation as a file in the folder of the current session. The script never creates the folder, so a wrong path stops with T106 and writes nothing. ([issues/291](https://github.com/couimet/my-claude-skills/issues/291))
+
 ## 2026.10.13.1
 
 ### Added
