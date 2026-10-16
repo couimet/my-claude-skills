@@ -13,7 +13,7 @@ All deterministic logic for "where should this file go?" lives in the scripts. A
 ## Script: target-path.sh
 
 ```bash
-~/.claude/skills/issue-context/target-path.sh --type <scratchpads|questions|commit-msgs|notes> --description "<text>" [--ext txt]
+~/.claude/skills/issue-context/target-path.sh --type <scratchpads|questions|commit-msgs|notes> --description "<text>" [--ext txt] [--folder <dir>]
 ```
 
 The script resolves the work-item folder, slugifies the description, names the file, creates the target directory, and prints one path on stdout.
@@ -28,6 +28,8 @@ The script resolves the work-item folder, slugifies the description, names the f
 You never release a path you decide not to use. The script sweeps an abandoned reservation on a later call.
 
 Placement resolves through three tiers, in order: the current session's folder override, this worktree's `CLAUDE_WORK_FOLDER` marker, then the branch context. A caller writes a working file the same way in every case, and the override and the marker are invisible to it. ADR 003 records why the tiers are ordered that way.
+
+`--folder` writes to another existing absolute folder.
 
 A marker can hold a mode instead: under `{"mode": "require-override"}`, a write with no session folder exits with T104 and reserves no file. The error names the fix: set a session folder. Tell the user. Do not write the file elsewhere by hand.
 
