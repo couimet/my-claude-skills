@@ -1,6 +1,6 @@
 ---
 name: launch-agent
-version: 2026.10.16@0c25292
+version: 2026.10.18@29841c0
 description: Start work on a topic in one call, in this session or with --bg in a background agent. Creates the topic folder, saves the launch prompt in it, and names the work after the folder.
 argument-hint: '[--bg] [--take-over] <folder> <task prompt>'
 allowed-tools: Bash(*/skills/launch-agent/launch-agent.sh *)
