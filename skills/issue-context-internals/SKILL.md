@@ -3,7 +3,7 @@ name: issue-context-internals
 version: 2026.10.16@0c25292
 user-invocable: false
 description: Contract for the issue-context scripts beyond path resolution - identifier resolution, branch matching, work-item folder resolution, branch-name rendering, the work-folder tier, and the settings file. Referenced by name from the skills that need one of them.
-allowed-tools: Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/render-branch-template.sh *), Bash(*/skills/issue-context/set-work-folder.sh *), Bash(*/skills/issue-context/work-folder-tier.sh *), Bash(*/skills/issue-context/tier-folders.sh *)
+allowed-tools: Bash(*/skills/issue-context/resolve-issue-id.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/render-branch-template.sh *), Bash(*/skills/issue-context/set-work-folder.sh *), Bash(*/skills/issue-context/work-folder-tier.sh *), Bash(*/skills/issue-context/tier-folders.sh *), Bash(*/skills/issue-context/folder-sessions.sh *)
 ---
 
 # Issue Context Internals
@@ -84,6 +84,10 @@ Every form says on stderr when the change leaves working files behind: the count
 A session keeps exactly one override file; a second write replaces the first, even under a different label. Every refusal falls back to the next tier and says so on stderr: a folder that is gone, a non-absolute path, more than one file matching the session, an unreadable or malformed file, an unknown version, or a missing `jq`. A marker is refused on the same terms, plus when it is empty or unreadable.
 
 The marker has two forms, read from its first line. A path names the folder. A line that starts with `{` holds a mode, parsed without `jq`: `{"mode": "require-override"}` means that each session must set a session folder before it writes. Under that mode `target-path.sh` exits with T104 when the session tier gives no usable folder, and with T105 for an unknown mode or a `{` line that does not parse, also when a session folder is set. Neither refusal sweeps or reserves a file. `work-folder-tier.sh` prints `branch` and `tier-folders.sh` prints no `worktree` line under a mode marker.
+
+## Script: folder-sessions.sh
+
+`folder-sessions.sh` lists the sessions that claim a folder. No skill runs it directly, and its header is the contract.
 
 ## Settings: issue-settings.sh
 

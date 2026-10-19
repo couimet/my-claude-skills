@@ -78,21 +78,21 @@ _skill() {
 
 @test "token-budget: an allowlisted skill passes --check" {
   _skill big 9000
-  printf 'big\n' > "$SKILLS/.budget-allowlist"
+  printf 'big 9100\n' > "$SKILLS/.budget-allowlist"
   run "$BUDGET" --check --skills-dir "$SKILLS"
   [ "$status" -eq 0 ]
 }
 
 @test "token-budget: the allowlist ignores comments and blank lines" {
   _skill big 9000
-  printf '# a comment\n\nbig\n' > "$SKILLS/.budget-allowlist"
+  printf '# a comment\n\nbig 9100\n' > "$SKILLS/.budget-allowlist"
   run "$BUDGET" --check --skills-dir "$SKILLS"
   [ "$status" -eq 0 ]
 }
 
 @test "token-budget: an allowlist entry for another skill does not cover this one" {
   _skill big 9000
-  printf 'someone-else\n' > "$SKILLS/.budget-allowlist"
+  printf 'someone-else 9100\n' > "$SKILLS/.budget-allowlist"
   run "$BUDGET" --check --skills-dir "$SKILLS"
   [ "$status" -eq 1 ]
 }
@@ -100,9 +100,71 @@ _skill() {
 # A partial name must not match. `grep -qxF` rather than `grep -q`.
 @test "token-budget: an allowlist entry matches the whole name only" {
   _skill big 9000
-  printf 'bigger\n' > "$SKILLS/.budget-allowlist"
+  printf 'bigger 9100\n' > "$SKILLS/.budget-allowlist"
   run "$BUDGET" --check --skills-dir "$SKILLS"
   [ "$status" -eq 1 ]
+}
+
+# =============================================================
+# The recorded size is a ratchet: a listed skill may shrink, not grow
+# =============================================================
+
+# _size <name> — print the byte size of a test skill, as the script counts it.
+_size() {
+  wc -c < "$SKILLS/$1/SKILL.md" | tr -d ' '
+}
+
+@test "token-budget: a listed skill at its recorded size passes --check" {
+  _skill big 9000
+  printf 'big %s\n' "$(_size big)" > "$SKILLS/.budget-allowlist"
+  run "$BUDGET" --check --skills-dir "$SKILLS"
+  [ "$status" -eq 0 ]
+}
+
+@test "token-budget: a listed skill under its recorded size passes --check" {
+  _skill big 9000
+  printf 'big %s\n' "$(($(_size big) + 500))" > "$SKILLS/.budget-allowlist"
+  run "$BUDGET" --check --skills-dir "$SKILLS"
+  [ "$status" -eq 0 ]
+}
+
+@test "token-budget: a listed skill one byte past its recorded size fails --check" {
+  _skill big 9000
+  local recorded=$(($(_size big) - 1))
+  printf 'big %s\n' "$recorded" > "$SKILLS/.budget-allowlist"
+  run --separate-stderr "$BUDGET" --check --skills-dir "$SKILLS"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"big is $(_size big) bytes, past the $recorded bytes"* ]] || false
+}
+
+@test "token-budget: a listed skill with no recorded size fails --check and names the line to write" {
+  _skill big 9000
+  printf 'big\n' > "$SKILLS/.budget-allowlist"
+  run --separate-stderr "$BUDGET" --check --skills-dir "$SKILLS"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"no recorded size; write its line as 'big $(_size big)'"* ]] || false
+}
+
+@test "token-budget: a recorded size that is not a number fails --check" {
+  _skill big 9000
+  printf 'big lots\n' > "$SKILLS/.budget-allowlist"
+  run "$BUDGET" --check --skills-dir "$SKILLS"
+  [ "$status" -eq 1 ]
+}
+
+@test "token-budget: a listed skill under its cap passes whatever its line records" {
+  _skill small 100
+  printf 'small 10\n' > "$SKILLS/.budget-allowlist"
+  run "$BUDGET" --check --skills-dir "$SKILLS"
+  [ "$status" -eq 0 ]
+}
+
+@test "token-budget: report mode marks a listed skill that grew as GREW" {
+  _skill big 9000
+  printf 'big 9001\n' > "$SKILLS/.budget-allowlist"
+  run "$BUDGET" --skills-dir "$SKILLS"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"GREW"* ]] || false
 }
 
 # =============================================================

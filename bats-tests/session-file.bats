@@ -38,10 +38,25 @@ READ='
   printf "%s|%s|%s" "$rc" "$folder" "$reason"
 '
 
+# JOB_DIR, when set, is the CLAUDE_JOB_DIR of the session: a background
+# session. Unset, the session is interactive, whatever the developer's shell
+# holds.
 read_session() {
-  run env MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="${1-$SESSION_ID}" \
+  run env -u CLAUDE_JOB_DIR ${JOB_DIR:+CLAUDE_JOB_DIR="$JOB_DIR"} \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="${1-$SESSION_ID}" \
     bash -c "$READ" _ "$SETTINGS" "$SCRIPT"
 }
+
+# job_state <body> — write the job state of a background session and point
+# JOB_DIR at it.
+job_state() {
+  JOB_DIR="$TEST_TEMP_DIR/job"
+  mkdir -p "$JOB_DIR"
+  printf '%s' "$1" > "$JOB_DIR/state.json"
+}
+
+# The id a /clear gives a session; SESSION_ID stays the first id of its job.
+CLEARED_ID="5f0c8a11-7d2e-4b3a-9c41-0e6f2b7d8a90"
 
 # Write a session file with the given basename and body.
 write_file() {
@@ -287,4 +302,63 @@ EOF
     _ "$SETTINGS" "$SCRIPT"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
+}
+
+# ============================================================================
+# After /clear: the first id of the job (issue 292)
+# ============================================================================
+
+@test "a background session after /clear resolves the folder of its first id" {
+  write_file "${SESSION_ID}--my-current-work.json" "$(valid_doc /work/topic)"
+  job_state '{"sessionId":"'"$SESSION_ID"'","resumeSessionId":"'"$CLEARED_ID"'"}'
+  read_session "$CLEARED_ID"
+  [ "$output" = "0|/work/topic|" ]
+}
+
+@test "after /clear, a file under the live id wins over the file of the first id" {
+  write_file "${SESSION_ID}--my-current-work.json" "$(valid_doc /work/old)"
+  write_file "${CLEARED_ID}.json" "$(valid_doc /work/new)"
+  job_state '{"sessionId":"'"$SESSION_ID"'"}'
+  read_session "$CLEARED_ID"
+  [ "$output" = "0|/work/new|" ]
+}
+
+@test "a background session with no file under either id still resolves nothing, silently" {
+  mkdir -p "$SESSIONS_DIR"
+  job_state '{"sessionId":"'"$SESSION_ID"'"}'
+  read_session "$CLEARED_ID"
+  [ "$output" = "1||none" ]
+}
+
+@test "an interactive session after /clear has no job state, so it resolves nothing" {
+  write_file "${SESSION_ID}.json" "$(valid_doc /work/topic)"
+  read_session "$CLEARED_ID"
+  [ "$output" = "1||none" ]
+}
+
+@test "a job state with no sessionId, or that is not JSON, gives no fallback" {
+  write_file "${SESSION_ID}.json" "$(valid_doc /work/topic)"
+  job_state '{"name":"x"}'
+  read_session "$CLEARED_ID"
+  [ "$output" = "1||none" ]
+  job_state '{"sessionId":'
+  read_session "$CLEARED_ID"
+  [ "$output" = "1||none" ]
+}
+
+@test "a first id that could not be a filename gives no fallback" {
+  # Without the guard, ../settings names the settings file beside the
+  # sessions directory, and the reader reports it as malformed.
+  mkdir -p "$SESSIONS_DIR"
+  job_state '{"sessionId":"../settings"}'
+  read_session "$CLEARED_ID"
+  [ "$output" = "1||none" ]
+}
+
+@test "two files of the first id are still a duplicate after /clear" {
+  write_file "${SESSION_ID}.json" "$(valid_doc /work/a)"
+  write_file "${SESSION_ID}--b.json" "$(valid_doc /work/b)"
+  job_state '{"sessionId":"'"$SESSION_ID"'"}'
+  read_session "$CLEARED_ID"
+  [ "$output" = "1||duplicate" ]
 }

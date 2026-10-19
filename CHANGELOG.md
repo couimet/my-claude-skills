@@ -10,6 +10,26 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.10.18
+
+### Added
+
+- A Claude Code hook keeps the work folder of a session after `/clear`, also for an interactive session, and tells a resumed session when another session holds its folder. The plugin installs it. `install.sh` asks before it adds it to `~/.claude/settings.json`, keeps a backup, and takes `--no-hooks` and `--uninstall-hooks`. It adds no entry whose script cannot run, and it refuses to run from a linked git worktree. The README gives the entry for a user of `npx skills`. ([issues/296](https://github.com/couimet/my-claude-skills/issues/296))
+
+- `folder-sessions.sh` in issue-context lists the sessions that claim a work folder, with a state for each one: `running`, `retired` (listed with no process), or `ended`. It finds a session after a `/clear` through its job id. `/resume-agent`, `/launch-agent`, and `/set-work-folder` use it, and a skill in another repository can call it instead of its own liveness check. ([issues/295](https://github.com/couimet/my-claude-skills/issues/295))
+
+### Changed
+
+- `/set-work-folder` and `/launch-agent` refuse a folder that another running or retired session holds, and name the `/resume-agent` command for that session. `--take-over` claims the folder anyway, removes the session file of the other session, and gives its `claude stop` command. `/launch-agent --bg` also refuses the folder of the session that runs it. ([issues/295](https://github.com/couimet/my-claude-skills/issues/295))
+- `/resume-agent` restarts an ended session in its launch directory, so a Bash `cd` or a `/clear` in the session no longer moves the restart to a subfolder. It restarts nothing for a retired session and gives the `claude attach` command, which wakes it with no copy. After a restart it prints a `Rename:` line, names each other job record with the same name and its `claude rm` command, and leaves out the `Open:` line when the agent view could open the wrong record. ([issues/295](https://github.com/couimet/my-claude-skills/issues/295))
+- `/launch-agent` takes each flag before the folder: `/launch-agent [--bg] [--take-over] <folder> <prompt>`, the same order as `/set-work-folder --take-over <folder>`. The old order, `<folder> --bg`, stops with an error that gives the new form, and a word after the folder is always prompt text. ([issues/295](https://github.com/couimet/my-claude-skills/issues/295))
+
+### Fixed
+
+- A background session keeps its work folder after a `/clear`, so a note written after the `/clear` goes to the same folder as before. ([issues/292](https://github.com/couimet/my-claude-skills/issues/292))
+- `/resume-agent` finds a running session after a `/clear` and no longer starts a copy of it. ([issues/295](https://github.com/couimet/my-claude-skills/issues/295))
+- `/resume-agent` skips a transcript line that is not JSON when it reads the start directory of a session. ([issues/294](https://github.com/couimet/my-claude-skills/issues/294))
+
 ## 2026.10.16
 
 ### Changed

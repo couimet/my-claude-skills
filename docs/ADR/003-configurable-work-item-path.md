@@ -6,6 +6,7 @@
 - **Amended:** 2026-09-08 by <https://github.com/couimet/my-claude-skills/issues/262> (identifier case)
 - **Amended:** 2026-09-14 by <https://github.com/couimet/my-claude-skills/issues/267> (session folder override)
 - **Amended:** 2026-10-13 by <https://github.com/couimet/my-claude-skills/issues/285> (required session folder)
+- **Amended:** 2026-10-18 by [ADR 006](./006-claude-code-hooks.md) (session identity after `/clear`, one session for each folder, take-over)
 
 ## Context
 
@@ -55,15 +56,23 @@ The override is one JSON file per session, under a `sessions/` directory beside 
 
 **Identity is the session, never the process.** A conversation's process is replaced underneath it: moving a session to a background spare gives it a different `CLAUDE_PID` and an environment the terminal never set, while `CLAUDE_CODE_SESSION_ID` survives the swap. Routing by environment variable would therefore send one conversation to two places, silently, with nothing in the output to explain it. Seeding the file from a variable fails for the same reason, and buys nothing: the writer has to run either way. This is recorded because it is an obvious idea that will be proposed again.
 
+> **Amended by [ADR 006](./006-claude-code-hooks.md).** `CLAUDE_CODE_SESSION_ID` does not survive a `/clear`: the session gets a new id, and its file keeps the old name. A background session is identified by the first session id of its job (`$CLAUDE_JOB_DIR/state.json`), and the reader falls back to it. A file written in a background session records that first id as `job_session_id`, so a file written after a `/clear` still links to its job. Across a `/clear`, the Claude Code hook carries the folder in a handoff keyed by `CLAUDE_PID`. That is the one place where the process identifies a session, because the probes showed that both hook calls of a `/clear` run in one process.
+
 **Naming a work item bypasses the override.** A `--id` call resolves the work item named, not the session's folder. The callers that pass `--id` are the ones that delete a directory or read a pointer out of it, and an ambient session setting must not retarget those.
 
 **Every refusal falls back rather than failing.** A folder that is gone, an unreadable or malformed file, an unknown `version`, two files matching one session, or a missing `jq` all fall back to the next tier. Refusing to resolve a path would block an unrelated call for an unrelated reason. Each refusal is reported on stderr, because an override silently ignored is indistinguishable from never having set one.
+
+> **Amended by [ADR 006](./006-claude-code-hooks.md).** This rule still governs the reader. The writer now has one refusal of its own: `set-work-folder.sh` and `launch-agent.sh` refuse a folder that another running or retired session holds, and `--take-over` is the explicit way past it. When that check cannot run, the claim goes on with a warning, for the reason this section gives.
 
 That reporting requirement is what put the script's stdout contract in writing: stdout is exactly one line and it is a path. Callers capture it with command substitution and create the directory it names, so a message on stdout becomes a directory named after the message.
 
 **The override is session-wide.** Subagents share their parent's session id, so one agent setting a folder changes it for its parent and its siblings. The file records which agent wrote it, best-effort, since Claude Code exposes no stable subagent identifier.
 
+**A change that hides working files says so, and moves nothing.** Each reader looks only in the folder that wins, so the files under the previous folder stop being found when the setting changes. `set-work-folder.sh` counts them and names their folder, and `/answers-ready` names a hidden questions folder when it finds no questions where it looks. The path helper also says on stderr when a `--id` call bypasses an override, so the difference is never silent.
+
 **Nothing prunes old session files.** Each is a small document and the directory grows by one per session. Pruning at write time would tidy a directory already in use; pruning at read time would give a read a write side effect, which is the objection that ruled out other designs here. A slow leak beats a deletion path that could remove a live session's file.
+
+> **Amended by [ADR 006](./006-claude-code-hooks.md).** Still no pruning. A take-over is the one deletion: `--take-over`, which a person asks for, removes the session files of the session that held the folder.
 
 ### Per-worktree override, and no containment (amendment, issue 267)
 

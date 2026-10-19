@@ -32,20 +32,21 @@ The folder is an absolute path or a slug. A slug resolves as in `/launch-agent`:
 ~/.claude/skills/resume-agent/resume-agent.sh "<folder>"
 ```
 
-The script finds the session of the folder in the session files that `/set-work-folder` writes, and it skips the file of this session. When more than one session used the folder, the newest one wins, and stderr names the others. Then the script reads `claude agents --json`:
+The script finds the sessions of the folder, and leaves out this session. When more than one session used the folder, the newest one wins, and stderr names the others. The state decides the action:
 
-- **Listed:** the session runs. The script restarts nothing, because a resume of a running session starts a copy.
-- **Not listed:** the session ended. The script runs `claude --bg --resume <session id>` with no prompt and no flag, so the session wakes idle under the name it was saved with. A flag such as `--name` makes Claude Code start a copy under a new id, which is why the script passes none. The restart runs in the start directory of the session, the first `cwd` of its transcript, because the session reads the project settings and `CLAUDE.md` from the directory it starts in. With no such directory, it runs in the git top-level of the folder, or in the folder when it is in no repository, as in `/launch-agent`. Then the script checks the `cwd` that the list reports for the session.
+- **Running:** the script restarts nothing, because a resume of a running session starts a copy.
+- **Retired:** the job is listed with no process. Only `claude attach` wakes it, in a terminal. The script restarts nothing and prints `Status: retired`.
+- **Ended:** the script runs `claude --bg --resume` on the first session id of the job, with no prompt and no flag, so the session wakes idle under its saved name, in one job record. A flag such as `--name` starts a copy. The script picks the start directory and checks it. R007 reports a mismatch.
 
 Right after a restart, the list shows the session under its short id until the session loads its name. Until then, a search in the agent view and a send by name cannot find the session. So the script reads the list again for up to 15 seconds, and the `Name:` line gives only a name that the list shows. When the name does not load in that time, the script prints `Name: not loaded yet`, and stderr gives the name from the restart output when it has one.
 
 ## Step 2: Report
 
-Give the user the lines the script printed, in order: `Folder:`, `Session:`, `Id:`, `Name:`, `Status:`, `State:`, `Action:`, `Pid:`, `Address:` (only when the socket exists), `Attach:`, `Open:` (only when the name loaded), and `Note:`. Give the stderr lines too, when the script prints them: the other sessions of the folder, a name that is not the folder name, a name from the restart that did not load in time, another live session with the same name and its `claude stop` command, a missing socket, a start directory that the transcript does not give, a running session in another directory and its `/cd` fix, and a `cwd` that the list does not give.
+Give the user every line the script printed, on stdout and on stderr, in order.
 
-Tell the user how to open the session: with the `Attach:` command, or, when an `Open:` line is there, in the agent view: press `Ctrl+F`, type the name, and press Enter. Tell the user not to run `claude --bg --resume` for the session: it runs, and a resume starts a copy.
+Tell the user how to open the session: with the `Attach:` command, or in the agent view as the `Open:` line says. Give the `Rename:` line as it is: it names the restarted session. Tell the user not to run `claude --bg --resume` for the session, because it starts a copy. Give a `claude rm` line to the user, and do not run it: it removes a job record and its worktree, and keeps the transcript.
 
-An error names its code. R001 is a usage error. R002 means that the folder does not resolve or does not exist. R003 means that no other session wrote to the folder. R004 means that `claude agents --json` failed, so the script restarted nothing. R005 means that the restart failed, or that it started a copy: give the user the output the script printed, which names the copy to stop. R006 means that the restart ran, but the list read after it failed, so the script does not know whether the session runs. Do not run `claude --bg --resume` for the session, because a resume of a running session starts a copy. Run the skill again: it restarts nothing when the list shows the session. R007 means that the session restarted in another directory than the one the script chose, so the project settings do not apply to it. The session runs: give the user the error, which says how to stop the session or move it with `/cd`.
+An error names its code. R005 means that the restart failed, or that it started a copy: give the user the output the script printed, which names the copy to stop. R006 means that the restart ran, but the list read after it failed, so the script does not know whether the session runs. Do not run `claude --bg --resume` for the session, because a resume of a running session starts a copy. Run the skill again: it restarts nothing when the list shows the session. R007 means that the session restarted in another directory than the one the script chose, so the project settings do not apply to it. The session runs: give the user the error, which says how to stop the session or move it with `/cd`.
 
 ## Step 3: Stop the Helper Session
 
@@ -64,8 +65,9 @@ A skill that prepares the next round calls the script directly, as callers of `l
 1. Save the prompt in the topic folder first, so that the message is never the only copy.
 2. Run `resume-agent.sh "<folder>"`.
 3. Choose the address. Use the name from the `Name:` line only when it loaded and stderr names no other live session with that name. Otherwise use the `Address:` line. A short id is not a `SendMessage` address. With no usable name and no `Address:` line, ask the person.
-4. Read the `Status:` line. When it is `idle`, the session waits at its prompt: send. After a restart it is `idle`, because the script sent no prompt. For each other status, ask the person before you send. `busy` means a turn runs, and a prompt can change work that is half done. `waiting` means a permission prompt, and a prompt does not answer it. `unknown` means the list gave no status.
+4. Read the `Status:` line. When it is `idle`, the session waits at its prompt: send. After a restart it is `idle`, because the script sent no prompt. For each other status, ask the person before you send. `busy` means a turn runs, and a prompt can change work that is half done. `waiting` means a permission prompt, and a prompt does not answer it. `retired` means the session has no process: give the person the `Attach:` command, and send nothing until the session runs. `unknown` means the list gave no status.
 5. Send the prompt with `SendMessage` to the address from step 3.
+6. Relay the `Rename:` line to the person, when the script printed one. Only a person who types `/rename` in the session can change its name.
 
 The `State:` value does not decide anything: a session at its prompt can show `blocked`.
 

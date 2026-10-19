@@ -221,9 +221,10 @@ folder_with_config() {
 
 SESSION_ID="06cb4128-c112-4696-bddb-3a52d1684a20"
 
-# Run the resolver with a session id in the environment.
+# Run the resolver with a session id in the environment. JOB_DIR, when set,
+# makes it a background session with that CLAUDE_JOB_DIR.
 folder_with_session() {
-  run --separate-stderr env \
+  run --separate-stderr env -u CLAUDE_JOB_DIR ${JOB_DIR:+CLAUDE_JOB_DIR="$JOB_DIR"} \
     MY_CLAUDE_SKILLS_CONFIG="$1" \
     CLAUDE_CODE_SESSION_ID="$2" \
     "$SCRIPT" "${@:3}"
@@ -265,6 +266,16 @@ write_session_file() {
   folder_with_session "$CFG" "$SESSION_ID"
   [ "$output" = "$TEST_TEMP_DIR/my-topic" ]
   [ "${#lines[@]}" -eq 1 ]
+}
+
+@test "override: a background session after /clear resolves the folder of its first id" {
+  mkdir -p "$TEST_TEMP_DIR/my-topic" "$TEST_TEMP_DIR/job"
+  write_session_file "$TEST_TEMP_DIR/my-topic"
+  printf '{"sessionId":"%s"}' "$SESSION_ID" > "$TEST_TEMP_DIR/job/state.json"
+  git checkout -q -b issues/42
+  JOB_DIR="$TEST_TEMP_DIR/job" folder_with_session "$CFG" "5f0c8a11-7d2e-4b3a-9c41-0e6f2b7d8a90"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$TEST_TEMP_DIR/my-topic" ]
 }
 
 @test "override: a file with no slug in its name resolves the same" {

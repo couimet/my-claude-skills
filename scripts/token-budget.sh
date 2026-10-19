@@ -19,19 +19,27 @@
 #   composite  (skill-kind: composite)  12000 bytes
 #   ordinary   (everything else)         8000 bytes
 #
-# A skill over its cap must be listed in skills/.budget-allowlist, one name per
-# line, `#` for comments. The allowlist is the backlog: an entry is a debt, and
-# it shows up in a diff when someone adds one.
+# A skill over its cap must be listed in skills/.budget-allowlist, one
+# `<skill> <bytes>` line per skill, `#` for comments. The allowlist is the
+# backlog: an entry is a debt, and it shows up in a diff when someone adds
+# one. The bytes are the measured size of the skill when the line was last
+# written, and they are a ratchet: a listed skill over its cap may shrink, but
+# it may not grow past them. Without the ratchet, a listed skill grows with no
+# limit and no sign, because the allowlist covers any size. A listed skill
+# under its cap passes whatever its line records, because it owes no debt.
 #
 # Usage:
 #   token-budget.sh [--check] [--skills-dir <dir>]
 #
-#   --check   exit 1 when a skill is over its cap and not allowlisted
-#             (report mode is the default and always exits 0)
+#   --check   exit 1 when a skill is over its cap and not allowlisted, or
+#             when a listed skill over its cap is larger than its recorded
+#             bytes or its line records no bytes (report mode is the
+#             default and always exits 0)
 #
 # Exit codes:
 #   0  — report printed, or --check found nothing
-#   1  — --check found an un-allowlisted skill over its cap
+#   1  — --check found a skill over its cap that the allowlist does not
+#        cover
 #   2  — usage error
 
 set -euo pipefail
@@ -42,7 +50,8 @@ usage() {
   cat <<'EOF'
 Usage: token-budget.sh [--check] [--skills-dir <dir>]
 
-  --check        Exit 1 when a skill exceeds its cap and is not allowlisted
+  --check        Exit 1 when a skill exceeds its cap and the allowlist does
+                 not cover its size
   --skills-dir   Directory holding <skill>/SKILL.md (default: skills/)
   --help         Show this help message
 EOF
@@ -80,9 +89,17 @@ fi
 
 ALLOWLIST="$SKILLS_DIR/.budget-allowlist"
 
-allowlisted() {
+# allowance <name> — print the bytes that the allowlist records for <name>,
+# the second field of its line, or "-" when the line records none. Returns 1
+# when no line names <name>. The name must match the whole first field.
+allowance() {
   [ -f "$ALLOWLIST" ] || return 1
-  grep -vE '^[[:space:]]*(#|$)' "$ALLOWLIST" | grep -qxF "$1"
+  awk -v name="$1" '
+    # kcov-exclude-start
+    /^[[:space:]]*(#|$)/ { next }
+    $1 == name { print ($2 == "" ? "-" : $2); found = 1; exit }
+    END { exit !found }
+  ' "$ALLOWLIST" # kcov-exclude-end
 }
 
 # Front-matter field read. Only the first --- block counts; a line further down
@@ -97,8 +114,7 @@ fm_field() {
       print
       exit
     }
-    # kcov-exclude-end
-  ' "$1"
+  ' "$1" # kcov-exclude-end
 }
 
 tokens_of() { echo $(( $1 * 10 / CHARS_PER_TOKEN )); }
@@ -107,6 +123,7 @@ total_file=0
 total_desc=0
 over=0
 rows=""
+findings=""
 
 for dir in "$SKILLS_DIR"/*/; do
   [ -f "$dir/SKILL.md" ] || continue
@@ -131,12 +148,26 @@ for dir in "$SKILLS_DIR"/*/; do
 
   status="ok"
   if [ "$bytes" -gt "$cap" ]; then
-    if allowlisted "$name"; then
-      status="ALLOWED"
-    else
+    if ! recorded="$(allowance "$name")"; then
       status="OVER"
-      over=$((over + 1))
+      findings="$findings$name is $bytes bytes, over its $cap cap and not in .budget-allowlist"$'\n'
+    else
+      case "$recorded" in
+        '' | *[!0-9]*)
+          status="NOSIZE"
+          findings="$findings$name is in .budget-allowlist with no recorded size; write its line as '$name $bytes'"$'\n'
+          ;;
+        *)
+          if [ "$bytes" -le "$recorded" ]; then
+            status="ALLOWED"
+          else
+            status="GREW"
+            findings="$findings$name is $bytes bytes, past the $recorded bytes that .budget-allowlist records"$'\n'
+          fi
+          ;;
+      esac
     fi
+    [ "$status" = "ALLOWED" ] || over=$((over + 1))
   fi
 
   total_file=$((total_file + bytes))
@@ -147,8 +178,8 @@ done
 
 if [ "$CHECK" -eq 1 ]; then
   if [ "$over" -gt 0 ]; then
-    printf '%s' "$rows" | awk '$NF == "OVER" { printf "%s is %s bytes, over its %s cap and not in .budget-allowlist\n", $1, $3, $6 }' >&2
-    echo "token-budget: $over skill(s) over budget. Shrink them, or add a line to skills/.budget-allowlist and say why in the commit." >&2
+    printf '%s' "$findings" >&2
+    echo "token-budget: $over skill(s) over budget. Shrink them, or add or raise a line in skills/.budget-allowlist and say why in the commit." >&2
     exit 1
   fi
   exit 0
@@ -162,5 +193,5 @@ printf 'Files:        %7s bytes  ~%s tokens (loaded per invocation, per chain)\n
 printf 'Descriptions: %7s bytes  ~%s tokens (session floor, loaded whether or not a skill runs)\n' \
   "$total_desc" "$(tokens_of "$total_desc")"
 if [ "$over" -gt 0 ]; then
-  printf '\n%s skill(s) over cap and not allowlisted. Run with --check to fail on them.\n' "$over"
+  printf '\n%s skill(s) over budget. Run with --check to fail on them.\n' "$over"
 fi
