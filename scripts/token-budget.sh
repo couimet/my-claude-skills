@@ -98,8 +98,7 @@ allowance() {
     /^[[:space:]]*(#|$)/ { next }
     $1 == name { print ($2 == "" ? "-" : $2); found = 1; exit }
     END { exit !found }
-    # kcov-exclude-end
-  ' "$ALLOWLIST"
+  ' "$ALLOWLIST" # kcov-exclude-end
 }
 
 # Front-matter field read. Only the first --- block counts; a line further down
@@ -114,8 +113,7 @@ fm_field() {
       print
       exit
     }
-    # kcov-exclude-end
-  ' "$1"
+  ' "$1" # kcov-exclude-end
 }
 
 tokens_of() { echo $(( $1 * 10 / CHARS_PER_TOKEN )); }

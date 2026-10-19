@@ -11,7 +11,9 @@
 # and then swaps $AGENTS_FILE for $AGENTS_AFTER, so a test sees the list before
 # and after the restart. A read of the list after the restart that finds
 # $AGENTS_NEXT swaps it in once, so a later read can show a name that the
-# session loaded late. The sessions directory sits beside a temp settings
+# session loaded late. STUB_AGENTS_FAIL=second-all fails only the second
+# `--all` read: folder-sessions.sh makes the first, and the script the second.
+# The sessions directory sits beside a temp settings
 # file, and the socket dir and the transcript dir are temp directories, so a
 # developer's real sessions never change an outcome. Each test starts with a
 # transcript of $TOPIC_SESSION that started in $REPO.
@@ -34,6 +36,10 @@ if [ "${1-}" = "agents" ] && [ "${2-}" = "--json" ]; then
   [ "${STUB_AGENTS_FAIL:-0}" = "after-resume" ] && [ -e "$RESUME_ARGS" ] && { echo "agents failed" >&2; exit 3; }
   if [ "${3-}" = "--all" ]; then
     [ "${STUB_AGENTS_FAIL:-0}" = "all" ] && { echo "agents failed" >&2; exit 3; }
+    if [ "${STUB_AGENTS_FAIL:-0}" = "second-all" ]; then
+      echo x >> "$AGENTS_ALL_FILE.calls"
+      [ "$(($(wc -l < "$AGENTS_ALL_FILE.calls")))" -lt 2 ] || { echo "agents failed" >&2; exit 3; }
+    fi
     if [ -n "${AGENTS_ALL_FILE:-}" ] && [ -s "$AGENTS_ALL_FILE" ]; then
       cat "$AGENTS_ALL_FILE"
       exit 0
@@ -251,6 +257,15 @@ run_resume() {
   [ ! -e "$RESUME_ARGS" ]
   [[ "$stderr" == *"H004"*"claude agents --json --all failed"* ]] || false
   [[ "$stderr" == *"R004"*"nothing was restarted"* ]] || false
+}
+
+@test "claude agents --json --all fails after the folder listing read it → R004 from the script, and nothing restarts" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  STUB_AGENTS_FAIL=second-all run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [[ "$stderr" != *"H004"* ]] || false
+  [[ "$stderr" == *"R004"*"claude agents --json --all failed, so the state of session $TOPIC_SESSION is unknown; nothing was restarted"* ]] || false
 }
 
 @test "with no transcript, a restart runs in the git top-level of the folder, and stderr says so" {
@@ -680,6 +695,27 @@ CLEARED_SESSION="bce0aa3b-a75a-4de0-910d-030528a0ec15"
   [ "$status" -eq 1 ]
   [ ! -e "$RESUME_ARGS" ]
   [[ "$stderr" == *"R004"* ]] || false
+}
+
+@test "a folder listing that fails with another exit code → R002, and nothing restarts" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  # The script checks the folder before it lists the sessions, so the listing
+  # cannot exit 1. A jq that fails only for the join of folder-sessions.sh,
+  # the one call with --argjson all, gives an exit code that is not 0 or 2.
+  local real_jq
+  real_jq="$(command -v jq)"
+  cat > "$BIN/jq" <<STUB
+#!/usr/bin/env bash
+case " \$* " in
+  *" --argjson all "*) exit 5 ;;
+esac
+exec "$real_jq" "\$@"
+STUB
+  chmod +x "$BIN/jq"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [[ "$stderr" == *"R002"*"the sessions of $REPO/my-topic could not be listed"* ]] || false
 }
 
 # ============================================================================

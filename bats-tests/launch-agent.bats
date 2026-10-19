@@ -1353,6 +1353,15 @@ holder() {
   _contains "$output" "stop it with claude stop ${HOLDER_ID:0:8}"
 }
 
+@test "held: --bg --take-over from an interactive session tells the user to close that session" {
+  holder idle 123
+  printf '[{"id":null,"sessionId":"%s","name":"","status":"idle","pid":123,"kind":"interactive","state":"blocked"}]' \
+    "$HOLDER_ID" > "$AGENTS_FILE"
+  run_in "$REPO" --bg --take-over my-topic "a prompt"
+  [ "$status" -eq 0 ]
+  _contains "$output" "launch-agent: takeover dispatched for $REPO/my-topic from session $HOLDER_ID (running); it can still write to the folder until it stops: close that session"
+}
+
 @test "held: --bg --take-over with a failed dispatch → L004, and the other session keeps the folder" {
   holder idle 123
   run env -u CLAUDE_CODE_SESSION_ID \

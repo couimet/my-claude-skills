@@ -226,6 +226,16 @@ run_sessions() {
   [ -z "$output" ]
 }
 
+@test "--others leaves out a file of the caller's job that an earlier /clear wrote under a third id" {
+  local job="$TEST_TEMP_DIR/job" earlier="5e6f7a8b-1c2d-4e3f-8a4b-5c6d7e8f9a0b"
+  mkdir -p "$job"
+  printf '{"sessionId":"%s"}' "$FIRST" > "$job/state.json"
+  session_file "$earlier" 2026-10-14T10:00:00Z "$FIRST"
+  run_sessions "$CLEARED" "$job" --others "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
 @test "without --others, the caller is listed" {
   session_file "$SELF" 2026-10-15T10:00:00Z
   printf '[%s]' "$(row "${SELF:0:8}" "$SELF" me idle 1)" > "$LIVE_FILE"

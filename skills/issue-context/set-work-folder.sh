@@ -208,7 +208,9 @@ case "${1-}" in
     folder="$2"
     ;;
   --take-over)
-    [ "$#" -ge 2 ] && [ "$#" -le 3 ] || die "$ERR_USAGE" "--take-over takes a folder and an optional name"
+    if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
+      die "$ERR_USAGE" "--take-over takes a folder and an optional name"
+    fi
     case "$2" in
       -*) die "$ERR_USAGE" "--take-over takes a folder, not '$2'" ;;
     esac

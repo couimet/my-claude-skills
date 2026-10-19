@@ -216,5 +216,4 @@ printf '%s\n' "$files" | jq -R -n -r \
   | [$session, ($job // "-"),
      (($lrow.name // $arow.name // "") | clean | if . == "" then "-" else . end), $state]
   | join("\t")
-  # kcov-exclude-end
-'
+' # kcov-exclude-end

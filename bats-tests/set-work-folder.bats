@@ -801,6 +801,17 @@ set_folder_stub() {
   [[ "$stderr" == *"took $TOPIC from session $OTHER_CLEARED (running, job ${OTHER_ID:0:8}"*"stop it with claude stop ${OTHER_ID:0:8}"* ]] || false
 }
 
+@test "--take-over from an interactive session tells the user to close that session" {
+  claude_stub
+  other_file "$OTHER_ID"
+  printf '[{"id":null,"sessionId":"%s","name":"","status":"idle","pid":123,"kind":"interactive","state":"blocked"}]' \
+    "$OTHER_ID" > "$LIVE_FILE"
+  set_folder_stub --take-over "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ ! -e "$SESSIONS_DIR/$OTHER_ID--other.json" ]
+  [[ "$stderr" == *"took $TOPIC from session $OTHER_ID (running) and removed its session file; it can still write to the folder until it stops: close that session"* ]] || false
+}
+
 @test "--take-over of a folder that nobody else holds is a plain claim" {
   claude_stub
   set_folder_stub --take-over "$TOPIC"

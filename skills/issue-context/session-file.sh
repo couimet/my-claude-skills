@@ -105,8 +105,7 @@ _issue_context_job_first_id() {
   eval "$_isj_out_var=''"
   [ -n "${CLAUDE_JOB_DIR:-}" ] && [ -r "$CLAUDE_JOB_DIR/state.json" ] || return 1
   command -v jq >/dev/null 2>&1 || return 1
-  _isj_id="$(jq -r 'if type == "object" and (.sessionId | type == "string")
-                    then .sessionId else empty end' "$CLAUDE_JOB_DIR/state.json" 2>/dev/null)" \
+  _isj_id="$(jq -r 'if type == "object" and (.sessionId | type == "string") then .sessionId else empty end' "$CLAUDE_JOB_DIR/state.json" 2>/dev/null)" \
     || return 1
   [ -n "$_isj_id" ] && _issue_settings_is_safe_component "$_isj_id" || return 1
   eval "$_isj_out_var=\"\$_isj_id\""
@@ -151,7 +150,9 @@ _issue_context_session_file_matches() {
       [ -f "$_isf_candidate" ] || continue
       _isf_found+=("$_isf_candidate")
     done
-    [ "${#_isf_found[@]}" -eq 0 ] && [ -z "$_isf_first" ] || break
+    if [ "${#_isf_found[@]}" -ne 0 ] || [ -n "$_isf_first" ]; then
+      break
+    fi
     _issue_context_job_first_id _isf_first || break
     [ "$_isf_first" != "$CLAUDE_CODE_SESSION_ID" ] || break
     _isf_id="$_isf_first"
@@ -216,8 +217,7 @@ _issue_context_session_file_read() {
     return 1
   fi
 
-  if ! _isf_version="$(jq -r 'if type == "object" and (.version | type == "number")
-                              then .version else empty end' "$_isf_file" 2>/dev/null)" \
+  if ! _isf_version="$(jq -r 'if type == "object" and (.version | type == "number") then .version else empty end' "$_isf_file" 2>/dev/null)" \
       || [ -z "$_isf_version" ]; then
     eval "$_isf_out_reason_var='malformed'"
     return 1
@@ -230,8 +230,7 @@ _issue_context_session_file_read() {
 
   # A reader ignores fields it does not recognise, so a later version can add
   # fields without breaking this one. Only folder is read.
-  if ! _isf_folder="$(jq -r 'if (.folder | type == "string") and (.folder | length > 0)
-                             then .folder else empty end' "$_isf_file" 2>/dev/null)" \
+  if ! _isf_folder="$(jq -r 'if (.folder | type == "string") and (.folder | length > 0) then .folder else empty end' "$_isf_file" 2>/dev/null)" \
       || [ -z "$_isf_folder" ]; then
     eval "$_isf_out_reason_var='malformed'"
     return 1
@@ -266,11 +265,11 @@ _issue_context_sessions_of_folder() {
 
   for _isf_file in "$_isf_dir"/*.json; do
     [ -f "$_isf_file" ] || continue
-    _isf_line="$(jq -r --arg f "$_isf_folder" \
-      'def token: type == "string" and test("^[A-Za-z0-9_-]+$");
-       select(type == "object" and .folder == $f and (.session_id | token))
-       | "\(.written_at // "")\t\(.session_id)\t\(if (.job_session_id | token) then .job_session_id else "" end)"' \
-      "$_isf_file" 2>/dev/null || true)"
+    _isf_line="$(jq -r --arg f "$_isf_folder" ' # kcov-exclude-start
+      def token: type == "string" and test("^[A-Za-z0-9_-]+$");
+      select(type == "object" and .folder == $f and (.session_id | token))
+      # kcov-exclude-end
+      | "\(.written_at // "")\t\(.session_id)\t\(if (.job_session_id | token) then .job_session_id else "" end)"' "$_isf_file" 2>/dev/null || true)"
     [ -n "$_isf_line" ] || continue
     _isf_all="${_isf_all}${_isf_line}"$'\n'
   done
@@ -299,12 +298,12 @@ _issue_context_holder_files() {
   for _isf_file in "$_isf_dir"/*.json; do
     [ -f "$_isf_file" ] || continue
     if jq -e --arg f "$_isf_folder" --arg s "$_isf_sid" --arg j "$_isf_job" \
-        'type == "object" and .folder == $f and (.session_id | type == "string")
+        'type == "object" and .folder == $f and (.session_id | type == "string") # kcov-exclude-start
          and (.session_id == $s
               or ($j != "" and (.session_id[0:8] == $j
                                 or ((.job_session_id | type == "string")
                                     and .job_session_id[0:8] == $j))))' \
-        "$_isf_file" >/dev/null 2>&1; then
+        "$_isf_file" >/dev/null 2>&1; then # kcov-exclude-end
       printf '%s\n' "$_isf_file"
     fi
   done

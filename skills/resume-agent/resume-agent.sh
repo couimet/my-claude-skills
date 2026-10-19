@@ -232,7 +232,7 @@ listing=""
 rc=0
 listing="$("$_self_dir/../issue-context/folder-sessions.sh" --others "$folder_abs")" || rc=$?
 case "$rc" in
-  0) ;;
+  0) ;; # kcov-exclude-line
   2) die "$ERR_AGENTS" "the sessions of $folder_abs could not be read, so their state is unknown; nothing was restarted" ;;
   *) die "$ERR_FOLDER" "the sessions of $folder_abs could not be listed" ;;
 esac
@@ -295,8 +295,7 @@ fi
 # its session id for a session with no job.
 # shellcheck disable=SC2016 # a jq program: $job and $id are jq variables
 readonly ROW='if $job != "" then .id == $job else .sessionId == $id end'
-job_cwd="$(printf '%s' "$all_list" | jq -r --arg id "$session_id" --arg job "$job_id" \
-  "first(.[] | select($ROW) | .cwd | strings) // empty")"
+job_cwd="$(printf '%s' "$all_list" | jq -r --arg id "$session_id" --arg job "$job_id" "first(.[] | select($ROW) | .cwd | strings) // empty")"
 resume_dir=""
 case "$job_cwd" in
   /*) resume_dir="$({ cd "$job_cwd" && pwd -P; } 2>/dev/null || true)" ;;
@@ -462,11 +461,11 @@ fi
 other_records() {
   printf '%s\n' "$all_list" | jq -r --arg n "$1" --arg id "$session_id" --arg job "$short_id" \
     --argjson live "$agents_list" \
-    '.[] | select(.name == $n and .id != $job and .sessionId != $id)
+    '.[] | select(.name == $n and .id != $job and .sessionId != $id) # kcov-exclude-start
      | . as $r
      | (if any($live[]; (.id != null and .id == $r.id) or .sessionId == $r.sessionId)
         then "live" else "ended" end) as $where
-     | "\(.id // .sessionId[0:8])\t\($where)\t\(.pid // "none")"'
+     | "\(.id // .sessionId[0:8])\t\($where)\t\(.pid // "none")"' # kcov-exclude-end
 }
 
 duplicates=0
@@ -493,10 +492,11 @@ fi
 # the record that a resume of a conversation id left behind.
 if [ "$action" = "restarted" ]; then
   printf '%s\n' "$all_list" | jq -r --arg job "$short_id" --argjson live "$agents_list" \
-    '.[] | select(.id != null and .id != $job)
-     | . as $r | select(any($live[]; .id == $r.id) | not) | .id' \
+    '.[] | select(.id != null and .id != $job) | . as $r | select(any($live[]; .id == $r.id) | not) | .id' \
     | while read -r old_id; do
-        [ -n "$old_id" ] && [ "$(continued_as "$old_id")" = "$session_id" ] || continue
+        if [ -z "$old_id" ] || [ "$(continued_as "$old_id")" != "$session_id" ]; then
+          continue
+        fi
         echo "resume-agent: the ended job record $old_id continues in the conversation of this session, $session_id; claude rm $old_id removes that record and its worktree, and keeps its transcript" >&2
       done
 fi

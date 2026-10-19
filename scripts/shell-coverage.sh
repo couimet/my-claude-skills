@@ -65,15 +65,21 @@ kcov_log="$outdir/kcov.log"
 # command at the line where that command completes, so two constructs are
 # unmeasurable no matter how many tests run over them:
 #
-#   1. A multi-line statement. The hit lands on the closing line; the opening
-#      line and every line of an embedded awk or jq program read as a miss
-#      forever. Those program bodies are not bash at all.
+#   1. A multi-line statement. The hit lands on one line only: the closing
+#      line of an assignment from $(...), or the opening line of a plain
+#      command or a pipeline. kcov follows a multi-line "..." string but not a
+#      '...' one, so each line of an embedded awk or jq program after the first
+#      reads as a statement, and as a miss forever. Those program bodies are
+#      not bash at all.
 #   2. An empty case arm. `/*) ;;` holds no command, so nothing fires even on
 #      a run where that arm is the one taken.
 #
 # Markers go as close to the unmeasurable lines as possible -- inside the
-# quoted awk or jq program, so the statement's closing line keeps being
-# measured and a reader can still see the call ran. A marker is never a way to
+# quoted awk or jq program, so the line that takes the hit keeps being
+# measured and a reader can still see the call ran. When the hit lands on the
+# opening line, the closing line is one more miss, so the end marker goes
+# after the closing quote: kcov also excludes the lines that carry a marker. A
+# program that fits on one line needs no marker. A marker is never a way to
 # hide untested logic; anything a test could reach stays counted.
 #
 # The three markers are spelled <prefix>-start, <prefix>-end and <prefix>-line.
