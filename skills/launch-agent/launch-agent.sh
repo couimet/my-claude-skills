@@ -69,11 +69,11 @@
 # background agent in the folder of its caller makes two sessions in one
 # folder, so L007 tells the user to launch into another folder or to do the
 # work in this session, and --take-over does not apply to the caller.
-# --take-over takes the folder from another session: in the default mode
-# set-work-folder.sh does it, and in the --bg mode this script removes the
-# session files of the other session before the dispatch, so the claim of
-# the child goes through. Neither stops the other session; stderr gives the
-# claude stop command. A session that ended does not hold the folder, and it
+# --take-over takes the folder from another session through
+# set-work-folder.sh --take-over: in the default mode this script runs it, and
+# in the --bg mode the child runs it as its first action, so a dispatch that
+# fails leaves the claim of the other session. Neither stops the other
+# session; stderr gives the claude stop command. A session that ended does not hold the folder, and it
 # keeps the /resume-agent hint. When the check cannot run, the launch goes on
 # and one stderr line says so.
 #
@@ -546,7 +546,9 @@ if [ "$bg_mode" -eq 0 ]; then
     {
       echo "launch-agent $ERR_HERE error: the folder was not adopted. The folder and the prompt file are in place; run this to adopt it by hand:"
       echo
-      printf '%s %s %s\n' "$(_launch_agent_shquote "$set_work_folder")" \
+      take_over_text=""
+      [ "$take_over" -eq 0 ] || take_over_text="--take-over "
+      printf '%s %s%s %s\n' "$(_launch_agent_shquote "$set_work_folder")" "$take_over_text" \
         "$(_launch_agent_shquote "$folder_abs")" "$(_launch_agent_shquote "$display_name")"
     } >&2 # kcov-exclude-line
     exit 1
@@ -558,30 +560,6 @@ if [ "$bg_mode" -eq 0 ]; then
   exit 0
 fi
 
-# --- Take the folder for the child ---
-# The child claims the folder with set-work-folder.sh, so the files of the
-# other session go before the dispatch.
-for held in ${held_files[@]+"${held_files[@]}"}; do
-  IFS=$'\t' read -r h_sid h_job h_label <<HELD
-$held
-HELD
-  h_files="$(_issue_context_holder_files "$folder_abs" "$h_sid" "$h_job")" \
-    || die "$ERR_HELD" "could not read the session files of $h_label, so the folder was not taken and no agent started"
-  while IFS= read -r h_file; do
-    [ -n "$h_file" ] || continue
-    rm -f "$h_file" \
-      || die "$ERR_HELD" "could not remove $h_file, so $h_label still holds $folder_abs and no agent started"
-  done <<FILES
-$h_files
-FILES
-  if [ "$h_job" = "-" ]; then
-    h_stop="close that session"
-  else
-    h_stop="stop it with claude stop $h_job"
-  fi
-  echo "launch-agent: took $folder_abs from $h_label and removed its session file; it can still write to the folder until it stops: $h_stop" >&2
-done
-
 # --- Choose the child's working directory ---
 # The repository root that contains the folder, so that repository's CLAUDE.md
 # loads in the child. A folder in no repository is its own working directory.
@@ -589,9 +567,13 @@ child_cwd="$(git -C "$folder_abs" rev-parse --show-toplevel 2>/dev/null || true)
 [ -n "$child_cwd" ] || child_cwd="$folder_abs"
 
 # --- Compose the child prompt ---
+# With --take-over, the child removes the files of the other session when it
+# claims the folder, so a dispatch that fails leaves that session's claim.
+child_take_over=""
+[ "$take_over" -eq 0 ] || child_take_over=" --take-over"
 child_prompt="Your work folder is $folder_abs. As your first action, run:
 
-~/.claude/skills/issue-context/set-work-folder.sh $(_launch_agent_shquote "$folder_abs") $(_launch_agent_shquote "$display_name")
+~/.claude/skills/issue-context/set-work-folder.sh$child_take_over $(_launch_agent_shquote "$folder_abs") $(_launch_agent_shquote "$display_name")
 
 "
 if [ -f "$child_cwd/CLAUDE.md" ]; then
@@ -611,6 +593,21 @@ if ! job_id="$({ cd "$child_cwd" && claude --bg --name "$display_name" "$child_p
   } >&2 # kcov-exclude-line
   exit 1
 fi
+
+# --- Report the take-over ---
+# The child takes the folder when it runs set-work-folder.sh, which can be
+# after this script exits, so the line says the take-over was dispatched.
+for held in ${held_files[@]+"${held_files[@]}"}; do
+  IFS=$'\t' read -r h_sid h_job h_label <<HELD
+$held
+HELD
+  if [ "$h_job" = "-" ]; then
+    h_stop="close that session"
+  else
+    h_stop="stop it with claude stop $h_job"
+  fi
+  echo "launch-agent: takeover dispatched for $folder_abs from $h_label; it can still write to the folder until it stops: $h_stop" >&2
+done
 
 # --- Read the job id ---
 # claude --bg prints a status line, `backgrounded · <id> · <name>`, then hint

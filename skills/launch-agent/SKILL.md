@@ -76,7 +76,7 @@ The default mode adds one line saying that no agent started, and one `Type /rena
 
 `--bg` adds the job id and the attach command. Print both, and say plainly that this session did not become the agent, so the user knows where the work went. `claude agents` lists the agent under the name, so no `/rename` is necessary.
 
-The script refuses with L007 when another running or `retired` session holds the folder. On L007, give the user the error and stop. Pass `--take-over` only when the user asks. It takes the folder from another session, never from this one, and prints a `claude stop` line. Give the user its `took` line.
+The script refuses with L007 when another running or `retired` session holds the folder. On L007, give the user the error and stop. Pass `--take-over` only when the user asks. It takes the folder from another session, never from this one, and prints a `claude stop` line. Give the user its `took` line, or with `--bg` its `takeover dispatched` line.
 
 A failed call leaves the folder and the prompt file in place. It prints the exact command on stderr, ready to paste and run by hand. Give the user that command unchanged. With `--bg` it carries the composed agent prompt. An L004 or L006 that says the agent started means the agent runs: do not launch again, record the work here, or give a `claude --bg` command. Point the user to `claude agents` and to the L006 `claude stop` command.
 

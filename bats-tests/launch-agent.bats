@@ -1166,6 +1166,19 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "do the thing" ]
 }
 
+@test "a folder that cannot be adopted with --take-over → L005, the printed command carries --take-over" {
+  bare="$TEST_TEMP_DIR/nojq-take-over"
+  _stub_path_without "$bare" jq > /dev/null
+  run env -u CLAUDE_JOB_DIR -u CLAUDE_CODE_AGENT -u CLAUDE_PID \
+    -u CLAUDE_CODE_CHILD_SESSION \
+    PATH="$bare" MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
+    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" --take-over "$REPO/my-topic" "do the thing"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L005"
+  _contains "$output" "set-work-folder.sh' --take-over '$REPO/my-topic' 'my-topic'"
+}
+
 @test "adoption failure escapes apostrophes in the folder and in the name" {
   topic="$TEST_TEMP_DIR/Charles' topics/Ann's run"
   bare="$TEST_TEMP_DIR/nojq-apostrophe"
@@ -1330,14 +1343,33 @@ holder() {
   _contains "$output" "claude stop ${HOLDER_ID:0:8}"
 }
 
-@test "held: --bg --take-over removes the file of the other session before the dispatch" {
+@test "held: --bg --take-over passes the take-over to the child and keeps the file of the other session" {
   holder idle 123
   run_in "$REPO" --bg --take-over my-topic "a prompt"
   [ "$status" -eq 0 ]
-  [ -e "$ARGS_FILE" ]
-  [ ! -e "$SESSIONS_DIR/$HOLDER_ID--t.json" ]
-  _contains "$output" "launch-agent: took $REPO/my-topic from session $HOLDER_ID"
+  [ -f "$SESSIONS_DIR/$HOLDER_ID--t.json" ]
+  _contains "$(cat "$ARGS_FILE")" "set-work-folder.sh --take-over '$REPO/my-topic' 'my-topic'"
+  _contains "$output" "launch-agent: takeover dispatched for $REPO/my-topic from session $HOLDER_ID"
   _contains "$output" "stop it with claude stop ${HOLDER_ID:0:8}"
+}
+
+@test "held: --bg --take-over with a failed dispatch → L004, and the other session keeps the folder" {
+  holder idle 123
+  run env -u CLAUDE_CODE_SESSION_ID \
+    PATH="$STUB_PATH" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" STUB_FAIL=1 \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" --bg --take-over my-topic "a prompt"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L004"
+  [ -f "$SESSIONS_DIR/$HOLDER_ID--t.json" ]
+  _lacks "$output" "takeover dispatched"
+}
+
+@test "held: without --take-over, the child prompt runs set-work-folder.sh with no take-over" {
+  run_in "$REPO" --bg my-topic "a prompt"
+  [ "$status" -eq 0 ]
+  _contains "$(cat "$ARGS_FILE")" "set-work-folder.sh '$REPO/my-topic' 'my-topic'"
+  _lacks "$(cat "$ARGS_FILE")" "--take-over"
 }
 
 @test "held: --bg from the session that holds the folder → L007, also with --take-over" {
