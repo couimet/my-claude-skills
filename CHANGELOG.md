@@ -14,7 +14,7 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 ### Added
 
-- A Claude Code hook keeps the work folder of a session after `/clear`, also for an interactive session, and tells a resumed session when another session holds its folder. The plugin installs it. `install.sh` asks before it adds it to `~/.claude/settings.json`, keeps a backup, and takes `--no-hooks` and `--uninstall-hooks`. The README gives the entry for a user of `npx skills`. ([issues/296](https://github.com/couimet/my-claude-skills/issues/296))
+- A Claude Code hook keeps the work folder of a session after `/clear`, also for an interactive session, and tells a resumed session when another session holds its folder. The plugin installs it. `install.sh` asks before it adds it to `~/.claude/settings.json`, keeps a backup, and takes `--no-hooks` and `--uninstall-hooks`. It adds no entry whose script cannot run, and it refuses to run from a linked git worktree. The README gives the entry for a user of `npx skills`. ([issues/296](https://github.com/couimet/my-claude-skills/issues/296))
 
 - `folder-sessions.sh` in issue-context lists the sessions that claim a work folder, with a state for each one: `running`, `retired` (listed with no process), or `ended`. It finds a session after a `/clear` through its job id. `/resume-agent`, `/launch-agent`, and `/set-work-folder` use it, and a skill in another repository can call it instead of its own liveness check. ([issues/295](https://github.com/couimet/my-claude-skills/issues/295))
 

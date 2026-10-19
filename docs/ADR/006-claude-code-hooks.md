@@ -63,7 +63,7 @@ One script handles three events:
 - **`SessionStart`, matcher `clear`:** when no session file names the new id, take the folder from the handoff file, or else from the job state, and write the session file of the new id with `set-work-folder.sh`. This covers an interactive session, which has no job state.
 - **`SessionStart`, matcher `resume`:** when `folder-sessions.sh` shows another `running` or `retired` session in the folder, return `additionalContext` that names it, tells the session not to write in the folder, and gives the `/resume-agent` command (probes 2 and 3).
 
-The hook never stops a start: on any error it exits 0 and prints at most one stderr line. It is idempotent, because a user can install it through the plugin and through the settings file. It lives in a skill folder, so `install.sh`, the skills CLI, and the plugin all ship it. The plugin names it in `hooks/hooks.json` (probe 4). `install.sh` asks before it adds the same entry to `~/.claude/settings.json`, keeps a backup, honors `--no-hooks`, and removes the entry on uninstall. The README gives the entry for a user of the skills CLI.
+The hook never stops a start: on any error it exits 0 and prints at most one stderr line. It is idempotent, because a user can install it through the plugin and through the settings file. It lives in a skill folder, so `install.sh`, the skills CLI, and the plugin all ship it. The plugin names it in `hooks/hooks.json` (probe 4). `install.sh` checks that the script of the entry can run, asks before it adds the same entry to `~/.claude/settings.json`, keeps a backup, honors `--no-hooks`, and removes the entry on uninstall. The README gives the entry for a user of the skills CLI.
 
 No probe failed, so the hook keeps both gaps of issue 296.
 

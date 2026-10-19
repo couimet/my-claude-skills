@@ -22,6 +22,16 @@
 # It writes a backup beside the file first, and it writes through a symlink,
 # so a settings file that a dotfiles repository links stays a link. A file
 # that is not a JSON object is never changed.
+#
+# The entry names the hook through the links, so install.sh checks that this
+# path can run before it asks, and it changes nothing when it cannot. An
+# entry that is already in the settings file but cannot run is reported, not
+# passed as "already in".
+#
+# install.sh refuses to link from a linked git worktree, and names the main
+# checkout to run it from. A worktree is ephemeral: when it is removed, each
+# link into it breaks. --help and --uninstall-hooks make no links, so they
+# run from any checkout.
 set -euo pipefail
 
 usage() {
@@ -121,7 +131,24 @@ if [ "$hooks_mode" = "uninstall" ]; then
   echo "Removed the hook entry of my-claude-skills from $SETTINGS."
   exit 0
 fi
-REPO_DIR="$(cd "$(dirname "$0")" && pwd)/skills"
+
+# Refuse a linked worktree, by where this script lives. In a linked worktree
+# the git dir is <common dir>/worktrees/<name>, so the two paths differ; in
+# the main checkout and outside git they are equal or absent.
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+if git_dirs="$(git -C "$script_dir" rev-parse --path-format=absolute --git-dir --git-common-dir 2>/dev/null)"; then
+  own_git_dir="${git_dirs%%$'\n'*}"
+  common_git_dir="${git_dirs#*$'\n'}"
+  if [ "$own_git_dir" != "$common_git_dir" ]; then
+    main_checkout="$(dirname "$common_git_dir")"
+    echo "install.sh: $script_dir is a linked git worktree, so nothing was linked." >&2
+    echo "A worktree is ephemeral, and each link into it breaks when it is removed." >&2
+    echo "Run install.sh from the main checkout: $main_checkout/install.sh" >&2
+    exit 1
+  fi
+fi
+
+REPO_DIR="$script_dir/skills"
 
 # When invoked from a linked git worktree, resolve to the main checkout's
 # skills/ directory instead so global symlinks survive worktree removal.
@@ -244,10 +271,27 @@ if ! command -v jq >/dev/null 2>&1; then
   echo "    {\"hooks\": {\"SessionStart\": [{\"matcher\": \"clear|resume\", \"hooks\": [{\"type\": \"command\", \"command\": \"$HOOK_COMMAND\"}]}], \"SessionEnd\": [{\"matcher\": \"clear\", \"hooks\": [{\"type\": \"command\", \"command\": \"$HOOK_COMMAND\"}]}]}}"
   exit 0
 fi
+already_in=0
 if [ -e "$SETTINGS" ] && jq -e --arg cmd "$HOOK_COMMAND" "$HOOK_JQ_DEFS
     ([.hooks.SessionStart[]? | select(.matcher == \"clear|resume\") | .hooks[]? | select(.command == \$cmd)] | length == 1)
     and ([.hooks.SessionEnd[]? | select(.matcher == \"clear\") | .hooks[]? | select(.command == \$cmd)] | length == 1)
     and ([.hooks[]?[]?.hooks[]? | select(ours)] | length == 2)" "$SETTINGS" >/dev/null 2>&1; then
+  already_in=1
+fi
+# Check the path that the entry names, through the links, because that is the
+# path Claude Code runs. A checkout without the script gives an entry that
+# fails at each session start.
+if [ ! -x "$HOOK_COMMAND" ]; then
+  if [ "$already_in" -eq 1 ]; then
+    echo "Claude Code hook: in $SETTINGS, but $HOOK_COMMAND cannot run."
+    echo "Update ${REPO_DIR%/skills} so it has the script, or remove the entry with install.sh --uninstall-hooks."
+  else
+    echo "Claude Code hook: not added, because $HOOK_COMMAND cannot run."
+    echo "Update ${REPO_DIR%/skills} so it has the script, then run install.sh again."
+  fi
+  exit 0
+fi
+if [ "$already_in" -eq 1 ]; then
   echo "Claude Code hook: already in $SETTINGS."
   exit 0
 fi

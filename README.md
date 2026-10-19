@@ -46,7 +46,9 @@ This creates symlinks from `~/.claude/skills/` to the repo, making all skills gl
 
 `install.sh` requires bash (macOS/Linux). On Windows, use the [quick install](#quick-install-npx-skills) or [marketplace](#marketplace-installation) paths instead.
 
-After the links, `install.sh` asks whether to add the [Claude Code hook](#claude-code-hook) to `~/.claude/settings.json`. The default answer is no. Pass `--no-hooks` to skip the question, and `--uninstall-hooks` to remove the entry later.
+After the links, `install.sh` asks whether to add the [Claude Code hook](#claude-code-hook) to `~/.claude/settings.json`. The default answer is no. Pass `--no-hooks` to skip the question, and `--uninstall-hooks` to remove the entry later. When the hook script cannot run, `install.sh` does not ask and changes nothing.
+
+Run `install.sh` from the main checkout. It refuses to run from a linked git worktree, because each link into a worktree breaks when the worktree is removed. It names the main checkout to run it from.
 
 `install.sh` symlinks only this repo's own skills. A few of them optionally call external skills — see [External skill dependencies](#external-skill-dependencies) below to install those too.
 

@@ -23,6 +23,11 @@ setup() {
   mkdir -p "$FAKE_HOME/.claude/skills" "$FAKE_REPO/skills/alpha" "$FAKE_REPO/skills/beta"
   printf -- '---\nname: alpha\n---\n' > "$FAKE_REPO/skills/alpha/SKILL.md"
   printf -- '---\nname: beta\n---\n' > "$FAKE_REPO/skills/beta/SKILL.md"
+  # The hook step checks that the script of the entry can run, so the fake
+  # repo ships a stub of it.
+  mkdir -p "$FAKE_REPO/skills/issue-context"
+  printf '#!/bin/sh\nexit 0\n' > "$FAKE_REPO/skills/issue-context/session-hook.sh"
+  chmod +x "$FAKE_REPO/skills/issue-context/session-hook.sh"
   cp "$SCRIPT" "$FAKE_REPO/install.sh"
   # install.sh resolves REPO_DIR from git-common-dir when it is inside a repo,
   # so make the fake repo a real one and run from its root.
@@ -57,7 +62,7 @@ run_install() {
   run_install
   run_install
   [ "$status" -eq 0 ]
-  [[ "$output" == *"2 unchanged"* ]] || false
+  [[ "$output" == *"3 unchanged"* ]] || false
 }
 
 # ============================================================================
@@ -255,6 +260,28 @@ hook_count() {
   [ "$(jq '.hooks.SessionStart | length' "$FAKE_HOME/$SETTINGS_REL")" -eq 1 ]
 }
 
+@test "hook: a script that cannot run is not added, and nothing is asked" {
+  rm "$FAKE_REPO/skills/issue-context/session-hook.sh"
+  ANSWER=y run_install
+  [ "$status" -eq 0 ]
+  [ ! -e "$FAKE_HOME/$SETTINGS_REL" ]
+  [[ "$output" == *"not added, because $FAKE_HOME/.claude/skills/issue-context/session-hook.sh cannot run"* ]] || false
+  [[ "$output" == *"Update $FAKE_REPO so it has the script"* ]] || false
+  [[ "$output" != *"[y/N]"* ]] || false
+}
+
+@test "hook: an entry whose script cannot run is reported, not passed as already in" {
+  ANSWER=y run_install
+  cp "$FAKE_HOME/$SETTINGS_REL" "$TEST_TEMP_DIR/before.json"
+  chmod -x "$FAKE_REPO/skills/issue-context/session-hook.sh"
+  ANSWER=y run_install
+  [ "$status" -eq 0 ]
+  cmp -s "$FAKE_HOME/$SETTINGS_REL" "$TEST_TEMP_DIR/before.json"
+  [[ "$output" == *"cannot run"* ]] || false
+  [[ "$output" == *"install.sh --uninstall-hooks"* ]] || false
+  [[ "$output" != *"already in"* ]] || false
+}
+
 @test "hook: no answer changes nothing and prints the entry to add by hand" {
   run_install
   [ "$status" -eq 0 ]
@@ -345,4 +372,53 @@ hook_count() {
 
 @test "hook: the script that the hooks file names exists and is executable" {
   [ -x "$PROJECT_ROOT/skills/issue-context/session-hook.sh" ]
+}
+
+# ============================================================================
+# A linked git worktree. A worktree is ephemeral, so install.sh links nothing
+# from it, and names the main checkout to run it from.
+# ============================================================================
+
+# add_worktree — commit the fake repo, and add a linked worktree of it at
+# $WORKTREE.
+add_worktree() {
+  WORKTREE="$TEST_TEMP_DIR/worktree"
+  git -C "$FAKE_REPO" add -A
+  git -C "$FAKE_REPO" -c user.name=t -c user.email=t@t commit -q -m init
+  git -C "$FAKE_REPO" worktree add -q -b side "$WORKTREE"
+}
+
+# run_install_in <dir> [args...] — run_install, from <dir> instead of the fake
+# repo.
+run_install_in() {
+  local dir="$1"
+  shift
+  run env HOME="$FAKE_HOME" bash -c 'cd "$1" && shift && exec ./install.sh "$@"' _ "$dir" "$@" \
+    < <(printf '%s' "${ANSWER-}")
+}
+
+@test "worktree: install.sh from a linked worktree links nothing, and names the main checkout" {
+  add_worktree
+  ANSWER=y run_install_in "$WORKTREE"
+  [ "$status" -eq 1 ]
+  [ -z "$(ls -A "$FAKE_HOME/.claude/skills")" ]
+  [ ! -e "$FAKE_HOME/$SETTINGS_REL" ]
+  [[ "$output" == *"is a linked git worktree, so nothing was linked"* ]] || false
+  [[ "$output" == *"Run install.sh from the main checkout: $FAKE_REPO/install.sh"* ]] || false
+}
+
+@test "worktree: --uninstall-hooks runs from a linked worktree" {
+  ANSWER=y run_install
+  add_worktree
+  run_install_in "$WORKTREE" --uninstall-hooks
+  [ "$status" -eq 0 ]
+  [ "$(hook_count SessionStart)" -eq 0 ]
+  [[ "$output" == *"Removed the hook entry"* ]] || false
+}
+
+@test "worktree: install.sh from the main checkout of a repo with worktrees links as usual" {
+  add_worktree
+  run_install
+  [ "$status" -eq 0 ]
+  [ "$(readlink "$FAKE_HOME/.claude/skills/alpha")" = "$FAKE_REPO/skills/alpha" ]
 }
