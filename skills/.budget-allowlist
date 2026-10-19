@@ -6,10 +6,10 @@
 #
 # Each line is `<skill> <bytes>`. The bytes are measured, never estimated: run
 # `make token-report`, and add a line only for a skill the report shows over
-# its cap. The bytes are a ratchet: `make lint` fails when a listed skill grows
-# past them. A PR that shrinks a skill lowers its number, and a PR that must
-# grow one raises the number in its diff and says why. Delete the line when
-# the skill is back under its cap.
+# its cap. The bytes are a ratchet: `make lint` fails when a listed skill over
+# its cap grows past them. A PR that shrinks a skill lowers its number, and a
+# PR that must grow one raises the number in its diff and says why. Delete the
+# line when the skill is back under its cap.
 
 # --- Contract documents: the bulk is spec, not rationale --------------------
 # Both carry a format or a set of script contracts that cannot compress

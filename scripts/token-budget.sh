@@ -23,17 +23,18 @@
 # `<skill> <bytes>` line per skill, `#` for comments. The allowlist is the
 # backlog: an entry is a debt, and it shows up in a diff when someone adds
 # one. The bytes are the measured size of the skill when the line was last
-# written, and they are a ratchet: a listed skill may shrink, but it may not
-# grow past them. Without the ratchet, a listed skill grows with no limit and
-# no sign, because the allowlist covers any size.
+# written, and they are a ratchet: a listed skill over its cap may shrink, but
+# it may not grow past them. Without the ratchet, a listed skill grows with no
+# limit and no sign, because the allowlist covers any size. A listed skill
+# under its cap passes whatever its line records, because it owes no debt.
 #
 # Usage:
 #   token-budget.sh [--check] [--skills-dir <dir>]
 #
-#   --check   exit 1 when a skill is over its cap and not allowlisted, when
-#             a listed skill is larger than its recorded bytes, or when its
-#             line records no bytes (report mode is the default and always
-#             exits 0)
+#   --check   exit 1 when a skill is over its cap and not allowlisted, or
+#             when a listed skill over its cap is larger than its recorded
+#             bytes or its line records no bytes (report mode is the
+#             default and always exits 0)
 #
 # Exit codes:
 #   0  — report printed, or --check found nothing

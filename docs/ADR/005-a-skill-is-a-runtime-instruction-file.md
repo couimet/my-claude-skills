@@ -46,7 +46,7 @@ Already recorded in ADR 004 for filename format. Generalised here: a caller name
 
 Three tiers rather than one, because a single number across skills of different kinds produces a long allowlist, and a long allowlist teaches everyone to add a line instead of thinking. A composite skill orchestrates five or more others and is legitimately larger. It declares itself with `skill-kind: composite`, so the claim is written down and reviewable rather than inferred from a reference count that could move for an unrelated reason.
 
-A skill over its cap earns a line in `skills/.budget-allowlist`. That file is a backlog, not configuration: an entry is a debt, it shows up in a diff, and it is deleted when its skill shrinks. Each line records the measured size of its skill, and `token-budget.sh --check` fails when a listed skill grows past it, so the debt can shrink but cannot grow without a change to its line in the diff.
+A skill over its cap earns a line in `skills/.budget-allowlist`. That file is a backlog, not configuration: an entry is a debt, it shows up in a diff, and it is deleted when its skill shrinks. Each line records the measured size of its skill. While a skill is over its cap, `token-budget.sh --check` fails when it grows past that size, so the debt can shrink but cannot grow without a change to its line in the diff. A skill back under its cap passes whatever its line records: it owes no debt, and its line is due for deletion.
 
 ## Consequences
 
