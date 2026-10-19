@@ -76,11 +76,14 @@ kcov_log="$outdir/kcov.log"
 #
 # Markers go as close to the unmeasurable lines as possible -- inside the
 # quoted awk or jq program, so the line that takes the hit keeps being
-# measured and a reader can still see the call ran. When the hit lands on the
-# opening line, the closing line is one more miss, so the end marker goes
-# after the closing quote: kcov also excludes the lines that carry a marker. A
-# program that fits on one line needs no marker. A marker is never a way to
-# hide untested logic; anything a test could reach stays counted.
+# measured and a reader can still see the call ran. kcov also excludes the
+# lines that carry a marker, so a marker never sits on the line that takes the
+# hit. For an assignment from $(...), the hit lands on the closing line, so the
+# end marker goes on its own line just above it, inside the program. When the
+# hit lands on the opening line, the closing line is one more miss, so the end
+# marker goes after the closing quote. A program that fits on one line needs no
+# marker. A marker is never a way to hide untested logic; anything a test could
+# reach stays counted.
 #
 # The three markers are spelled <prefix>-start, <prefix>-end and <prefix>-line.
 # They are assembled from the prefix rather than written out, because this file
