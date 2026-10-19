@@ -326,6 +326,53 @@ STUB
   [ -f "$SESSIONS_DIR/other-session.json" ]
 }
 
+# set_folder_job <session-id> <args...> — run the script as a background
+# session whose job state names SESSION_ID as its first id: after a /clear,
+# <session-id> differs from it.
+set_folder_job() {
+  local sid="$1"
+  shift
+  mkdir -p "$TEST_TEMP_DIR/job"
+  printf '{"sessionId":"%s"}' "$SESSION_ID" > "$TEST_TEMP_DIR/job/state.json"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    CLAUDE_CODE_SESSION_ID="$sid" \
+    CLAUDE_JOB_DIR="$TEST_TEMP_DIR/job" \
+    "$SCRIPT" "$@"
+}
+
+CLEARED_ID="5f0c8a11-7d2e-4b3a-9c41-0e6f2b7d8a90"
+
+@test "a background session records the first id of its job in the file" {
+  set_folder_job "$SESSION_ID" "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ "$(jq -r .job_session_id "$output")" = "$SESSION_ID" ]
+}
+
+@test "an interactive session records no job id in the file" {
+  set_folder "$TOPIC"
+  [ "$(jq -r .job_session_id "$output")" = "null" ]
+}
+
+@test "after /clear, --clear removes the file of the first id that the reader falls back to" {
+  set_folder_job "$SESSION_ID" "$TOPIC"
+  set_folder_job "$CLEARED_ID" --clear
+  [ "$status" -eq 0 ]
+  [ "$(session_file_count)" -eq 0 ]
+  [[ "$stderr" == *"cleared this session's folder override"* ]] || false
+}
+
+@test "after /clear, a new folder is written under the live id, and the first-id file stays" {
+  local other="$TEST_TEMP_DIR/other-topic"
+  mkdir -p "$other"
+  set_folder_job "$SESSION_ID" "$TOPIC"
+  set_folder_job "$CLEARED_ID" "$other"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$SESSIONS_DIR/$CLEARED_ID.json" ]
+  [ "$(session_file_count)" -eq 1 ]
+  [ "$(jq -r .job_session_id "$output")" = "$SESSION_ID" ]
+}
+
 @test "--clear errors rather than reporting success when the removal fails" {
   _require_enforced_permission_bits
   # Removing a file is governed by the write bit on its directory, not on the
@@ -660,4 +707,138 @@ working_file() {
   set_folder --clear
   [ "$status" -eq 0 ]
   [[ "$stderr" != *"stays under"* ]] || false
+}
+
+# ============================================================================
+# One session for each folder (issue 295, part 2)
+# ============================================================================
+
+OTHER_ID="7fa0c639-1111-4222-8333-944455556666"
+OTHER_CLEARED="9b1d2c3e-4f50-4a61-8b72-c3d4e5f60718"
+
+# claude_stub — put a claude first on PATH whose `agents --json` and
+# `agents --json --all` both print $LIVE_FILE, or fail with STUB_FAIL=1.
+claude_stub() {
+  mkdir -p "$TEST_TEMP_DIR/bin"
+  cat > "$TEST_TEMP_DIR/bin/claude" <<'STUB'
+#!/usr/bin/env bash
+[ "${STUB_FAIL:-0}" = "1" ] && exit 3
+[ "${1-} ${2-}" = "agents --json" ] && { cat "$LIVE_FILE"; exit 0; }
+exit 9
+STUB
+  chmod +x "$TEST_TEMP_DIR/bin/claude"
+  LIVE_FILE="$TEST_TEMP_DIR/live.json"
+  printf '[]' > "$LIVE_FILE"
+}
+
+# other_file <session-id> [job-session-id] — a session file of another session
+# that names TOPIC.
+other_file() {
+  mkdir -p "$SESSIONS_DIR"
+  local job="null"
+  [ -z "${2-}" ] || job="\"$2\""
+  printf '{"version":1,"folder":"%s","session_id":"%s","job_session_id":%s,"written_at":"2026-10-13T10:00:00Z"}' \
+    "$TOPIC" "$1" "$job" > "$SESSIONS_DIR/$1--other.json"
+}
+
+# live_row <session-id> <status|null> <pid|null> — the list holds one row of
+# the job of OTHER_ID.
+live_row() {
+  local status="\"$2\""
+  [ "$2" != "null" ] || status="null"
+  printf '[{"id":"%s","sessionId":"%s","name":"other-work","status":%s,"pid":%s,"kind":"background","state":"blocked"}]' \
+    "${OTHER_ID:0:8}" "$1" "$status" "$3" > "$LIVE_FILE"
+}
+
+set_folder_stub() {
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
+    PATH="$TEST_TEMP_DIR/bin:$PATH" LIVE_FILE="$LIVE_FILE" STUB_FAIL="${STUB_FAIL:-0}" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
+    "$SCRIPT" "$@"
+}
+
+@test "a folder that a running session holds is refused with S007 and the /resume-agent command" {
+  claude_stub
+  other_file "$OTHER_ID"
+  live_row "$OTHER_ID" idle 123
+  set_folder_stub "$TOPIC"
+  [ "$status" -eq 1 ]
+  [ "$(session_file_count)" -eq 0 ]
+  [[ "$stderr" == *"S007"*"session $OTHER_ID (running, job ${OTHER_ID:0:8}, name 'other-work') holds $TOPIC"* ]] || false
+  [[ "$stderr" == *"use /resume-agent $TOPIC"*"set-work-folder.sh --take-over $TOPIC"* ]] || false
+}
+
+@test "a folder that a retired session holds is refused too" {
+  claude_stub
+  other_file "$OTHER_ID"
+  live_row "$OTHER_ID" null null
+  set_folder_stub "$TOPIC"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"S007"*"(retired"* ]] || false
+}
+
+@test "a folder whose other session ended is claimed" {
+  claude_stub
+  other_file "$OTHER_ID"
+  set_folder_stub "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ "$(session_file_count)" -eq 1 ]
+  [ -f "$SESSIONS_DIR/$OTHER_ID--other.json" ]
+}
+
+@test "--take-over removes each file of the other job, claims the folder, and prints the stop command" {
+  claude_stub
+  other_file "$OTHER_ID" "$OTHER_ID"
+  other_file "$OTHER_CLEARED" "$OTHER_ID"
+  live_row "$OTHER_CLEARED" idle 123
+  set_folder_stub --take-over "$TOPIC" "my name"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$SESSIONS_DIR/${SESSION_ID}--my-name.json" ]
+  [ ! -e "$SESSIONS_DIR/$OTHER_ID--other.json" ]
+  [ ! -e "$SESSIONS_DIR/$OTHER_CLEARED--other.json" ]
+  [ "$(printf '%s\n' "$stderr" | grep -c 'took ')" -eq 1 ]
+  [[ "$stderr" == *"took $TOPIC from session $OTHER_CLEARED (running, job ${OTHER_ID:0:8}"*"stop it with claude stop ${OTHER_ID:0:8}"* ]] || false
+}
+
+@test "--take-over of a folder that nobody else holds is a plain claim" {
+  claude_stub
+  set_folder_stub --take-over "$TOPIC"
+  [ "$status" -eq 0 ]
+  [[ "$stderr" != *"took"* ]] || false
+}
+
+@test "--take-over with no folder → S001" {
+  set_folder --take-over
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"S001"* ]] || false
+}
+
+@test "--take-over with a flag in place of the folder → S001" {
+  set_folder --take-over --clear
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"S001"* ]] || false
+}
+
+@test "a check that cannot run lets the claim go on, with one stderr line" {
+  claude_stub
+  other_file "$OTHER_ID"
+  STUB_FAIL=1 set_folder_stub "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ "$(session_file_count)" -eq 1 ]
+  [ "$(printf '%s\n' "$stderr" | grep -c 'could not check')" -eq 1 ]
+  [[ "$stderr" == *"could not check whether another session holds $TOPIC (claude agents --json failed"*"the claim goes on"* ]] || false
+}
+
+@test "a background session after /clear does not count its own job as a holder" {
+  claude_stub
+  set_folder_job "$SESSION_ID" "$TOPIC"
+  printf '[{"id":"%s","sessionId":"%s","name":"me","status":"idle","pid":1,"kind":"background","state":"blocked"}]' \
+    "${SESSION_ID:0:8}" "$CLEARED_ID" > "$LIVE_FILE"
+  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
+    PATH="$TEST_TEMP_DIR/bin:$PATH" LIVE_FILE="$LIVE_FILE" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$CLEARED_ID" \
+    CLAUDE_JOB_DIR="$TEST_TEMP_DIR/job" "$SCRIPT" "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$SESSIONS_DIR/$CLEARED_ID.json" ]
 }

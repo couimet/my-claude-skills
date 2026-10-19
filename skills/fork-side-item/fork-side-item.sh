@@ -18,7 +18,7 @@
 #
 #   fork   Name the folder side-<slug>, where the slug comes from <claim> and
 #          is cut at 50 characters, and start the worker through
-#          launch-agent.sh <folder> --bg with the worker prompt from standard
+#          launch-agent.sh --bg <folder> with the worker prompt from standard
 #          input. launch-agent.sh creates the folder, saves the prompt as
 #          prompt-new-agent-launch.txt, names the worker after the folder, and
 #          applies the depth limit. This script adds no folder code of its own.
@@ -176,7 +176,7 @@ if [ -e "$side_folder" ]; then
   die "$ERR_EXISTS" "$side_folder exists already (state: $existing_state); if it holds this item, do not fork it again; if the item differs, reword the claim$wake_hint"
 fi
 
-if ! launch_output="$(printf '%s\n' "$prompt" | "$_self_dir/../launch-agent/launch-agent.sh" "$name" --bg)"; then
+if ! launch_output="$(printf '%s\n' "$prompt" | "$_self_dir/../launch-agent/launch-agent.sh" --bg "$name")"; then
   [ -z "$launch_output" ] || printf '%s\n' "$launch_output"
   # Not "did not start": launch-agent.sh can fail after the worker started,
   # with L004 or L006, and its own error says which case it is.

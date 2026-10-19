@@ -10,12 +10,15 @@
 # launch prompt nobody kept. This script does all four in one call.
 #
 # Usage:
-#   launch-agent.sh <folder> [--bg] <<'LAUNCH_AGENT_PROMPT_END'
+#   launch-agent.sh [--bg] [--take-over] <folder> <<'LAUNCH_AGENT_PROMPT_END'
 #   <task prompt>
 #   LAUNCH_AGENT_PROMPT_END
 #
-#   launch-agent.sh <folder> [--bg] <task prompt>
+#   launch-agent.sh [--bg] [--take-over] <folder> <task prompt>
 #   launch-agent.sh --help
+#
+#   Each flag comes before the folder, in any order. A word after the folder
+#   is prompt text.
 #
 #   <folder>        An absolute path, used as given, or a slug naming one
 #                   directory under the topic root. The topic root is the
@@ -25,8 +28,10 @@
 #                   link's target, which can sit outside that root.
 #   --bg            Start a background agent. Without it, no agent starts and
 #                   the calling session's working files point at the folder.
+#   --take-over     Take the folder from another session that holds it. See
+#                   "One session for each folder" below.
 #   <task prompt>   Standard input, when no argument follows the folder and
-#                   the flag and standard input is not a terminal. Otherwise
+#                   standard input is not a terminal. Otherwise
 #                   the rest of the arguments. A single argument with no
 #                   whitespace that names a readable file contributes that
 #                   file's content instead.
@@ -56,6 +61,22 @@
 # id, written right after the dispatch; agent-depth.sh says why. The default
 # mode starts no agent, so it has no depth check.
 #
+# One session for each folder. Before anything is written, the script asks
+# ../issue-context/folder-sessions.sh which sessions claim an existing folder.
+# When another session in the state running or retired holds it, the launch
+# stops with L007, which names that session and the /resume-agent command
+# that continues it. In the --bg mode the calling session counts too: a
+# background agent in the folder of its caller makes two sessions in one
+# folder, so L007 tells the user to launch into another folder or to do the
+# work in this session, and --take-over does not apply to the caller.
+# --take-over takes the folder from another session: in the default mode
+# set-work-folder.sh does it, and in the --bg mode this script removes the
+# session files of the other session before the dispatch, so the claim of
+# the child goes through. Neither stops the other session; stderr gives the
+# claude stop command. A session that ended does not hold the folder, and it
+# keeps the /resume-agent hint. When the check cannot run, the launch goes on
+# and one stderr line says so.
+#
 # No claude flag passes through to the child. The child starts with the user's
 # default settings, and wanting a different model or permission mode is a
 # settings change rather than a launcher argument.
@@ -82,8 +103,8 @@
 # it survives a launch that fails and a child that crashes on its first turn.
 #
 # Output (stdout): the resolved folder first, so a typo shows in the first
-# line, then the prompt file and the name. When a session file of another
-# session names the folder, one stderr line points to /resume-agent. A launch that repeats the newest
+# line, then the prompt file and the name. When a session that ended claimed
+# the folder, one stderr line points to /resume-agent. A launch that repeats the newest
 # prompt adds one Repeat: line before the prompt file. The default mode ends
 # with one line saying that no agent was started and one line with the /rename
 # command; --bg ends with the job id and the attach command. The job id is the
@@ -103,6 +124,7 @@ readonly ERR_PROMPT="L003"
 readonly ERR_DISPATCH="L004"
 readonly ERR_HERE="L005"
 readonly ERR_DEPTH="L006"
+readonly ERR_HELD="L007"
 
 # The one fixed filename this script owns. A launch prompt is found by name
 # rather than by search, so the name does not vary and is not configurable.
@@ -110,16 +132,17 @@ readonly PROMPT_BASENAME="prompt-new-agent-launch"
 
 usage() {
   cat <<'EOF'
-Usage: launch-agent.sh <folder> [--bg] <<'LAUNCH_AGENT_PROMPT_END'
+Usage: launch-agent.sh [--bg] [--take-over] <folder> <<'LAUNCH_AGENT_PROMPT_END'
        <task prompt>
        LAUNCH_AGENT_PROMPT_END
-       launch-agent.sh <folder> [--bg] <task prompt>
+       launch-agent.sh [--bg] [--take-over] <folder> <task prompt>
        launch-agent.sh --help
 
   <folder>       Absolute path, or a slug naming one directory under the
                  launchAgentDefaultFolder setting, else the repository root
   --bg           Start a background agent; without it, point the calling
                  session's working files at the folder
+  --take-over    Take the folder from another session that holds it
   <task prompt>  Standard input, or the rest of the arguments. A single
                  argument with no whitespace naming a readable file
                  contributes that file's content instead.
@@ -175,31 +198,27 @@ _launch_agent_shquote() {
 }
 
 # --- Parse arguments ---
-case "${1-}" in
-  --help)
-    usage
-    exit 0
-    ;;
-  "")
-    usage >&2
-    die "$ERR_USAGE" "a folder is required"
-    ;;
-  -*)
-    die "$ERR_USAGE" "unknown flag '$1'; the folder comes first"
-    ;;
-esac
-
-folder="$1"
-shift
-
+# One grammar, the one each script of the collection uses: the flags first,
+# in any order, then the folder, then the prompt. A word after the folder is
+# prompt text, never a flag, except --bg or --take-over in the first place
+# after it: that is the order this script took before, so it stops with a
+# message that gives the new form. --name and --here are refused by name for
+# the same reason: a saved command from before their removal fails with a
+# message that says what to do instead.
 bg_mode=0
-# One flag remains. --name and --here are refused by name rather than read as
-# the start of the prompt, so a saved command from before their removal fails
-# with a message that says what to do instead.
+take_over=0
 while :; do
   case "${1-}" in
+    --help)
+      usage
+      exit 0
+      ;;
     --bg)
       bg_mode=1
+      shift
+      ;;
+    --take-over)
+      take_over=1
       shift
       ;;
     --name)
@@ -208,11 +227,27 @@ while :; do
     --here)
       die "$ERR_USAGE" "--here was removed; this session adopting the folder is now the default, and --bg starts an agent instead"
       ;;
+    -*)
+      die "$ERR_USAGE" "unknown flag '$1'"
+      ;;
     *)
       break
       ;;
   esac
 done
+
+if [ -z "${1-}" ]; then
+  usage >&2
+  die "$ERR_USAGE" "a folder is required"
+fi
+folder="$1"
+shift
+
+case "${1-}" in
+  --bg | --take-over)
+    die "$ERR_USAGE" "'$1' comes after the folder; each flag now comes before it: launch-agent.sh $1 $folder ..."
+    ;;
+esac
 
 # --- Read the prompt from standard input ---
 # Only when no argument is left, so an explicit argument always wins and a
@@ -353,6 +388,48 @@ fi
 
 [ -n "$prompt" ] || die "$ERR_PROMPT" "the task prompt is empty"
 
+# --- One session for each folder ---
+# See the header. A folder that does not exist yet has no session. The hint
+# for a session that ended is printed after the Folder line.
+earlier_hint=""
+held_files=()
+if [ -d "$target" ] && held_abs="$({ cd "$target" && pwd -P; } 2>/dev/null)"; then
+  check_args=("$held_abs")
+  [ "$bg_mode" -eq 1 ] || check_args=(--others "$held_abs")
+  self_first=""
+  _issue_context_job_first_id self_first || self_first=""
+  check_rc=0
+  check_out="$("$_self_dir/../issue-context/folder-sessions.sh" "${check_args[@]}" 2>&1)" || check_rc=$?
+  if [ "$check_rc" -ne 0 ]; then
+    check_why="${check_out##*$'\n'}"
+    check_why="${check_why#*error: }"
+    echo "launch-agent: could not check whether another session holds $held_abs (${check_why:-no reason given}); the launch goes on" >&2
+  else
+    while IFS=$'\t' read -r h_sid h_job h_name h_state; do
+      [ -n "$h_sid" ] || continue
+      if [ "$h_state" = "ended" ]; then
+        [ -n "$earlier_hint" ] \
+          || earlier_hint="launch-agent: session ${h_sid:0:8} used this folder before; to continue that session rather than start with no context, use /resume-agent $held_abs"
+        continue
+      fi
+      case "$h_state" in running | retired) ;; *) continue ;; esac
+      if [ "$h_sid" = "${CLAUDE_CODE_SESSION_ID:-}" ] \
+          || { [ -n "$self_first" ] && [ "$h_job" = "${self_first:0:8}" ]; }; then
+        die "$ERR_HELD" "this session holds $held_abs, and a background agent in it would make two sessions in one folder; launch the agent into another folder, or do the work in this session"
+      fi
+      h_label="session $h_sid ($h_state"
+      [ "$h_job" = "-" ] || h_label="$h_label, job $h_job"
+      [ "$h_name" = "-" ] || h_label="$h_label, name '$h_name'"
+      h_label="$h_label)"
+      [ "$take_over" -eq 1 ] \
+        || die "$ERR_HELD" "$h_label holds $held_abs, and two sessions in one folder each see half of the work; to continue that session, use /resume-agent $held_abs; to take the folder from it, launch again with --take-over"
+      held_files+=("$h_sid	$h_job	$h_label")
+    done <<HOLDERS
+$check_out
+HOLDERS
+  fi
+fi
+
 # --- Create the folder ---
 # Created rather than refused, unlike set-work-folder.sh: this call is what
 # starts a topic, so the folder not existing yet is the normal case rather
@@ -372,21 +449,12 @@ folder_abs="$({ cd "$target" && pwd -P; } 2>/dev/null)" \
 printf 'Folder: %s\n' "$folder_abs"
 
 # --- Point to an earlier session of the folder ---
-# A hint, never a refusal. Another session that wrote to this folder holds the
-# chat context of the earlier rounds, and /resume-agent continues it, where
-# this launch starts with none. This script cannot tell whether that session
-# ended or why a new one is wanted, so it says so once and goes on. Only the
-# newest one is named; /resume-agent picks the same one.
-if earlier="$(_issue_context_sessions_of_folder "$folder_abs")"; then
-  while IFS=$'\t' read -r _written earlier_id; do
-    [ -n "$earlier_id" ] || continue
-    [ "$earlier_id" != "${CLAUDE_CODE_SESSION_ID:-}" ] || continue
-    echo "launch-agent: session ${earlier_id:0:8} used this folder before; to continue that session rather than start with no context, use /resume-agent $folder_abs" >&2
-    break
-  done <<EOF
-$earlier
-EOF
-fi
+# A hint, never a refusal. A session that ended in this folder holds the chat
+# context of the earlier rounds, and /resume-agent continues it, where this
+# launch starts with none. This script cannot tell why a new one is wanted,
+# so it says so once and goes on. Only the newest one is named;
+# /resume-agent picks the same one.
+[ -z "$earlier_hint" ] || echo "$earlier_hint" >&2
 
 # --- Save the prompt ---
 # Before dispatch, so the file exists even when the launch fails. The stable
@@ -472,7 +540,9 @@ printf 'Name: %s\n' "$display_name"
 # the facts that matter are the last lines printed here.
 if [ "$bg_mode" -eq 0 ]; then
   set_work_folder="$(cd "$_self_dir/../issue-context" && pwd -P)/set-work-folder.sh"
-  if ! "$set_work_folder" "$folder_abs" "$display_name" > /dev/null; then
+  take_over_flag=()
+  [ "$take_over" -eq 0 ] || take_over_flag=(--take-over)
+  if ! "$set_work_folder" ${take_over_flag[@]+"${take_over_flag[@]}"} "$folder_abs" "$display_name" > /dev/null; then
     {
       echo "launch-agent $ERR_HERE error: the folder was not adopted. The folder and the prompt file are in place; run this to adopt it by hand:"
       echo
@@ -487,6 +557,30 @@ if [ "$bg_mode" -eq 0 ]; then
   printf 'Type /rename %s to give this session the folder name.\n' "$display_name"
   exit 0
 fi
+
+# --- Take the folder for the child ---
+# The child claims the folder with set-work-folder.sh, so the files of the
+# other session go before the dispatch.
+for held in ${held_files[@]+"${held_files[@]}"}; do
+  IFS=$'\t' read -r h_sid h_job h_label <<HELD
+$held
+HELD
+  h_files="$(_issue_context_holder_files "$folder_abs" "$h_sid" "$h_job")" \
+    || die "$ERR_HELD" "could not read the session files of $h_label, so the folder was not taken and no agent started"
+  while IFS= read -r h_file; do
+    [ -n "$h_file" ] || continue
+    rm -f "$h_file" \
+      || die "$ERR_HELD" "could not remove $h_file, so $h_label still holds $folder_abs and no agent started"
+  done <<FILES
+$h_files
+FILES
+  if [ "$h_job" = "-" ]; then
+    h_stop="close that session"
+  else
+    h_stop="stop it with claude stop $h_job"
+  fi
+  echo "launch-agent: took $folder_abs from $h_label and removed its session file; it can still write to the folder until it stops: $h_stop" >&2
+done
 
 # --- Choose the child's working directory ---
 # The repository root that contains the folder, so that repository's CLAUDE.md

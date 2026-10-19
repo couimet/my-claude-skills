@@ -33,8 +33,12 @@ teardown() {
   rm -rf "${TEST_TEMP_DIR:?}"
 }
 
+# run_install [args...] — run install.sh from the fake repo with the fake
+# HOME. ANSWER is the text on its standard input, the answer to the hook
+# question; with no ANSWER, standard input is empty, which answers no.
 run_install() {
-  run env HOME="$FAKE_HOME" bash -c "cd '$FAKE_REPO' && ./install.sh"
+  run env HOME="$FAKE_HOME" bash -c 'cd "$1" && shift && exec ./install.sh "$@"' _ "$FAKE_REPO" "$@" \
+    < <(printf '%s' "${ANSWER-}")
 }
 
 # ============================================================================
@@ -189,4 +193,156 @@ run_install() {
   [[ "$output" == *"real directory"* ]] || false
   [[ "$output" == *"1 conflict"* ]] || false
   [ -L "$FAKE_HOME/.claude/skills/beta" ]
+}
+
+# ============================================================================
+# The Claude Code hook step (issue 296). Every test edits a settings file
+# under the fake HOME, never the developer's own.
+# ============================================================================
+
+SETTINGS_REL=".claude/settings.json"
+HOOK_SUFFIX="/issue-context/session-hook.sh"
+
+# hook_count <event> — count the entries of this hook under <event>.
+hook_count() {
+  jq --arg e "$1" --arg s "$HOOK_SUFFIX" \
+    '[.hooks[$e][]?.hooks[]? | select(.command | endswith($s))] | length' "$FAKE_HOME/$SETTINGS_REL"
+}
+
+@test "hook: a yes adds one entry for each event, with the matchers and the absolute command" {
+  ANSWER=y run_install
+  [ "$status" -eq 0 ]
+  [ "$(hook_count SessionStart)" -eq 1 ]
+  [ "$(hook_count SessionEnd)" -eq 1 ]
+  [ "$(jq -r '.hooks.SessionStart[0].matcher' "$FAKE_HOME/$SETTINGS_REL")" = "clear|resume" ]
+  [ "$(jq -r '.hooks.SessionEnd[0].matcher' "$FAKE_HOME/$SETTINGS_REL")" = "clear" ]
+  [ "$(jq -r '.hooks.SessionEnd[0].hooks[0].command' "$FAKE_HOME/$SETTINGS_REL")" = "$FAKE_HOME/.claude/skills/issue-context/session-hook.sh" ]
+  [[ "$output" == *"[y/N]"* ]] || false
+  [[ "$output" == *"Claude Code hook: added"* ]] || false
+}
+
+@test "hook: the edit keeps every other key and hook, and writes a backup first" {
+  printf '%s' '{"model":"x","hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"/other/hook.sh"}]}],"Stop":[{"hooks":[{"type":"command","command":"/stop.sh"}]}]}}' \
+    > "$FAKE_HOME/$SETTINGS_REL"
+  cp "$FAKE_HOME/$SETTINGS_REL" "$TEST_TEMP_DIR/before.json"
+  ANSWER=y run_install
+  [ "$status" -eq 0 ]
+  [ "$(jq -r .model "$FAKE_HOME/$SETTINGS_REL")" = "x" ]
+  [ "$(jq -r '.hooks.Stop[0].hooks[0].command' "$FAKE_HOME/$SETTINGS_REL")" = "/stop.sh" ]
+  [ "$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$FAKE_HOME/$SETTINGS_REL")" = "/other/hook.sh" ]
+  [ "$(hook_count SessionStart)" -eq 1 ]
+  local backup
+  backup="$(ls "$FAKE_HOME/.claude/"settings.json.bak-*)"
+  cmp -s "$backup" "$TEST_TEMP_DIR/before.json"
+}
+
+@test "hook: a second run adds nothing and asks nothing" {
+  ANSWER=y run_install
+  ANSWER=y run_install
+  [ "$status" -eq 0 ]
+  [ "$(hook_count SessionStart)" -eq 1 ]
+  [ "$(hook_count SessionEnd)" -eq 1 ]
+  [[ "$output" == *"Claude Code hook: already in"* ]] || false
+  [[ "$output" != *"[y/N]"* ]] || false
+}
+
+@test "hook: an old entry of the hook is replaced, not doubled" {
+  printf '%s' '{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"~/.claude/skills/issue-context/session-hook.sh"}]}]}}' \
+    > "$FAKE_HOME/$SETTINGS_REL"
+  ANSWER=y run_install
+  [ "$status" -eq 0 ]
+  [ "$(hook_count SessionStart)" -eq 1 ]
+  [ "$(jq '.hooks.SessionStart | length' "$FAKE_HOME/$SETTINGS_REL")" -eq 1 ]
+}
+
+@test "hook: no answer changes nothing and prints the entry to add by hand" {
+  run_install
+  [ "$status" -eq 0 ]
+  [ ! -e "$FAKE_HOME/$SETTINGS_REL" ]
+  [[ "$output" == *"Claude Code hook: not added"* ]] || false
+  [[ "$output" == *"\"matcher\": \"clear|resume\""* ]] || false
+}
+
+@test "hook: a no changes nothing" {
+  printf '%s' '{"model":"x"}' > "$FAKE_HOME/$SETTINGS_REL"
+  ANSWER=n run_install
+  [ "$status" -eq 0 ]
+  [ "$(cat "$FAKE_HOME/$SETTINGS_REL")" = '{"model":"x"}' ]
+  ! ls "$FAKE_HOME/.claude/"settings.json.bak-* 2>/dev/null
+}
+
+@test "hook: --no-hooks links the skills, and asks nothing" {
+  ANSWER=y run_install --no-hooks
+  [ "$status" -eq 0 ]
+  [ -L "$FAKE_HOME/.claude/skills/alpha" ]
+  [ ! -e "$FAKE_HOME/$SETTINGS_REL" ]
+  [[ "$output" == *"skipped (--no-hooks)"* ]] || false
+  [[ "$output" != *"[y/N]"* ]] || false
+}
+
+@test "hook: a settings file that is not a JSON object is not changed" {
+  printf 'not json' > "$FAKE_HOME/$SETTINGS_REL"
+  ANSWER=y run_install
+  [ "$status" -eq 0 ]
+  [ "$(cat "$FAKE_HOME/$SETTINGS_REL")" = "not json" ]
+  [[ "$output" == *"is not a JSON object, so it was not changed"* ]] || false
+}
+
+@test "hook: a symlinked settings file is written through, and stays a link" {
+  printf '%s' '{"model":"x"}' > "$TEST_TEMP_DIR/dotfiles-settings.json"
+  ln -s "$TEST_TEMP_DIR/dotfiles-settings.json" "$FAKE_HOME/$SETTINGS_REL"
+  ANSWER=y run_install
+  [ "$status" -eq 0 ]
+  [ -L "$FAKE_HOME/$SETTINGS_REL" ]
+  [ "$(jq -r .model "$TEST_TEMP_DIR/dotfiles-settings.json")" = "x" ]
+  [ "$(hook_count SessionEnd)" -eq 1 ]
+}
+
+@test "hook: --uninstall-hooks removes only the entries of the hook, and links nothing" {
+  printf '%s' '{"model":"x","hooks":{"Stop":[{"hooks":[{"type":"command","command":"/stop.sh"}]}]}}' \
+    > "$FAKE_HOME/$SETTINGS_REL"
+  ANSWER=y run_install
+  rm -rf "$FAKE_HOME/.claude/skills"
+  run_install --uninstall-hooks
+  [ "$status" -eq 0 ]
+  [ "$(hook_count SessionStart)" -eq 0 ]
+  [ "$(hook_count SessionEnd)" -eq 0 ]
+  [ "$(jq -r '.hooks | keys | join(",")' "$FAKE_HOME/$SETTINGS_REL")" = "Stop" ]
+  [ "$(jq -r .model "$FAKE_HOME/$SETTINGS_REL")" = "x" ]
+  [ ! -e "$FAKE_HOME/.claude/skills" ]
+  [[ "$output" == *"Removed the hook entry"* ]] || false
+}
+
+@test "hook: --uninstall-hooks drops an empty hooks key" {
+  ANSWER=y run_install
+  run_install --uninstall-hooks
+  [ "$status" -eq 0 ]
+  [ "$(jq -c . "$FAKE_HOME/$SETTINGS_REL")" = "{}" ]
+}
+
+@test "hook: --uninstall-hooks with no entry changes nothing" {
+  printf '%s' '{"model":"x"}' > "$FAKE_HOME/$SETTINGS_REL"
+  run_install --uninstall-hooks
+  [ "$status" -eq 0 ]
+  [ "$(cat "$FAKE_HOME/$SETTINGS_REL")" = '{"model":"x"}' ]
+  [[ "$output" == *"nothing to remove"* ]] || false
+}
+
+@test "hook: an unknown argument fails with the usage" {
+  run_install --bogus
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"unknown argument '--bogus'"* ]] || false
+}
+
+@test "hook: the plugin hooks file and install.sh name the same script and matchers" {
+  local hooks="$PROJECT_ROOT/hooks/hooks.json"
+  [ "$(jq -r '.hooks.SessionStart[0].matcher' "$hooks")" = "clear|resume" ]
+  [ "$(jq -r '.hooks.SessionEnd[0].matcher' "$hooks")" = "clear" ]
+  [ "$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$hooks")" = '${CLAUDE_PLUGIN_ROOT}/skills/issue-context/session-hook.sh' ]
+  [ "$(jq -r '.hooks.SessionEnd[0].hooks[0].command' "$hooks")" = '${CLAUDE_PLUGIN_ROOT}/skills/issue-context/session-hook.sh' ]
+  grep -q 'HOOK_COMMAND="$SKILLS_DIR/issue-context/session-hook.sh"' "$SCRIPT"
+}
+
+@test "hook: the script that the hooks file names exists and is executable" {
+  [ -x "$PROJECT_ROOT/skills/issue-context/session-hook.sh" ]
 }

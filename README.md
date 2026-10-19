@@ -46,6 +46,8 @@ This creates symlinks from `~/.claude/skills/` to the repo, making all skills gl
 
 `install.sh` requires bash (macOS/Linux). On Windows, use the [quick install](#quick-install-npx-skills) or [marketplace](#marketplace-installation) paths instead.
 
+After the links, `install.sh` asks whether to add the [Claude Code hook](#claude-code-hook) to `~/.claude/settings.json`. The default answer is no. Pass `--no-hooks` to skip the question, and `--uninstall-hooks` to remove the entry later.
+
 `install.sh` symlinks only this repo's own skills. A few of them optionally call external skills — see [External skill dependencies](#external-skill-dependencies) below to install those too.
 
 ### Updating
@@ -54,7 +56,7 @@ This creates symlinks from `~/.claude/skills/` to the repo, making all skills gl
 cd ~/src/my-claude-skills && git pull && ./install.sh
 ```
 
-The install script is idempotent — safe to run on every pull. It only creates/updates symlinks; it never deletes non-symlink directories.
+The install script is idempotent — safe to run on every pull. It only creates/updates symlinks; it never deletes non-symlink directories. When the hook entry is already in your settings file, it asks nothing.
 
 Installed via `npx skills`? Update with `npx skills update -g` instead (see [Quick Install](#quick-install-npx-skills)).
 
@@ -108,6 +110,35 @@ Separate from the optional external skills above, some skills shell out to comma
 ```bash
 brew install jq
 ```
+
+### Claude Code hook
+
+The skills ship one [Claude Code hook](https://code.claude.com/docs/en/hooks), `skills/issue-context/session-hook.sh`. It keeps the work folder of a session after `/clear`, and it tells a resumed session when another session holds its folder. [ADR 006](docs/ADR/006-claude-code-hooks.md) explains why.
+
+- **Marketplace:** the plugin installs the hook for you, through `hooks/hooks.json`.
+- **Clone and symlink:** `install.sh` asks before it adds the hook to `~/.claude/settings.json`, and it keeps a backup of the file.
+- **`npx skills`:** the CLI copies skill folders only, so add this entry to `~/.claude/settings.json` by hand, merged with the `hooks` you already have:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "clear|resume",
+        "hooks": [{ "type": "command", "command": "~/.claude/skills/issue-context/session-hook.sh" }]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "clear",
+        "hooks": [{ "type": "command", "command": "~/.claude/skills/issue-context/session-hook.sh" }]
+      }
+    ]
+  }
+}
+```
+
+The hook never stops a session start: on an error it does nothing and prints at most one line.
 
 ### Work-item path configuration
 
@@ -472,7 +503,7 @@ I've used Claude Code on dozens of real issues and kept running into the same fr
 | `/draft-issue <title-or-path>`                                 | Author an issue draft in a standardized local format (YAML front matter over a title and body), grilled through `/g2q` for thoroughness, before filing it with `/create-github-issue` or `/create-jira-issue`                                                                                                                                                                                                                      |
 | `/finish-issue`                                                | Verify work, collect breadcrumbs, check docs, and generate a PR description                                                                                                                                                                                                                                                                                                                                                        |
 | `/fork-side-item <claim>`                                      | Move a side item found outside the current task to its own `side-<slug>` folder, with a background worker that files a ticket, adds to one, sends a message, or drops it; `list` shows each side folder and its state; a project adds rules with `fork-side-item-hook`                                                                                                                                                             |
-| `/launch-agent <folder> [--bg] <prompt>`                       | Start work on a topic with its folder created and its launch prompt saved inside it, in one call — this session adopts the folder by default, and `--bg` starts a background agent named after the folder; set `launchAgentDefaultFolder` so a short folder name lands in your topic repository from any session; Claude can start it with `--bg`, and `launchAgentMaxDepth` (default 2) stops a chain of agents that start agents |
+| `/launch-agent [--bg] <folder> <prompt>`                       | Start work on a topic with its folder created and its launch prompt saved inside it, in one call — this session adopts the folder by default, and `--bg` starts a background agent named after the folder; set `launchAgentDefaultFolder` so a short folder name lands in your topic repository from any session; Claude can start it with `--bg`, and `launchAgentMaxDepth` (default 2) stops a chain of agents that start agents |
 | `/note <desc>`                                                 | Capture a quick note, finding, or result — lightweight `/scratchpad` alternative                                                                                                                                                                                                                                                                                                                                                   |
 | `/question <topic>`                                            | Surface design decisions as a structured Q&A file you edit in-place                                                                                                                                                                                                                                                                                                                                                                |
 | `/rebase-issue <target>`                                       | Rebase an issue branch onto `<target>` (defaults to `origin/main`) after upstream PRs merge — handles conflicts, squashes to one commit, and confirms before push                                                                                                                                                                                                                                                                  |

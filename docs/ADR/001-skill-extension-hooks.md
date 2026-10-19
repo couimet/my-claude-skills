@@ -3,6 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-06-15
 - **Issue:** <https://github.com/couimet/my-claude-skills/issues/155>
+- **See also:** [ADR 006](./006-claude-code-hooks.md) for the Claude Code hook that the skills ship. That hook is a command that Claude Code runs on a session event. It is a different mechanism from the `<skill>-hook` skills of this ADR.
 
 ## Context
 

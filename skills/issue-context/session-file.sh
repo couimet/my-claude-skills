@@ -16,6 +16,14 @@
 # with), while CLAUDE_CODE_SESSION_ID survives that swap. A variable would
 # route one conversation to two places, silently.
 #
+# CLAUDE_CODE_SESSION_ID does not survive a /clear: the session gets a new
+# id, and its file keeps the name of the first one. A background session
+# keeps the first id in the sessionId field of its job state,
+# $CLAUDE_JOB_DIR/state.json, so the lookup falls back to that id when no
+# file names the new one. An interactive session has no job state, so only
+# a file written for the new id, such as the one session-hook.sh writes,
+# keeps its folder.
+#
 # Location:
 #   <dirname SETTINGS_FILE>/sessions/<session-id>[--<slug>].json
 #
@@ -26,9 +34,11 @@
 # Functions defined on source:
 #   _issue_context_sessions_dir
 #   _issue_context_session_id_ok
+#   _issue_context_job_first_id <out-var>
 #   _issue_context_session_file_read <out-folder-var> <out-reason-var>
 #   _issue_context_session_file_matches <out-array-var>
 #   _issue_context_sessions_of_folder <folder>
+#   _issue_context_holder_files <folder> <session-id> <job-id>
 #
 # Reading never exits and never prints. Every failure returns non-zero and
 # writes a short reason into the caller's variable, so the caller composes its
@@ -78,6 +88,30 @@ _issue_context_session_id_ok() {
   _issue_settings_is_safe_component "$CLAUDE_CODE_SESSION_ID"
 }
 
+# _issue_context_job_first_id <out-var> — set <out-var> to the first session
+# id of the job of this background session: the sessionId field of
+# $CLAUDE_JOB_DIR/state.json. A /clear changes CLAUDE_CODE_SESSION_ID and
+# leaves this field as it was, so it names the session for the whole life of
+# the job. Its first 8 characters are the job id that `claude agents --json`
+# reports.
+#
+# Returns 1, with <out-var> empty, when CLAUDE_JOB_DIR is unset, the file
+# cannot be read, jq is missing, or the field is not a string that can be a
+# filename component. An interactive session has no job, so this is the
+# ordinary case there. The state file is not a documented interface, so a
+# change of its shape makes the lookup find nothing, never something wrong.
+_issue_context_job_first_id() {
+  local _isj_out_var="$1" _isj_id
+  eval "$_isj_out_var=''"
+  [ -n "${CLAUDE_JOB_DIR:-}" ] && [ -r "$CLAUDE_JOB_DIR/state.json" ] || return 1
+  command -v jq >/dev/null 2>&1 || return 1
+  _isj_id="$(jq -r 'if type == "object" and (.sessionId | type == "string")
+                    then .sessionId else empty end' "$CLAUDE_JOB_DIR/state.json" 2>/dev/null)" \
+    || return 1
+  [ -n "$_isj_id" ] && _issue_settings_is_safe_component "$_isj_id" || return 1
+  eval "$_isj_out_var=\"\$_isj_id\""
+}
+
 # _issue_context_session_file_matches <out-array-var> — collect every session
 # file belonging to the current session into the named array variable.
 #
@@ -91,23 +125,36 @@ _issue_context_session_id_ok() {
 # patterns are what make the code say so. Nothing ever looks a file up by its
 # slug, so a filename whose slug went stale stays cosmetic.
 #
+# The files of the live id come first. Only when none exists, and the
+# session is a background session whose job state names another first id,
+# are the files of that first id collected instead: a session after /clear.
+# A file under the live id therefore always wins, and the reader, --clear,
+# and the one-writer cleanup of set-work-folder.sh all see the same file.
+#
 # Returns 1 when there is no session id, when the session id could not be a
 # filename component, or when there is no sessions directory. An empty
 # array with a 0 return means the directory exists and holds nothing for this
 # session, which is the ordinary no-override case.
 _issue_context_session_file_matches() {
-  local _isf_out_var="$1" _isf_dir _isf_candidate
+  local _isf_out_var="$1" _isf_dir _isf_candidate _isf_id _isf_first=""
   local -a _isf_found=()
 
   _issue_context_session_id_ok || return 1
   _isf_dir="$(_issue_context_sessions_dir)" || return 1
   [ -d "$_isf_dir" ] || return 1
 
-  for _isf_candidate in \
-    "$_isf_dir/${CLAUDE_CODE_SESSION_ID}.json" \
-    "$_isf_dir/${CLAUDE_CODE_SESSION_ID}--"*.json; do
-    [ -f "$_isf_candidate" ] || continue
-    _isf_found+=("$_isf_candidate")
+  _isf_id="$CLAUDE_CODE_SESSION_ID"
+  while :; do
+    for _isf_candidate in \
+      "$_isf_dir/${_isf_id}.json" \
+      "$_isf_dir/${_isf_id}--"*.json; do
+      [ -f "$_isf_candidate" ] || continue
+      _isf_found+=("$_isf_candidate")
+    done
+    [ "${#_isf_found[@]}" -eq 0 ] && [ -z "$_isf_first" ] || break
+    _issue_context_job_first_id _isf_first || break
+    [ "$_isf_first" != "$CLAUDE_CODE_SESSION_ID" ] || break
+    _isf_id="$_isf_first"
   done
 
   # eval is how a bash 3.2 function assigns to a caller-named array; macOS
@@ -198,14 +245,18 @@ _issue_context_session_file_read() {
 }
 
 # _issue_context_sessions_of_folder <folder> — print one
-# "<written_at><TAB><session_id>" line for each session file that names
-# <folder>, newest first. <folder> must be canonical (pwd -P), because the
-# writer stores it that way and the two compare as strings. The file of the
-# current session is included; the caller skips it when it must.
+# "<written_at><TAB><session_id><TAB><job_session_id>" line for each session
+# file that names <folder>, newest first. <folder> must be canonical (pwd -P),
+# because the writer stores it that way and the two compare as strings. The
+# file of the current session is included; the caller skips it when it must.
+# <job_session_id> is the first session id of the job that wrote the file,
+# and empty for an interactive session or an older file.
 #
-# A file that does not parse is skipped: it names no folder a reader can
-# trust. Returns 1 when jq is missing or there is no sessions directory, so a
-# caller that only gives a hint can skip it quietly.
+# Each id reaches a command line in a caller, so a file whose session_id is
+# not one plain token is skipped, and a job_session_id that is not one plain
+# token reads as empty. A file that does not parse is skipped: it names no
+# folder a reader can trust. Returns 1 when jq is missing or there is no
+# sessions directory, so a caller that only gives a hint can skip it quietly.
 _issue_context_sessions_of_folder() {
   local _isf_folder="$1" _isf_dir _isf_file _isf_line _isf_all=""
 
@@ -216,10 +267,45 @@ _issue_context_sessions_of_folder() {
   for _isf_file in "$_isf_dir"/*.json; do
     [ -f "$_isf_file" ] || continue
     _isf_line="$(jq -r --arg f "$_isf_folder" \
-      'select(type == "object" and .folder == $f and (.session_id | type == "string"))
-       | "\(.written_at // "")\t\(.session_id)"' "$_isf_file" 2>/dev/null || true)"
+      'def token: type == "string" and test("^[A-Za-z0-9_-]+$");
+       select(type == "object" and .folder == $f and (.session_id | token))
+       | "\(.written_at // "")\t\(.session_id)\t\(if (.job_session_id | token) then .job_session_id else "" end)"' \
+      "$_isf_file" 2>/dev/null || true)"
     [ -n "$_isf_line" ] || continue
     _isf_all="${_isf_all}${_isf_line}"$'\n'
   done
   printf '%s' "$_isf_all" | LC_ALL=C sort -r
+}
+
+# _issue_context_holder_files <folder> <session-id> <job-id> — print the path
+# of each session file that names <folder> and belongs to one session: its
+# session_id is <session-id>, or it belongs to the job <job-id> (the first 8
+# characters of its session_id or of its job_session_id). <job-id> may be
+# empty or "-" for a session with no job. <folder> must be canonical, as for
+# _issue_context_sessions_of_folder.
+#
+# A take-over of a folder removes these files, so that the other session no
+# longer claims it. The files of one job, before and after a /clear, all go,
+# because the reader falls back from one to the other. Returns 1 when jq is
+# missing or there is no sessions directory.
+_issue_context_holder_files() {
+  local _isf_folder="$1" _isf_sid="$2" _isf_job="$3" _isf_dir _isf_file
+  [ "$_isf_job" != "-" ] || _isf_job=""
+
+  command -v jq >/dev/null 2>&1 || return 1
+  _isf_dir="$(_issue_context_sessions_dir)" || return 1
+  [ -d "$_isf_dir" ] || return 1
+
+  for _isf_file in "$_isf_dir"/*.json; do
+    [ -f "$_isf_file" ] || continue
+    if jq -e --arg f "$_isf_folder" --arg s "$_isf_sid" --arg j "$_isf_job" \
+        'type == "object" and .folder == $f and (.session_id | type == "string")
+         and (.session_id == $s
+              or ($j != "" and (.session_id[0:8] == $j
+                                or ((.job_session_id | type == "string")
+                                    and .job_session_id[0:8] == $j))))' \
+        "$_isf_file" >/dev/null 2>&1; then
+      printf '%s\n' "$_isf_file"
+    fi
+  done
 }

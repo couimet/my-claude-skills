@@ -32,9 +32,17 @@ SESSION_ID="9c1f3e70-2a44-4c8e-9d61-5b0f7a2c8d13"
 # bare id. Set STUB_FAIL=1 in the environment to make it exit non-zero instead,
 # STUB_SILENT=1 to make it succeed while printing nothing, and STUB_OUTPUT to
 # make it succeed while printing that text in place of the real layout.
+# `claude agents --json [--all]` is the list that folder-sessions.sh reads: it
+# prints $AGENTS_FILE when that file is not empty, else an empty list, and
+# fails with STUB_AGENTS_FAIL=1. It records nothing.
 claude_stub() {
   cat > "$1/claude" <<'STUB'
 #!/usr/bin/env bash
+if [ "${1-} ${2-}" = "agents --json" ]; then
+  [ "${STUB_AGENTS_FAIL:-0}" = "1" ] && exit 3
+  if [ -n "${AGENTS_FILE:-}" ] && [ -s "$AGENTS_FILE" ]; then cat "$AGENTS_FILE"; else printf '[]'; fi
+  exit 0
+fi
 [ -z "${ARGS_FILE:-}" ] || printf '%s\n' "$*" > "$ARGS_FILE"
 [ -z "${CWD_FILE:-}" ] || pwd > "$CWD_FILE"
 if [ "${STUB_FAIL:-0}" = "1" ]; then
@@ -143,7 +151,9 @@ setup() {
   claude_stub "$BIN"
   ARGS_FILE="$TEST_TEMP_DIR/claude-args.txt"
   CWD_FILE="$TEST_TEMP_DIR/claude-cwd.txt"
-  export ARGS_FILE CWD_FILE
+  AGENTS_FILE="$TEST_TEMP_DIR/agents.json"
+  : > "$AGENTS_FILE"
+  export ARGS_FILE CWD_FILE AGENTS_FILE
   STUB_PATH="$BIN:$PATH"
 
   # A repository to launch from. `git init` alone is enough: every path this
@@ -245,15 +255,16 @@ set_default_folder() {
   [[ "$output" == *"a task prompt is required"* ]] || false
 }
 
-@test "leading flag instead of a folder → L001" {
-  run_in "$REPO" --bg thing "do it"
+@test "an unknown flag before the folder → L001, nothing created" {
+  run_in "$REPO" --bogus thing "do it"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L001"* ]] || false
-  [[ "$output" == *"the folder comes first"* ]] || false
+  [[ "$output" == *"unknown flag '--bogus'"* ]] || false
+  [ ! -d "$REPO/thing" ]
 }
 
 @test "--name → L001 saying it was removed, nothing created" {
-  run_here "$REPO" my-topic --name thing "do it"
+  run_here "$REPO" --name thing my-topic "do it"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L001"* ]] || false
   [[ "$output" == *"--name was removed"* ]] || false
@@ -261,10 +272,27 @@ set_default_folder() {
 }
 
 @test "--here → L001 saying it was removed, nothing created" {
-  run_here "$REPO" my-topic --here "do it"
+  run_here "$REPO" --here my-topic "do it"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L001"* ]] || false
   [[ "$output" == *"--here was removed"* ]] || false
+  [ ! -d "$REPO/my-topic" ]
+}
+
+@test "the old order <folder> --bg → L001 with the new form, and no agent starts" {
+  run_in "$REPO" my-topic --bg "do it"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"L001"* ]] || false
+  [[ "$output" == *"launch-agent.sh --bg my-topic"* ]] || false
+  [ ! -e "$ARGS_FILE" ]
+  [ ! -d "$REPO/my-topic" ]
+}
+
+@test "the old order <folder> --take-over → L001 with the new form, nothing created" {
+  run_here "$REPO" my-topic --take-over "do it"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"L001"* ]] || false
+  [[ "$output" == *"launch-agent.sh --take-over my-topic"* ]] || false
   [ ! -d "$REPO/my-topic" ]
 }
 
@@ -281,7 +309,7 @@ set_default_folder() {
 # ============================================================================
 
 @test "slug resolves to <repo-root>/<slug>, not into .claude-work" {
-  run_in "$REPO" my-topic --bg "do the thing"
+  run_in "$REPO" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   [[ "$output" == *"Folder: $REPO/my-topic"* ]] || false
   [ -d "$REPO/my-topic" ]
@@ -290,14 +318,14 @@ set_default_folder() {
 
 @test "slug resolves against the main checkout when run from a subdirectory" {
   mkdir -p "$REPO/src/deep"
-  run_in "$REPO/src/deep" my-topic --bg "do the thing"
+  run_in "$REPO/src/deep" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   [[ "$output" == *"Folder: $REPO/my-topic"* ]] || false
 }
 
 @test "absolute path is used as given, outside any repository" {
   target="$TEST_TEMP_DIR/elsewhere/topic"
-  run_in "$REPO" "$target" --bg "do the thing"
+  run_in "$REPO" --bg "$target" "do the thing"
   [ "$status" -eq 0 ]
   [[ "$output" == *"Folder: $target"* ]] || false
   [ -d "$target" ]
@@ -305,21 +333,21 @@ set_default_folder() {
 
 @test "absolute path with a trailing slash still names the job after the basename" {
   target="$TEST_TEMP_DIR/elsewhere/topic"
-  run_in "$REPO" "$target/" --bg "do the thing"
+  run_in "$REPO" --bg "$target/" "do the thing"
   [ "$status" -eq 0 ]
   [[ "$output" == *"Name: topic"* ]] || false
 }
 
 @test "existing folder is reused, not refused" {
   mkdir -p "$REPO/my-topic"
-  run_in "$REPO" my-topic --bg "do the thing"
+  run_in "$REPO" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   [[ "$output" == *"Folder: $REPO/my-topic"* ]] || false
 }
 
 @test "folder path that exists as a regular file → L002, nothing written" {
   : > "$TEST_TEMP_DIR/afile"
-  run_in "$REPO" "$TEST_TEMP_DIR/afile" --bg "do the thing"
+  run_in "$REPO" --bg "$TEST_TEMP_DIR/afile" "do the thing"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L002"* ]] || false
   [[ "$output" == *"is not a directory"* ]] || false
@@ -329,7 +357,7 @@ set_default_folder() {
 @test "slug outside a git repository → L002 asking for an absolute path" {
   outside="$TEST_TEMP_DIR/no-repo"
   mkdir -p "$outside"
-  run_in "$outside" my-topic --bg "do the thing"
+  run_in "$outside" --bg my-topic "do the thing"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L002"* ]] || false
   [[ "$output" == *"pass an absolute path instead"* ]] || false
@@ -337,7 +365,7 @@ set_default_folder() {
 }
 
 @test "slug containing a separator → L002, nothing created" {
-  run_in "$REPO" team/onboarding --bg "do the thing"
+  run_in "$REPO" --bg team/onboarding "do the thing"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L002"* ]] || false
   [[ "$output" == *"is not a single path component"* ]] || false
@@ -345,7 +373,7 @@ set_default_folder() {
 }
 
 @test "slug of .. → L002, nothing created outside the root" {
-  run_in "$REPO" .. --bg "do the thing"
+  run_in "$REPO" --bg .. "do the thing"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L002"* ]] || false
   [[ "$output" == *"is not a topic name"* ]] || false
@@ -355,7 +383,7 @@ set_default_folder() {
   outside="$TEST_TEMP_DIR/outside"
   mkdir -p "$outside"
   ln -s "$outside" "$REPO/linked"
-  run_in "$REPO" linked --bg "do the thing"
+  run_in "$REPO" --bg linked "do the thing"
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "Folder: $outside" ]
   [ "$(cat "$outside/prompt-new-agent-launch.txt")" = "do the thing" ]
@@ -369,7 +397,7 @@ set_default_folder() {
   topics="$TEST_TEMP_DIR/topics"
   mkdir -p "$topics"
   set_default_folder "$topics"
-  run_in "$REPO" my-topic --bg "do the thing"
+  run_in "$REPO" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "Folder: $topics/my-topic" ]
   [ ! -d "$REPO/my-topic" ]
@@ -446,7 +474,7 @@ set_default_folder() {
 
 @test "a malformed settings file → L002 for a slug, nothing written in the repository" {
   printf '%s' '{"launchAgentDefaultFolder":' > "$CFG"
-  run_in "$REPO" my-topic --bg "do the thing"
+  run_in "$REPO" --bg my-topic "do the thing"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L002"* ]] || false
   [[ "$output" == *"$CFG could not be read"* ]] || false
@@ -458,7 +486,7 @@ set_default_folder() {
   _require_enforced_permission_bits
   set_default_folder "$TEST_TEMP_DIR/topics"
   chmod 000 "$CFG"
-  run_in "$REPO" my-topic --bg "do the thing"
+  run_in "$REPO" --bg my-topic "do the thing"
   chmod 644 "$CFG"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L002"* ]] || false
@@ -469,7 +497,7 @@ set_default_folder() {
 @test "a malformed settings file does not block an absolute folder" {
   printf '%s' '{"launchAgentDefaultFolder":' > "$CFG"
   target="$TEST_TEMP_DIR/elsewhere/topic"
-  run_in "$REPO" "$target" --bg "do the thing"
+  run_in "$REPO" --bg "$target" "do the thing"
   [ "$status" -eq 0 ]
   # The loader's warning comes first in the merged output, so match the line
   # anywhere rather than at lines[0].
@@ -491,7 +519,7 @@ set_default_folder() {
 
 @test "slug that normalizes onto an existing sibling → L002 naming the sibling" {
   mkdir -p "$REPO/agent_launch_skill"
-  run_in "$REPO" agent-launch-skill --bg "do the thing"
+  run_in "$REPO" --bg agent-launch-skill "do the thing"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L002"* ]] || false
   [[ "$output" == *"nearly matches the existing 'agent_launch_skill'"* ]] || false
@@ -500,27 +528,27 @@ set_default_folder() {
 
 @test "case-only difference is a near match too" {
   mkdir -p "$REPO/MyTopic"
-  run_in "$REPO" mytopic --bg "do the thing"
+  run_in "$REPO" --bg mytopic "do the thing"
   [ "$status" -eq 1 ]
   [[ "$output" == *"nearly matches the existing 'MyTopic'"* ]] || false
 }
 
 @test "exact match is not a refusal: a second agent joins an existing topic" {
   mkdir -p "$REPO/my-topic"
-  run_in "$REPO" my-topic --bg "do the thing"
+  run_in "$REPO" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
 }
 
 @test "a regular file that normalizes onto the slug does not refuse it" {
   : > "$REPO/my_topic"
-  run_in "$REPO" my-topic --bg "do the thing"
+  run_in "$REPO" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   [ -d "$REPO/my-topic" ]
 }
 
 @test "an absolute path skips the guard, which is the way past a refusal" {
   mkdir -p "$REPO/agent_launch_skill"
-  run_in "$REPO" "$REPO/agent-launch-skill" --bg "do the thing"
+  run_in "$REPO" --bg "$REPO/agent-launch-skill" "do the thing"
   [ "$status" -eq 0 ]
   [ -d "$REPO/agent-launch-skill" ]
 }
@@ -530,21 +558,21 @@ set_default_folder() {
 # ============================================================================
 
 @test "multi-word prompt is written verbatim" {
-  run_in "$REPO" my-topic --bg "do the thing" "and then another"
+  run_in "$REPO" --bg my-topic "do the thing" "and then another"
   [ "$status" -eq 0 ]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "do the thing and then another" ]
 }
 
 @test "single token naming a readable file contributes that file's content" {
   printf 'line one\nline two\n' > "$TEST_TEMP_DIR/prompt.txt"
-  run_in "$REPO" my-topic --bg "$TEST_TEMP_DIR/prompt.txt"
+  run_in "$REPO" --bg my-topic "$TEST_TEMP_DIR/prompt.txt"
   [ "$status" -eq 0 ]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "$(printf 'line one\nline two')" ]
   [[ "$(cat "$ARGS_FILE")" == *"line two"* ]] || false
 }
 
 @test "path-shaped single token naming nothing → L003, nothing written" {
-  run_in "$REPO" my-topic --bg ./plans/lanch-prompt.txt
+  run_in "$REPO" --bg my-topic ./plans/lanch-prompt.txt
   [ "$status" -eq 1 ]
   [[ "$output" == *"L003"* ]] || false
   [[ "$output" == *"looks like a file path but names no readable file"* ]] || false
@@ -556,7 +584,7 @@ set_default_folder() {
   _require_enforced_permission_bits
   printf 'secret\n' > "$TEST_TEMP_DIR/prompt.md"
   chmod 000 "$TEST_TEMP_DIR/prompt.md"
-  run_in "$REPO" my-topic --bg "$TEST_TEMP_DIR/prompt.md"
+  run_in "$REPO" --bg my-topic "$TEST_TEMP_DIR/prompt.md"
   chmod 644 "$TEST_TEMP_DIR/prompt.md"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L003"* ]] || false
@@ -576,7 +604,7 @@ PROMPT
   printf '%s\n' "Fix /note handling in skills/x.sh" > "$TEST_TEMP_DIR/stdin.txt"
   run env -u CLAUDE_CODE_SESSION_ID PATH="$STUB_PATH" ARGS_FILE="$ARGS_FILE" \
     CWD_FILE="$CWD_FILE" MY_CLAUDE_SKILLS_CONFIG="$CFG" \
-    bash -c 'cd "$1" && shift && exec "$@" < "$0"' "$TEST_TEMP_DIR/stdin.txt" "$REPO" "$SCRIPT" my-topic --bg
+    bash -c 'cd "$1" && shift && exec "$@" < "$0"' "$TEST_TEMP_DIR/stdin.txt" "$REPO" "$SCRIPT" --bg my-topic
   [ "$status" -eq 0 ]
   _contains "$(cat "$ARGS_FILE")" "Fix /note handling in skills/x.sh"
 }
@@ -603,13 +631,13 @@ PROMPT
 }
 
 @test "one-word literal prompt that is not path-shaped passes through" {
-  run_in "$REPO" my-topic --bg triage
+  run_in "$REPO" --bg my-topic triage
   [ "$status" -eq 0 ]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "triage" ]
 }
 
 @test "empty prompt → L003, nothing created" {
-  run_in "$REPO" my-topic --bg ""
+  run_in "$REPO" --bg my-topic ""
   [ "$status" -eq 1 ]
   [[ "$output" == *"L003"* ]] || false
   [ ! -d "$REPO/my-topic" ]
@@ -624,7 +652,7 @@ PROMPT
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
   touch -t 202001021530.45 "$REPO/my-topic/prompt-new-agent-launch.txt" "$TEST_TEMP_DIR/ref"
   clock_stub 20260930-120000
-  run_in "$REPO" my-topic --bg "a later prompt"
+  run_in "$REPO" --bg my-topic "a later prompt"
   [ "$status" -eq 0 ]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "the first prompt" ]
   [ ! "$REPO/my-topic/prompt-new-agent-launch.txt" -nt "$TEST_TEMP_DIR/ref" ]
@@ -635,7 +663,7 @@ PROMPT
   mkdir -p "$REPO/my-topic"
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
   clock_stub 20260930-120000
-  run_in "$REPO" my-topic --bg "a later prompt"
+  run_in "$REPO" --bg my-topic "a later prompt"
   [ "$status" -eq 0 ]
   update="$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt"
   printf 'a later prompt\n' | cmp -s - "$update"
@@ -647,9 +675,9 @@ PROMPT
   mkdir -p "$REPO/my-topic"
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
   clock_stub 20260930-120000 20260930-130000
-  run_in "$REPO" my-topic --bg "the second prompt"
+  run_in "$REPO" --bg my-topic "the second prompt"
   [ "$status" -eq 0 ]
-  run_in "$REPO" my-topic --bg "the third prompt"
+  run_in "$REPO" --bg my-topic "the third prompt"
   [ "$status" -eq 0 ]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "the first prompt" ]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt")" = "the second prompt" ]
@@ -661,7 +689,7 @@ PROMPT
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
   printf 'a launch in the same second\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt"
   clock_stub 20260930-120000 20260930-120001
-  run_in "$REPO" my-topic --bg "a later prompt"
+  run_in "$REPO" --bg my-topic "a later prompt"
   [ "$status" -eq 0 ]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt")" = "a launch in the same second" ]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120001.txt")" = "a later prompt" ]
@@ -674,7 +702,7 @@ PROMPT
   printf 'a launch in the same second\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt"
   before="$(_prompt_files "$REPO/my-topic")"
   clock_stub 20260930-120000
-  run_in "$REPO" my-topic --bg "a later prompt"
+  run_in "$REPO" --bg my-topic "a later prompt"
   [ "$status" -eq 1 ]
   _contains "$output" "L003"
   _contains "$output" "no free name"
@@ -687,7 +715,7 @@ PROMPT
 @test "a repeat of the first prompt writes nothing and says so" {
   mkdir -p "$REPO/my-topic"
   printf 'the same prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
-  run_in "$REPO" my-topic --bg "the same prompt"
+  run_in "$REPO" --bg my-topic "the same prompt"
   [ "$status" -eq 0 ]
   first="$REPO/my-topic/prompt-new-agent-launch.txt"
   _contains "$output" "Repeat: the prompt matches $first, so no new file was written."
@@ -700,7 +728,7 @@ PROMPT
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
   printf 'the second prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-100000.txt"
   before="$(_prompt_files "$REPO/my-topic")"
-  run_in "$REPO" my-topic --bg "the second prompt"
+  run_in "$REPO" --bg my-topic "the second prompt"
   [ "$status" -eq 0 ]
   _contains "$output" "Prompt: $REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-100000.txt"
   _contains "$output" "Repeat:"
@@ -712,7 +740,7 @@ PROMPT
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
   printf 'the second prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260930-100000.txt"
   before="$(_prompt_files "$REPO/my-topic")"
-  run_in "$REPO" my-topic --bg "the second prompt"
+  run_in "$REPO" --bg my-topic "the second prompt"
   [ "$status" -eq 0 ]
   _contains "$output" "Repeat: the prompt matches $REPO/my-topic/prompt-new-agent-launch.update-20260930-100000.txt"
   [ "$(_prompt_files "$REPO/my-topic")" = "$before" ]
@@ -724,7 +752,7 @@ PROMPT
   printf 'the older prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260929-090000.txt"
   printf 'the newest prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260930-100000.txt"
   before="$(_prompt_files "$REPO/my-topic")"
-  run_in "$REPO" my-topic --bg "the newest prompt"
+  run_in "$REPO" --bg my-topic "the newest prompt"
   [ "$status" -eq 0 ]
   _contains "$output" "Repeat: the prompt matches $REPO/my-topic/prompt-new-agent-launch.update-20260930-100000.txt"
   [ "$(_prompt_files "$REPO/my-topic")" = "$before" ]
@@ -736,7 +764,7 @@ PROMPT
   printf 'the older prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260929-090000.txt"
   printf 'the newest prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-100000.txt"
   before="$(_prompt_files "$REPO/my-topic")"
-  run_in "$REPO" my-topic --bg "the newest prompt"
+  run_in "$REPO" --bg my-topic "the newest prompt"
   [ "$status" -eq 0 ]
   _contains "$output" "Repeat: the prompt matches $REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-100000.txt"
   [ "$(_prompt_files "$REPO/my-topic")" = "$before" ]
@@ -748,7 +776,7 @@ PROMPT
   printf 'the older prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260929-090000.txt"
   printf 'the newest prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260930-100000.txt"
   clock_stub 20260930-120000
-  run_in "$REPO" my-topic --bg "the older prompt"
+  run_in "$REPO" --bg my-topic "the older prompt"
   [ "$status" -eq 0 ]
   _lacks "$output" "Repeat:"
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt")" = "the older prompt" ]
@@ -759,7 +787,7 @@ PROMPT
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
   printf 'an old-form launch\n' > "$REPO/my-topic/prompt-new-agent-launch.update-20260930-120000.txt"
   clock_stub 20260930-120000 20260930-120001
-  run_in "$REPO" my-topic --bg "a later prompt"
+  run_in "$REPO" --bg my-topic "a later prompt"
   [ "$status" -eq 0 ]
   [ ! -e "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt" ]
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120001.txt")" = "a later prompt" ]
@@ -771,7 +799,7 @@ PROMPT
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
   printf 'a hand-named prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.update.20260930-100000.txt"
   clock_stub 20260930-120000
-  run_in "$REPO" my-topic --bg "a hand-named prompt"
+  run_in "$REPO" --bg my-topic "a hand-named prompt"
   [ "$status" -eq 0 ]
   _lacks "$output" "Repeat:"
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt")" = "a hand-named prompt" ]
@@ -782,7 +810,7 @@ PROMPT
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
   printf 'a draft\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-draft.txt"
   clock_stub 20260930-120000
-  run_in "$REPO" my-topic --bg "a draft"
+  run_in "$REPO" --bg my-topic "a draft"
   [ "$status" -eq 0 ]
   _lacks "$output" "Repeat:"
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt")" = "a draft" ]
@@ -793,7 +821,7 @@ PROMPT
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
   printf 'the second prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-100000.txt"
   clock_stub 20260930-120000
-  run_in "$REPO" my-topic --bg "the first prompt"
+  run_in "$REPO" --bg my-topic "the first prompt"
   [ "$status" -eq 0 ]
   _lacks "$output" "Repeat:"
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt")" = "the first prompt" ]
@@ -804,7 +832,7 @@ PROMPT
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
   printf 'an archived prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.20200102-153045.txt"
   clock_stub 20260930-120000
-  run_in "$REPO" my-topic --bg "an archived prompt"
+  run_in "$REPO" --bg my-topic "an archived prompt"
   [ "$status" -eq 0 ]
   _lacks "$output" "Repeat:"
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.20200102-153045.txt")" = "an archived prompt" ]
@@ -816,7 +844,7 @@ PROMPT
   mkdir -p "$REPO/my-topic"
   printf 'the first prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
   clock_stub 20260930-120000
-  run_in "$REPO" my-topic --bg "a later prompt"
+  run_in "$REPO" --bg my-topic "a later prompt"
   [ "$status" -eq 0 ]
   _contains "$(cat "$ARGS_FILE")" "already saved at $REPO/my-topic/prompt-new-agent-launch.txt.update-20260930-120000.txt"
 }
@@ -824,7 +852,7 @@ PROMPT
 @test "--bg on a repeat names the matched file in the preamble" {
   mkdir -p "$REPO/my-topic"
   printf 'the same prompt\n' > "$REPO/my-topic/prompt-new-agent-launch.txt"
-  run_in "$REPO" my-topic --bg "the same prompt"
+  run_in "$REPO" --bg my-topic "the same prompt"
   [ "$status" -eq 0 ]
   _contains "$(cat "$ARGS_FILE")" "already saved at $REPO/my-topic/prompt-new-agent-launch.txt,"
 }
@@ -833,7 +861,7 @@ PROMPT
   mkdir -p "$REPO/my-topic" "$SESSIONS_DIR"
   printf '{"version":1,"folder":"%s","session_id":"7fa0c639-1111-4222-8333-944455556666","slug":"t","written_at":"2026-10-13T10:00:00Z"}' \
     "$REPO/my-topic" > "$SESSIONS_DIR/7fa0c639-1111-4222-8333-944455556666--t.json"
-  run_in "$REPO" my-topic --bg "a later prompt"
+  run_in "$REPO" --bg my-topic "a later prompt"
   [ "$status" -eq 0 ]
   _contains "$output" "launch-agent: session 7fa0c639 used this folder before; to continue that session rather than start with no context, use /resume-agent $REPO/my-topic"
   [ -e "$ARGS_FILE" ]
@@ -852,7 +880,7 @@ PROMPT
   mkdir -p "$REPO/my-topic" "$REPO/elsewhere" "$SESSIONS_DIR"
   printf '{"version":1,"folder":"%s","session_id":"7fa0c639-1111-4222-8333-944455556666","slug":"t","written_at":"2026-10-13T10:00:00Z"}' \
     "$REPO/elsewhere" > "$SESSIONS_DIR/7fa0c639-1111-4222-8333-944455556666--t.json"
-  run_in "$REPO" my-topic --bg "a prompt"
+  run_in "$REPO" --bg my-topic "a prompt"
   [ "$status" -eq 0 ]
   [[ "$output" != *"/resume-agent"* ]] || false
 }
@@ -899,7 +927,7 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
 # ============================================================================
 
 @test "display name defaults to the folder basename and reaches claude" {
-  run_in "$REPO" my-topic --bg "do the thing"
+  run_in "$REPO" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   [[ "$output" == *"Name: my-topic"* ]] || false
   [[ "$(cat "$ARGS_FILE")" == *"--name my-topic"* ]] || false
@@ -910,20 +938,20 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
 # ============================================================================
 
 @test "child starts in the repository root that contains the folder" {
-  run_in "$REPO" my-topic --bg "do the thing"
+  run_in "$REPO" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   [ "$(cat "$CWD_FILE")" = "$(cd "$REPO" && pwd -P)" ]
 }
 
 @test "child starts in the folder itself when it is in no repository" {
   target="$TEST_TEMP_DIR/elsewhere/topic"
-  run_in "$REPO" "$target" --bg "do the thing"
+  run_in "$REPO" --bg "$target" "do the thing"
   [ "$status" -eq 0 ]
   [ "$(cat "$CWD_FILE")" = "$(cd "$target" && pwd -P)" ]
 }
 
 @test "preamble names the folder, the set-work-folder call, and the saved prompt" {
-  run_in "$REPO" my-topic --bg "do the thing"
+  run_in "$REPO" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   args="$(cat "$ARGS_FILE")"
   [[ "$args" == *"Your work folder is $REPO/my-topic."* ]] || false
@@ -934,13 +962,13 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
 
 @test "CLAUDE.md sentence appears when the child's working directory has one" {
   printf 'repo rules\n' > "$REPO/CLAUDE.md"
-  run_in "$REPO" my-topic --bg "do the thing"
+  run_in "$REPO" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   [[ "$(cat "$ARGS_FILE")" == *"Then read $REPO/CLAUDE.md and follow it."* ]] || false
 }
 
 @test "CLAUDE.md sentence is absent when there is no such file" {
-  run_in "$REPO" my-topic --bg "do the thing"
+  run_in "$REPO" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   [[ "$(cat "$ARGS_FILE")" != *"and follow it"* ]] || false
 }
@@ -952,7 +980,7 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
 # Whole-line assertions, because the defect these guard against joined the
 # status line and the hint lines into one token that still contained the id.
 @test "success reports the bare job id and the attach command" {
-  run_in "$REPO" my-topic --bg "do the thing"
+  run_in "$REPO" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   [ "${lines[$((${#lines[@]} - 2))]}" = "Job: a1b2c3d4" ]
   [ "${lines[$((${#lines[@]} - 1))]}" = "Attach: claude attach a1b2c3d4" ]
@@ -962,14 +990,14 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
   run env PATH="$STUB_PATH" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" \
     STUB_OUTPUT='\033[1mbackgrounded\033[0m · \033[36ma1b2c3d4\033[39m · \033]8;;https://example.invalid\007my-topic\033]8;;\007\n  claude agents             list sessions' \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" \
-    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" my-topic --bg "do the thing"
+    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   [ "${lines[$((${#lines[@]} - 2))]}" = "Job: a1b2c3d4" ]
   [ "${lines[$((${#lines[@]} - 1))]}" = "Attach: claude attach a1b2c3d4" ]
 }
 
 @test "the resolved folder is the first line of output" {
-  run_in "$REPO" my-topic --bg "do the thing"
+  run_in "$REPO" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "Folder: $REPO/my-topic" ]
 }
@@ -977,7 +1005,7 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
 @test "dispatch failure → exit 1, folder and prompt kept, pasteable command printed" {
   run env PATH="$STUB_PATH" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" STUB_FAIL=1 \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" \
-    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" my-topic --bg "do the thing"
+    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" --bg my-topic "do the thing"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L004"* ]] || false
   [[ "$output" == *"claude --bg --name 'my-topic'"* ]] || false
@@ -994,8 +1022,8 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
   topic="$TEST_TEMP_DIR/Charles' agent"
   run env PATH="$STUB_PATH" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" STUB_FAIL=1 \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" \
-    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" "$topic" \
-    --bg "Fix the user's bug"
+    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" --bg "$topic" \
+    "Fix the user's bug"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L004"* ]] || false
   _contains "$output" "--name 'Charles'\\'' agent'"
@@ -1011,7 +1039,7 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
 @test "a launch that prints nothing → L004 that says the agent runs, with no relaunch" {
   run env PATH="$STUB_PATH" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" STUB_SILENT=1 \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" \
-    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" my-topic --bg "do the thing"
+    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" --bg my-topic "do the thing"
   [ "$status" -eq 1 ]
   _contains "$output" "L004"
   _contains "$output" "the agent started as my-topic"
@@ -1027,7 +1055,7 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
   run env PATH="$STUB_PATH" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" \
     STUB_OUTPUT='\033[1mbackgrounded a1b2c3d4\033[0m\n  claude agents             list sessions' \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" \
-    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" my-topic --bg "do the thing"
+    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" --bg my-topic "do the thing"
   [ "$status" -eq 1 ]
   _contains "$output" "L004"
   _contains "$output" "the agent started as my-topic"
@@ -1045,7 +1073,7 @@ prompt-new-agent-launch.txt.update-20260930-120000.txt"
   _stub_path_without "$bare" claude >/dev/null
   run env PATH="$bare" ARGS_FILE="$ARGS_FILE" CWD_FILE="$CWD_FILE" \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" \
-    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" my-topic --bg "do the thing"
+    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" --bg my-topic "do the thing"
   [ "$status" -eq 1 ]
   [[ "$output" == *"L004"* ]] || false
   [ "$(cat "$REPO/my-topic/prompt-new-agent-launch.txt")" = "do the thing" ]
@@ -1180,28 +1208,28 @@ depth_record() {
 }
 
 @test "depth: a launch from a session with no record writes depth 1 for the child's job id" {
-  run_bg_as "$SESSION_ID" my-topic --bg "do the thing"
+  run_bg_as "$SESSION_ID" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   # The stub prints job id a1b2c3d4.
   [ "$(cat "$TEST_TEMP_DIR/$DEPTH_DIR_NAME/a1b2c3d4")" = "1" ]
 }
 
 @test "depth: a launch from a plain shell is depth 0, so the child is depth 1" {
-  run_in "$REPO" my-topic --bg "do the thing"
+  run_in "$REPO" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   [ "$(cat "$TEST_TEMP_DIR/$DEPTH_DIR_NAME/a1b2c3d4")" = "1" ]
 }
 
 @test "depth: a session at depth 1 starts a child at depth 2" {
   depth_record "${SESSION_ID:0:8}" 1
-  run_bg_as "$SESSION_ID" my-topic --bg "do the thing"
+  run_bg_as "$SESSION_ID" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   [ "$(cat "$TEST_TEMP_DIR/$DEPTH_DIR_NAME/a1b2c3d4")" = "2" ]
 }
 
 @test "depth: a session at the default limit → L006 naming the limit and the setting, nothing created" {
   depth_record "${SESSION_ID:0:8}" 2
-  run_bg_as "$SESSION_ID" my-topic --bg "do the thing"
+  run_bg_as "$SESSION_ID" --bg my-topic "do the thing"
   [ "$status" -eq 1 ]
   _contains "$output" "L006"
   _contains "$output" "depth 2"
@@ -1213,14 +1241,14 @@ depth_record() {
 @test "depth: launchAgentMaxDepth raises the limit" {
   printf '%s' '{"launchAgentMaxDepth": 3}' > "$CFG"
   depth_record "${SESSION_ID:0:8}" 2
-  run_bg_as "$SESSION_ID" my-topic --bg "do the thing"
+  run_bg_as "$SESSION_ID" --bg my-topic "do the thing"
   [ "$status" -eq 0 ]
   [ "$(cat "$TEST_TEMP_DIR/$DEPTH_DIR_NAME/a1b2c3d4")" = "3" ]
 }
 
 @test "depth: launchAgentMaxDepth 0 refuses every background launch" {
   printf '%s' '{"launchAgentMaxDepth": 0}' > "$CFG"
-  run_bg_as "$SESSION_ID" my-topic --bg "do the thing"
+  run_bg_as "$SESSION_ID" --bg my-topic "do the thing"
   [ "$status" -eq 1 ]
   _contains "$output" "L006"
   _contains "$output" "launchAgentMaxDepth is 0"
@@ -1228,7 +1256,7 @@ depth_record() {
 
 @test "depth: a damaged record refuses rather than reading as 0" {
   depth_record "${SESSION_ID:0:8}" "two"
-  run_bg_as "$SESSION_ID" my-topic --bg "do the thing"
+  run_bg_as "$SESSION_ID" --bg my-topic "do the thing"
   [ "$status" -eq 1 ]
   _contains "$output" "L006"
   _contains "$output" "cannot be read"
@@ -1246,10 +1274,108 @@ depth_record() {
   _require_enforced_permission_bits
   mkdir -p "$TEST_TEMP_DIR/$DEPTH_DIR_NAME"
   chmod 500 "$TEST_TEMP_DIR/$DEPTH_DIR_NAME"
-  run_bg_as "$SESSION_ID" my-topic --bg "do the thing"
+  run_bg_as "$SESSION_ID" --bg my-topic "do the thing"
   chmod 700 "$TEST_TEMP_DIR/$DEPTH_DIR_NAME"
   [ "$status" -eq 1 ]
   _contains "$output" "L006"
   _contains "$output" "claude stop a1b2c3d4"
   _lacks "$output" "claude --bg --name"
+}
+
+# ============================================================================
+# One session for each folder (issue 295, part 2)
+# ============================================================================
+
+HOLDER_ID="7fa0c639-1111-4222-8333-944455556666"
+
+# holder <status|null> <pid|null> — a session file of HOLDER_ID for
+# $REPO/my-topic, and its row in the list.
+holder() {
+  mkdir -p "$REPO/my-topic" "$SESSIONS_DIR"
+  printf '{"version":1,"folder":"%s","session_id":"%s","written_at":"2026-10-13T10:00:00Z"}' \
+    "$REPO/my-topic" "$HOLDER_ID" > "$SESSIONS_DIR/$HOLDER_ID--t.json"
+  local status="\"$1\""
+  [ "$1" != "null" ] || status="null"
+  printf '[{"id":"%s","sessionId":"%s","name":"my-topic","status":%s,"pid":%s,"kind":"background","state":"blocked"}]' \
+    "${HOLDER_ID:0:8}" "$HOLDER_ID" "$status" "$2" > "$AGENTS_FILE"
+}
+
+@test "held: a running session holds the folder → L007 with the /resume-agent command, and nothing is written" {
+  holder idle 123
+  run_here "$REPO" my-topic "a prompt"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L007"
+  _contains "$output" "session $HOLDER_ID (running, job ${HOLDER_ID:0:8}, name 'my-topic') holds $REPO/my-topic"
+  _contains "$output" "use /resume-agent $REPO/my-topic"
+  _contains "$output" "launch again with --take-over"
+  [ ! -e "$REPO/my-topic/prompt-new-agent-launch.txt" ]
+  [ ! -e "$SESSIONS_DIR/$SESSION_ID--my-topic.json" ]
+}
+
+@test "held: a retired session holds the folder → L007 for --bg, and no agent starts" {
+  holder null null
+  run_in "$REPO" --bg my-topic "a prompt"
+  [ "$status" -eq 1 ]
+  _contains "$output" "(retired"
+  [ ! -e "$ARGS_FILE" ]
+}
+
+@test "held: --take-over in the default mode passes the take-over to set-work-folder.sh" {
+  holder idle 123
+  run_here "$REPO" --take-over my-topic "a prompt"
+  [ "$status" -eq 0 ]
+  [ ! -e "$SESSIONS_DIR/$HOLDER_ID--t.json" ]
+  [ -f "$SESSIONS_DIR/$SESSION_ID--my-topic.json" ]
+  _contains "$output" "set-work-folder: took $REPO/my-topic from session $HOLDER_ID"
+  _contains "$output" "claude stop ${HOLDER_ID:0:8}"
+}
+
+@test "held: --bg --take-over removes the file of the other session before the dispatch" {
+  holder idle 123
+  run_in "$REPO" --bg --take-over my-topic "a prompt"
+  [ "$status" -eq 0 ]
+  [ -e "$ARGS_FILE" ]
+  [ ! -e "$SESSIONS_DIR/$HOLDER_ID--t.json" ]
+  _contains "$output" "launch-agent: took $REPO/my-topic from session $HOLDER_ID"
+  _contains "$output" "stop it with claude stop ${HOLDER_ID:0:8}"
+}
+
+@test "held: --bg from the session that holds the folder → L007, also with --take-over" {
+  mkdir -p "$REPO/my-topic" "$SESSIONS_DIR"
+  printf '{"version":1,"folder":"%s","session_id":"%s","written_at":"2026-10-13T10:00:00Z"}' \
+    "$REPO/my-topic" "$SESSION_ID" > "$SESSIONS_DIR/$SESSION_ID--t.json"
+  printf '[{"id":"%s","sessionId":"%s","name":"me","status":"busy","pid":1,"kind":"interactive","state":null}]' \
+    "${SESSION_ID:0:8}" "$SESSION_ID" > "$AGENTS_FILE"
+  run_here "$REPO" --bg --take-over my-topic "a prompt"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L007"
+  _contains "$output" "this session holds $REPO/my-topic"
+  _contains "$output" "launch the agent into another folder, or do the work in this session"
+  [ ! -e "$ARGS_FILE" ]
+  [ -f "$SESSIONS_DIR/$SESSION_ID--t.json" ]
+}
+
+@test "held: the default mode in the folder this session already holds is not refused" {
+  mkdir -p "$REPO/my-topic" "$SESSIONS_DIR"
+  printf '{"version":1,"folder":"%s","session_id":"%s","written_at":"2026-10-13T10:00:00Z"}' \
+    "$REPO/my-topic" "$SESSION_ID" > "$SESSIONS_DIR/$SESSION_ID--t.json"
+  run_here "$REPO" my-topic "a prompt"
+  [ "$status" -eq 0 ]
+}
+
+@test "held: a check that cannot run lets the launch go on, with one stderr line" {
+  holder idle 123
+  run env -u CLAUDE_CODE_SESSION_ID PATH="$STUB_PATH" ARGS_FILE="$ARGS_FILE" \
+    MY_CLAUDE_SKILLS_CONFIG="$CFG" STUB_AGENTS_FAIL=1 \
+    bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "$REPO" "$SCRIPT" --bg my-topic "a prompt"
+  [ "$status" -eq 0 ]
+  [ -e "$ARGS_FILE" ]
+  _contains "$output" "launch-agent: could not check whether another session holds $REPO/my-topic (claude agents --json failed"
+  [ "$(printf '%s\n' "$output" | grep -c 'could not check')" -eq 1 ]
+}
+
+@test "held: a folder that does not exist yet is not checked" {
+  run_in "$REPO" --bg new-topic "a prompt"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"could not check"* ]] || false
 }

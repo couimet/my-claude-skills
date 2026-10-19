@@ -28,3 +28,4 @@ We follow the format from [adr.github.io](https://adr.github.io/):
 | [0003](./003-configurable-work-item-path.md)                          | Configurable Work-Item Path Convention               | Accepted |
 | [0004](./004-working-file-naming-and-the-script-contract-boundary.md) | Working-File Naming and the Script-Contract Boundary | Accepted |
 | [0005](./005-a-skill-is-a-runtime-instruction-file.md)                | A SKILL.md Is a Runtime Instruction File             | Accepted |
+| [0006](./006-claude-code-hooks.md)                                    | One Session per Work Folder, and a Claude Code Hook  | Accepted |

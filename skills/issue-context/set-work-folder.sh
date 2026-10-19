@@ -10,6 +10,9 @@
 #
 # Usage:
 #   set-work-folder.sh <folder> [name]        set the override for this session
+#   set-work-folder.sh --take-over <folder> [name]
+#                                             set it, and take the folder from
+#                                             another session that holds it
 #   set-work-folder.sh --clear                remove this session's override
 #   set-work-folder.sh --worktree <folder>    set this worktree's marker
 #   set-work-folder.sh --clear --worktree     remove this worktree's marker
@@ -29,6 +32,20 @@
 #   [name]    Optional readable label for the filename. Absent, the name is
 #             read from $CLAUDE_JOB_DIR/state.json; absent there too, the
 #             filename carries no label. Nothing is ever looked up by label.
+#
+# One folder has one session. Before a session claims a folder, the script
+# asks folder-sessions.sh which other sessions claim it. When another session
+# in the state running or retired holds the folder, the claim stops with
+# S007, which names that session and the /resume-agent command that continues
+# it: two sessions in one folder each see half of the work, and a send by
+# name can reach either one. --take-over claims the folder anyway. It removes
+# the session files of the other session, says so on stderr, and prints the
+# claude stop command for it. It does not stop that session, because a stop
+# can cut a turn in progress: the user decides. A session that ended does not
+# hold the folder. When the check cannot run (no jq, no claude command, or a
+# failed `claude agents --json`), the claim goes on and one stderr line says
+# so: a refusal would leave the session with no folder, and its working
+# files would go to the default folder with no sign.
 #
 # The override is SESSION-WIDE. Subagents launched through the Agent tool run
 # in the same process and inherit CLAUDE_CODE_SESSION_ID, so a subagent that
@@ -51,7 +68,9 @@
 #
 # Exit codes:
 #   0  — success
-#   1  — error (see stderr)
+#   1  — error (see stderr): S001 usage, S002 no session, S003 folder, S004
+#        no jq, S005 write, S006 marker mode, S007 another session holds the
+#        folder
 
 set -euo pipefail
 
@@ -61,16 +80,19 @@ readonly ERR_FOLDER="S003"
 readonly ERR_NO_JQ="S004"
 readonly ERR_WRITE="S005"
 readonly ERR_MODE="S006"
+readonly ERR_HELD="S007"
 
 usage() {
   cat <<'EOF'
 Usage: set-work-folder.sh <folder> [name]
+       set-work-folder.sh --take-over <folder> [name]
        set-work-folder.sh --clear
        set-work-folder.sh --worktree <folder>
        set-work-folder.sh --clear --worktree
 
   <folder>     Absolute path to an existing directory
   [name]       Optional readable label for the session file's name
+  --take-over  Take the folder from another session that holds it
   --clear      Remove this session's override
   --worktree   Write or clear this worktree's CLAUDE_WORK_FOLDER marker
                instead of this session's override
@@ -160,6 +182,7 @@ report_left_behind() {
 # --- Parse arguments ---
 clear_mode=0
 worktree_mode=0
+take_over=0
 folder=""
 name=""
 
@@ -183,6 +206,15 @@ case "${1-}" in
     [ "$#" -eq 2 ] || die "$ERR_USAGE" "--worktree takes exactly one folder"
     worktree_mode=1
     folder="$2"
+    ;;
+  --take-over)
+    [ "$#" -ge 2 ] && [ "$#" -le 3 ] || die "$ERR_USAGE" "--take-over takes a folder and an optional name"
+    case "$2" in
+      -*) die "$ERR_USAGE" "--take-over takes a folder, not '$2'" ;;
+    esac
+    take_over=1
+    folder="$2"
+    name="${3-}"
     ;;
   "")
     usage >&2
@@ -358,6 +390,53 @@ esac
 folder_phys="$(cd "$folder" && pwd -P)" \
   || die "$ERR_FOLDER" "'$folder' could not be resolved"
 
+# --- One session for each folder ---
+# See the header. folder-sessions.sh prints only its own error on stderr, so
+# a failure is folded into one line here.
+holders=()
+check_rc=0
+check_out="$("$_self_dir/folder-sessions.sh" --others "$folder_phys" 2>&1)" || check_rc=$?
+if [ "$check_rc" -ne 0 ]; then
+  check_why="${check_out##*$'\n'}"
+  check_why="${check_why#*error: }"
+  echo "set-work-folder: could not check whether another session holds $folder_phys (${check_why:-no reason given}); the claim goes on" >&2
+else
+  while IFS=$'\t' read -r h_sid h_job h_name h_state; do
+    case "$h_state" in
+      running | retired) holders+=("$h_sid	$h_job	$h_name	$h_state") ;;
+    esac
+  done <<HOLDERS
+$check_out
+HOLDERS
+fi
+
+for holder in ${holders[@]+"${holders[@]}"}; do
+  IFS=$'\t' read -r h_sid h_job h_name h_state <<HOLDER
+$holder
+HOLDER
+  h_label="session $h_sid ($h_state"
+  [ "$h_job" = "-" ] || h_label="$h_label, job $h_job"
+  [ "$h_name" = "-" ] || h_label="$h_label, name '$h_name'"
+  h_label="$h_label)"
+  if [ "$take_over" -eq 0 ]; then
+    die "$ERR_HELD" "$h_label holds $folder_phys, and two sessions in one folder each see half of the work; to continue that session, use /resume-agent $folder_phys; to take the folder from it, run set-work-folder.sh --take-over $folder_phys"
+  fi
+  h_files="$(_issue_context_holder_files "$folder_phys" "$h_sid" "$h_job")" \
+    || die "$ERR_WRITE" "could not read the session files of $h_label, so the folder was not taken"
+  while IFS= read -r h_file; do
+    [ -n "$h_file" ] || continue
+    rm -f "$h_file" || die "$ERR_WRITE" "could not remove $h_file, so $h_label still holds $folder_phys"
+  done <<FILES
+$h_files
+FILES
+  if [ "$h_job" = "-" ]; then
+    h_stop="close that session"
+  else
+    h_stop="stop it with claude stop $h_job"
+  fi
+  echo "set-work-folder: took $folder_phys from $h_label and removed its session file; it can still write to the folder until it stops: $h_stop" >&2
+done
+
 # --- Derive the slug ---
 # Order matters: an explicit name, then the job state file, then nothing. This
 # keeps the script usable with no arguments while keeping the dependency on an
@@ -393,6 +472,14 @@ mkdir -p "$sessions_dir" || die "$ERR_WRITE" "could not create $sessions_dir"
 # read by people comparing sessions, so UTC keeps it unambiguous.
 written_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
+# job_session_id is the first session id of the job of a background session
+# (see _issue_context_job_first_id), and null in an interactive session. A
+# file written after a /clear names the new id, and this field is what still
+# links it to its job: folder-sessions.sh groups the files of one job, and
+# resume-agent.sh resumes the job through its first id.
+job_session_id=""
+_issue_context_job_first_id job_session_id || job_session_id=""
+
 # written_by is best-effort, not an identity. Claude Code exposes no stable
 # identifier for a subagent, so these three values are what is available to
 # trace a surprising change after the fact. CLAUDE_CODE_CHILD_SESSION reads 1
@@ -406,6 +493,7 @@ jq -n \
   --argjson version "$_ISSUE_CONTEXT_SESSION_VERSION" \
   --arg folder "$folder_phys" \
   --arg session_id "$CLAUDE_CODE_SESSION_ID" \
+  --arg job_session_id "$job_session_id" \
   --arg slug "$slug" \
   --arg written_at "$written_at" \
   --arg agent "${CLAUDE_CODE_AGENT:-}" \
@@ -416,6 +504,7 @@ jq -n \
      version: $version,
      folder: $folder,
      session_id: $session_id,
+     job_session_id: (if $job_session_id == "" then null else $job_session_id end),
      slug: (if $slug == "" then null else $slug end),
      written_at: $written_at,
      written_by: {
