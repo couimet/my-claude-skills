@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.10.20
+
+### Fixed
+
+- The answers of a questions file no longer lose text after the letter. An answer can name several letters, such as `A, C`, and the extractor prints each letter with its option text. Text after the letters, such as a reason after `;`, prints on its own line under the answer. When several letters are followed by text with no `;`, the extractor stops with X008, because the text can be one more choice. `/question-format` and `/g2q` describe the new forms ([issues/299](https://github.com/couimet/my-claude-skills/issues/299))
+
 ## 2026.10.18
 
 ### Added

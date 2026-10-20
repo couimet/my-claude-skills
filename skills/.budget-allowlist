@@ -15,7 +15,7 @@
 # Both carry a format or a set of script contracts that cannot compress
 # without losing the thing a caller reads them for. question-format holds a
 # worked template of about 1,150 bytes on its own.
-question-format 5956
+question-format 6190
 issue-context-internals 10776
 issue-draft-reader 6563
 
