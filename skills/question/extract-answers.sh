@@ -12,10 +12,17 @@
 # Output (stdout):
 #   ACKNOWLEDGED: <n> of <total>
 #   UNANSWERED: <space-separated answer ids still carrying [RECOMMENDED]>
-#   A001: <letter> | <text of the option that letter names>
-#     <further lines of a multi-line answer, indented, printed whole>
 #   HELD: <n>, then one indented line per held question
 #   RETIRED: <n>, then one indented line per retired question
+#   A001: <letter> | <text of the option that letter names>
+#   A002: <letter>, <letter> | <option text> ; <option text>
+#     <the rest of the answer line after the letters, indented>
+#     <further lines of a multi-line answer, indented, printed whole>
+#
+# The letters are a run of bare A-E tokens at the start of the answer line,
+# split by commas, spaces, or both. The rest of the line loses its leading
+# spaces, `;`, `,`, and `.`, and prints on its own line, so no text is lost.
+# An answer line with no letter prints whole on the answer line.
 #
 # Exit codes:
 #   0 — success
@@ -29,6 +36,8 @@
 #   X005 — a closer has no matching opener
 #   X006 — a closer's id does not match the opener it closes
 #   X007 — the file contains no answers and no retired entries
+#   X008 — two or more letters are followed by text that does not start with
+#          `;`, so the text can be a further choice or a reason
 #
 # A terminal wave holds only retired entries and no answers. It is valid: it
 # reports ACKNOWLEDGED: 0 of 0 with RETIRED above zero, which marks the grill
@@ -61,29 +70,47 @@ FILE="$1"
 
 awk '
 # kcov-exclude-start
-function flush_answer(   i, letter, marked, body, key, text, line) {
+function flush_answer(   i, n, l, letters, marked, body, rest, text, line) {
   if (open_id == "") return
   marked = (opener ~ /\[RECOMMENDED\]/)
   body = opener
   sub(/\[RECOMMENDED\][[:space:]]*/, "", body)
-  # The letter is the first bare A-E token left on the opener line.
-  letter = ""
-  if (match(body, /^[[:space:]]*[A-E]([[:space:]]|[;,.]|$)/)) {
-    letter = substr(body, RSTART, RLENGTH)
-    gsub(/[^A-E]/, "", letter)
+  # The letters are a run of bare A-E tokens at the start of the opener line,
+  # split by commas, spaces, or both. A `.` or a `;` ends the run.
+  n = 0; letters = ""; rest = body
+  sub(/^[[:space:]]+/, "", rest)
+  while (match(rest, /^[A-E]([[:space:]]|[;,.]|$)/)) {
+    n++; l[n] = substr(rest, 1, 1)
+    letters = letters (n > 1 ? ", " : "") l[n]
+    rest = substr(rest, 2)
+    match(rest, /^[[:space:],]*/)
+    rest = substr(rest, RLENGTH + 1)
   }
+  # Two or more letters followed by text can be a further choice or the start
+  # of a reason. Only a `;` tells them apart, so anything else stops here.
+  if (n > 1 && rest ~ /[^[:space:];,.]/ && rest !~ /^;/) {
+    printf "extract-answers X008 error: answer A%s names several letters and then text with no \";\"; end the letters with \";\", as in \"A%s: %s; <reason>\"\n", open_id, open_id, letters > "/dev/stderr"
+    bad = 1; exit 1
+  }
+  sub(/^[[:space:];,.]+/, "", rest)
   total++
   if (marked) {
     unack = unack (unack == "" ? "" : " ") "A" open_id
-    line = sprintf("A%s: [RECOMMENDED] %s", open_id, (letter == "" ? body : letter))
+    line = sprintf("A%s: [RECOMMENDED] %s", open_id, (n == 0 ? body : letters))
   } else {
     ack++
-    line = sprintf("A%s: %s", open_id, (letter == "" ? body : letter))
+    line = sprintf("A%s: %s", open_id, (n == 0 ? body : letters))
   }
-  key = open_id letter
-  text = (letter != "" && (key in opt)) ? opt[key] : ""
+  # The option texts print only when every letter names one, so a text never
+  # sits beside the wrong letter.
+  text = ""
+  for (i = 1; i <= n; i++) {
+    if (!((open_id l[i]) in opt)) { text = ""; break }
+    text = text (i > 1 ? " ; " : "") opt[open_id l[i]]
+  }
   if (text != "") line = line " | " text
   nout++; out[nout] = line
+  if (n > 0 && rest != "") { nout++; out[nout] = "  " rest }
   for (i = 1; i <= nbody; i++) { nout++; out[nout] = "  " bodyline[i] }
   open_id = ""; nbody = 0
 }

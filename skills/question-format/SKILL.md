@@ -65,7 +65,7 @@ Every question carries these fields, in this order:
 3. **Depends on** (optional): earlier question IDs whose answers affect this one
 4. **Options**: `A)`, `B)`, `C)`, each with a concise tradeoff. Minimum 2, maximum 5
 5. **Recommendation**: the recommended letter with brief reasoning
-6. **Answer**: `ANNN: [RECOMMENDED] <letter>`, prefilled with the recommendation
+6. **Answer**: `ANNN: [RECOMMENDED] <letter>`, prefilled with the recommendation. An answer can name several letters split by commas, such as `A, C`
 7. **Answer closer**: `</ANNN>` alone on its own line at column zero
 
 Reference questions as `Q001` and answers as `A001`, inside the file and from other documents.
@@ -82,7 +82,7 @@ An answer runs from its `ANNN:` opener to its `</ANNN>` closer, and everything b
 
 ## Answer acknowledgment
 
-`[RECOMMENDED]` marks an answer prefilled by Claude and not yet reviewed. The user clears it to acknowledge: `A001: [RECOMMENDED] A` unreviewed, `A001: A` acknowledged, `A001: B; switched because...` changed.
+`[RECOMMENDED]` marks an answer prefilled by Claude and not yet reviewed. The user clears it to acknowledge: `A001: [RECOMMENDED] A` unreviewed, `A001: A` acknowledged, `A001: B; switched because...` changed. A reason after several letters starts with `;`, as in `A001: A, C; because...`, because other text there can be one more letter: the extractor stops on it with X008.
 
 **The gate is hard.** A consumer refuses to fold answers while any marker stands, and names the questions still carrying one. A standing marker never means acceptance, and no signal from the user overrides it. Cleared markers are themselves the completion signal, so the format carries no separate ready-state field that could disagree with them.
 

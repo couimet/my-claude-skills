@@ -370,3 +370,92 @@ FIXTURE
   [[ "$output" == *"ACKNOWLEDGED: 0 of 0"* ]] || false
   [[ "$output" == *"RETIRED: 2"* ]] || false
 }
+
+# =============================================================
+# Text after the letters on the answer line
+# =============================================================
+
+# _repro_wave <file> — write a three-question wave: a run of two letters, a
+# single letter with a reason after a `;`, and a run of two letters followed by
+# text with no `;`, which is ambiguous.
+_repro_wave() {
+  cat > "$1" <<'FIXTURE'
+# Repro wave 1
+
+## Q001: First?
+
+A) Alpha - a
+B) Bravo - b
+C) Charlie - c
+
+A001: A, C
+</A001>
+
+## Q002: Second?
+
+A) Alpha2 - a
+B) Bravo2 - b
+
+A002: B; switched because the first option assumes the caller holds the questions.
+</A002>
+
+## Q003: Third?
+
+A) Alpha3 - a
+B) Bravo3 - b
+
+A003: B, A is wrong because it skips the gate.
+</A003>
+FIXTURE
+}
+
+@test "extract-answers: a run of letters prints each letter with its option text" {
+  _repro_wave wave.txt
+  sed -i.bak 's/^A003: .*/A003: B/' wave.txt
+  run "$SCRIPT" wave.txt
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"A001: A, C | Alpha ; Charlie"* ]] || false
+}
+
+@test "extract-answers: a reason after a letter and a semicolon prints on an indented line" {
+  _repro_wave wave.txt
+  sed -i.bak 's/^A003: .*/A003: B/' wave.txt
+  run "$SCRIPT" wave.txt
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"A002: B | Bravo2"$'\n'"  switched because the first option assumes the caller holds the questions."* ]] || false
+}
+
+@test "extract-answers: X008 when a run of letters is followed by text with no semicolon" {
+  _repro_wave wave.txt
+  run "$SCRIPT" wave.txt
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"X008"* ]] || false
+  [[ "$output" == *"A003"* ]] || false
+}
+
+@test "extract-answers: a marked run of letters counts as unanswered and prints each letter" {
+  _repro_wave wave.txt
+  sed -i.bak -e 's/^A001: A, C$/A001: [RECOMMENDED] A, C/' -e 's/^A003: .*/A003: B/' wave.txt
+  run "$SCRIPT" wave.txt
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"UNANSWERED: A001"* ]] || false
+  [[ "$output" == *"A001: [RECOMMENDED] A, C | Alpha ; Charlie"* ]] || false
+}
+
+@test "extract-answers: a single letter and a period then text prints the letter and the reason" {
+  _repro_wave wave.txt
+  sed -i.bak 's/^A003: .*/A003: A. Because it keeps the gate./' wave.txt
+  run "$SCRIPT" wave.txt
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"X008"* ]] || false
+  [[ "$output" == *"A003: A | Alpha3"$'\n'"  Because it keeps the gate."* ]] || false
+}
+
+@test "extract-answers: a multi-line answer prints the rest of the answer line before the body lines" {
+  _repro_wave wave.txt
+  sed -i.bak -e 's/^A003: .*/A003: B/' -e 's/^A002: B; switched because the first option assumes the caller holds the questions.$/A002: B; switched because of the gate./' wave.txt
+  awk '{ print } /^A002: / { print ""; print "A fresh session does not hold them." }' wave.txt > wave2.txt
+  run "$SCRIPT" wave2.txt
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"A002: B | Bravo2"$'\n'"  switched because of the gate."$'\n'"  A fresh session does not hold them."* ]] || false
+}
