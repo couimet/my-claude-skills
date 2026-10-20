@@ -1,6 +1,6 @@
 ---
 name: label-discovery
-version: 2026.10.18@29841c0
+version: 2026.10.20@b191fa8
 user-invocable: false
 description: 'Fetches GitHub labels, classifies them as defaults vs structured, and prints them grouped by prefix for the user to apply. Auto-consulted by /create-github-issue.'
 allowed-tools: Bash(gh label list *)
