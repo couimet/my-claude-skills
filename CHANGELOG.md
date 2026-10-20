@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.10.20.1
+
+### Fixed
+
+- The prose check of `/prose-style` no longer reports false findings in a tilde fenced block (`~~~`). It exempts a tilde block from every rule, the same as a backtick block. A fence closes only on a run of the same character that is at least as long as the opening run, so a backtick block inside a `~~~markdown` paste block no longer closes the paste block ([issues/301](https://github.com/couimet/my-claude-skills/issues/301))
+
 ## 2026.10.20
 
 ### Fixed

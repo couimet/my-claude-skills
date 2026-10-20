@@ -150,6 +150,55 @@ teardown() {
   [ "$status" -eq 0 ]
 }
 
+@test "check-prose: a tilde fenced block is exempt from every rule" {
+  printf '# Title\n\n~~~text\nlines 26-37 and PR #42 and .claude-work/x.txt\nand a wrapped\nline too\n~~~\n' > "$FILE"
+  run "$SCRIPT" "$FILE"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+# The probe after the outer close shows that the outer fence still closes, and
+# that it is the only line checked.
+@test "check-prose: a backtick line inside a tilde block does not close it" {
+  printf '# Title\n\n~~~markdown\nSee lines 3-4 first.\n```bash\nlines 26-37 inside\n```\n~~~\n\nSee lines 1-2 here.\n' > "$FILE"
+  run "$SCRIPT" "$FILE"
+  [ "$status" -eq 1 ]
+  [ "$output" = "10: P003 plain-text line reference; use path#L42 instead" ]
+}
+
+@test "check-prose: a tilde line inside a backtick block does not close it" {
+  printf '# Title\n\n```markdown\nSee lines 3-4 first.\n~~~bash\nlines 26-37 inside\n~~~\n```\n\nSee lines 1-2 here.\n' > "$FILE"
+  run "$SCRIPT" "$FILE"
+  [ "$status" -eq 1 ]
+  [ "$output" = "10: P003 plain-text line reference; use path#L42 instead" ]
+}
+
+@test "check-prose: a closing run shorter than the opening run does not close the fence" {
+  for c in '`' '~'; do
+    printf '# Title\n\n%s\n%s\nlines 26-37 inside\n%s\n\nSee lines 1-2 here.\n' \
+      "$c$c$c$c" "$c$c$c" "$c$c$c$c" > "$FILE"
+    run "$SCRIPT" "$FILE"
+    [ "$status" -eq 1 ]
+    [ "$output" = "8: P003 plain-text line reference; use path#L42 instead" ]
+  done
+}
+
+@test "check-prose: a tilde fence toggles at every valid indentation" {
+  for indent in "" " " "  " "   "; do
+    printf '# Title\n\n%s~~~\n%slines 26-37 inside a fence\n%s~~~\n' \
+      "$indent" "$indent" "$indent" > "$FILE"
+    run "$SCRIPT" "$FILE"
+    [ "$status" -eq 0 ]
+  done
+}
+
+@test "check-prose: a four-space tilde line opens no fence" {
+  printf '# Title\n\n    ~~~\nlines 26-37 after a four-space tilde line\n' > "$FILE"
+  run "$SCRIPT" "$FILE"
+  [ "$status" -eq 1 ]
+  [ "$output" = "4: P003 plain-text line reference; use path#L42 instead" ]
+}
+
 @test "check-prose: a bold label is prose and is checked for P004" {
   printf '# Title\n\n**Related:** PR #42 carries the change.\n' > "$FILE"
   run "$SCRIPT" "$FILE"
