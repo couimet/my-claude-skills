@@ -451,6 +451,22 @@ FIXTURE
   [[ "$output" == *"A003: A | Alpha3"$'\n'"  Because it keeps the gate."* ]] || false
 }
 
+@test "extract-answers: a reason after a semicolon keeps a leading period" {
+  _repro_wave wave.txt
+  sed -i.bak 's/^A003: .*/A003: A; .env is required/' wave.txt
+  run "$SCRIPT" wave.txt
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"A003: A | Alpha3"$'\n'"  .env is required"* ]] || false
+}
+
+@test "extract-answers: a reason after a letter and a space keeps a leading period" {
+  _repro_wave wave.txt
+  sed -i.bak 's/^A003: .*/A003: A .env is required/' wave.txt
+  run "$SCRIPT" wave.txt
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"A003: A | Alpha3"$'\n'"  .env is required"* ]] || false
+}
+
 @test "extract-answers: a multi-line answer prints the rest of the answer line before the body lines" {
   _repro_wave wave.txt
   sed -i.bak -e 's/^A003: .*/A003: B/' -e 's/^A002: B; switched because the first option assumes the caller holds the questions.$/A002: B; switched because of the gate./' wave.txt

@@ -20,8 +20,9 @@
 #     <further lines of a multi-line answer, indented, printed whole>
 #
 # The letters are a run of bare A-E tokens at the start of the answer line,
-# split by commas, spaces, or both. The rest of the line loses its leading
-# spaces, `;`, `,`, and `.`, and prints on its own line, so no text is lost.
+# split by commas, spaces, or both. The rest of the line loses one leading `;`,
+# or one `.` that a space or the line end follows, and the spaces after it. It
+# prints on its own line, so no text is lost.
 # An answer line with no letter prints whole on the answer line.
 #
 # Exit codes:
@@ -92,7 +93,9 @@ function flush_answer(   i, n, l, letters, marked, body, rest, text, line) {
     printf "extract-answers X008 error: answer A%s names several letters and then text with no \";\"; end the letters with \";\", as in \"A%s: %s; <reason>\"\n", open_id, open_id, letters > "/dev/stderr"
     bad = 1; exit 1
   }
-  sub(/^[[:space:];,.]+/, "", rest)
+  # Remove one separator only, so a reason such as `.env is required` keeps its
+  # leading `.`.
+  sub(/^(;|\.([[:space:]]|$))[[:space:]]*/, "", rest)
   total++
   if (marked) {
     unack = unack (unack == "" ? "" : " ") "A" open_id
