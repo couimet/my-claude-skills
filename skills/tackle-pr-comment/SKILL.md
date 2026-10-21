@@ -1,6 +1,6 @@
 ---
 name: tackle-pr-comment
-version: 2026.10.20@b191fa8
+version: 2026.10.20.1@5b343e4
 description: Tackle a PR comment - analyze feedback, explore code, and create implementation working document
 argument-hint: <pr-comment-url> [--scratchpad]
 skill-kind: composite
