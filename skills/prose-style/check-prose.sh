@@ -66,12 +66,18 @@ report() {
 }
 
 # Fenced code blocks, tables and list items are exempt from every rule here.
-# A fence toggles on any line whose first non-space characters are three
-# backticks, so an indented fence inside a list still closes correctly.
+# A fence opens on any line whose first non-space characters are a run of
+# three or more backticks or three or more tildes, so an indented fence inside
+# a list still closes correctly. The fence holds that opening run, and it
+# closes only on a run of the same character that is at least as long, with
+# nothing after it but spaces. So a backtick line inside a tilde block, a
+# shorter run, or a run with an info string such as ~~~python is fence
+# content. The space class also holds the \r of a CRLF line.
 # Markdown allows a fence up to three leading spaces and treats a fourth as
 # indented content, so the line is trimmed of at most three before the marker
 # is tested.
-in_fence=0
+fence=""
+fence_re='^(```+|~~~+)'
 lineno=0
 prev_text=""
 prev_no=0
@@ -108,10 +114,20 @@ while IFS= read -r line || [ -n "$line" ]; do
 
   unindented="$line"
   for _ in 1 2 3; do unindented="${unindented# }"; done
-  case "$unindented" in
-    '```'*) in_fence=$((1 - in_fence)); prev_text=""; continue ;;
-  esac
-  [ "$in_fence" -eq 1 ] && continue
+  if [[ "$unindented" =~ $fence_re ]]; then
+    run="${BASH_REMATCH[1]}"
+    if [ -z "$fence" ]; then
+      fence="$run"
+      prev_text=""
+      continue
+    fi
+    if [ "${run:0:1}" = "${fence:0:1}" ] && [ "${#run}" -ge "${#fence}" ] \
+      && [[ "${unindented:${#run}}" =~ ^[[:space:]]*$ ]]; then
+      fence=""
+      continue
+    fi
+  fi
+  [ -n "$fence" ] && continue
 
   # Structural lines are never prose: headings, table rows, list items,
   # blockquotes, thematic breaks, and the answer-region delimiters
