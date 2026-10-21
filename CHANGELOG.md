@@ -14,7 +14,7 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 ### Fixed
 
-- The prose check of `/prose-style` no longer reports false findings in a tilde fenced block (`~~~`). It exempts a tilde block from every rule, the same as a backtick block. A fence closes only on a run of the same character that is at least as long as the opening run, so a backtick block inside a `~~~markdown` paste block no longer closes the paste block ([issues/301](https://github.com/couimet/my-claude-skills/issues/301))
+- The prose check of `/prose-style` no longer reports false findings in a tilde fenced block (`~~~`). It exempts a tilde block from every rule, the same as a backtick block. A fence closes only on a run of the same character that is at least as long as the opening run, with nothing after it but spaces. So a `~~~python` line inside a tilde block no longer closes the block early, and a backtick block inside a `~~~markdown` paste block no longer closes the paste block ([issues/301](https://github.com/couimet/my-claude-skills/issues/301))
 
 ## 2026.10.20
 

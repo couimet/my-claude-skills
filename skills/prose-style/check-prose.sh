@@ -69,8 +69,10 @@ report() {
 # A fence opens on any line whose first non-space characters are a run of
 # three or more backticks or three or more tildes, so an indented fence inside
 # a list still closes correctly. The fence holds that opening run, and it
-# closes only on a run of the same character that is at least as long. So a
-# backtick line inside a tilde block, or a shorter run, is fence content.
+# closes only on a run of the same character that is at least as long, with
+# nothing after it but spaces. So a backtick line inside a tilde block, a
+# shorter run, or a run with an info string such as ~~~python is fence
+# content. The space class also holds the \r of a CRLF line.
 # Markdown allows a fence up to three leading spaces and treats a fourth as
 # indented content, so the line is trimmed of at most three before the marker
 # is tested.
@@ -119,7 +121,8 @@ while IFS= read -r line || [ -n "$line" ]; do
       prev_text=""
       continue
     fi
-    if [ "${run:0:1}" = "${fence:0:1}" ] && [ "${#run}" -ge "${#fence}" ]; then
+    if [ "${run:0:1}" = "${fence:0:1}" ] && [ "${#run}" -ge "${#fence}" ] \
+      && [[ "${unindented:${#run}}" =~ ^[[:space:]]*$ ]]; then
       fence=""
       continue
     fi

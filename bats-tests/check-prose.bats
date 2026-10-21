@@ -183,6 +183,26 @@ teardown() {
   done
 }
 
+@test "check-prose: a closing run with an info string does not close the fence" {
+  for c in '`' '~'; do
+    printf '# Title\n\n%stext\n%spython\nlines 26-37 inside\n%s\n\nSee lines 1-2 here.\n' \
+      "$c$c$c" "$c$c$c" "$c$c$c" > "$FILE"
+    run "$SCRIPT" "$FILE"
+    [ "$status" -eq 1 ]
+    [ "$output" = "8: P003 plain-text line reference; use path#L42 instead" ]
+  done
+}
+
+@test "check-prose: a closing run with trailing spaces closes the fence" {
+  for c in '`' '~'; do
+    printf '# Title\n\n%s\nlines 26-37 inside\n%s  \n\nSee lines 1-2 here.\n' \
+      "$c$c$c" "$c$c$c" > "$FILE"
+    run "$SCRIPT" "$FILE"
+    [ "$status" -eq 1 ]
+    [ "$output" = "7: P003 plain-text line reference; use path#L42 instead" ]
+  done
+}
+
 @test "check-prose: a tilde fence toggles at every valid indentation" {
   for indent in "" " " "  " "   "; do
     printf '# Title\n\n%s~~~\n%slines 26-37 inside a fence\n%s~~~\n' \
