@@ -74,8 +74,14 @@
 # in the --bg mode the child runs it as its first action, so a dispatch that
 # fails leaves the claim of the other session. Neither stops the other
 # session; stderr gives the claude stop command. A session that ended does not hold the folder, and it
-# keeps the /resume-agent hint. When the check cannot run, the launch goes on
-# and one stderr line says so.
+# keeps the /resume-agent hint. A gone session (Claude Code deleted its
+# transcript) does not hold the folder either, and gets no hint, because
+# /resume-agent stops on it with R008. The newest session that ended or is
+# gone decides: when it is gone, one stderr line says that its transcript is
+# gone and that the earlier prompts and working files are in the folder, and
+# an older ended session gets no hint, because /resume-agent does not fall
+# back to it. When the check cannot run, the launch goes on and one stderr
+# line says so.
 #
 # No claude flag passes through to the child. The child starts with the user's
 # default settings, and wanting a different model or permission mode is a
@@ -104,7 +110,8 @@
 #
 # Output (stdout): the resolved folder first, so a typo shows in the first
 # line, then the prompt file and the name. When a session that ended claimed
-# the folder, one stderr line points to /resume-agent. A launch that repeats the newest
+# the folder, one stderr line points to /resume-agent; when that session is
+# gone, the stderr line says so instead. A launch that repeats the newest
 # prompt adds one Repeat: line before the prompt file. The default mode ends
 # with one line saying that no agent was started and one line with the /rename
 # command; --bg ends with the job id and the attach command. The job id is the
@@ -390,8 +397,9 @@ fi
 
 # --- One session for each folder ---
 # See the header. A folder that does not exist yet has no session. The hint
-# for a session that ended is printed after the Folder line.
+# for a session that ended or is gone is printed after the Folder line.
 earlier_hint=""
+earlier_seen=0
 held_files=()
 if [ -d "$target" ] && held_abs="$({ cd "$target" && pwd -P; } 2>/dev/null)"; then
   check_args=("$held_abs")
@@ -407,11 +415,21 @@ if [ -d "$target" ] && held_abs="$({ cd "$target" && pwd -P; } 2>/dev/null)"; th
   else
     while IFS=$'\t' read -r h_sid h_job h_name h_state; do
       [ -n "$h_sid" ] || continue
-      if [ "$h_state" = "ended" ]; then
-        [ -n "$earlier_hint" ] \
-          || earlier_hint="launch-agent: session ${h_sid:0:8} used this folder before; to continue that session rather than start with no context, use /resume-agent $held_abs"
-        continue
-      fi
+      # The newest session that ended or is gone decides, as in /resume-agent.
+      case "$h_state" in
+        ended)
+          [ "$earlier_seen" -eq 1 ] \
+            || earlier_hint="launch-agent: session ${h_sid:0:8} used this folder before; to continue that session rather than start with no context, use /resume-agent $held_abs"
+          earlier_seen=1
+          continue
+          ;;
+        gone)
+          [ "$earlier_seen" -eq 1 ] \
+            || earlier_hint="launch-agent: session ${h_sid:0:8} used this folder before, but Claude Code deleted its transcript; this launch starts with no context; the earlier prompts and working files are in $held_abs"
+          earlier_seen=1
+          continue
+          ;;
+      esac
       case "$h_state" in running | retired) ;; *) continue ;; esac
       if [ "$h_sid" = "${CLAUDE_CODE_SESSION_ID:-}" ] \
           || { [ -n "$self_first" ] && [ "$h_job" = "${self_first:0:8}" ]; }; then
@@ -453,7 +471,8 @@ printf 'Folder: %s\n' "$folder_abs"
 # context of the earlier rounds, and /resume-agent continues it, where this
 # launch starts with none. This script cannot tell why a new one is wanted,
 # so it says so once and goes on. Only the newest one is named;
-# /resume-agent picks the same one.
+# /resume-agent picks the same one. When that one is gone, no session holds
+# the earlier rounds, so the line names the files that still do.
 [ -z "$earlier_hint" ] || echo "$earlier_hint" >&2
 
 # --- Save the prompt ---

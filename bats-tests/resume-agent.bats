@@ -268,8 +268,21 @@ run_resume() {
   [[ "$stderr" == *"R004"*"claude agents --json --all failed, so the state of session $TOPIC_SESSION is unknown; nothing was restarted"* ]] || false
 }
 
-@test "with no transcript, a restart runs in the git top-level of the folder, and stderr says so" {
+# cleared_job_without_first_transcript — make $TOPIC_SESSION a cleared job
+# whose job record continues in $CLEARED_SESSION, and whose job row gives no
+# cwd. Only the transcript of $CLEARED_SESSION is left, so the session is
+# ended, and its start directory is unknown.
+cleared_job_without_first_transcript() {
   rm "$PROJECTS_DIR/-proj/$TOPIC_SESSION.jsonl"
+  transcript "$CLEARED_SESSION" "$TEST_TEMP_DIR/elsewhere"
+  mkdir -p "$JOBS_DIR/${TOPIC_SESSION:0:8}"
+  printf '{"sessionId":"%s","resumeSessionId":"%s"}' "$TOPIC_SESSION" "$CLEARED_SESSION" \
+    > "$JOBS_DIR/${TOPIC_SESSION:0:8}/state.json"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" "${1:-my-topic}" done null null null)" > "$AGENTS_ALL_FILE"
+}
+
+@test "with no transcript of the first id, a restart runs in the git top-level of the folder, and stderr says so" {
+  cleared_job_without_first_transcript
   session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
   printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done)" > "$AGENTS_AFTER"
   RUN_DIR="$REPO/my-topic" AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
@@ -316,8 +329,8 @@ run_resume() {
   [[ "$stderr" != *"the script uses"* ]] || false
 }
 
-@test "with no transcript, a folder in no repository restarts in the folder itself" {
-  rm "$PROJECTS_DIR/-proj/$TOPIC_SESSION.jsonl"
+@test "with no transcript of the first id, a folder in no repository restarts in the folder itself" {
+  cleared_job_without_first_transcript loose
   local loose="$TEST_TEMP_DIR/loose"
   mkdir -p "$loose"
   session_file "$TOPIC_SESSION" "$loose" "2026-10-13T10:00:00Z"
@@ -786,4 +799,84 @@ STUB
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"another session also used this folder: $OTHER_SESSION continued as $TOPIC_SESSION (not resumed; it is the earlier part of the same work)"* ]] || false
   [[ "$stderr" != *"the newest one wins"* ]] || false
+}
+
+# ============================================================================
+# A session whose transcript is gone (issue 302)
+# ============================================================================
+
+# Only $TOPIC_SESSION has a transcript, so $OTHER_SESSION is gone when no
+# live row names it.
+
+@test "a gone session → R008, nothing restarts, nothing on stdout, and the advice is /launch-agent" {
+  session_file "$OTHER_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"resume-agent R008 error: Claude Code deleted the transcript of session $OTHER_SESSION (no $OTHER_SESSION.jsonl in $PROJECTS_DIR)"* ]] || false
+  [[ "$stderr" == *"an empty conversation with no history and no name"* ]] || false
+  [[ "$stderr" == *"/launch-agent \"$REPO/my-topic\""* ]] || false
+  [[ "$stderr" != *"start a session in"* ]] || false
+  [[ "$stderr" != *"no session"* ]] || false
+}
+
+@test "a gone session after /clear names the conversation of its job record" {
+  session_file "$OTHER_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  mkdir -p "$JOBS_DIR/${OTHER_SESSION:0:8}"
+  printf '{"sessionId":"%s","resumeSessionId":"%s"}' "$OTHER_SESSION" "$CLEARED_SESSION" \
+    > "$JOBS_DIR/${OTHER_SESSION:0:8}/state.json"
+  printf '[%s]' "$(agent_entry "$OTHER_SESSION" my-topic done null null)" > "$AGENTS_ALL_FILE"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"R008"*"(no $CLEARED_SESSION.jsonl in $PROJECTS_DIR)"* ]] || false
+}
+
+@test "a gone session whose job row starts in another directory → R008 that names that directory" {
+  local wt="$TEST_TEMP_DIR/worktree"
+  mkdir -p "$wt"
+  session_file "$OTHER_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$OTHER_SESSION" my-topic done null null "$wt")" > "$AGENTS_ALL_FILE"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [[ "$stderr" == *"R008"*"start a session in $wt, and run /launch-agent \"$REPO/my-topic\" in it"* ]] || false
+}
+
+@test "a gone session whose job row starts in the git top-level of the folder → R008 with /launch-agent alone" {
+  session_file "$OTHER_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$OTHER_SESSION" my-topic done null null "$REPO")" > "$AGENTS_ALL_FILE"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"R008"*"/launch-agent \"$REPO/my-topic\""* ]] || false
+  [[ "$stderr" != *"start a session in"* ]] || false
+}
+
+@test "a gone session whose job row read fails → R008 with /launch-agent alone, not R004" {
+  session_file "$OTHER_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  STUB_AGENTS_FAIL=second-all run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [[ "$stderr" == *"R008"*"/launch-agent \"$REPO/my-topic\""* ]] || false
+  [[ "$stderr" != *"R004"* ]] || false
+}
+
+@test "a gone newest session with an older ended session → R008, and stderr names the older session" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-12T09:00:00Z"
+  session_file "$OTHER_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"another session also used this folder: $TOPIC_SESSION (not resumed; the newest one wins)"* ]] || false
+  [[ "$stderr" == *"R008"*"session $OTHER_SESSION"* ]] || false
+}
+
+@test "an older gone session is marked as gone on its line" {
+  session_file "$OTHER_SESSION" "$REPO/my-topic" "2026-10-12T09:00:00Z"
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic idle)" > "$AGENTS_FILE"
+  run_resume "" my-topic
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"another session also used this folder: $OTHER_SESSION (not resumed; the newest one wins; Claude Code deleted its transcript)"* ]] || false
 }

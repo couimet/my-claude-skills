@@ -175,6 +175,13 @@ setup() {
   # launchAgentDefaultFolder, and a run in the default mode adopts the folder
   # for the developer's live session. The helpers still set both explicitly.
   export MY_CLAUDE_SKILLS_CONFIG="$CFG"
+  # The transcripts and job records that folder-sessions.sh reads, so a
+  # developer's real transcripts never decide whether an earlier session is
+  # ended or gone.
+  PROJECTS_DIR="$TEST_TEMP_DIR/projects"
+  mkdir -p "$PROJECTS_DIR"
+  export FOLDER_SESSIONS_PROJECTS_DIR="$PROJECTS_DIR"
+  export FOLDER_SESSIONS_JOBS_DIR="$TEST_TEMP_DIR/jobs"
   unset CLAUDE_CODE_SESSION_ID CLAUDE_JOB_DIR CLAUDE_CODE_AGENT CLAUDE_PID \
     CLAUDE_CODE_CHILD_SESSION
 }
@@ -857,14 +864,57 @@ PROMPT
   _contains "$(cat "$ARGS_FILE")" "already saved at $REPO/my-topic/prompt-new-agent-launch.txt,"
 }
 
+# earlier_session <session-id> <written_at> [transcript] — write a session
+# file of another session for $REPO/my-topic, and its transcript when the
+# third argument is "transcript".
+earlier_session() {
+  mkdir -p "$REPO/my-topic" "$SESSIONS_DIR"
+  printf '{"version":1,"folder":"%s","session_id":"%s","slug":"t","written_at":"%s"}' \
+    "$REPO/my-topic" "$1" "$2" > "$SESSIONS_DIR/$1--t.json"
+  if [ "${3-}" = "transcript" ]; then
+    mkdir -p "$PROJECTS_DIR/-proj"
+    printf '{"type":"user","cwd":"%s","sessionId":"%s"}\n' "$REPO" "$1" > "$PROJECTS_DIR/-proj/$1.jsonl"
+  fi
+}
+
 @test "a session file of another session for the folder → a hint to /resume-agent, and the launch goes on" {
   mkdir -p "$REPO/my-topic" "$SESSIONS_DIR"
+  mkdir -p "$PROJECTS_DIR/-proj"
+  printf '{}\n' > "$PROJECTS_DIR/-proj/7fa0c639-1111-4222-8333-944455556666.jsonl"
   printf '{"version":1,"folder":"%s","session_id":"7fa0c639-1111-4222-8333-944455556666","slug":"t","written_at":"2026-10-13T10:00:00Z"}' \
     "$REPO/my-topic" > "$SESSIONS_DIR/7fa0c639-1111-4222-8333-944455556666--t.json"
   run_in "$REPO" --bg my-topic "a later prompt"
   [ "$status" -eq 0 ]
   _contains "$output" "launch-agent: session 7fa0c639 used this folder before; to continue that session rather than start with no context, use /resume-agent $REPO/my-topic"
   [ -e "$ARGS_FILE" ]
+}
+
+@test "an earlier session whose transcript is gone → the gone line, no /resume-agent hint, and the launch goes on" {
+  earlier_session 7fa0c639-1111-4222-8333-944455556666 2026-10-13T10:00:00Z
+  run_in "$REPO" --bg my-topic "a later prompt"
+  [ "$status" -eq 0 ]
+  _contains "$output" "launch-agent: session 7fa0c639 used this folder before, but Claude Code deleted its transcript; this launch starts with no context; the earlier prompts and working files are in $REPO/my-topic"
+  [[ "$output" != *"/resume-agent"* ]] || false
+  [ -e "$ARGS_FILE" ]
+}
+
+@test "a gone newest session with an older ended session → the gone line, and no hint for the older session" {
+  earlier_session 4089da53-d584-438b-80f8-afbeb125a2bf 2026-10-12T09:00:00Z transcript
+  earlier_session 7fa0c639-1111-4222-8333-944455556666 2026-10-13T10:00:00Z
+  run_in "$REPO" --bg my-topic "a later prompt"
+  [ "$status" -eq 0 ]
+  _contains "$output" "launch-agent: session 7fa0c639 used this folder before, but Claude Code deleted its transcript"
+  [[ "$output" != *"/resume-agent"* ]] || false
+  [[ "$output" != *"4089da53"* ]] || false
+}
+
+@test "an ended newest session with an older gone session → the hint for the ended session only" {
+  earlier_session 4089da53-d584-438b-80f8-afbeb125a2bf 2026-10-12T09:00:00Z
+  earlier_session 7fa0c639-1111-4222-8333-944455556666 2026-10-13T10:00:00Z transcript
+  run_in "$REPO" --bg my-topic "a later prompt"
+  [ "$status" -eq 0 ]
+  _contains "$output" "launch-agent: session 7fa0c639 used this folder before; to continue that session rather than start with no context, use /resume-agent $REPO/my-topic"
+  [[ "$output" != *"deleted its transcript"* ]] || false
 }
 
 @test "the session file of the calling session gives no hint" {

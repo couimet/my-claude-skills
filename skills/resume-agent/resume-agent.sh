@@ -15,7 +15,8 @@
 #
 # The session of a folder, and its state, come from
 # ../issue-context/folder-sessions.sh --others, the one rule that every
-# caller uses. It joins the session files that set-work-folder.sh writes to
+# caller uses, with the transcript and job record directories of this
+# script. It joins the session files that set-work-folder.sh writes to
 # `claude agents --json` by session id and by job id, so a session after a
 # /clear is still found. The session that runs this script is left out, so a
 # person who types the skill in the folder's own session does not restart it.
@@ -34,6 +35,17 @@
 #            `claude attach <job id>` wakes it with one job record, but that
 #            command needs a terminal. So nothing restarts it, Status is
 #            retired, and stderr gives the attach command.
+#   gone     the job is not listed, and Claude Code deleted the transcript
+#            of the conversation that a resume loads. A resume gives an
+#            empty conversation with no history, which Claude Code names
+#            from its first prompt. So nothing restarts, stdout is empty, and
+#            the script stops with R008. It does not try an older session of
+#            the folder: an older session misses the later rounds, and a
+#            resume of it looks like a success. The R008 message gives
+#            /launch-agent "<folder>", and when the cwd of the job row (source 1
+#            below) is not the git top-level of the folder, the directory to
+#            run it in. A failed read of that row gives R008 with the short
+#            advice, never R004.
 #   ended    the job is not listed. `claude --bg --resume <session id>` wakes
 #            it with no prompt, idle, under the name it was saved with. For a
 #            job, the session id is the first session id of the job: a resume
@@ -129,7 +141,9 @@
 #        R004 `claude agents --json` failed and nothing restarted, R005
 #        restart failed, R006 the restart ran but `claude agents --json` then
 #        failed, so the state of the session is unknown, R007 the session
-#        restarted in another directory than the one the script used
+#        restarted in another directory than the one the script used, R008
+#        Claude Code deleted the transcript of the session, so nothing
+#        restarted
 
 set -euo pipefail
 
@@ -140,6 +154,7 @@ readonly ERR_AGENTS="R004"
 readonly ERR_RESTART="R005"
 readonly ERR_UNKNOWN="R006"
 readonly ERR_CWD="R007"
+readonly ERR_GONE="R008"
 
 usage() {
   cat <<'EOF'
@@ -226,11 +241,17 @@ sessions_dir="$(_issue_context_sessions_dir)" \
 
 [ -d "$sessions_dir" ] || die "$ERR_NO_SESSION" "no session has its working files in $folder_abs, so there is no session to resume; start one with /launch-agent"
 
+readonly PROJECTS_DIR="${RESUME_AGENT_PROJECTS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects}"
+readonly JOBS_DIR="${RESUME_AGENT_JOBS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/jobs}"
+
 # folder-sessions.sh is the one rule for the state of a session; see the
-# header. Its own stderr line says why it failed.
+# header. It gets the directories of this script, so the state and the start
+# directory come from one transcript directory. Its own stderr line says why
+# it failed.
 listing=""
 rc=0
-listing="$("$_self_dir/../issue-context/folder-sessions.sh" --others "$folder_abs")" || rc=$?
+listing="$(FOLDER_SESSIONS_PROJECTS_DIR="$PROJECTS_DIR" FOLDER_SESSIONS_JOBS_DIR="$JOBS_DIR" \
+  "$_self_dir/../issue-context/folder-sessions.sh" --others "$folder_abs")" || rc=$?
 case "$rc" in
   0) ;; # kcov-exclude-line
   2) die "$ERR_AGENTS" "the sessions of $folder_abs could not be read, so their state is unknown; nothing was restarted" ;;
@@ -249,7 +270,7 @@ while IFS=$'\t' read -r sid jid _name st; do
     job_id="$jid"
     list_state="$st"
   else
-    others+=("$sid:$jid")
+    others+=("$sid:$jid:$st")
   fi
 done <<LISTING
 $listing
@@ -264,7 +285,6 @@ LISTING
 # continued_as <job id> — print the conversation id that the job record of
 # <job id> continues in, or nothing. The record is the job state of Claude
 # Code, an undocumented file, so a change of its shape gives nothing.
-readonly JOBS_DIR="${RESUME_AGENT_JOBS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/jobs}"
 continued_as() {
   [ -n "$1" ] && [ -r "$JOBS_DIR/$1/state.json" ] || return 0
   jq -r '.resumeSessionId | strings' "$JOBS_DIR/$1/state.json" 2>/dev/null || true
@@ -274,28 +294,53 @@ continued_as() {
 # the earlier part of the same work, not a separate one.
 for other in ${others[@]+"${others[@]}"}; do
   other_id="${other%%:*}"
-  other_job="${other#*:}"
+  other_rest="${other#*:}"
+  other_job="${other_rest%%:*}"
+  other_gone=""
+  [ "${other_rest#*:}" != "gone" ] || other_gone="; Claude Code deleted its transcript"
   if [ -n "$other_job" ] && [ "$(continued_as "$other_job")" = "$session_id" ]; then
-    echo "resume-agent: another session also used this folder: $other_id continued as $session_id (not resumed; it is the earlier part of the same work)" >&2
+    echo "resume-agent: another session also used this folder: $other_id continued as $session_id (not resumed; it is the earlier part of the same work$other_gone)" >&2
   else
-    echo "resume-agent: another session also used this folder: $other_id (not resumed; the newest one wins)" >&2
+    echo "resume-agent: another session also used this folder: $other_id (not resumed; the newest one wins$other_gone)" >&2
   fi
 done
 
 # --- Choose the directory of the session ---
 # See the header for why it is the launch directory of the job, and not the
 # directory of the caller.
-readonly PROJECTS_DIR="${RESUME_AGENT_PROJECTS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects}"
 all_list=""
 if ! all_list="$(claude agents --json --all 2>/dev/null)" \
     || ! printf '%s' "$all_list" | jq -e 'type == "array"' >/dev/null 2>&1; then
-  die "$ERR_AGENTS" "claude agents --json --all failed, so the state of session $session_id is unknown; nothing was restarted"
+  # For a gone session the row only improves the advice, so R008 stands.
+  [ "$list_state" = "gone" ] \
+    || die "$ERR_AGENTS" "claude agents --json --all failed, so the state of session $session_id is unknown; nothing was restarted"
+  all_list="[]"
 fi
 # ROW is the jq condition that picks the row of the session: its job id, or
 # its session id for a session with no job.
 # shellcheck disable=SC2016 # a jq program: $job and $id are jq variables
 readonly ROW='if $job != "" then .id == $job else .sessionId == $id end'
 job_cwd="$(printf '%s' "$all_list" | jq -r --arg id "$session_id" --arg job "$job_id" "first(.[] | select($ROW) | .cwd | strings) // empty")"
+
+# --- Stop on a gone session ---
+# See the header: no restart, and no older session in its place.
+if [ "$list_state" = "gone" ]; then
+  gone_conv="$(continued_as "$job_id")"
+  [[ "$gone_conv" =~ ^[A-Za-z0-9_-]+$ ]] || gone_conv="$session_id"
+  advice="start a new session for the folder with /launch-agent \"$folder_abs\""
+  gone_dir=""
+  case "$job_cwd" in
+    /*) gone_dir="$({ cd "$job_cwd" && pwd -P; } 2>/dev/null || true)" ;;
+  esac
+  if [ -n "$gone_dir" ]; then
+    gone_top="$(git -C "$folder_abs" rev-parse --show-toplevel 2>/dev/null || true)"
+    [ -z "$gone_top" ] || gone_top="$({ cd "$gone_top" && pwd -P; } 2>/dev/null || true)"
+    [ "$gone_dir" = "$gone_top" ] \
+      || advice="start a session in $gone_dir, and run /launch-agent \"$folder_abs\" in it"
+  fi
+  die "$ERR_GONE" "Claude Code deleted the transcript of session $session_id (no $gone_conv.jsonl in $PROJECTS_DIR), so a resume gives an empty conversation with no history and no name; the script restarted nothing; $advice"
+fi
+
 resume_dir=""
 case "$job_cwd" in
   /*) resume_dir="$({ cd "$job_cwd" && pwd -P; } 2>/dev/null || true)" ;;

@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.10.22
+
+### Fixed
+
+- `/resume-agent` no longer restarts a session whose transcript Claude Code deleted, which woke as an empty conversation with no history and no name. It now stops with R008 and tells you how to start the work again with `/launch-agent`, and in which directory when the session started outside the repository of the folder. `/launch-agent` no longer suggests `/resume-agent` for such a session: it says that the history is gone and that the earlier prompts and working files are still in the folder ([issues/302](https://github.com/couimet/my-claude-skills/issues/302))
+
 ## 2026.10.20.1
 
 ### Fixed
