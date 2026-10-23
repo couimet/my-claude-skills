@@ -816,7 +816,7 @@ STUB
   [ -z "$output" ]
   [[ "$stderr" == *"resume-agent R008 error: Claude Code deleted the transcript of session $OTHER_SESSION (no $OTHER_SESSION.jsonl in $PROJECTS_DIR)"* ]] || false
   [[ "$stderr" == *"an empty conversation with no history and no name"* ]] || false
-  [[ "$stderr" == *"/launch-agent $REPO/my-topic"* ]] || false
+  [[ "$stderr" == *"/launch-agent \"$REPO/my-topic\""* ]] || false
   [[ "$stderr" != *"start a session in"* ]] || false
   [[ "$stderr" != *"no session"* ]] || false
 }
@@ -840,7 +840,7 @@ STUB
   run_resume "$SELF_SESSION" my-topic
   [ "$status" -eq 1 ]
   [ ! -e "$RESUME_ARGS" ]
-  [[ "$stderr" == *"R008"*"start a session in $wt, and run /launch-agent $REPO/my-topic in it"* ]] || false
+  [[ "$stderr" == *"R008"*"start a session in $wt, and run /launch-agent \"$REPO/my-topic\" in it"* ]] || false
 }
 
 @test "a gone session whose job row starts in the git top-level of the folder → R008 with /launch-agent alone" {
@@ -848,7 +848,7 @@ STUB
   printf '[%s]' "$(agent_entry "$OTHER_SESSION" my-topic done null null "$REPO")" > "$AGENTS_ALL_FILE"
   run_resume "$SELF_SESSION" my-topic
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"R008"*"/launch-agent $REPO/my-topic"* ]] || false
+  [[ "$stderr" == *"R008"*"/launch-agent \"$REPO/my-topic\""* ]] || false
   [[ "$stderr" != *"start a session in"* ]] || false
 }
 
@@ -857,7 +857,7 @@ STUB
   STUB_AGENTS_FAIL=second-all run_resume "$SELF_SESSION" my-topic
   [ "$status" -eq 1 ]
   [ ! -e "$RESUME_ARGS" ]
-  [[ "$stderr" == *"R008"*"/launch-agent $REPO/my-topic"* ]] || false
+  [[ "$stderr" == *"R008"*"/launch-agent \"$REPO/my-topic\""* ]] || false
   [[ "$stderr" != *"R004"* ]] || false
 }
 

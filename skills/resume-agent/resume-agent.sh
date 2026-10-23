@@ -42,7 +42,7 @@
 #            the script stops with R008. It does not try an older session of
 #            the folder: an older session misses the later rounds, and a
 #            resume of it looks like a success. The R008 message gives
-#            /launch-agent <folder>, and when the cwd of the job row (source 1
+#            /launch-agent "<folder>", and when the cwd of the job row (source 1
 #            below) is not the git top-level of the folder, the directory to
 #            run it in. A failed read of that row gives R008 with the short
 #            advice, never R004.
@@ -327,7 +327,7 @@ job_cwd="$(printf '%s' "$all_list" | jq -r --arg id "$session_id" --arg job "$jo
 if [ "$list_state" = "gone" ]; then
   gone_conv="$(continued_as "$job_id")"
   [[ "$gone_conv" =~ ^[A-Za-z0-9_-]+$ ]] || gone_conv="$session_id"
-  advice="start a new session for the folder with /launch-agent $folder_abs"
+  advice="start a new session for the folder with /launch-agent \"$folder_abs\""
   gone_dir=""
   case "$job_cwd" in
     /*) gone_dir="$({ cd "$job_cwd" && pwd -P; } 2>/dev/null || true)" ;;
@@ -336,7 +336,7 @@ if [ "$list_state" = "gone" ]; then
     gone_top="$(git -C "$folder_abs" rev-parse --show-toplevel 2>/dev/null || true)"
     [ -z "$gone_top" ] || gone_top="$({ cd "$gone_top" && pwd -P; } 2>/dev/null || true)"
     [ "$gone_dir" = "$gone_top" ] \
-      || advice="start a session in $gone_dir, and run /launch-agent $folder_abs in it"
+      || advice="start a session in $gone_dir, and run /launch-agent \"$folder_abs\" in it"
   fi
   die "$ERR_GONE" "Claude Code deleted the transcript of session $session_id (no $gone_conv.jsonl in $PROJECTS_DIR), so a resume gives an empty conversation with no history and no name; the script restarted nothing; $advice"
 fi
