@@ -3,6 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-10-18
 - **Issues:** <https://github.com/couimet/my-claude-skills/issues/292>, <https://github.com/couimet/my-claude-skills/issues/295>, <https://github.com/couimet/my-claude-skills/issues/296>
+- **Amended:** 2026-10-21 by <https://github.com/couimet/my-claude-skills/issues/302> (the `gone` state)
 
 ## Context
 
@@ -42,6 +43,8 @@ A `matcher` filters both events: `SessionStart` with `clear|resume` and `Session
 ### One rule for the state of a session
 
 `skills/issue-context/folder-sessions.sh` is the one rule that says which sessions claim a folder and whether each one runs: `running`, `retired`, or `ended`. It joins the session files to `claude agents --json` and `--json --all` by session id, by job id, and by the new `job_session_id` field of a session file, so the files of one job, before and after a `/clear`, give one line. `resume-agent.sh`, `launch-agent.sh`, and `set-work-folder.sh` call it, and a caller in another repository calls it too.
+
+> **Amended by [issue 302](https://github.com/couimet/my-claude-skills/issues/302).** A fourth state, `gone`, splits `ended`. A session with no live row is `gone` when Claude Code deleted the transcript of the conversation that a resume loads: the `resumeSessionId` of its job record, else its session id. A resume of it gives an empty conversation with no history and no name. `resume-agent.sh` stops on it with R008 and does not fall back to an older session, and `launch-agent.sh` gives it no `/resume-agent` hint. A missing transcript directory is H005, not `gone`. A `running` or a `retired` session gets no transcript check.
 
 ### The reader falls back to the first id of the job
 

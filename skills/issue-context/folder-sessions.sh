@@ -50,7 +50,23 @@
 #                        background session that has no process. A
 #                        `claude --bg --resume` of it starts a copy, and
 #                        `claude attach <job id>` wakes it.
-#               ended    no live row
+#               ended    no live row, and the transcript below exists
+#               gone     no live row, and the transcript below does not
+#                        exist: Claude Code deleted it (cleanupPeriodDays).
+#                        A resume gives an empty conversation with no
+#                        history and no name, so no caller restarts it.
+#
+# The transcript of a session with no live row is the one of the
+# conversation that `claude --bg --resume` loads:
+# <projects dir>/*/<conversation id>.jsonl. The conversation id is the
+# resumeSessionId of the job record, <jobs dir>/<job id>/state.json, when the
+# record exists and the field is one plain token: a /clear gives the job a
+# new conversation, and the cleanup can delete the transcript of the first
+# id first. Else it is the session id field. The projects dir is
+# FOLDER_SESSIONS_PROJECTS_DIR, default ${CLAUDE_CONFIG_DIR:-~/.claude}/projects,
+# and the jobs dir is FOLDER_SESSIONS_JOBS_DIR, default
+# ${CLAUDE_CONFIG_DIR:-~/.claude}/jobs. A running or a retired session gets
+# no check, because no caller restarts it.
 #
 # No output means that no session claims the folder. The script then reads
 # no list at all.
@@ -59,9 +75,11 @@
 #   0  — the list is complete, possibly empty
 #   1  — usage error (H001) or a folder that is not an existing absolute
 #        directory (H002)
-#   2  — the sessions cannot be read: jq is missing (H003), or
-#        `claude agents --json` failed (H004). stdout is empty. A caller
-#        decides what a failed check means for it.
+#   2  — the sessions cannot be read: jq is missing (H003),
+#        `claude agents --json` failed (H004), or a session has no live row
+#        and the projects dir does not exist (H005), so ended and gone
+#        cannot be told apart. stdout is empty. A caller decides what a
+#        failed check means for it.
 
 set -euo pipefail
 
@@ -69,6 +87,10 @@ readonly ERR_USAGE="H001"
 readonly ERR_FOLDER="H002"
 readonly ERR_NO_JQ="H003"
 readonly ERR_AGENTS="H004"
+readonly ERR_PROJECTS="H005"
+
+readonly PROJECTS_DIR="${FOLDER_SESSIONS_PROJECTS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects}"
+readonly JOBS_DIR="${FOLDER_SESSIONS_JOBS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/jobs}"
 
 usage() {
   cat <<'EOF'
@@ -170,7 +192,10 @@ read_list live \
 read_list all --all \
   || die 2 "$ERR_AGENTS" "claude agents --json --all failed, so the state of the sessions of $folder is unknown"
 
-printf '%s\n' "$files" | jq -R -n -r \
+# The state rule needs a file test for the transcript, which jq cannot make,
+# so the jq program gives ended, and the loop after it gives gone. The list
+# is held first, so an H005 exit leaves stdout empty.
+listing="$(printf '%s\n' "$files" | jq -R -n -r \
   --argjson live "$live" --argjson all "$all" \
   --arg self_id "$self_id" --arg self_job "${self_first:0:8}" '
   # kcov-exclude-start
@@ -216,4 +241,35 @@ printf '%s\n' "$files" | jq -R -n -r \
   | [$session, ($job // "-"),
      (($lrow.name // $arow.name // "") | clean | if . == "" then "-" else . end), $state]
   | join("\t")
-' # kcov-exclude-end
+')" # kcov-exclude-end
+
+# has_transcript <session id> <job id> — 0 when the transcript of the
+# conversation that a resume loads exists. See the header.
+has_transcript() {
+  local conv="" candidate
+  if [ "$2" != "-" ] && [ -r "$JOBS_DIR/$2/state.json" ]; then
+    conv="$(jq -r '.resumeSessionId | strings' "$JOBS_DIR/$2/state.json" 2>/dev/null || true)"
+  fi
+  [[ "$conv" =~ ^[A-Za-z0-9_-]+$ ]] || conv="$1"
+  for candidate in "$PROJECTS_DIR"/*/"$conv.jsonl"; do
+    [ -f "$candidate" ] && return 0
+  done
+  return 1
+}
+
+case "$listing" in
+  *$'\t'ended | *$'\t'ended$'\n'*)
+    [ -d "$PROJECTS_DIR" ] \
+      || die 2 "$ERR_PROJECTS" "the transcript directory $PROJECTS_DIR does not exist, so it is unknown whether the sessions of $folder that do not run still have their history"
+    ;;
+esac
+
+while IFS=$'\t' read -r l_sid l_job l_name l_state; do
+  [ -n "$l_sid" ] || continue
+  if [ "$l_state" = "ended" ] && ! has_transcript "$l_sid" "$l_job"; then
+    l_state="gone"
+  fi
+  printf '%s\t%s\t%s\t%s\n' "$l_sid" "$l_job" "$l_name" "$l_state"
+done <<LISTING
+$listing
+LISTING
