@@ -195,9 +195,7 @@ read_list all --all \
 # The state rule needs a file test for the transcript, which jq cannot make,
 # so the jq program gives ended, and the loop after it gives gone. The list
 # is held first, so an H005 exit leaves stdout empty.
-listing="$(printf '%s\n' "$files" | jq -R -n -r \
-  --argjson live "$live" --argjson all "$all" \
-  --arg self_id "$self_id" --arg self_job "${self_first:0:8}" '
+listing="$(printf '%s\n' "$files" | jq -R -n -r '
   # kcov-exclude-start
   def clean: tostring | gsub("[\t\n\r]"; " ");
   def jobid: if type == "string" and length >= 8 then .[0:8] else null end;
@@ -241,7 +239,8 @@ listing="$(printf '%s\n' "$files" | jq -R -n -r \
   | [$session, ($job // "-"),
      (($lrow.name // $arow.name // "") | clean | if . == "" then "-" else . end), $state]
   | join("\t")
-')" # kcov-exclude-end
+  # kcov-exclude-end
+' --argjson live "$live" --argjson all "$all" --arg self_id "$self_id" --arg self_job "${self_first:0:8}")"
 
 # has_transcript <session id> <job id> — 0 when the transcript of the
 # conversation that a resume loads exists. See the header.

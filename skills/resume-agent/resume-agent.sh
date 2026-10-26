@@ -250,8 +250,7 @@ readonly JOBS_DIR="${RESUME_AGENT_JOBS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/
 # it failed.
 listing=""
 rc=0
-listing="$(FOLDER_SESSIONS_PROJECTS_DIR="$PROJECTS_DIR" FOLDER_SESSIONS_JOBS_DIR="$JOBS_DIR" \
-  "$_self_dir/../issue-context/folder-sessions.sh" --others "$folder_abs")" || rc=$?
+listing="$(FOLDER_SESSIONS_PROJECTS_DIR="$PROJECTS_DIR" FOLDER_SESSIONS_JOBS_DIR="$JOBS_DIR" "$_self_dir/../issue-context/folder-sessions.sh" --others "$folder_abs")" || rc=$?
 case "$rc" in
   0) ;; # kcov-exclude-line
   2) die "$ERR_AGENTS" "the sessions of $folder_abs could not be read, so their state is unknown; nothing was restarted" ;;
