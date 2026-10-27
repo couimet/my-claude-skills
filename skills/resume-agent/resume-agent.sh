@@ -46,15 +46,20 @@
 #            below) is not the git top-level of the folder, the directory to
 #            run it in. A failed read of that row gives R008 with the short
 #            advice, never R004.
-#   ended    the job is not listed. `claude --bg --resume <session id>` wakes
-#            it with no prompt, idle, under the name it was saved with. For a
-#            job, the session id is the first session id of the job: a resume
-#            of it keeps one job record and continues the newest
+#   ended    the job is not listed. `claude --bg --resume <session id>
+#            "/rename <folder name>"` wakes it and gives it the folder name.
+#            For a job, the session id is the first session id of the job: a
+#            resume of it keeps one job record and continues the newest
 #            conversation, where a resume of a later conversation id makes a
 #            second record. No flag is passed: with a flag such as --name,
-#            Claude Code 2.1.296 starts a copy under a new id instead of the
-#            session. The script then reads the list again and checks that
-#            the session is there.
+#            Claude Code 2.1.311 starts a copy under a new id instead of the
+#            session. A prompt does not start a copy. Without the /rename
+#            prompt, a session named only by a typed /rename wakes with an
+#            automatic name, and a later AI title replaces it, so a send by
+#            the folder name misses it. The /rename prompt sets a name that
+#            Claude Code keeps as the --name option of the job, also for a
+#            session that was launched with --name. The script then reads the
+#            list again and checks that the session is there.
 #
 # A session reads the project .claude/settings.json and CLAUDE.md from the
 # directory it starts in only. On Claude Code 2.1.302, a resume of the first
@@ -93,18 +98,17 @@
 # restart output has a name, stderr gives it as the name the session will
 # load.
 #
-# Claude Code takes the name of a restarted session from its job record, and
-# only a /rename typed in the session changes it, so the Rename line tells the
-# user how to give it the folder name. The agent view opens a record by name,
-# and another record with the same name, live or ended, makes it pick the
-# wrong one. So stderr names each such record with its command (claude stop
-# for a live one, claude rm for an ended one; on 2.1.302, claude rm deletes
-# the job record and its worktree, and keeps the transcript), and the Open
-# line is left out.
+# The restart gives the session the folder name. When the list does not show
+# that name, the Rename line tells the user how to give it. The agent view
+# opens a record by name, and another record with the same name, live or
+# ended, makes it pick the wrong one. So stderr names each such record with
+# its command (claude stop for a live one, claude rm for an ended one; on
+# 2.1.302, claude rm deletes the job record and its worktree, and keeps the
+# transcript), and the Open line is left out.
 #
-# The script sends no prompt and attaches nothing. A caller sends its own
-# prompt, and a person opens the session from the agent view or with the
-# attach command.
+# The script sends no prompt other than the /rename of a restart, and attaches
+# nothing. A caller sends its own prompt, and a person opens the session from
+# the agent view or with the attach command.
 #
 # The Address line is the cross-session address of the session's process,
 # uds:<socket dir>/<pid>.sock. A short id is not a SendMessage address, and
@@ -129,9 +133,8 @@
 #   Attach:   claude attach <short id>
 #   Open:     how a person opens the session with no shell command, only
 #             when the name is loaded and no other record has it
-#   Rename:   the /rename command for the folder name, after each restart,
-#             and for a session that already ran when its name is not the
-#             folder name
+#   Rename:   the /rename command for the folder name, only when the name
+#             that the list shows is not the folder name
 #   Note:     do not run claude --bg --resume, because that starts a copy
 #
 # Exit codes:
@@ -419,8 +422,8 @@ elif [ "$list_state" = "retired" ]; then
   retired=1
   echo "resume-agent: session $session_id is retired: its job is listed with no process, and claude --bg --resume of it starts a copy, so the script restarts nothing; wake it with claude attach $short_id" >&2
 else
-  # No prompt, and no flag. See the header for why --name is not passed.
-  restart_output="$({ cd "$resume_dir" && claude --bg --resume "$session_id"; } 2>&1)" || {
+  # A /rename prompt, and no flag. See the header for why --name is not passed.
+  restart_output="$({ cd "$resume_dir" && claude --bg --resume "$session_id" "/rename $folder_name"; } 2>&1)" || {
     {
       echo "resume-agent $ERR_RESTART error: claude --bg --resume $session_id failed:"
       printf '%s\n' "$restart_output" | sed 's/^/  /'
@@ -569,11 +572,10 @@ printf 'Attach: claude attach %s\n' "$short_id"
 if [ -n "$name" ] && [ "$duplicates" -eq 0 ]; then
   printf 'Open: in the agent view (claude agents), press Ctrl+F, type %s, and press Enter\n' "$name"
 fi
-# Claude Code takes the name of a restart from its job record, and only a
-# /rename typed in the session changes it. So after a restart the name can be
-# old, and the line is always given; for a session that already ran, only
-# when its name is not the folder name.
-if [ "$action" = "restarted" ] || [ "${name:-}" != "$folder_name" ]; then
+# A restart gives the folder name, so the line is given only when the list
+# does not show it: a name not loaded yet, or a session that already ran
+# under another name.
+if [ "${name:-}" != "$folder_name" ]; then
   printf 'Rename: if the agent view does not show %s, open the session and type /rename %s\n' "$folder_name" "$folder_name"
 fi
 printf 'Note: do not run claude --bg --resume %s: the session runs, and a resume starts a copy\n' "$short_id"
