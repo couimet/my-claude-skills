@@ -1,6 +1,6 @@
 ---
 name: cleanup-issue
-version: 2026.10.20.1@5b343e4
+version: 2026.10.22@b3b9515
 description: Delete an issue's working directory under .claude-work/ after confirming with the user via interactive prompt
 argument-hint: '[issue-id] | --sweep'
 allowed-tools: Read, Glob, AskUserQuestion, Bash(*/skills/cleanup-issue/find-obsolete-issue-dirs.sh *), Bash(*/skills/cleanup-issue/remove-issue-dir.sh *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/issue-context/work-folder-tier.sh *)
