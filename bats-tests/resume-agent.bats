@@ -5,8 +5,8 @@
 #
 # `claude` is replaced by a stub first on PATH. `claude agents --json` prints
 # the file $AGENTS_FILE, `claude agents --json --all` prints $AGENTS_ALL_FILE
-# when it is not empty and $AGENTS_FILE when it is, and `claude --bg --resume` records its arguments and
-# its directory,
+# when it is not empty and $AGENTS_FILE when it is, and `claude --bg --resume`
+# records its arguments, one on each line, and its directory,
 # prints what Claude Code 2.1.296 printed in a real restart with no flags,
 # and then swaps $AGENTS_FILE for $AGENTS_AFTER, so a test sees the list before
 # and after the restart. A read of the list after the restart that finds
@@ -52,7 +52,7 @@ if [ "${1-}" = "agents" ] && [ "${2-}" = "--json" ]; then
   exit 0
 fi
 if [ "${1-}" = "--bg" ] && [ "${2-}" = "--resume" ]; then
-  printf '%s\n' "$*" > "$RESUME_ARGS"
+  printf '%s\n' "$@" > "$RESUME_ARGS"
   pwd -P > "$RESUME_CWD"
   [ "${STUB_RESUME_FAIL:-0}" = "1" ] && { echo "resume refused" >&2; exit 5; }
   if [ "${STUB_RESUME_COPY:-0}" = "1" ]; then
@@ -174,12 +174,12 @@ run_resume() {
     bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "${RUN_DIR:-$REPO}" "$SCRIPT" "$@"
 }
 
-@test "an ended session restarts with no flag and is reported idle under the folder name" {
+@test "an ended session restarts with a /rename prompt and no flag, and is reported idle under the folder name" {
   session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
   printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done)" > "$AGENTS_AFTER"
   AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
   [ "$status" -eq 0 ]
-  [ "$(cat "$RESUME_ARGS")" = "--bg --resume $TOPIC_SESSION" ]
+  [ "$(cat "$RESUME_ARGS")" = "$(printf '%s\n' --bg --resume "$TOPIC_SESSION" "/rename my-topic")" ]
   [ "${lines[0]}" = "Folder: $REPO/my-topic" ]
   [ "${lines[1]}" = "Session: $TOPIC_SESSION" ]
   [ "${lines[2]}" = "Id: ${TOPIC_SESSION:0:8}" ]
@@ -190,8 +190,8 @@ run_resume() {
   [ "${lines[7]}" = "Pid: 99897" ]
   [ "${lines[8]}" = "Attach: claude attach ${TOPIC_SESSION:0:8}" ]
   [ "${lines[9]}" = "Open: in the agent view (claude agents), press Ctrl+F, type my-topic, and press Enter" ]
-  [ "${lines[10]}" = "Rename: if the agent view does not show my-topic, open the session and type /rename my-topic" ]
-  [ "${lines[11]}" = "Note: do not run claude --bg --resume ${TOPIC_SESSION:0:8}: the session runs, and a resume starts a copy" ]
+  [ "${lines[10]}" = "Note: do not run claude --bg --resume ${TOPIC_SESSION:0:8}: the session runs, and a resume starts a copy" ]
+  [ "${#lines[@]}" -eq 11 ]
   [ "$stderr" = "resume-agent: no socket at $SOCKET_DIR/99897.sock, so no Address line; send to the name, or ask the person" ]
 }
 
@@ -268,8 +268,21 @@ run_resume() {
   [[ "$stderr" == *"R004"*"claude agents --json --all failed, so the state of session $TOPIC_SESSION is unknown; nothing was restarted"* ]] || false
 }
 
-@test "with no transcript, a restart runs in the git top-level of the folder, and stderr says so" {
+# cleared_job_without_first_transcript — make $TOPIC_SESSION a cleared job
+# whose job record continues in $CLEARED_SESSION, and whose job row gives no
+# cwd. Only the transcript of $CLEARED_SESSION is left, so the session is
+# ended, and its start directory is unknown.
+cleared_job_without_first_transcript() {
   rm "$PROJECTS_DIR/-proj/$TOPIC_SESSION.jsonl"
+  transcript "$CLEARED_SESSION" "$TEST_TEMP_DIR/elsewhere"
+  mkdir -p "$JOBS_DIR/${TOPIC_SESSION:0:8}"
+  printf '{"sessionId":"%s","resumeSessionId":"%s"}' "$TOPIC_SESSION" "$CLEARED_SESSION" \
+    > "$JOBS_DIR/${TOPIC_SESSION:0:8}/state.json"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" "${1:-my-topic}" done null null null)" > "$AGENTS_ALL_FILE"
+}
+
+@test "with no transcript of the first id, a restart runs in the git top-level of the folder, and stderr says so" {
+  cleared_job_without_first_transcript
   session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
   printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done)" > "$AGENTS_AFTER"
   RUN_DIR="$REPO/my-topic" AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
@@ -316,8 +329,8 @@ run_resume() {
   [[ "$stderr" != *"the script uses"* ]] || false
 }
 
-@test "with no transcript, a folder in no repository restarts in the folder itself" {
-  rm "$PROJECTS_DIR/-proj/$TOPIC_SESSION.jsonl"
+@test "with no transcript of the first id, a folder in no repository restarts in the folder itself" {
+  cleared_job_without_first_transcript loose
   local loose="$TEST_TEMP_DIR/loose"
   mkdir -p "$loose"
   session_file "$TOPIC_SESSION" "$loose" "2026-10-13T10:00:00Z"
@@ -400,6 +413,7 @@ run_resume() {
   [[ "$output" == *"Name: not loaded yet"* ]] || false
   [[ "$output" != *"Open:"* ]] || false
   [[ "$stderr" == *"the restart named the session 'my-topic', but claude agents did not show that name within 1 seconds"* ]] || false
+  [[ "$output" == *"Rename: if the agent view does not show my-topic, open the session and type /rename my-topic"* ]] || false
 }
 
 @test "with no name in the restart line, the list is read again until the name loads" {
@@ -669,7 +683,7 @@ CLEARED_SESSION="bce0aa3b-a75a-4de0-910d-030528a0ec15"
     | jq -c --arg s "$CLEARED_SESSION" '[.sessionId = $s]' > "$AGENTS_AFTER"
   AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
   [ "$status" -eq 0 ]
-  [ "$(cat "$RESUME_ARGS")" = "--bg --resume $TOPIC_SESSION" ]
+  [ "$(cat "$RESUME_ARGS")" = "$(printf '%s\n' --bg --resume "$TOPIC_SESSION" "/rename my-topic")" ]
   [[ "$output" == *"Action: restarted"* ]] || false
   [[ "$output" == *"Session: $CLEARED_SESSION"* ]] || false
   [[ "$stderr" != *"another session also used this folder"* ]] || false
@@ -730,6 +744,25 @@ STUB
   [[ "$output" != *"Rename:"* ]] || false
 }
 
+@test "a folder name with a space reaches the /rename prompt as one argument" {
+  mkdir -p "$REPO/my topic"
+  session_file "$TOPIC_SESSION" "$REPO/my topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" "my topic" done)" > "$AGENTS_AFTER"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" "my topic"
+  [ "$status" -eq 0 ]
+  [ "$(cat "$RESUME_ARGS")" = "$(printf '%s\n' --bg --resume "$TOPIC_SESSION" "/rename my topic")" ]
+  [[ "$output" != *"Rename:"* ]] || false
+}
+
+@test "a restarted session that the list shows under another name gets the Rename line" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" old-title idle)" > "$AGENTS_AFTER"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" my-topic
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Action: restarted"* ]] || false
+  [[ "$output" == *"Rename: if the agent view does not show my-topic, open the session and type /rename my-topic"* ]] || false
+}
+
 @test "a running session under another name gets the Rename line" {
   session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
   printf '[%s]' "$(agent_entry "$TOPIC_SESSION" old-title idle)" > "$AGENTS_FILE"
@@ -786,4 +819,84 @@ STUB
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"another session also used this folder: $OTHER_SESSION continued as $TOPIC_SESSION (not resumed; it is the earlier part of the same work)"* ]] || false
   [[ "$stderr" != *"the newest one wins"* ]] || false
+}
+
+# ============================================================================
+# A session whose transcript is gone (issue 302)
+# ============================================================================
+
+# Only $TOPIC_SESSION has a transcript, so $OTHER_SESSION is gone when no
+# live row names it.
+
+@test "a gone session → R008, nothing restarts, nothing on stdout, and the advice is /launch-agent" {
+  session_file "$OTHER_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"resume-agent R008 error: Claude Code deleted the transcript of session $OTHER_SESSION (no $OTHER_SESSION.jsonl in $PROJECTS_DIR)"* ]] || false
+  [[ "$stderr" == *"an empty conversation with no history and no name"* ]] || false
+  [[ "$stderr" == *"/launch-agent \"$REPO/my-topic\""* ]] || false
+  [[ "$stderr" != *"start a session in"* ]] || false
+  [[ "$stderr" != *"no session"* ]] || false
+}
+
+@test "a gone session after /clear names the conversation of its job record" {
+  session_file "$OTHER_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  mkdir -p "$JOBS_DIR/${OTHER_SESSION:0:8}"
+  printf '{"sessionId":"%s","resumeSessionId":"%s"}' "$OTHER_SESSION" "$CLEARED_SESSION" \
+    > "$JOBS_DIR/${OTHER_SESSION:0:8}/state.json"
+  printf '[%s]' "$(agent_entry "$OTHER_SESSION" my-topic done null null)" > "$AGENTS_ALL_FILE"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"R008"*"(no $CLEARED_SESSION.jsonl in $PROJECTS_DIR)"* ]] || false
+}
+
+@test "a gone session whose job row starts in another directory → R008 that names that directory" {
+  local wt="$TEST_TEMP_DIR/worktree"
+  mkdir -p "$wt"
+  session_file "$OTHER_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$OTHER_SESSION" my-topic done null null "$wt")" > "$AGENTS_ALL_FILE"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [[ "$stderr" == *"R008"*"start a session in $wt, and run /launch-agent \"$REPO/my-topic\" in it"* ]] || false
+}
+
+@test "a gone session whose job row starts in the git top-level of the folder → R008 with /launch-agent alone" {
+  session_file "$OTHER_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$OTHER_SESSION" my-topic done null null "$REPO")" > "$AGENTS_ALL_FILE"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"R008"*"/launch-agent \"$REPO/my-topic\""* ]] || false
+  [[ "$stderr" != *"start a session in"* ]] || false
+}
+
+@test "a gone session whose job row read fails → R008 with /launch-agent alone, not R004" {
+  session_file "$OTHER_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  STUB_AGENTS_FAIL=second-all run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [[ "$stderr" == *"R008"*"/launch-agent \"$REPO/my-topic\""* ]] || false
+  [[ "$stderr" != *"R004"* ]] || false
+}
+
+@test "a gone newest session with an older ended session → R008, and stderr names the older session" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-12T09:00:00Z"
+  session_file "$OTHER_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"another session also used this folder: $TOPIC_SESSION (not resumed; the newest one wins)"* ]] || false
+  [[ "$stderr" == *"R008"*"session $OTHER_SESSION"* ]] || false
+}
+
+@test "an older gone session is marked as gone on its line" {
+  session_file "$OTHER_SESSION" "$REPO/my-topic" "2026-10-12T09:00:00Z"
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic idle)" > "$AGENTS_FILE"
+  run_resume "" my-topic
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"another session also used this folder: $OTHER_SESSION (not resumed; the newest one wins; Claude Code deleted its transcript)"* ]] || false
 }

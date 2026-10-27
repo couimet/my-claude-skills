@@ -15,7 +15,8 @@
 #
 # The session of a folder, and its state, come from
 # ../issue-context/folder-sessions.sh --others, the one rule that every
-# caller uses. It joins the session files that set-work-folder.sh writes to
+# caller uses, with the transcript and job record directories of this
+# script. It joins the session files that set-work-folder.sh writes to
 # `claude agents --json` by session id and by job id, so a session after a
 # /clear is still found. The session that runs this script is left out, so a
 # person who types the skill in the folder's own session does not restart it.
@@ -34,15 +35,31 @@
 #            `claude attach <job id>` wakes it with one job record, but that
 #            command needs a terminal. So nothing restarts it, Status is
 #            retired, and stderr gives the attach command.
-#   ended    the job is not listed. `claude --bg --resume <session id>` wakes
-#            it with no prompt, idle, under the name it was saved with. For a
-#            job, the session id is the first session id of the job: a resume
-#            of it keeps one job record and continues the newest
+#   gone     the job is not listed, and Claude Code deleted the transcript
+#            of the conversation that a resume loads. A resume gives an
+#            empty conversation with no history, which Claude Code names
+#            from its first prompt. So nothing restarts, stdout is empty, and
+#            the script stops with R008. It does not try an older session of
+#            the folder: an older session misses the later rounds, and a
+#            resume of it looks like a success. The R008 message gives
+#            /launch-agent "<folder>", and when the cwd of the job row (source 1
+#            below) is not the git top-level of the folder, the directory to
+#            run it in. A failed read of that row gives R008 with the short
+#            advice, never R004.
+#   ended    the job is not listed. `claude --bg --resume <session id>
+#            "/rename <folder name>"` wakes it and gives it the folder name.
+#            For a job, the session id is the first session id of the job: a
+#            resume of it keeps one job record and continues the newest
 #            conversation, where a resume of a later conversation id makes a
 #            second record. No flag is passed: with a flag such as --name,
-#            Claude Code 2.1.296 starts a copy under a new id instead of the
-#            session. The script then reads the list again and checks that
-#            the session is there.
+#            Claude Code 2.1.311 starts a copy under a new id instead of the
+#            session. A prompt does not start a copy. Without the /rename
+#            prompt, a session named only by a typed /rename wakes with an
+#            automatic name, and a later AI title replaces it, so a send by
+#            the folder name misses it. The /rename prompt sets a name that
+#            Claude Code keeps as the --name option of the job, also for a
+#            session that was launched with --name. The script then reads the
+#            list again and checks that the session is there.
 #
 # A session reads the project .claude/settings.json and CLAUDE.md from the
 # directory it starts in only. On Claude Code 2.1.302, a resume of the first
@@ -81,18 +98,17 @@
 # restart output has a name, stderr gives it as the name the session will
 # load.
 #
-# Claude Code takes the name of a restarted session from its job record, and
-# only a /rename typed in the session changes it, so the Rename line tells the
-# user how to give it the folder name. The agent view opens a record by name,
-# and another record with the same name, live or ended, makes it pick the
-# wrong one. So stderr names each such record with its command (claude stop
-# for a live one, claude rm for an ended one; on 2.1.302, claude rm deletes
-# the job record and its worktree, and keeps the transcript), and the Open
-# line is left out.
+# The restart gives the session the folder name. When the list does not show
+# that name, the Rename line tells the user how to give it. The agent view
+# opens a record by name, and another record with the same name, live or
+# ended, makes it pick the wrong one. So stderr names each such record with
+# its command (claude stop for a live one, claude rm for an ended one; on
+# 2.1.302, claude rm deletes the job record and its worktree, and keeps the
+# transcript), and the Open line is left out.
 #
-# The script sends no prompt and attaches nothing. A caller sends its own
-# prompt, and a person opens the session from the agent view or with the
-# attach command.
+# The script sends no prompt other than the /rename of a restart, and attaches
+# nothing. A caller sends its own prompt, and a person opens the session from
+# the agent view or with the attach command.
 #
 # The Address line is the cross-session address of the session's process,
 # uds:<socket dir>/<pid>.sock. A short id is not a SendMessage address, and
@@ -117,9 +133,8 @@
 #   Attach:   claude attach <short id>
 #   Open:     how a person opens the session with no shell command, only
 #             when the name is loaded and no other record has it
-#   Rename:   the /rename command for the folder name, after each restart,
-#             and for a session that already ran when its name is not the
-#             folder name
+#   Rename:   the /rename command for the folder name, only when the name
+#             that the list shows is not the folder name
 #   Note:     do not run claude --bg --resume, because that starts a copy
 #
 # Exit codes:
@@ -129,7 +144,9 @@
 #        R004 `claude agents --json` failed and nothing restarted, R005
 #        restart failed, R006 the restart ran but `claude agents --json` then
 #        failed, so the state of the session is unknown, R007 the session
-#        restarted in another directory than the one the script used
+#        restarted in another directory than the one the script used, R008
+#        Claude Code deleted the transcript of the session, so nothing
+#        restarted
 
 set -euo pipefail
 
@@ -140,6 +157,7 @@ readonly ERR_AGENTS="R004"
 readonly ERR_RESTART="R005"
 readonly ERR_UNKNOWN="R006"
 readonly ERR_CWD="R007"
+readonly ERR_GONE="R008"
 
 usage() {
   cat <<'EOF'
@@ -226,11 +244,16 @@ sessions_dir="$(_issue_context_sessions_dir)" \
 
 [ -d "$sessions_dir" ] || die "$ERR_NO_SESSION" "no session has its working files in $folder_abs, so there is no session to resume; start one with /launch-agent"
 
+readonly PROJECTS_DIR="${RESUME_AGENT_PROJECTS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects}"
+readonly JOBS_DIR="${RESUME_AGENT_JOBS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/jobs}"
+
 # folder-sessions.sh is the one rule for the state of a session; see the
-# header. Its own stderr line says why it failed.
+# header. It gets the directories of this script, so the state and the start
+# directory come from one transcript directory. Its own stderr line says why
+# it failed.
 listing=""
 rc=0
-listing="$("$_self_dir/../issue-context/folder-sessions.sh" --others "$folder_abs")" || rc=$?
+listing="$(FOLDER_SESSIONS_PROJECTS_DIR="$PROJECTS_DIR" FOLDER_SESSIONS_JOBS_DIR="$JOBS_DIR" "$_self_dir/../issue-context/folder-sessions.sh" --others "$folder_abs")" || rc=$?
 case "$rc" in
   0) ;; # kcov-exclude-line
   2) die "$ERR_AGENTS" "the sessions of $folder_abs could not be read, so their state is unknown; nothing was restarted" ;;
@@ -249,7 +272,7 @@ while IFS=$'\t' read -r sid jid _name st; do
     job_id="$jid"
     list_state="$st"
   else
-    others+=("$sid:$jid")
+    others+=("$sid:$jid:$st")
   fi
 done <<LISTING
 $listing
@@ -264,7 +287,6 @@ LISTING
 # continued_as <job id> — print the conversation id that the job record of
 # <job id> continues in, or nothing. The record is the job state of Claude
 # Code, an undocumented file, so a change of its shape gives nothing.
-readonly JOBS_DIR="${RESUME_AGENT_JOBS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/jobs}"
 continued_as() {
   [ -n "$1" ] && [ -r "$JOBS_DIR/$1/state.json" ] || return 0
   jq -r '.resumeSessionId | strings' "$JOBS_DIR/$1/state.json" 2>/dev/null || true
@@ -274,28 +296,53 @@ continued_as() {
 # the earlier part of the same work, not a separate one.
 for other in ${others[@]+"${others[@]}"}; do
   other_id="${other%%:*}"
-  other_job="${other#*:}"
+  other_rest="${other#*:}"
+  other_job="${other_rest%%:*}"
+  other_gone=""
+  [ "${other_rest#*:}" != "gone" ] || other_gone="; Claude Code deleted its transcript"
   if [ -n "$other_job" ] && [ "$(continued_as "$other_job")" = "$session_id" ]; then
-    echo "resume-agent: another session also used this folder: $other_id continued as $session_id (not resumed; it is the earlier part of the same work)" >&2
+    echo "resume-agent: another session also used this folder: $other_id continued as $session_id (not resumed; it is the earlier part of the same work$other_gone)" >&2
   else
-    echo "resume-agent: another session also used this folder: $other_id (not resumed; the newest one wins)" >&2
+    echo "resume-agent: another session also used this folder: $other_id (not resumed; the newest one wins$other_gone)" >&2
   fi
 done
 
 # --- Choose the directory of the session ---
 # See the header for why it is the launch directory of the job, and not the
 # directory of the caller.
-readonly PROJECTS_DIR="${RESUME_AGENT_PROJECTS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects}"
 all_list=""
 if ! all_list="$(claude agents --json --all 2>/dev/null)" \
     || ! printf '%s' "$all_list" | jq -e 'type == "array"' >/dev/null 2>&1; then
-  die "$ERR_AGENTS" "claude agents --json --all failed, so the state of session $session_id is unknown; nothing was restarted"
+  # For a gone session the row only improves the advice, so R008 stands.
+  [ "$list_state" = "gone" ] \
+    || die "$ERR_AGENTS" "claude agents --json --all failed, so the state of session $session_id is unknown; nothing was restarted"
+  all_list="[]"
 fi
 # ROW is the jq condition that picks the row of the session: its job id, or
 # its session id for a session with no job.
 # shellcheck disable=SC2016 # a jq program: $job and $id are jq variables
 readonly ROW='if $job != "" then .id == $job else .sessionId == $id end'
 job_cwd="$(printf '%s' "$all_list" | jq -r --arg id "$session_id" --arg job "$job_id" "first(.[] | select($ROW) | .cwd | strings) // empty")"
+
+# --- Stop on a gone session ---
+# See the header: no restart, and no older session in its place.
+if [ "$list_state" = "gone" ]; then
+  gone_conv="$(continued_as "$job_id")"
+  [[ "$gone_conv" =~ ^[A-Za-z0-9_-]+$ ]] || gone_conv="$session_id"
+  advice="start a new session for the folder with /launch-agent \"$folder_abs\""
+  gone_dir=""
+  case "$job_cwd" in
+    /*) gone_dir="$({ cd "$job_cwd" && pwd -P; } 2>/dev/null || true)" ;;
+  esac
+  if [ -n "$gone_dir" ]; then
+    gone_top="$(git -C "$folder_abs" rev-parse --show-toplevel 2>/dev/null || true)"
+    [ -z "$gone_top" ] || gone_top="$({ cd "$gone_top" && pwd -P; } 2>/dev/null || true)"
+    [ "$gone_dir" = "$gone_top" ] \
+      || advice="start a session in $gone_dir, and run /launch-agent \"$folder_abs\" in it"
+  fi
+  die "$ERR_GONE" "Claude Code deleted the transcript of session $session_id (no $gone_conv.jsonl in $PROJECTS_DIR), so a resume gives an empty conversation with no history and no name; the script restarted nothing; $advice"
+fi
+
 resume_dir=""
 case "$job_cwd" in
   /*) resume_dir="$({ cd "$job_cwd" && pwd -P; } 2>/dev/null || true)" ;;
@@ -375,8 +422,8 @@ elif [ "$list_state" = "retired" ]; then
   retired=1
   echo "resume-agent: session $session_id is retired: its job is listed with no process, and claude --bg --resume of it starts a copy, so the script restarts nothing; wake it with claude attach $short_id" >&2
 else
-  # No prompt, and no flag. See the header for why --name is not passed.
-  restart_output="$({ cd "$resume_dir" && claude --bg --resume "$session_id"; } 2>&1)" || {
+  # A /rename prompt, and no flag. See the header for why --name is not passed.
+  restart_output="$({ cd "$resume_dir" && claude --bg --resume "$session_id" "/rename $folder_name"; } 2>&1)" || {
     {
       echo "resume-agent $ERR_RESTART error: claude --bg --resume $session_id failed:"
       printf '%s\n' "$restart_output" | sed 's/^/  /'
@@ -525,11 +572,10 @@ printf 'Attach: claude attach %s\n' "$short_id"
 if [ -n "$name" ] && [ "$duplicates" -eq 0 ]; then
   printf 'Open: in the agent view (claude agents), press Ctrl+F, type %s, and press Enter\n' "$name"
 fi
-# Claude Code takes the name of a restart from its job record, and only a
-# /rename typed in the session changes it. So after a restart the name can be
-# old, and the line is always given; for a session that already ran, only
-# when its name is not the folder name.
-if [ "$action" = "restarted" ] || [ "${name:-}" != "$folder_name" ]; then
+# A restart gives the folder name, so the line is given only when the list
+# does not show it: a name not loaded yet, or a session that already ran
+# under another name.
+if [ "${name:-}" != "$folder_name" ]; then
   printf 'Rename: if the agent view does not show %s, open the session and type /rename %s\n' "$folder_name" "$folder_name"
 fi
 printf 'Note: do not run claude --bg --resume %s: the session runs, and a resume starts a copy\n' "$short_id"

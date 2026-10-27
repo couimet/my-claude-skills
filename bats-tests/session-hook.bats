@@ -7,8 +7,9 @@
 # `claude` is replaced by a stub first on PATH: `claude agents --json` prints
 # $LIVE_FILE, and `claude agents --json --all` prints $ALL_FILE. STUB_FAIL
 # makes the first or the second read fail. Each call is logged in $CALLS. The
-# sessions directory and the handoff directory sit beside a temp settings
-# file, so a developer's real sessions never change an outcome. Each case
+# sessions directory, the handoff directory, and the transcripts and job
+# records that folder-sessions.sh reads sit beside a temp settings file, so a
+# developer's real sessions never change an outcome. Each case
 # runs with CLAUDE_CODE_SESSION_ID, CLAUDE_JOB_DIR, and CLAUDE_PID removed,
 # and sets only what it needs.
 
@@ -53,6 +54,11 @@ STUB
   printf '[]' > "$LIVE_FILE"
   printf '[]' > "$ALL_FILE"
   export LIVE_FILE ALL_FILE CALLS
+  # Without these, folder-sessions.sh reads ~/.claude/projects, and a host
+  # with no such directory gets H005 for an ended session.
+  mkdir -p "$TEST_TEMP_DIR/projects"
+  export FOLDER_SESSIONS_PROJECTS_DIR="$TEST_TEMP_DIR/projects"
+  export FOLDER_SESSIONS_JOBS_DIR="$TEST_TEMP_DIR/jobs"
 }
 
 teardown() {
