@@ -64,8 +64,10 @@
 # One session for each folder. Before anything is written, the script asks
 # ../issue-context/folder-sessions.sh which sessions claim an existing folder.
 # When another session in the state running or retired holds it, the launch
-# stops with L007, which names that session and the /resume-agent command
-# that continues it. In the --bg mode the calling session counts too: a
+# stops with L007, which names that session and the next command that
+# ../issue-context/find-agent.sh --others gives for the folder: claude attach
+# for a session that runs under the folder name, or /rename-agent in a session
+# that runs under another name. In the --bg mode the calling session counts too: a
 # background agent in the folder of its caller makes two sessions in one
 # folder, so L007 tells the user to launch into another folder or to do the
 # work in this session, and --take-over does not apply to the caller.
@@ -439,8 +441,14 @@ if [ -d "$target" ] && held_abs="$({ cd "$target" && pwd -P; } 2>/dev/null)"; th
       [ "$h_job" = "-" ] || h_label="$h_label, job $h_job"
       [ "$h_name" = "-" ] || h_label="$h_label, name '$h_name'"
       h_label="$h_label)"
-      [ "$take_over" -eq 1 ] \
-        || die "$ERR_HELD" "$h_label holds $held_abs, and two sessions in one folder each see half of the work; to continue that session, use /resume-agent $held_abs; to take the folder from it, launch again with --take-over"
+      if [ "$take_over" -eq 0 ]; then
+        # find-agent.sh gives the advice, so /find-agent, /resume-agent, and
+        # this script never disagree. A failed call keeps the old advice.
+        h_next="$("$_self_dir/../issue-context/find-agent.sh" --others "$held_abs" 2>/dev/null \
+          | sed -n 's/^Next: //p')" || h_next=""
+        [ -n "$h_next" ] || h_next="/resume-agent $held_abs"
+        die "$ERR_HELD" "$h_label holds $held_abs, and two sessions in one folder each see half of the work; to continue that session: $h_next; to take the folder from it, launch again with --take-over"
+      fi
       held_files+=("$h_sid	$h_job	$h_label")
     done <<HOLDERS
 $check_out
