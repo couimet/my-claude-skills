@@ -219,8 +219,10 @@ hook_count() {
   [ "$status" -eq 0 ]
   [ "$(hook_count SessionStart)" -eq 1 ]
   [ "$(hook_count SessionEnd)" -eq 1 ]
+  [ "$(hook_count UserPromptSubmit)" -eq 1 ]
   [ "$(jq -r '.hooks.SessionStart[0].matcher' "$FAKE_HOME/$SETTINGS_REL")" = "clear|resume" ]
   [ "$(jq -r '.hooks.SessionEnd[0].matcher' "$FAKE_HOME/$SETTINGS_REL")" = "clear" ]
+  [ "$(jq -r '.hooks.UserPromptSubmit[0] | has("matcher")' "$FAKE_HOME/$SETTINGS_REL")" = "false" ]
   [ "$(jq -r '.hooks.SessionEnd[0].hooks[0].command' "$FAKE_HOME/$SETTINGS_REL")" = "$FAKE_HOME/.claude/skills/issue-context/session-hook.sh" ]
   [[ "$output" == *"[y/N]"* ]] || false
   [[ "$output" == *"Claude Code hook: added"* ]] || false
@@ -247,8 +249,22 @@ hook_count() {
   [ "$status" -eq 0 ]
   [ "$(hook_count SessionStart)" -eq 1 ]
   [ "$(hook_count SessionEnd)" -eq 1 ]
+  [ "$(hook_count UserPromptSubmit)" -eq 1 ]
   [[ "$output" == *"Claude Code hook: already in"* ]] || false
   [[ "$output" != *"[y/N]"* ]] || false
+}
+
+@test "hook: an entry with only the two earlier events gets the UserPromptSubmit event" {
+  local cmd="$FAKE_HOME/.claude/skills/issue-context/session-hook.sh"
+  jq -n --arg cmd "$cmd" '{hooks: {
+    SessionStart: [{matcher: "clear|resume", hooks: [{type: "command", command: $cmd}]}],
+    SessionEnd: [{matcher: "clear", hooks: [{type: "command", command: $cmd}]}]}}' > "$FAKE_HOME/$SETTINGS_REL"
+  ANSWER=y run_install
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Claude Code hook: added"* ]] || false
+  [ "$(hook_count SessionStart)" -eq 1 ]
+  [ "$(hook_count SessionEnd)" -eq 1 ]
+  [ "$(hook_count UserPromptSubmit)" -eq 1 ]
 }
 
 @test "hook: an old entry of the hook is replaced, not doubled" {
@@ -367,6 +383,8 @@ hook_count() {
   [ "$(jq -r '.hooks.SessionEnd[0].matcher' "$hooks")" = "clear" ]
   [ "$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$hooks")" = '${CLAUDE_PLUGIN_ROOT}/skills/issue-context/session-hook.sh' ]
   [ "$(jq -r '.hooks.SessionEnd[0].hooks[0].command' "$hooks")" = '${CLAUDE_PLUGIN_ROOT}/skills/issue-context/session-hook.sh' ]
+  [ "$(jq -r '.hooks.UserPromptSubmit[0].hooks[0].command' "$hooks")" = '${CLAUDE_PLUGIN_ROOT}/skills/issue-context/session-hook.sh' ]
+  [ "$(jq -r '.hooks.UserPromptSubmit[0] | has("matcher")' "$hooks")" = "false" ]
   grep -q 'HOOK_COMMAND="$SKILLS_DIR/issue-context/session-hook.sh"' "$SCRIPT"
 }
 

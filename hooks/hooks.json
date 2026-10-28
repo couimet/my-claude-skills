@@ -21,6 +21,16 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/skills/issue-context/session-hook.sh"
+          }
+        ]
+      }
     ]
   }
 }

@@ -106,6 +106,20 @@
 # 2.1.302, claude rm deletes the job record and its worktree, and keeps the
 # transcript), and the Open line is left out.
 #
+# The caller can hold the folder too: /launch-agent binds the caller to a
+# folder whose session ended, and hints at /resume-agent. When the session
+# file of the caller (CLAUDE_CODE_SESSION_ID, or the first id of its job)
+# names the folder and the chosen session ended, a restart would make two
+# sessions in one folder. So the script stops with R009 before any restart:
+# stdout is empty, nothing restarts, and no session file changes. stderr
+# names both sessions and the two choices. No time rule replaces the check: a
+# /clear writes the session file again, so its age does not show when the
+# work started. A running, retired, or gone session restarts nothing, so it
+# keeps its behavior.
+#
+# R003 with no session other than the caller gives the next command of
+# ../issue-context/find-agent.sh, so this script and /find-agent agree.
+#
 # The script sends no prompt other than the /rename of a restart, and attaches
 # nothing. A caller sends its own prompt, and a person opens the session from
 # the agent view or with the attach command.
@@ -146,6 +160,7 @@
 #        failed, so the state of the session is unknown, R007 the session
 #        restarted in another directory than the one the script used, R008
 #        Claude Code deleted the transcript of the session, so nothing
+#        restarted, R009 this session holds the folder too, so nothing
 #        restarted
 
 set -euo pipefail
@@ -158,6 +173,7 @@ readonly ERR_RESTART="R005"
 readonly ERR_UNKNOWN="R006"
 readonly ERR_CWD="R007"
 readonly ERR_GONE="R008"
+readonly ERR_CALLER="R009"
 
 usage() {
   cat <<'EOF'
@@ -278,11 +294,36 @@ done <<LISTING
 $listing
 LISTING
 
-[ -n "$session_id" ] \
-  || die "$ERR_NO_SESSION" "no session other than this one has its working files in $folder_abs, so there is no session to resume; start one with /launch-agent"
+if [ -z "$session_id" ]; then
+  # find-agent.sh gives the advice, so /find-agent, /launch-agent, and this
+  # script never disagree. A failed call keeps the old advice.
+  no_next="$(FOLDER_SESSIONS_PROJECTS_DIR="$PROJECTS_DIR" FOLDER_SESSIONS_JOBS_DIR="$JOBS_DIR" \
+    "$_self_dir/../issue-context/find-agent.sh" "$folder_abs" 2>/dev/null | sed -n 's/^Next: //p')" \
+    || no_next=""
+  [ -n "$no_next" ] || no_next="start one with /launch-agent"
+  die "$ERR_NO_SESSION" "no session other than this one has its working files in $folder_abs, so there is no session to resume; next: $no_next"
+fi
 # The id reaches a command line and a jq filter, so it must be one plain token.
 [[ "$session_id" =~ ^[A-Za-z0-9_-]+$ ]] \
   || die "$ERR_NO_SESSION" "the session file for $folder_abs holds the session id '$session_id', which is not a valid id"
+
+# --- Stop when the caller holds the folder too ---
+# See the header: a restart would make two sessions in one folder, and the
+# caller is one of them. No time rule replaces this check, because a /clear
+# writes the session file again.
+if [ "$list_state" = "ended" ]; then
+  caller_folder=""
+  # shellcheck disable=SC2034 # caller_reason is set through its name; any reason means no claim
+  caller_reason=""
+  if _issue_context_session_file_read caller_folder caller_reason \
+      && [ "$caller_folder" = "$folder_abs" ]; then
+    caller_short=""
+    _issue_context_job_first_id caller_short || caller_short=""
+    caller_short="${caller_short:0:8}"
+    [ -n "$caller_short" ] || caller_short="${CLAUDE_CODE_SESSION_ID:0:8}"
+    die "$ERR_CALLER" "this session, ${CLAUDE_CODE_SESSION_ID:-}, holds $folder_abs too, so a restart of session $session_id would make two sessions in one folder, each with half of the work; the script restarted nothing; choose one: (1) keep this session, and do nothing; (2) wake the earlier session: run /set-work-folder --clear in this session, then /resume-agent \"$folder_abs\" again, then claude stop $caller_short"
+  fi
+fi
 
 # continued_as <job id> — print the conversation id that the job record of
 # <job id> continues in, or nothing. The record is the job state of Claude

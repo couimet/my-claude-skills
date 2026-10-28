@@ -38,6 +38,8 @@ Pass an absolute path to a directory that already exists, optionally followed by
 
 The name is optional and cosmetic. It goes into the stored file's name to make the sessions directory readable. Nothing is ever looked up by it, so it does not have to stay accurate. With no name given, the script reads one from the session's own job state when that is available, and otherwise leaves it off.
 
+The session name is a different thing. When the session hook is installed, the session gets the folder name as its name at its next prompt, unless the user chose another name. A send by name then reaches the session that holds the folder. `/rename-agent` changes the session name.
+
 One folder has one session. When another running or `retired` session holds the folder, the script stops with S007. The error names that session and the `/resume-agent <folder>` command that continues it. `--take-over <folder> [name]` claims the folder anyway: it removes the session files of the other session, and stderr gives the `claude stop <job id>` command for it.
 
 `--clear` removes the session override, and `--clear --worktree` removes the worktree marker. Each clears only its own tier, so clearing a session folder leaves a marker in force. Clearing when nothing is set is not an error.

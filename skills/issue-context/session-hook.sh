@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
 # session-hook.sh — The Claude Code hook that keeps the work folder of a
-# session after a /clear, and warns a resumed session when another session
-# holds its work folder.
+# session after a /clear, warns a resumed session when another session holds
+# its work folder, and keeps the session name equal to its folder name.
 #
 # Usage: Claude Code runs this script with one JSON object on stdin. It has
 # no arguments.
@@ -10,10 +10,12 @@
 # Install: hooks/hooks.json names this script for the plugin, and install.sh
 # adds the same entry to ~/.claude/settings.json when the user agrees. Both
 # limit the calls with matchers: SessionEnd with the reason clear, and
-# SessionStart with the source clear or resume. The script checks the event
-# again, because a user can write the settings entry by hand.
+# SessionStart with the source clear or resume. UserPromptSubmit has no
+# matcher, so it runs at each prompt, and the cheap checks come first. The
+# script checks the event again, because a user can write the settings entry
+# by hand.
 #
-# The three events (see docs/ADR/006-claude-code-hooks.md):
+# The four events (see docs/ADR/006-claude-code-hooks.md):
 #
 #   SessionEnd, reason clear
 #       Read the work folder of the old session id, and write it to a
@@ -28,16 +30,43 @@
 #       Then write the session file of the new id with set-work-folder.sh. A
 #       handoff file older than SESSION_HOOK_HANDOFF_MAX_AGE seconds (default
 #       300) is not used, because a process id can be used again. The
-#       handoff file is removed after the read, used or not.
+#       handoff file is removed after the read, used or not. A title record
+#       of the old id (see UserPromptSubmit) moves to the new id with the
+#       folder, so a name that the user chose stays a choice.
 #   SessionStart, source resume
 #       When folder-sessions.sh shows another running or retired session in
 #       the work folder of this session, print additionalContext that names
 #       that session, tells this session not to write working files in the
 #       folder, and gives the /resume-agent command.
+#   UserPromptSubmit
+#       Keep the session title equal to the folder name of the work folder.
+#       The input holds the title as session_title, and the transcript at
+#       transcript_path holds ai-title and custom-title entries. A title that
+#       a hook sets writes a custom-title entry, as a typed /rename does, so
+#       the hook keeps its own title record,
+#       <dirname SETTINGS_FILE>/session-titles/<session id>.json, with the
+#       fields "set" (the last title it set), "warned" (the last title it
+#       warned about), and "wanted" (the name that rename-agent.sh asked for).
+#       In this order:
+#       - no session file: nothing.
+#       - "wanted" is set: set the title to it with no warning, write "set",
+#         and remove "wanted" and "warned".
+#       - the title is the folder name, or the title that the hook set:
+#         nothing.
+#       - a drift (no title, or the newest title entry is an ai-title): set
+#         the title to the folder name and write "set". When another running
+#         or retired session holds the folder, set nothing, because two
+#         sessions with one name make a send by name reach either one; give
+#         additionalContext that names that session, once for each title.
+#       - else the user chose the title. Keep it, and give additionalContext
+#         with the line of find-agent.sh --check, once for each title. That
+#         line gives /launch-agent first when the title is the folder name of
+#         another existing folder, and /rename-agent first otherwise.
 #
-# Output: for a resume that finds another session, one JSON object on stdout,
-# the form that Claude Code reads for SessionStart. Each other path prints
-# nothing on stdout.
+# Output: for a resume that finds another session, or a prompt that sets a
+# title or warns, one JSON object on stdout, the form that Claude Code reads
+# for that event (hookSpecificOutput.sessionTitle for a title). Each other
+# path prints nothing on stdout.
 #
 # Exit codes: always 0. A hook that fails can stop or disturb the start of a
 # session, and a missing folder is less harmful than a session that does not
@@ -61,13 +90,15 @@ command -v jq >/dev/null 2>&1 || warn "jq not found, so the hook did nothing"
 # Parse the input once. The first field is the case, the second field is the
 # session id when it is one plain token, else empty. A path that does nothing
 # stops here, before any file is sourced.
-parsed="$(jq -r '
+input="$(cat)"
+parsed="$(printf '%s' "$input" | jq -r '
   # kcov-exclude-start
   if type != "object" then "invalid"
   else
     (if .hook_event_name == "SessionEnd" and .reason == "clear" then "end-clear"
      elif .hook_event_name == "SessionStart" and .source == "clear" then "start-clear"
      elif .hook_event_name == "SessionStart" and .source == "resume" then "start-resume"
+     elif .hook_event_name == "UserPromptSubmit" then "prompt"
      else "other" end)
     + "\t"
     + (if (.session_id | type == "string") and (.session_id | test("^[A-Za-z0-9_-]+$"))
@@ -83,7 +114,7 @@ case "$parsed" in
 esac
 
 case "$event" in
-  end-clear | start-clear | start-resume) ;;
+  end-clear | start-clear | start-resume | prompt) ;;
   other) exit 0 ;;
   *) warn "the input is not one JSON object, so the hook did nothing" ;;
 esac
@@ -167,6 +198,7 @@ if [ "$event" = "start-clear" ]; then
   fi
 
   folder=""
+  old_id=""
   if [ -n "$handoff" ] && [ -f "$handoff" ]; then
     max_age="${SESSION_HOOK_HANDOFF_MAX_AGE:-300}"
     case "$max_age" in
@@ -180,6 +212,8 @@ if [ "$event" = "start-clear" ]; then
       if [ "$age" -ge 0 ] && [ "$age" -le "$max_age" ]; then
         folder="$(jq -r 'if (.folder | type == "string") then .folder else empty end' \
           "$handoff" 2>/dev/null)" || folder=""
+        old_id="$(jq -r '.session_id | strings | select(test("^[A-Za-z0-9_-]+$"))' \
+          "$handoff" 2>/dev/null)" || old_id=""
       fi
     fi
     rm -f "$handoff"
@@ -194,7 +228,103 @@ if [ "$event" = "start-clear" ]; then
     || warn "the work folder $folder of the session before the /clear does not exist, so no folder is set for this session"
   "$_self_dir/set-work-folder.sh" "$folder" >/dev/null 2>&1 \
     || warn "could not set the work folder after the /clear; run /set-work-folder $folder"
+  # The title record goes with the folder. A failed move only loses the
+  # record, so the next prompt decides from the transcript.
+  if [ -n "$old_id" ] && [ "$old_id" != "$session_id" ] && titles="$(_issue_context_titles_dir)" \
+      && [ -f "$titles/$old_id.json" ] && [ ! -e "$titles/$session_id.json" ]; then
+    mv -f "$titles/$old_id.json" "$titles/$session_id.json" 2>/dev/null || true
+  fi
   exit 0
+fi
+
+# --- UserPromptSubmit ---
+if [ "$event" = "prompt" ]; then
+  folder=""
+  reason=""
+  _issue_context_session_file_read folder reason || exit 0
+  folder_name="${folder##*/}"
+  title="$(printf '%s' "$input" | jq -r '.session_title | strings' 2>/dev/null)" || title=""
+  transcript="$(printf '%s' "$input" | jq -r '.transcript_path | strings' 2>/dev/null)" || transcript=""
+
+  titles="$(_issue_context_titles_dir)" || warn "no settings path, so the session name was not checked"
+  record="$titles/$session_id.json"
+  rec="{}"
+  if [ -f "$record" ] && jq -e 'type == "object"' "$record" >/dev/null 2>&1; then
+    rec="$(cat "$record")"
+  fi
+  rec_field() { printf '%s' "$rec" | jq -r --arg k "$1" '.[$k] | strings'; }
+
+  # write_record <jq filter> <title> — apply <jq filter>, which reads <title>
+  # as $t, to the record, through a temporary file and a rename.
+  write_record() {
+    local tmp
+    mkdir -p "$titles" 2>/dev/null || return 1
+    tmp="$(mktemp "$titles/.tmp-XXXXXX" 2>/dev/null)" || return 1
+    if printf '%s' "$rec" | jq --arg t "$2" "$1" > "$tmp" 2>/dev/null \
+        && mv -f "$tmp" "$record" 2>/dev/null; then
+      return 0
+    fi
+    rm -f "$tmp"
+    return 1
+  }
+
+  # set_title <title> — print the output that sets the title, and record it.
+  set_title() {
+    # shellcheck disable=SC2016 # a jq program: $t is a jq variable
+    write_record 'del(.wanted, .warned) | .set = $t' "$1" \
+      || warn "could not write $record, so the title was not set"
+    jq -n --arg t "$1" '{hookSpecificOutput: {hookEventName: "UserPromptSubmit", sessionTitle: $t}}' \
+      || warn "could not write the session title"
+    exit 0
+  }
+
+  # warn_once <context> — print <context> once for each title, and record it.
+  warn_once() {
+    [ "$(rec_field warned)" != "$title" ] || exit 0
+    # shellcheck disable=SC2016 # a jq program: $t is a jq variable
+    write_record '.warned = $t' "$title" \
+      || warn "could not write $record, so the warning was not given"
+    jq -n --arg context "$1" \
+      '{hookSpecificOutput: {hookEventName: "UserPromptSubmit", additionalContext: $context}}' \
+      || warn "could not write the warning about the session name"
+    exit 0
+  }
+
+  wanted="$(rec_field wanted)"
+  [ -z "$wanted" ] || set_title "$wanted"
+  [ "$title" != "$folder_name" ] || exit 0
+  [ -z "$title" ] || [ "$title" != "$(rec_field set)" ] || exit 0
+
+  newest=""
+  if [ -n "$transcript" ] && [ -f "$transcript" ]; then
+    newest="$(grep -E '"type": ?"(ai|custom)-title"' "$transcript" 2>/dev/null | tail -n 1 \
+      | jq -r '.type | strings' 2>/dev/null)" || newest=""
+  fi
+
+  if [ -z "$title" ] || [ "$newest" = "ai-title" ]; then
+    # A drift. Another holder would get the same name, so it warns instead.
+    holders=""
+    if [ -d "$folder" ] \
+        && check_out="$("$_self_dir/folder-sessions.sh" --others "$folder" 2>/dev/null)"; then
+      while IFS=$'\t' read -r h_sid h_job h_name h_state; do
+        case "$h_state" in
+          running | retired)
+            holders="${holders}- session $h_sid, job $h_job, name $h_name, state $h_state"$'\n'
+            ;;
+        esac
+      done <<HOLDERS
+$check_out
+HOLDERS
+    fi
+    [ -n "$holders" ] || set_title "$folder_name"
+    warn_once "This session has a new name, '$title', in place of its folder name $folder_name. The hook did not give it the folder name back, because another session holds the work folder $folder of this session, and two sessions with one name make a send by name reach either one:
+${holders}Give the user this command, which says what to do, and do not run it yourself: /find-agent $folder"
+  fi
+
+  check_rc=0
+  check_line="$("$_self_dir/find-agent.sh" --check --title "$title" 2>/dev/null)" || check_rc=$?
+  [ "$check_rc" -eq 1 ] && [ -n "$check_line" ] || exit 0
+  warn_once "$check_line. Give the user these commands, and run none of them: the user decides."
 fi
 
 # --- SessionStart, source resume ---

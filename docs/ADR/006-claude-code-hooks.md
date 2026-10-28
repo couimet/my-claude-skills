@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-10-18
 - **Issues:** <https://github.com/couimet/my-claude-skills/issues/292>, <https://github.com/couimet/my-claude-skills/issues/295>, <https://github.com/couimet/my-claude-skills/issues/296>
-- **Amended:** 2026-10-21 by <https://github.com/couimet/my-claude-skills/issues/302> (the `gone` state)
+- **Amended:** 2026-10-21 by <https://github.com/couimet/my-claude-skills/issues/302> (the `gone` state); 2026-10-28 by <https://github.com/couimet/my-claude-skills/issues/306> (the `UserPromptSubmit` event, and the caller as a holder)
 
 ## Context
 
@@ -38,6 +38,16 @@ Each probe ran on Claude Code 2.1.302, on 2026-10-18, with sessions that the pro
 
 A `matcher` filters both events: `SessionStart` with `clear|resume` and `SessionEnd` with `clear` did not run at `startup` or at the exit of a session.
 
+### The session title (Claude Code 2.1.312, 2026-10-28)
+
+Two background sessions ran with `claude --bg --settings <temporary file>`, and the probe then stopped and removed them.
+
+1. **`hookSpecificOutput.sessionTitle` from `UserPromptSubmit`.** The hooks documentation does not list the field. It changed the shown title, the `name` of `claude agents --json`, and the `name` of the job state. A `SendMessage` to the new name reached the session.
+2. **The `session_title` input.** It held the `--name` value at the first prompt, the title that the hook set at the next prompt, and `null` in a session with no title yet.
+3. **The transcript.** A title that the hook set wrote `custom-title` entries, the entry type of a typed `/rename`. An AI title wrote `ai-title` entries. So only a record of the hook tells its own title from a choice of the user.
+4. **AI titles.** A session with a `SessionStart` command hook (matcher `clear|resume`) still got an AI title. A report that a `SessionStart` hook stops AI titles on 2.1.252 does not apply to 2.1.312.
+5. **Cross-session messages.** `UserPromptSubmit` also fired for a prompt that arrived as a cross-session message.
+
 ## Decision
 
 ### One rule for the state of a session
@@ -70,6 +80,10 @@ The hook never stops a start: on any error it exits 0 and prints at most one std
 
 No probe failed, so the hook keeps both gaps of issue 296.
 
+> **Amended by [issue 306](https://github.com/couimet/my-claude-skills/issues/306).** A fourth event, **`UserPromptSubmit`** with no matcher, keeps the session name equal to the folder name of its work folder (title probes 1 to 5). A send by name and the agent view find a session by that name. The hook keeps a title record for each session, `<dirname SETTINGS_FILE>/session-titles/<session id>.json`, with the last title that it set, the last title that it warned about, and the name that `/rename-agent` asked for. After a drift (no title, or a newest `ai-title` entry), the hook sets the folder name. When another `running` or `retired` session holds the folder, it warns instead, because two sessions with one name make a send by name ambiguous. A title that the user chose stays, and the hook warns once for each such title with the line of `find-agent.sh --check`: `/launch-agent <that folder>` first when the title is the folder name of another existing folder, `/rename-agent` first otherwise. A name from `/rename-agent` applies with no warning. A `/clear` moves the title record to the new id with the folder. The first checks read only the session file and the input, because this event runs at each prompt. `skills/issue-context/find-agent.sh` gives the verdict of a folder or of a session, and `launch-agent.sh` (L007) and `resume-agent.sh` (R003) take their advice from it.
+>
+> `resume-agent.sh` also stops with R009 when the session file of the caller names the folder and the chosen session ended. `/launch-agent` binds the caller to a folder whose session ended and hints at `/resume-agent`, so the premise "it wakes the session that holds the folder" fails: the caller holds the folder too. No time rule replaces the check, because a `/clear` writes the session file again.
+
 ## Consequences
 
 ### Positive
@@ -81,7 +95,7 @@ No probe failed, so the hook keeps both gaps of issue 296.
 ### Negative
 
 - The rule reads the job state of Claude Code (`state.json`), which is not a documented interface. A change of its shape makes the fallback find nothing, never something wrong.
-- The hook runs in each session of each user. Its matchers keep it out of each start and end that is not a `/clear` or a resume.
+- The hook runs in each session of each user. Its matchers keep it out of each start and end that is not a `/clear` or a resume. Since [issue 306](https://github.com/couimet/my-claude-skills/issues/306), it also runs at each prompt, with no matcher. A session with no session file, or with a title equal to its folder name, costs one parse and one session file read.
 - A user who installs both the plugin and the settings entry runs the hook twice. The hook is idempotent, so the cost is time only.
 
 ## Alternatives Considered
@@ -93,3 +107,5 @@ The reader fallback covers only a background session, and the guard covers only 
 ### A hook that renames a restarted session (rejected)
 
 On Claude Code 2.1.299, a `SessionStart` hook that returns `sessionTitle` did not rename a background session in the agent view. `resume-agent.sh` prints a `Rename:` line instead.
+
+> **Amended by [issue 306](https://github.com/couimet/my-claude-skills/issues/306).** A `UserPromptSubmit` hook can set the title on 2.1.312 (title probe 1). So the hook now restores the folder name at the next prompt, and `/rename-agent` asks for a name through it. The restart of `resume-agent.sh` keeps its `/rename` prompt, because a restarted session gets no prompt from the user until the person sends one.

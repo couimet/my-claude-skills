@@ -900,3 +900,52 @@ STUB
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"another session also used this folder: $OTHER_SESSION (not resumed; the newest one wins; Claude Code deleted its transcript)"* ]] || false
 }
+
+# ============================================================================
+# The caller holds the folder (issue 306, part 3)
+# ============================================================================
+
+@test "a caller that holds the folder of an ended session → R009, and nothing restarts or changes" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  session_file "$SELF_SESSION" "$REPO/my-topic" "2026-10-14T10:00:00Z"
+  before="$(cd "$SESSIONS_DIR" && ls -l && cat ./*)"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [ ! -e "$RESUME_ARGS" ]
+  [ "$(cd "$SESSIONS_DIR" && ls -l && cat ./*)" = "$before" ]
+  [[ "$stderr" == *"R009"*"this session, $SELF_SESSION, holds $REPO/my-topic"*"session $TOPIC_SESSION"* ]] || false
+  [[ "$stderr" == *"keep this session, and do nothing"* ]] || false
+  [[ "$stderr" == *"/set-work-folder --clear"*"/resume-agent \"$REPO/my-topic\""*"claude stop ${SELF_SESSION:0:8}"* ]] || false
+}
+
+@test "a caller that holds the folder of a running session gets no R009, because nothing restarts" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  session_file "$SELF_SESSION" "$REPO/my-topic" "2026-10-14T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic idle)" > "$AGENTS_FILE"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [[ "$output" == *"Action: already running"* ]] || false
+  [[ "$stderr" != *"R009"* ]] || false
+}
+
+@test "a caller that holds another folder restarts the ended session as before" {
+  mkdir -p "$REPO/other-topic"
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  session_file "$SELF_SESSION" "$REPO/other-topic" "2026-10-14T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done)" > "$AGENTS_AFTER"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  [ -e "$RESUME_ARGS" ]
+  [[ "$output" == *"Action: restarted"* ]] || false
+}
+
+@test "R003 when only the caller holds the folder says that this session holds it" {
+  session_file "$SELF_SESSION" "$REPO/my-topic" "2026-10-14T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$SELF_SESSION" my-topic idle)" > "$AGENTS_FILE"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [[ "$stderr" == *"R003"*"no session other than this one"*"next: nothing; this session holds the folder"* ]] || false
+}
