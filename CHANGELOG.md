@@ -15,7 +15,7 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 ### Added
 
 - New `/find-agent [<folder>]` says which session holds a work folder, or what this session holds, and prints the next command: `/launch-agent`, `/resume-agent`, `claude attach`, or `/rename-agent` in the holder. It lists each holder with its state and name, and it changes nothing ([issues/306](https://github.com/couimet/my-claude-skills/issues/306))
-- New `/rename-agent [name]` gives this session its folder name, or the name you give, at your next prompt, in place of a typed `/rename`. It renames only this session ([issues/306](https://github.com/couimet/my-claude-skills/issues/306))
+- New `/rename-agent [name]` gives this session its folder name, or the name you give, at your next prompt, in place of a typed `/rename`. It renames only this session. A name that you give works in a session with no work folder too ([issues/306](https://github.com/couimet/my-claude-skills/issues/306))
 - The session hook now runs at each prompt and keeps the session name equal to its folder name. After a new AI title, the session gets its folder name back. A name that you chose stays, and you get one warning with the fix: `/launch-agent` of the folder with that name, or `/rename-agent`. Run `install.sh` again to add the new event to `~/.claude/settings.json`; the plugin adds it for you ([issues/306](https://github.com/couimet/my-claude-skills/issues/306))
 
 ### Changed
@@ -23,6 +23,10 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 - `/resume-agent` no longer wakes an ended session when this session holds the same folder, which made two sessions in one folder. It stops with R009, changes nothing, and gives the two choices: keep this session, or move this session off the folder and then wake the earlier one ([issues/306](https://github.com/couimet/my-claude-skills/issues/306))
 - When another session holds the folder, `/launch-agent` (L007) gives the command that fits that session, such as `claude attach` or `/rename-agent` in it, not always `/resume-agent`. `/resume-agent` says when this session is the only one that holds the folder ([issues/306](https://github.com/couimet/my-claude-skills/issues/306))
 - With the session hook, a session that `/set-work-folder` binds also gets the folder name as its session name at its next prompt ([issues/306](https://github.com/couimet/my-claude-skills/issues/306))
+
+### Fixed
+
+- After a restart, `/resume-agent` no longer gives the `/rename` prompt as the session name. It waits up to 15 seconds for the folder name, and gives `Name: not loaded yet` when the name is not there yet ([issues/302](https://github.com/couimet/my-claude-skills/issues/302))
 
 ## 2026.10.22
 

@@ -241,13 +241,18 @@ fi
 if [ "$event" = "prompt" ]; then
   folder=""
   reason=""
-  _issue_context_session_file_read folder reason || exit 0
+  # A session with no session file can still have a name that /rename-agent
+  # asked for. With no title record, it has nothing to do, so it exits here.
+  bound=1
+  _issue_context_session_file_read folder reason || bound=0
   folder_name="${folder##*/}"
+
+  titles="$(_issue_context_titles_dir)" || titles=""
+  [ "$bound" -eq 1 ] || { [ -n "$titles" ] && [ -f "$titles/$session_id.json" ]; } || exit 0
+  [ -n "$titles" ] || warn "no settings path, so the session name was not checked"
+  record="$titles/$session_id.json"
   title="$(printf '%s' "$input" | jq -r '.session_title | strings' 2>/dev/null)" || title=""
   transcript="$(printf '%s' "$input" | jq -r '.transcript_path | strings' 2>/dev/null)" || transcript=""
-
-  titles="$(_issue_context_titles_dir)" || warn "no settings path, so the session name was not checked"
-  record="$titles/$session_id.json"
   rec="{}"
   if [ -f "$record" ] && jq -e 'type == "object"' "$record" >/dev/null 2>&1; then
     rec="$(cat "$record")"
@@ -292,6 +297,7 @@ if [ "$event" = "prompt" ]; then
 
   wanted="$(rec_field wanted)"
   [ -z "$wanted" ] || set_title "$wanted"
+  [ "$bound" -eq 1 ] || exit 0
   [ "$title" != "$folder_name" ] || exit 0
   [ -z "$title" ] || [ "$title" != "$(rec_field set)" ] || exit 0
 

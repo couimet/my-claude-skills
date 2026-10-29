@@ -88,15 +88,14 @@
 # runs, a different cwd is a warning on stderr, because nothing restarted. A
 # missing cwd is a warning in both cases, because the session runs.
 #
-# Right after a restart, `claude agents` lists the session under its short id
-# until the session loads its saved name. Until then, the agent view search
-# and a send by name cannot find the session by its name. So the script reads
-# the list again every second for up to RESUME_AGENT_NAME_WAIT seconds
-# (default 15), and the Name line gives only a name that the list shows. A
-# name that is still the short id after that is reported as not loaded, never
-# as a different name. When the "backgrounded · <id> · <name>" line of the
-# restart output has a name, stderr gives it as the name the session will
-# load.
+# Right after a restart, `claude agents` lists the session under its short id,
+# or under the "/rename <folder name>" prompt, until the /rename applies.
+# Until then, the agent view search and a send by name cannot find the
+# session by its name. So the script reads the list again every second for up
+# to RESUME_AGENT_NAME_WAIT seconds (default 15), until the list shows the
+# folder name. The Name line gives only a name that the list shows. A short id
+# or a prompt is reported as not loaded, never as a name. When the list does
+# not show the folder name after the wait, stderr names the folder name.
 #
 # The restart gives the session the folder name. When the list does not show
 # that name, the Rename line tells the user how to give it. The agent view
@@ -443,16 +442,16 @@ field() {
 }
 
 short_id="${job_id:-${session_id:0:8}}"
-# loaded <name> — 0 when <name> is a real name, not empty and not the short id.
+# loaded <name> — 0 when <name> is a real name: not empty, not the short id,
+# and not a prompt such as "/rename <folder name>".
 loaded() {
-  [ -n "$1" ] && [ "$1" != "$short_id" ]
+  [ -n "$1" ] && [ "$1" != "$short_id" ] && [ "${1#/}" = "$1" ]
 }
 
 read_list \
   || die "$ERR_AGENTS" "claude agents --json failed, so the state of session $session_id is unknown; nothing was restarted"
 entry="$(entry_of)"
 
-restart_name=""
 retired=0
 if [ "$list_state" = "running" ]; then
   action="already running"
@@ -480,17 +479,13 @@ else
       exit 1
       ;;
   esac
-  restart_name="$(printf '%s\n' "$restart_output" \
-    | sed -n 's/^backgrounded · [^ ]* · \(.*\)$/\1/p' | head -n 1)"
-  restart_name="${restart_name% (*}"
-  loaded "$restart_name" || restart_name=""
-
+  # The /rename prompt asks for the folder name, so the wait ends at that name.
   waited=0
   while :; do
     read_list \
       || die "$ERR_UNKNOWN" "claude --bg --resume $session_id ran, but claude agents --json then failed, so it is not known whether the session runs; do not run claude --bg --resume, because a resume of a running session starts a copy; run this skill again, which restarts nothing when the session is listed"
     entry="$(entry_of)"
-    if [ -n "$entry" ] && loaded "$(field name)"; then
+    if [ -n "$entry" ] && [ "$(field name)" = "$folder_name" ]; then
       break
     fi
     [ "$waited" -lt "$NAME_WAIT" ] || break
@@ -523,8 +518,8 @@ listed_id="$(field id)"
 listed_session="$(field sessionId)"
 [ -z "$listed_session" ] || session_id="$listed_session"
 name="$(field name)"
-if ! loaded "$name" && [ -n "$restart_name" ]; then
-  echo "resume-agent: the restart named the session '$restart_name', but claude agents did not show that name within $NAME_WAIT seconds; run the skill again to read the name" >&2
+if [ "$action" = "restarted" ] && [ "$name" != "$folder_name" ]; then
+  echo "resume-agent: the restart asked for the name '$folder_name', but claude agents did not show that name within $NAME_WAIT seconds; run the skill again to read the name" >&2
 fi
 status="$(field status)"
 [ "$retired" -eq 0 ] || status="retired"

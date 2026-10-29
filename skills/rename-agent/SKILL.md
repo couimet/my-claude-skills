@@ -18,7 +18,7 @@ This skill renames only the session that runs it. For another session, rename no
 ## Step 1: Run the Script
 
 ```bash
-~/.claude/skills/issue-context/rename-agent.sh $ARGUMENTS
+~/.claude/skills/issue-context/rename-agent.sh "$ARGUMENTS"
 ```
 
 The script records the name for this session. The session hook sets it at the next prompt and gives no warning about it. Without the session hook, the name does not apply: tell the user to install the hook (see the README).

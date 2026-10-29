@@ -57,6 +57,14 @@ run_rename() {
   [ "$(jq -r .wanted "$TITLES_DIR/$SELF_SESSION.json")" = "my-topic" ]
 }
 
+@test "rename-agent: an empty argument asks for the folder name of the bound folder" {
+  session_file "$SELF_SESSION" "$TEST_TEMP_DIR/my-topic"
+  run_rename "$SELF_SESSION" ""
+  [ "$status" -eq 0 ]
+  [ "$output" = "The name my-topic applies at your next prompt." ]
+  [ "$(jq -r .wanted "$TITLES_DIR/$SELF_SESSION.json")" = "my-topic" ]
+}
+
 @test "rename-agent: an argument asks for that name" {
   session_file "$SELF_SESSION" "$TEST_TEMP_DIR/my-topic"
   run_rename "$SELF_SESSION" my own name

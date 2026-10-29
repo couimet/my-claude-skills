@@ -412,7 +412,31 @@ cleared_job_without_first_transcript() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"Name: not loaded yet"* ]] || false
   [[ "$output" != *"Open:"* ]] || false
-  [[ "$stderr" == *"the restart named the session 'my-topic', but claude agents did not show that name within 1 seconds"* ]] || false
+  [[ "$stderr" == *"the restart asked for the name 'my-topic', but claude agents did not show that name within 1 seconds"* ]] || false
+  [[ "$output" == *"Rename: if the agent view does not show my-topic, open the session and type /rename my-topic"* ]] || false
+}
+
+@test "a list that shows the /rename prompt as the name is read again until the folder name loads" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" "/rename my-topic" blocked)" > "$AGENTS_AFTER"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic blocked)" > "$AGENTS_NEXT"
+  STUB_NAME="/rename my-topic" NAME_WAIT=3 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" my-topic
+  [ "$status" -eq 0 ]
+  [ ! -e "$AGENTS_NEXT" ]
+  [[ "$output" == *"Name: my-topic"* ]] || false
+  [[ "$output" != *"Rename:"* ]] || false
+  [[ "$stderr" != *"/rename my-topic"* ]] || false
+}
+
+@test "a /rename prompt that the list still shows after the wait is not reported as the name" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" "/rename my-topic" blocked)" > "$AGENTS_AFTER"
+  STUB_NAME="/rename my-topic" NAME_WAIT=1 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" my-topic
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Name: not loaded yet"* ]] || false
+  [[ "$output" != *"Open:"* ]] || false
+  [[ "$stderr" == *"the restart asked for the name 'my-topic', but claude agents did not show that name within 1 seconds"* ]] || false
+  [[ "$stderr" != *"runs under the name"* ]] || false
   [[ "$output" == *"Rename: if the agent view does not show my-topic, open the session and type /rename my-topic"* ]] || false
 }
 
@@ -426,7 +450,7 @@ cleared_job_without_first_transcript() {
   [[ "$stderr" != *"runs under the name"* ]] || false
 }
 
-@test "a name that never loads is reported as not loaded, with no Open line and no name warning" {
+@test "a name that never loads is reported as not loaded, with no Open line, and stderr names the folder name" {
   session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
   printf '[%s]' "$(agent_entry "$TOPIC_SESSION" "${TOPIC_SESSION:0:8}" blocked)" > "$AGENTS_AFTER"
   STUB_NAME="" NAME_WAIT=1 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" my-topic
@@ -435,7 +459,7 @@ cleared_job_without_first_transcript() {
   [[ "$output" == *"Attach: claude attach ${TOPIC_SESSION:0:8}"* ]] || false
   [[ "$output" != *"Open:"* ]] || false
   [[ "$stderr" != *"runs under the name"* ]] || false
-  [[ "$stderr" != *"the restart named the session"* ]] || false
+  [[ "$stderr" == *"the restart asked for the name 'my-topic'"* ]] || false
 }
 
 @test "a running session with a socket gets an Address line, and no socket warning" {

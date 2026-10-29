@@ -486,6 +486,20 @@ TITLES_DIR_NAME="session-titles"
   [ -z "$output" ]
 }
 
+@test "session-hook: a name that /rename-agent asked for in a session with no session file is applied, then kept" {
+  mkdir -p "$TEST_TEMP_DIR/$TITLES_DIR_NAME"
+  printf '{"wanted":"chosen"}' > "$TEST_TEMP_DIR/$TITLES_DIR_NAME/$NEW.json"
+  run_hook "$(prompt_event "$NEW" an-ai-title)"
+  [ "$status" -eq 0 ]
+  [ "$(printf '%s' "$output" | jq -r .hookSpecificOutput.sessionTitle)" = "chosen" ]
+  [ "$(jq -c . "$TEST_TEMP_DIR/$TITLES_DIR_NAME/$NEW.json")" = '{"set":"chosen"}' ]
+
+  run_hook "$(prompt_event "$NEW" an-ai-title)"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  [ -z "$stderr" ]
+}
+
 @test "session-hook: /rename-agent with no argument restores the folder name of a chosen name" {
   session_file "$NEW" "$TOPIC"
   mkdir -p "$TEST_TEMP_DIR/$TITLES_DIR_NAME"
