@@ -72,8 +72,7 @@ case "$name" in
   *$'\n'* | *$'\r'* | *$'\t'*) die "$ERR_USAGE" "the name holds a line break or a tab, so it cannot be a session title" ;;
 esac
 
-_issue_context_session_id_ok \
-  || die "$ERR_NO_SESSION" "CLAUDE_CODE_SESSION_ID is not set or cannot be a file name, so there is no current session to rename"
+_issue_context_session_id_ok || die "$ERR_NO_SESSION" "CLAUDE_CODE_SESSION_ID is not set or cannot be a file name, so there is no current session to rename"
 command -v jq >/dev/null 2>&1 || die "$ERR_NO_JQ" "jq not found; it is required to write the title record"
 
 if [ -z "$name" ]; then

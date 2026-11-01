@@ -153,6 +153,43 @@ only_list_reads() {
   [ "${lines[3]}" = "Next: open session ${TOPIC_SESSION:0:8} (claude attach ${TOPIC_SESSION:0:8}), and run /rename-agent in it" ]
 }
 
+@test "find-agent: a running holder with no job, under the folder name, gives its terminal" {
+  session_file "$TOPIC_SESSION" "$ROOT/my-topic" "2026-10-13T10:00:00Z"
+  printf '[{"cwd":"/x","kind":"interactive","name":"my-topic","pid":123,"sessionId":"%s","startedAt":1,"state":"blocked","status":"idle"}]' \
+    "$TOPIC_SESSION" > "$LIVE_FILE"
+  cp "$LIVE_FILE" "$ALL_FILE"
+  run_find "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Verdict: running" ]
+  [ "${lines[2]}" = "Holder: $TOPIC_SESSION - running other my-topic" ]
+  [ "${lines[3]}" = "Next: open the terminal where session ${TOPIC_SESSION:0:8} runs" ]
+}
+
+@test "find-agent: a running holder with no job, under another name, gives its terminal and /rename-agent" {
+  session_file "$TOPIC_SESSION" "$ROOT/my-topic" "2026-10-13T10:00:00Z"
+  printf '[{"cwd":"/x","kind":"interactive","name":"an-ai-title","pid":123,"sessionId":"%s","startedAt":1,"state":"blocked","status":"idle"}]' \
+    "$TOPIC_SESSION" > "$LIVE_FILE"
+  cp "$LIVE_FILE" "$ALL_FILE"
+  run_find "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Verdict: rename" ]
+  [ "${lines[3]}" = "Next: open the terminal where session ${TOPIC_SESSION:0:8} runs, and run /rename-agent in it" ]
+}
+
+@test "find-agent: an absolute folder with a trailing slash gives the folder without it" {
+  run_find "$SELF_SESSION" "$ROOT/my-topic//"
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Verdict: launch" ]
+  [ "${lines[1]}" = "Folder: $ROOT/my-topic" ]
+}
+
+@test "find-agent: a relative path with a slash gives G003" {
+  run_find "$SELF_SESSION" topics/my-topic
+  [ "$status" -eq 2 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"G003"*"not a topic name"* ]] || false
+}
+
 @test "find-agent: a retired holder gives attach" {
   session_file "$TOPIC_SESSION" "$ROOT/my-topic" "2026-10-13T10:00:00Z"
   printf '[%s]' "$(row "$TOPIC_SESSION" my-topic null null)" > "$LIVE_FILE"
@@ -311,6 +348,22 @@ only_list_reads() {
   [[ "${lines[0]}" == "moved: "* ]] || false
   first="${lines[0]%%/rename-agent*}"
   [[ "$first" == *"/launch-agent \"$ROOT/other-topic\""* ]] || false
+}
+
+@test "find-agent: --check on an empty name exits 1 and says that the session has no name" {
+  session_file "$SELF_SESSION" "$ROOT/my-topic" "2026-10-13T10:00:00Z"
+  run_find "$SELF_SESSION" --check --title ""
+  [ "$status" -eq 1 ]
+  [ "${#lines[@]}" -eq 1 ]
+  [[ "${lines[0]}" == "rename: this session has no name, but its work folder is $ROOT/my-topic;"* ]] || false
+}
+
+@test "find-agent: a failed list read for the current session gives G004 and no stdout" {
+  session_file "$SELF_SESSION" "$ROOT/my-topic" "2026-10-13T10:00:00Z"
+  STUB_FAIL=1 run_find "$SELF_SESSION"
+  [ "$status" -eq 2 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"G004"*"the name of this session is unknown"* ]] || false
 }
 
 @test "find-agent: --check with no --title reads the name from the list" {

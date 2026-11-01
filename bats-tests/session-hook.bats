@@ -206,6 +206,35 @@ row() {
   [ ! -e "$HANDOFF_DIR/$PID.json" ]
 }
 
+@test "session-hook: a /clear with no CLAUDE_PID names the handoff file after the parent process" {
+  session_file "$OLD" "$TOPIC"
+  run_hook "$(event SessionEnd clear "$OLD")"
+  [ "$status" -eq 0 ]
+  [ -z "$stderr" ]
+  handoffs="$(find "$HANDOFF_DIR" -type f -name '*.json')"
+  [ "$(printf '%s\n' "$handoffs" | wc -l | tr -d ' ')" -eq 1 ]
+  [[ "${handoffs##*/}" =~ ^[0-9]+\.json$ ]] || false
+  [ "$(jq -r .folder "$handoffs")" = "$TOPIC" ]
+}
+
+@test "session-hook: a /clear with a settings path with no directory part writes the handoff beside it" {
+  session_file "$OLD" "$TOPIC"
+  cd "$TEST_TEMP_DIR"
+  run_hook "$(event SessionEnd clear "$OLD")" CLAUDE_PID="$PID" MY_CLAUDE_SKILLS_CONFIG=settings.json
+  [ "$status" -eq 0 ]
+  [ -z "$stderr" ]
+  [ "$(jq -r .folder "$HANDOFF_DIR/$PID.json")" = "$TOPIC" ]
+}
+
+@test "session-hook: a /clear with a session file that cannot be read gives one stderr line and no handoff" {
+  printf '{' > "$SESSIONS_DIR/$OLD--t.json"
+  run_hook "$(event SessionEnd clear "$OLD")" CLAUDE_PID="$PID"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  [ "$stderr" = "session-hook: the session file of $OLD could not be read (malformed), so its work folder does not carry over the /clear" ]
+  [ ! -e "$HANDOFF_DIR/$PID.json" ]
+}
+
 @test "session-hook: a second call for each /clear event changes nothing" {
   session_file "$OLD" "$TOPIC"
   run_hook "$(event SessionEnd clear "$OLD")" CLAUDE_PID="$PID"
@@ -247,6 +276,17 @@ row() {
   [ -z "$stderr" ]
   [ "$(jq -r .folder "$(files_of "$NEW")")" = "$TOPIC" ]
   [ ! -e "$HANDOFF_DIR/$PID.json" ]
+}
+
+@test "session-hook: a SESSION_HOOK_HANDOFF_MAX_AGE that is not a number gives the default age" {
+  mkdir -p "$HANDOFF_DIR"
+  printf '{"folder":"%s","session_id":"%s","written_at":%s}' \
+    "$TOPIC" "$OLD" "$(($(date +%s) - 10))" > "$HANDOFF_DIR/$PID.json"
+
+  run_hook "$(event SessionStart clear "$NEW")" CLAUDE_PID="$PID" SESSION_HOOK_HANDOFF_MAX_AGE=soon
+  [ "$status" -eq 0 ]
+  [ -z "$stderr" ]
+  [ "$(jq -r .folder "$(files_of "$NEW")")" = "$TOPIC" ]
 }
 
 @test "session-hook: a background /clear with no handoff takes the folder through the job state" {
@@ -425,6 +465,21 @@ TITLES_DIR_NAME="session-titles"
   [ "$(printf '%s' "$output" | jq -r .hookSpecificOutput.sessionTitle)" = "topic" ]
 }
 
+@test "session-hook: a title record that cannot be written gives one stderr line and no title" {
+  _require_enforced_permission_bits
+  session_file "$NEW" "$TOPIC"
+  record="$TEST_TEMP_DIR/$TITLES_DIR_NAME/$NEW.json"
+  mkdir -p "$record"
+  chmod 555 "$record"
+  run_hook "$(prompt_event "$NEW" null)"
+  local st="$status" out="$output" err="$stderr"
+  chmod 755 "$record"
+  [ "$st" -eq 0 ]
+  [ -z "$out" ]
+  [ "$err" = "session-hook: could not write $record, so the title was not set" ]
+  [ -z "$(find "$TEST_TEMP_DIR/$TITLES_DIR_NAME" -name '.tmp-*')" ]
+}
+
 @test "session-hook: a name that the user chose is kept, and gets one warning with /rename-agent first" {
   session_file "$NEW" "$TOPIC"
   title_transcript "$TEST_TEMP_DIR/t.jsonl" custom:topic custom:my-choice
@@ -520,6 +575,7 @@ TITLES_DIR_NAME="session-titles"
   [ "$(printf '%s' "$output" | jq -r '.hookSpecificOutput.sessionTitle // empty')" = "" ]
   context="$(printf '%s' "$output" | jq -r .hookSpecificOutput.additionalContext)"
   [[ "$context" == *"session $OTHER"*"/find-agent $TOPIC"* ]] || false
+  [[ "$context" == *$'reach either one:\n- session '"$OTHER"* ]] || false
 }
 
 @test "session-hook: a /clear carries the title record to the new session id" {

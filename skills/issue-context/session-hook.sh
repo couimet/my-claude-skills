@@ -91,7 +91,7 @@ command -v jq >/dev/null 2>&1 || warn "jq not found, so the hook did nothing"
 # session id when it is one plain token, else empty. A path that does nothing
 # stops here, before any file is sourced.
 input="$(cat)"
-parsed="$(printf '%s' "$input" | jq -r '
+parsed="$(printf '%s' "$input" | jq -r ' # kcov-exclude-line
   # kcov-exclude-start
   if type != "object" then "invalid"
   else
@@ -114,7 +114,7 @@ case "$parsed" in
 esac
 
 case "$event" in
-  end-clear | start-clear | start-resume | prompt) ;;
+  end-clear | start-clear | start-resume | prompt) ;; # kcov-exclude-line
   other) exit 0 ;;
   *) warn "the input is not one JSON object, so the hook did nothing" ;;
 esac
@@ -204,16 +204,14 @@ if [ "$event" = "start-clear" ]; then
     case "$max_age" in
       '' | *[!0-9]*) max_age=300 ;;
     esac
-    written_at="$(jq -r 'if type == "object" and (.written_at | type == "number")
+    written_at="$(jq -r 'if type == "object" and (.written_at | type == "number") # kcov-exclude-line
                          then .written_at | floor else empty end' "$handoff" 2>/dev/null)" \
       || written_at=""
     if [ -n "$written_at" ]; then
       age=$(($(date +%s) - written_at))
       if [ "$age" -ge 0 ] && [ "$age" -le "$max_age" ]; then
-        folder="$(jq -r 'if (.folder | type == "string") then .folder else empty end' \
-          "$handoff" 2>/dev/null)" || folder=""
-        old_id="$(jq -r '.session_id | strings | select(test("^[A-Za-z0-9_-]+$"))' \
-          "$handoff" 2>/dev/null)" || old_id=""
+        folder="$(jq -r 'if (.folder | type == "string") then .folder else empty end' "$handoff" 2>/dev/null)" || folder=""
+        old_id="$(jq -r '.session_id | strings | select(test("^[A-Za-z0-9_-]+$"))' "$handoff" 2>/dev/null)" || old_id=""
       fi
     fi
     rm -f "$handoff"
@@ -303,8 +301,7 @@ if [ "$event" = "prompt" ]; then
 
   newest=""
   if [ -n "$transcript" ] && [ -f "$transcript" ]; then
-    newest="$(grep -E '"type": ?"(ai|custom)-title"' "$transcript" 2>/dev/null | tail -n 1 \
-      | jq -r '.type | strings' 2>/dev/null)" || newest=""
+    newest="$(grep -E '"type": ?"(ai|custom)-title"' "$transcript" 2>/dev/null | tail -n 1 | jq -r '.type | strings' 2>/dev/null)" || newest=""
   fi
 
   if [ -z "$title" ] || [ "$newest" = "ai-title" ]; then
@@ -323,8 +320,7 @@ $check_out
 HOLDERS
     fi
     [ -n "$holders" ] || set_title "$folder_name"
-    warn_once "This session has a new name, '$title', in place of its folder name $folder_name. The hook did not give it the folder name back, because another session holds the work folder $folder of this session, and two sessions with one name make a send by name reach either one:
-${holders}Give the user this command, which says what to do, and do not run it yourself: /find-agent $folder"
+    warn_once "This session has a new name, '$title', in place of its folder name $folder_name. The hook did not give it the folder name back, because another session holds the work folder $folder of this session, and two sessions with one name make a send by name reach either one:"$'\n'"${holders}Give the user this command, which says what to do, and do not run it yourself: /find-agent $folder"
   fi
 
   check_rc=0

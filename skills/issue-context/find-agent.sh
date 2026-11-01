@@ -282,8 +282,7 @@ if [ "$title_set" -eq 0 ]; then
       || ! printf '%s' "$live" | jq -e 'type == "array"' >/dev/null 2>&1; then
     die "$ERR_SESSIONS" "claude agents --json failed, so the name of this session is unknown"
   fi
-  title="$(printf '%s' "$live" | jq -r --arg id "$self_id" \
-    'first(.[] | select(.sessionId == $id) | .name | strings) // empty')"
+  title="$(printf '%s' "$live" | jq -r --arg id "$self_id" 'first(.[] | select(.sessionId == $id) | .name | strings) // empty')"
 fi
 
 named=""

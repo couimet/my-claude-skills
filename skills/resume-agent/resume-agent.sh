@@ -296,9 +296,7 @@ LISTING
 if [ -z "$session_id" ]; then
   # find-agent.sh gives the advice, so /find-agent, /launch-agent, and this
   # script never disagree. A failed call keeps the old advice.
-  no_next="$(FOLDER_SESSIONS_PROJECTS_DIR="$PROJECTS_DIR" FOLDER_SESSIONS_JOBS_DIR="$JOBS_DIR" \
-    "$_self_dir/../issue-context/find-agent.sh" "$folder_abs" 2>/dev/null | sed -n 's/^Next: //p')" \
-    || no_next=""
+  no_next="$(FOLDER_SESSIONS_PROJECTS_DIR="$PROJECTS_DIR" FOLDER_SESSIONS_JOBS_DIR="$JOBS_DIR" "$_self_dir/../issue-context/find-agent.sh" "$folder_abs" 2>/dev/null | sed -n 's/^Next: //p')" || no_next=""
   [ -n "$no_next" ] || no_next="start one with /launch-agent"
   die "$ERR_NO_SESSION" "no session other than this one has its working files in $folder_abs, so there is no session to resume; next: $no_next"
 fi
@@ -448,8 +446,7 @@ loaded() {
   [ -n "$1" ] && [ "$1" != "$short_id" ] && [ "${1#/}" = "$1" ]
 }
 
-read_list \
-  || die "$ERR_AGENTS" "claude agents --json failed, so the state of session $session_id is unknown; nothing was restarted"
+read_list || die "$ERR_AGENTS" "claude agents --json failed, so the state of session $session_id is unknown; nothing was restarted"
 entry="$(entry_of)"
 
 retired=0
@@ -482,8 +479,7 @@ else
   # The /rename prompt asks for the folder name, so the wait ends at that name.
   waited=0
   while :; do
-    read_list \
-      || die "$ERR_UNKNOWN" "claude --bg --resume $session_id ran, but claude agents --json then failed, so it is not known whether the session runs; do not run claude --bg --resume, because a resume of a running session starts a copy; run this skill again, which restarts nothing when the session is listed"
+    read_list || die "$ERR_UNKNOWN" "claude --bg --resume $session_id ran, but claude agents --json then failed, so it is not known whether the session runs; do not run claude --bg --resume, because a resume of a running session starts a copy; run this skill again, which restarts nothing when the session is listed"
     entry="$(entry_of)"
     if [ -n "$entry" ] && [ "$(field name)" = "$folder_name" ]; then
       break

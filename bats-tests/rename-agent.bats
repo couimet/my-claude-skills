@@ -87,6 +87,27 @@ run_rename() {
   [ ! -e "$TITLES_DIR" ]
 }
 
+@test "rename-agent: no argument and a session file that cannot be read renames nothing and gives N003" {
+  printf '{' > "$SESSIONS_DIR/$SELF_SESSION--t.json"
+  run_rename "$SELF_SESSION"
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"N003"*"could not be read (malformed)"* ]] || false
+  [ ! -e "$TITLES_DIR" ]
+}
+
+@test "rename-agent: a record that cannot be written gives N005" {
+  _require_enforced_permission_bits
+  mkdir -p "$TITLES_DIR/$SELF_SESSION.json"
+  chmod 555 "$TITLES_DIR/$SELF_SESSION.json"
+  run_rename "$SELF_SESSION" chosen-name
+  local st="$status" out="$output" err="$stderr"
+  chmod 755 "$TITLES_DIR/$SELF_SESSION.json"
+  [ "$st" -eq 1 ]
+  [ -z "$out" ]
+  [[ "$err" == *"N005"*"could not write $TITLES_DIR/$SELF_SESSION.json"* ]] || false
+}
+
 @test "rename-agent: the record keeps the other fields of the hook" {
   session_file "$SELF_SESSION" "$TEST_TEMP_DIR/my-topic"
   mkdir -p "$TITLES_DIR"

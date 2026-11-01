@@ -444,8 +444,7 @@ if [ -d "$target" ] && held_abs="$({ cd "$target" && pwd -P; } 2>/dev/null)"; th
       if [ "$take_over" -eq 0 ]; then
         # find-agent.sh gives the advice, so /find-agent, /resume-agent, and
         # this script never disagree. A failed call keeps the old advice.
-        h_next="$("$_self_dir/../issue-context/find-agent.sh" --others "$held_abs" 2>/dev/null \
-          | sed -n 's/^Next: //p')" || h_next=""
+        h_next="$("$_self_dir/../issue-context/find-agent.sh" --others "$held_abs" 2>/dev/null | sed -n 's/^Next: //p')" || h_next=""
         [ -n "$h_next" ] || h_next="/resume-agent $held_abs"
         die "$ERR_HELD" "$h_label holds $held_abs, and two sessions in one folder each see half of the work; to continue that session: $h_next; to take the folder from it, launch again with --take-over"
       fi
