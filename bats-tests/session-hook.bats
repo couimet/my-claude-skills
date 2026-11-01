@@ -437,13 +437,27 @@ TITLES_DIR_NAME="session-titles"
   [ ! -e "$TEST_TEMP_DIR/$TITLES_DIR_NAME" ]
 }
 
-@test "session-hook: a prompt whose title is the folder name gives no output and reads no list" {
+@test "session-hook: a prompt whose title is the folder name gives no output, reads no list, and records the folder" {
   session_file "$NEW" "$TOPIC"
   run_hook "$(prompt_event "$NEW" topic)"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
   [ -z "$stderr" ]
   [ ! -e "$CALLS" ]
+  [ "$(jq -c . "$TEST_TEMP_DIR/$TITLES_DIR_NAME/$NEW.json")" = "{\"set\":\"topic\",\"folder\":\"$TOPIC\"}" ]
+}
+
+@test "session-hook: a launch name that is the folder name changes to the new folder name after a change of folder" {
+  session_file "$NEW" "$TOPIC"
+  run_hook "$(prompt_event "$NEW" topic)"
+  [ -z "$output" ]
+  rm -f "$SESSIONS_DIR/$NEW--t.json"
+  mkdir -p "$TEST_TEMP_DIR/second"
+  session_file "$NEW" "$TEST_TEMP_DIR/second"
+  run_hook "$(prompt_event "$NEW" topic)"
+  [ "$status" -eq 0 ]
+  [ -z "$stderr" ]
+  [ "$(printf '%s' "$output" | jq -r .hookSpecificOutput.sessionTitle)" = "second" ]
 }
 
 @test "session-hook: a prompt after a new AI title gives the folder name back" {

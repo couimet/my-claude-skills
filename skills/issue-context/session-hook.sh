@@ -300,7 +300,18 @@ if [ "$event" = "prompt" ]; then
   wanted="$(rec_field wanted)"
   [ -z "$wanted" ] || set_title "$wanted"
   [ "$bound" -eq 1 ] || exit 0
-  [ "$title" != "$folder_name" ] || exit 0
+  # A title that is the folder name is correct. The record marks it as a
+  # folder title, so a later change of folder renames the session. This
+  # covers a launch name, which the hook did not set itself.
+  if [ "$title" = "$folder_name" ]; then
+    if [ -n "$titles" ] \
+        && { [ "$(rec_field set)" != "$title" ] || [ "$(rec_field folder)" != "$folder" ]; }; then
+      # shellcheck disable=SC2016 # a jq program: $t and $f are jq variables
+      write_record '.set = $t | .folder = $f' "$title" "$folder" \
+        || warn "could not write $record, so the folder of the title was not recorded"
+    fi
+    exit 0
+  fi
   # A title that the hook set is still correct, unless it names an earlier
   # folder: /set-work-folder then changed the folder of this session.
   stale=0
