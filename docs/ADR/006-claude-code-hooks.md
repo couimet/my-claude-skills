@@ -19,7 +19,7 @@ The skills see only the session starts that they make. A manual `claude --bg --r
 
 ## Probe results
 
-Each probe ran on Claude Code 2.1.302, on 2026-10-18, with sessions that the probe started and then stopped and removed. A logging hook came from `claude --settings <temporary file>` or `claude --plugin-dir <temporary plugin>`, so no user settings file changed.
+Each probe before the title probes ran on Claude Code 2.1.302, on 2026-10-18, with sessions that the probe started and then stopped and removed. A logging hook came from `claude --settings <temporary file>` or `claude --plugin-dir <temporary plugin>`, so no user settings file changed. The title probes give their own version and date in their heading.
 
 ### The job record, the session ids, and the start directory
 
