@@ -1,6 +1,6 @@
 ---
 name: set-work-folder
-version: 2026.10.22@b3b9515
+version: 2026.10.28@13eb6e6
 description: Point this session's or this worktree's working files at a folder, instead of letting the current git branch decide where they go
 argument-hint: '[--take-over] <folder> [name] | --clear | --worktree <folder> | --clear --worktree'
 allowed-tools: Bash(*/skills/issue-context/set-work-folder.sh *)
