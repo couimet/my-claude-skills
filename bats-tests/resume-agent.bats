@@ -412,7 +412,31 @@ cleared_job_without_first_transcript() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"Name: not loaded yet"* ]] || false
   [[ "$output" != *"Open:"* ]] || false
-  [[ "$stderr" == *"the restart named the session 'my-topic', but claude agents did not show that name within 1 seconds"* ]] || false
+  [[ "$stderr" == *"the restart asked for the name 'my-topic', but claude agents did not show that name within 1 seconds"* ]] || false
+  [[ "$output" == *"Rename: if the agent view does not show my-topic, open the session and type /rename my-topic"* ]] || false
+}
+
+@test "a list that shows the /rename prompt as the name is read again until the folder name loads" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" "/rename my-topic" blocked)" > "$AGENTS_AFTER"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic blocked)" > "$AGENTS_NEXT"
+  STUB_NAME="/rename my-topic" NAME_WAIT=3 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" my-topic
+  [ "$status" -eq 0 ]
+  [ ! -e "$AGENTS_NEXT" ]
+  [[ "$output" == *"Name: my-topic"* ]] || false
+  [[ "$output" != *"Rename:"* ]] || false
+  [[ "$stderr" != *"/rename my-topic"* ]] || false
+}
+
+@test "a /rename prompt that the list still shows after the wait is not reported as the name" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" "/rename my-topic" blocked)" > "$AGENTS_AFTER"
+  STUB_NAME="/rename my-topic" NAME_WAIT=1 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" my-topic
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Name: not loaded yet"* ]] || false
+  [[ "$output" != *"Open:"* ]] || false
+  [[ "$stderr" == *"the restart asked for the name 'my-topic', but claude agents did not show that name within 1 seconds"* ]] || false
+  [[ "$stderr" != *"runs under the name"* ]] || false
   [[ "$output" == *"Rename: if the agent view does not show my-topic, open the session and type /rename my-topic"* ]] || false
 }
 
@@ -426,7 +450,7 @@ cleared_job_without_first_transcript() {
   [[ "$stderr" != *"runs under the name"* ]] || false
 }
 
-@test "a name that never loads is reported as not loaded, with no Open line and no name warning" {
+@test "a name that never loads is reported as not loaded, with no Open line, and stderr names the folder name" {
   session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
   printf '[%s]' "$(agent_entry "$TOPIC_SESSION" "${TOPIC_SESSION:0:8}" blocked)" > "$AGENTS_AFTER"
   STUB_NAME="" NAME_WAIT=1 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" my-topic
@@ -435,7 +459,7 @@ cleared_job_without_first_transcript() {
   [[ "$output" == *"Attach: claude attach ${TOPIC_SESSION:0:8}"* ]] || false
   [[ "$output" != *"Open:"* ]] || false
   [[ "$stderr" != *"runs under the name"* ]] || false
-  [[ "$stderr" != *"the restart named the session"* ]] || false
+  [[ "$stderr" == *"the restart asked for the name 'my-topic'"* ]] || false
 }
 
 @test "a running session with a socket gets an Address line, and no socket warning" {
@@ -899,4 +923,53 @@ STUB
   run_resume "" my-topic
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"another session also used this folder: $OTHER_SESSION (not resumed; the newest one wins; Claude Code deleted its transcript)"* ]] || false
+}
+
+# ============================================================================
+# The caller holds the folder (issue 306, part 3)
+# ============================================================================
+
+@test "a caller that holds the folder of an ended session → R009, and nothing restarts or changes" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  session_file "$SELF_SESSION" "$REPO/my-topic" "2026-10-14T10:00:00Z"
+  before="$(cd "$SESSIONS_DIR" && ls -l && cat ./*)"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [ ! -e "$RESUME_ARGS" ]
+  [ "$(cd "$SESSIONS_DIR" && ls -l && cat ./*)" = "$before" ]
+  [[ "$stderr" == *"R009"*"this session, $SELF_SESSION, holds $REPO/my-topic"*"session $TOPIC_SESSION"* ]] || false
+  [[ "$stderr" == *"keep this session, and do nothing"* ]] || false
+  [[ "$stderr" == *"/set-work-folder --clear"*"/resume-agent \"$REPO/my-topic\""*"claude stop ${SELF_SESSION:0:8}"* ]] || false
+}
+
+@test "a caller that holds the folder of a running session gets no R009, because nothing restarts" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  session_file "$SELF_SESSION" "$REPO/my-topic" "2026-10-14T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic idle)" > "$AGENTS_FILE"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [[ "$output" == *"Action: already running"* ]] || false
+  [[ "$stderr" != *"R009"* ]] || false
+}
+
+@test "a caller that holds another folder restarts the ended session as before" {
+  mkdir -p "$REPO/other-topic"
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  session_file "$SELF_SESSION" "$REPO/other-topic" "2026-10-14T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done)" > "$AGENTS_AFTER"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  [ -e "$RESUME_ARGS" ]
+  [[ "$output" == *"Action: restarted"* ]] || false
+}
+
+@test "R003 when only the caller holds the folder says that this session holds it" {
+  session_file "$SELF_SESSION" "$REPO/my-topic" "2026-10-14T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$SELF_SESSION" my-topic idle)" > "$AGENTS_FILE"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [[ "$stderr" == *"R003"*"no session other than this one"*"next: nothing; this session holds the folder"* ]] || false
 }

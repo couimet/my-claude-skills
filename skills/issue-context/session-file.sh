@@ -33,6 +33,7 @@
 #
 # Functions defined on source:
 #   _issue_context_sessions_dir
+#   _issue_context_titles_dir
 #   _issue_context_session_id_ok
 #   _issue_context_job_first_id <out-var>
 #   _issue_context_session_file_read <out-folder-var> <out-reason-var>
@@ -66,6 +67,22 @@ _issue_context_sessions_dir() {
   case "$SETTINGS_FILE" in
     */*) printf '%s/sessions\n' "${SETTINGS_FILE%/*}" ;;
     *) printf './sessions\n' ;;
+  esac
+}
+
+# _issue_context_titles_dir — print the directory holding the title records:
+# <dirname SETTINGS_FILE>/session-titles/<session id>.json, one JSON object
+# for each session. rename-agent.sh writes its "wanted" field, the name that
+# the session asks for. session-hook.sh applies it at the next prompt, and
+# writes "set" (the last title that the hook set) and "warned" (the last
+# title that it warned about). Beside the sessions directory, so
+# MY_CLAUDE_SKILLS_CONFIG moves both. Returns 1 when SETTINGS_FILE is unset or
+# empty.
+_issue_context_titles_dir() {
+  [ -n "${SETTINGS_FILE:-}" ] || return 1
+  case "$SETTINGS_FILE" in
+    */*) printf '%s/session-titles\n' "${SETTINGS_FILE%/*}" ;;
+    *) printf './session-titles\n' ;;
   esac
 }
 

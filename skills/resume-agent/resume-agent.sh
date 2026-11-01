@@ -88,15 +88,14 @@
 # runs, a different cwd is a warning on stderr, because nothing restarted. A
 # missing cwd is a warning in both cases, because the session runs.
 #
-# Right after a restart, `claude agents` lists the session under its short id
-# until the session loads its saved name. Until then, the agent view search
-# and a send by name cannot find the session by its name. So the script reads
-# the list again every second for up to RESUME_AGENT_NAME_WAIT seconds
-# (default 15), and the Name line gives only a name that the list shows. A
-# name that is still the short id after that is reported as not loaded, never
-# as a different name. When the "backgrounded · <id> · <name>" line of the
-# restart output has a name, stderr gives it as the name the session will
-# load.
+# Right after a restart, `claude agents` lists the session under its short id,
+# or under the "/rename <folder name>" prompt, until the /rename applies.
+# Until then, the agent view search and a send by name cannot find the
+# session by its name. So the script reads the list again every second for up
+# to RESUME_AGENT_NAME_WAIT seconds (default 15), until the list shows the
+# folder name. The Name line gives only a name that the list shows. A short id
+# or a prompt is reported as not loaded, never as a name. When the list does
+# not show the folder name after the wait, stderr names the folder name.
 #
 # The restart gives the session the folder name. When the list does not show
 # that name, the Rename line tells the user how to give it. The agent view
@@ -105,6 +104,20 @@
 # its command (claude stop for a live one, claude rm for an ended one; on
 # 2.1.302, claude rm deletes the job record and its worktree, and keeps the
 # transcript), and the Open line is left out.
+#
+# The caller can hold the folder too: /launch-agent binds the caller to a
+# folder whose session ended, and hints at /resume-agent. When the session
+# file of the caller (CLAUDE_CODE_SESSION_ID, or the first id of its job)
+# names the folder and the chosen session ended, a restart would make two
+# sessions in one folder. So the script stops with R009 before any restart:
+# stdout is empty, nothing restarts, and no session file changes. stderr
+# names both sessions and the two choices. No time rule replaces the check: a
+# /clear writes the session file again, so its age does not show when the
+# work started. A running, retired, or gone session restarts nothing, so it
+# keeps its behavior.
+#
+# R003 with no session other than the caller gives the next command of
+# ../issue-context/find-agent.sh, so this script and /find-agent agree.
 #
 # The script sends no prompt other than the /rename of a restart, and attaches
 # nothing. A caller sends its own prompt, and a person opens the session from
@@ -146,6 +159,7 @@
 #        failed, so the state of the session is unknown, R007 the session
 #        restarted in another directory than the one the script used, R008
 #        Claude Code deleted the transcript of the session, so nothing
+#        restarted, R009 this session holds the folder too, so nothing
 #        restarted
 
 set -euo pipefail
@@ -158,6 +172,7 @@ readonly ERR_RESTART="R005"
 readonly ERR_UNKNOWN="R006"
 readonly ERR_CWD="R007"
 readonly ERR_GONE="R008"
+readonly ERR_CALLER="R009"
 
 usage() {
   cat <<'EOF'
@@ -278,11 +293,34 @@ done <<LISTING
 $listing
 LISTING
 
-[ -n "$session_id" ] \
-  || die "$ERR_NO_SESSION" "no session other than this one has its working files in $folder_abs, so there is no session to resume; start one with /launch-agent"
+if [ -z "$session_id" ]; then
+  # find-agent.sh gives the advice, so /find-agent, /launch-agent, and this
+  # script never disagree. A failed call keeps the old advice.
+  no_next="$(FOLDER_SESSIONS_PROJECTS_DIR="$PROJECTS_DIR" FOLDER_SESSIONS_JOBS_DIR="$JOBS_DIR" "$_self_dir/../issue-context/find-agent.sh" "$folder_abs" 2>/dev/null | sed -n 's/^Next: //p')" || no_next=""
+  [ -n "$no_next" ] || no_next="start one with /launch-agent"
+  die "$ERR_NO_SESSION" "no session other than this one has its working files in $folder_abs, so there is no session to resume; next: $no_next"
+fi
 # The id reaches a command line and a jq filter, so it must be one plain token.
 [[ "$session_id" =~ ^[A-Za-z0-9_-]+$ ]] \
   || die "$ERR_NO_SESSION" "the session file for $folder_abs holds the session id '$session_id', which is not a valid id"
+
+# --- Stop when the caller holds the folder too ---
+# See the header: a restart would make two sessions in one folder, and the
+# caller is one of them. No time rule replaces this check, because a /clear
+# writes the session file again.
+if [ "$list_state" = "ended" ]; then
+  caller_folder=""
+  # shellcheck disable=SC2034 # caller_reason is set through its name; any reason means no claim
+  caller_reason=""
+  if _issue_context_session_file_read caller_folder caller_reason \
+      && [ "$caller_folder" = "$folder_abs" ]; then
+    caller_short=""
+    _issue_context_job_first_id caller_short || caller_short=""
+    caller_short="${caller_short:0:8}"
+    [ -n "$caller_short" ] || caller_short="${CLAUDE_CODE_SESSION_ID:0:8}"
+    die "$ERR_CALLER" "this session, ${CLAUDE_CODE_SESSION_ID:-}, holds $folder_abs too, so a restart of session $session_id would make two sessions in one folder, each with half of the work; the script restarted nothing; choose one: (1) keep this session, and do nothing; (2) wake the earlier session: run /set-work-folder --clear in this session, then /resume-agent \"$folder_abs\" again, then claude stop $caller_short"
+  fi
+fi
 
 # continued_as <job id> — print the conversation id that the job record of
 # <job id> continues in, or nothing. The record is the job state of Claude
@@ -402,16 +440,15 @@ field() {
 }
 
 short_id="${job_id:-${session_id:0:8}}"
-# loaded <name> — 0 when <name> is a real name, not empty and not the short id.
+# loaded <name> — 0 when <name> is a real name: not empty, not the short id,
+# and not a prompt such as "/rename <folder name>".
 loaded() {
-  [ -n "$1" ] && [ "$1" != "$short_id" ]
+  [ -n "$1" ] && [ "$1" != "$short_id" ] && [ "${1#/}" = "$1" ]
 }
 
-read_list \
-  || die "$ERR_AGENTS" "claude agents --json failed, so the state of session $session_id is unknown; nothing was restarted"
+read_list || die "$ERR_AGENTS" "claude agents --json failed, so the state of session $session_id is unknown; nothing was restarted"
 entry="$(entry_of)"
 
-restart_name=""
 retired=0
 if [ "$list_state" = "running" ]; then
   action="already running"
@@ -439,17 +476,12 @@ else
       exit 1
       ;;
   esac
-  restart_name="$(printf '%s\n' "$restart_output" \
-    | sed -n 's/^backgrounded · [^ ]* · \(.*\)$/\1/p' | head -n 1)"
-  restart_name="${restart_name% (*}"
-  loaded "$restart_name" || restart_name=""
-
+  # The /rename prompt asks for the folder name, so the wait ends at that name.
   waited=0
   while :; do
-    read_list \
-      || die "$ERR_UNKNOWN" "claude --bg --resume $session_id ran, but claude agents --json then failed, so it is not known whether the session runs; do not run claude --bg --resume, because a resume of a running session starts a copy; run this skill again, which restarts nothing when the session is listed"
+    read_list || die "$ERR_UNKNOWN" "claude --bg --resume $session_id ran, but claude agents --json then failed, so it is not known whether the session runs; do not run claude --bg --resume, because a resume of a running session starts a copy; run this skill again, which restarts nothing when the session is listed"
     entry="$(entry_of)"
-    if [ -n "$entry" ] && loaded "$(field name)"; then
+    if [ -n "$entry" ] && [ "$(field name)" = "$folder_name" ]; then
       break
     fi
     [ "$waited" -lt "$NAME_WAIT" ] || break
@@ -482,8 +514,8 @@ listed_id="$(field id)"
 listed_session="$(field sessionId)"
 [ -z "$listed_session" ] || session_id="$listed_session"
 name="$(field name)"
-if ! loaded "$name" && [ -n "$restart_name" ]; then
-  echo "resume-agent: the restart named the session '$restart_name', but claude agents did not show that name within $NAME_WAIT seconds; run the skill again to read the name" >&2
+if [ "$action" = "restarted" ] && [ "$name" != "$folder_name" ]; then
+  echo "resume-agent: the restart asked for the name '$folder_name', but claude agents did not show that name within $NAME_WAIT seconds; run the skill again to read the name" >&2
 fi
 status="$(field status)"
 [ "$retired" -eq 0 ] || status="retired"

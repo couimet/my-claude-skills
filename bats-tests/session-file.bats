@@ -111,6 +111,14 @@ EOF
   [ "$output" = "./sessions" ]
 }
 
+@test "a settings path with no directory part puts the title records beside it" {
+  run env MY_CLAUDE_SKILLS_CONFIG="settings.json" bash -c \
+    'source "$1" 2>/dev/null; source "$2"; _issue_context_titles_dir' \
+    _ "$SETTINGS" "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" = "./session-titles" ]
+}
+
 # ============================================================================
 # The ordinary no-override case
 # ============================================================================

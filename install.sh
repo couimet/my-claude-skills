@@ -10,8 +10,9 @@
 #   install.sh --help
 #
 # The hook is skills/issue-context/session-hook.sh. It keeps the work folder
-# of a session after a /clear, and warns a resumed session when another
-# session holds its folder; docs/ADR/006-claude-code-hooks.md says why. The
+# of a session after a /clear, warns a resumed session when another session
+# holds its folder, and keeps the session name equal to its folder name at
+# each prompt; docs/ADR/006-claude-code-hooks.md says why. The
 # plugin ships the same hook in hooks/hooks.json, so this step is for a user
 # who installs with this script.
 #
@@ -107,7 +108,8 @@ write_settings() {
 print_hook_entry() {
   jq -n --arg cmd "$HOOK_COMMAND" '{hooks: {
     SessionStart: [{matcher: "clear|resume", hooks: [{type: "command", command: $cmd}]}],
-    SessionEnd: [{matcher: "clear", hooks: [{type: "command", command: $cmd}]}]}}' 2>/dev/null \
+    SessionEnd: [{matcher: "clear", hooks: [{type: "command", command: $cmd}]}],
+    UserPromptSubmit: [{hooks: [{type: "command", command: $cmd}]}]}}' 2>/dev/null \
     | sed 's/^/    /'
 }
 
@@ -268,14 +270,15 @@ if [ "$hooks_mode" = "skip" ]; then
 fi
 if ! command -v jq >/dev/null 2>&1; then
   echo "Claude Code hook: jq not found, so $SETTINGS was not changed. Install jq and run install.sh again, or add this entry by hand:"
-  echo "    {\"hooks\": {\"SessionStart\": [{\"matcher\": \"clear|resume\", \"hooks\": [{\"type\": \"command\", \"command\": \"$HOOK_COMMAND\"}]}], \"SessionEnd\": [{\"matcher\": \"clear\", \"hooks\": [{\"type\": \"command\", \"command\": \"$HOOK_COMMAND\"}]}]}}"
+  echo "    {\"hooks\": {\"SessionStart\": [{\"matcher\": \"clear|resume\", \"hooks\": [{\"type\": \"command\", \"command\": \"$HOOK_COMMAND\"}]}], \"SessionEnd\": [{\"matcher\": \"clear\", \"hooks\": [{\"type\": \"command\", \"command\": \"$HOOK_COMMAND\"}]}], \"UserPromptSubmit\": [{\"hooks\": [{\"type\": \"command\", \"command\": \"$HOOK_COMMAND\"}]}]}}"
   exit 0
 fi
 already_in=0
 if [ -e "$SETTINGS" ] && jq -e --arg cmd "$HOOK_COMMAND" "$HOOK_JQ_DEFS
     ([.hooks.SessionStart[]? | select(.matcher == \"clear|resume\") | .hooks[]? | select(.command == \$cmd)] | length == 1)
     and ([.hooks.SessionEnd[]? | select(.matcher == \"clear\") | .hooks[]? | select(.command == \$cmd)] | length == 1)
-    and ([.hooks[]?[]?.hooks[]? | select(ours)] | length == 2)" "$SETTINGS" >/dev/null 2>&1; then
+    and ([.hooks.UserPromptSubmit[]? | select(has(\"matcher\") | not) | .hooks[]? | select(.command == \$cmd)] | length == 1)
+    and ([.hooks[]?[]?.hooks[]? | select(ours)] | length == 3)" "$SETTINGS" >/dev/null 2>&1; then
   already_in=1
 fi
 # Check the path that the entry names, through the links, because that is the
@@ -297,7 +300,8 @@ if [ "$already_in" -eq 1 ]; then
 fi
 
 echo "Claude Code hook: the skills ship a hook that keeps the work folder of a session"
-echo "after /clear, and warns a resumed session when another session holds its folder."
+echo "after /clear, warns a resumed session when another session holds its folder, and"
+echo "keeps the session name equal to its folder name at each prompt."
 printf 'Add it to %s (a backup is kept)? [y/N] ' "$SETTINGS"
 answer=""
 # read fails at the end of input, also after an answer with no newline, and
@@ -319,6 +323,8 @@ write_settings '
   | .hooks.SessionStart = (((.hooks.SessionStart // []) | strip)
       + [{matcher: "clear|resume", hooks: [{type: "command", command: $cmd}]}])
   | .hooks.SessionEnd = (((.hooks.SessionEnd // []) | strip)
-      + [{matcher: "clear", hooks: [{type: "command", command: $cmd}]}])' \
+      + [{matcher: "clear", hooks: [{type: "command", command: $cmd}]}])
+  | .hooks.UserPromptSubmit = (((.hooks.UserPromptSubmit // []) | strip)
+      + [{hooks: [{type: "command", command: $cmd}]}])' \
   || { echo "Claude Code hook: not added. Fix $SETTINGS, or add the entry by hand:"; print_hook_entry; exit 0; }
 echo "Claude Code hook: added to $SETTINGS. Remove it with install.sh --uninstall-hooks."

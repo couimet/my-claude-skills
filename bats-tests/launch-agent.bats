@@ -1363,13 +1363,14 @@ holder() {
     "${HOLDER_ID:0:8}" "$HOLDER_ID" "$status" "$2" > "$AGENTS_FILE"
 }
 
-@test "held: a running session holds the folder → L007 with the /resume-agent command, and nothing is written" {
+@test "held: a running session holds the folder → L007 with the next command of find-agent.sh, and nothing is written" {
   holder idle 123
   run_here "$REPO" my-topic "a prompt"
   [ "$status" -eq 1 ]
   _contains "$output" "L007"
   _contains "$output" "session $HOLDER_ID (running, job ${HOLDER_ID:0:8}, name 'my-topic') holds $REPO/my-topic"
-  _contains "$output" "use /resume-agent $REPO/my-topic"
+  _contains "$output" "to continue that session: claude attach ${HOLDER_ID:0:8}"
+  _lacks "$output" "/resume-agent"
   _contains "$output" "launch again with --take-over"
   [ ! -e "$REPO/my-topic/prompt-new-agent-launch.txt" ]
   [ ! -e "$SESSIONS_DIR/$SESSION_ID--my-topic.json" ]
@@ -1381,6 +1382,15 @@ holder() {
   [ "$status" -eq 1 ]
   _contains "$output" "(retired"
   [ ! -e "$ARGS_FILE" ]
+}
+
+@test "held: a running session under another name holds the folder → L007 names /rename-agent in that session" {
+  holder idle 123
+  jq -c '.[0].name = "an-ai-title"' "$AGENTS_FILE" > "$AGENTS_FILE.tmp" && mv "$AGENTS_FILE.tmp" "$AGENTS_FILE"
+  run_here "$REPO" my-topic "a prompt"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L007"
+  _contains "$output" "to continue that session: open session ${HOLDER_ID:0:8} (claude attach ${HOLDER_ID:0:8}), and run /rename-agent in it"
 }
 
 @test "held: --take-over in the default mode passes the take-over to set-work-folder.sh" {
