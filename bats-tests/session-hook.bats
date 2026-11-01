@@ -456,6 +456,7 @@ TITLES_DIR_NAME="session-titles"
   [ "$(printf '%s' "$output" | jq -r .hookSpecificOutput.sessionTitle)" = "topic" ]
   [ "$(printf '%s' "$output" | jq -r '.hookSpecificOutput.additionalContext // empty')" = "" ]
   [ "$(jq -r .set "$TEST_TEMP_DIR/$TITLES_DIR_NAME/$NEW.json")" = "topic" ]
+  [ "$(jq -r .folder "$TEST_TEMP_DIR/$TITLES_DIR_NAME/$NEW.json")" = "$TOPIC" ]
 }
 
 @test "session-hook: a first prompt with no title gives the folder name" {
@@ -576,6 +577,60 @@ TITLES_DIR_NAME="session-titles"
   context="$(printf '%s' "$output" | jq -r .hookSpecificOutput.additionalContext)"
   [[ "$context" == *"session $OTHER"*"/find-agent $TOPIC"* ]] || false
   [[ "$context" == *$'reach either one:\n- session '"$OTHER"* ]] || false
+}
+
+@test "session-hook: a drift when claude agents --json fails gives one stderr line, no title, and no record" {
+  session_file "$OTHER" "$TOPIC"
+  session_file "$NEW" "$TOPIC"
+  title_transcript "$TEST_TEMP_DIR/t.jsonl" ai:an-ai-title
+  STUB_FAIL=live run_hook "$(prompt_event "$NEW" an-ai-title "$TEST_TEMP_DIR/t.jsonl")"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  [ "${#stderr_lines[@]}" -eq 1 ]
+  [[ "$stderr" == "session-hook: could not check whether another session holds $TOPIC ("*"), so the session name was not changed" ]] || false
+  [ ! -e "$TEST_TEMP_DIR/$TITLES_DIR_NAME/$NEW.json" ]
+}
+
+@test "session-hook: a folder title of an earlier folder gives the name of the new folder" {
+  mkdir -p "$TEST_TEMP_DIR/second"
+  session_file "$NEW" "$TEST_TEMP_DIR/second"
+  mkdir -p "$TEST_TEMP_DIR/$TITLES_DIR_NAME"
+  printf '{"set":"topic","folder":"%s"}' "$TOPIC" > "$TEST_TEMP_DIR/$TITLES_DIR_NAME/$NEW.json"
+  title_transcript "$TEST_TEMP_DIR/t.jsonl" custom:topic
+  run_hook "$(prompt_event "$NEW" topic "$TEST_TEMP_DIR/t.jsonl")"
+  [ "$status" -eq 0 ]
+  [ -z "$stderr" ]
+  [ "$(printf '%s' "$output" | jq -r .hookSpecificOutput.sessionTitle)" = "second" ]
+  [ "$(jq -c . "$TEST_TEMP_DIR/$TITLES_DIR_NAME/$NEW.json")" = "{\"set\":\"second\",\"folder\":\"$TEST_TEMP_DIR/second\"}" ]
+}
+
+@test "session-hook: a name that /rename-agent asked for is kept after a change of folder" {
+  mkdir -p "$TEST_TEMP_DIR/second"
+  session_file "$NEW" "$TEST_TEMP_DIR/second"
+  mkdir -p "$TEST_TEMP_DIR/$TITLES_DIR_NAME"
+  printf '{"set":"chosen"}' > "$TEST_TEMP_DIR/$TITLES_DIR_NAME/$NEW.json"
+  title_transcript "$TEST_TEMP_DIR/t.jsonl" custom:chosen
+  run_hook "$(prompt_event "$NEW" chosen "$TEST_TEMP_DIR/t.jsonl")"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  [ -z "$stderr" ]
+  [ ! -e "$CALLS" ]
+}
+
+@test "session-hook: a folder title of an earlier folder while another session holds the new folder warns and does not rename" {
+  mkdir -p "$TEST_TEMP_DIR/second"
+  session_file "$OTHER" "$TEST_TEMP_DIR/second"
+  session_file "$NEW" "$TEST_TEMP_DIR/second"
+  printf '[%s]' "$(row "${OTHER:0:8}" "$OTHER" second idle 123)" > "$LIVE_FILE"
+  cp "$LIVE_FILE" "$ALL_FILE"
+  mkdir -p "$TEST_TEMP_DIR/$TITLES_DIR_NAME"
+  printf '{"set":"topic","folder":"%s"}' "$TOPIC" > "$TEST_TEMP_DIR/$TITLES_DIR_NAME/$NEW.json"
+  title_transcript "$TEST_TEMP_DIR/t.jsonl" custom:topic
+  run_hook "$(prompt_event "$NEW" topic "$TEST_TEMP_DIR/t.jsonl")"
+  [ "$status" -eq 0 ]
+  [ "$(printf '%s' "$output" | jq -r '.hookSpecificOutput.sessionTitle // empty')" = "" ]
+  context="$(printf '%s' "$output" | jq -r .hookSpecificOutput.additionalContext)"
+  [[ "$context" == "This session keeps the name 'topic' of its earlier work folder"*"session $OTHER"*"/find-agent $TEST_TEMP_DIR/second"* ]] || false
 }
 
 @test "session-hook: a /clear carries the title record to the new session id" {

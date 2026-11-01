@@ -257,13 +257,14 @@ if [ "$event" = "prompt" ]; then
   fi
   rec_field() { printf '%s' "$rec" | jq -r --arg k "$1" '.[$k] | strings'; }
 
-  # write_record <jq filter> <title> — apply <jq filter>, which reads <title>
-  # as $t, to the record, through a temporary file and a rename.
+  # write_record <jq filter> <title> [folder] — apply <jq filter>, which reads
+  # <title> as $t and [folder] as $f, to the record, through a temporary file
+  # and a rename.
   write_record() {
     local tmp
     mkdir -p "$titles" 2>/dev/null || return 1
     tmp="$(mktemp "$titles/.tmp-XXXXXX" 2>/dev/null)" || return 1
-    if printf '%s' "$rec" | jq --arg t "$2" "$1" > "$tmp" 2>/dev/null \
+    if printf '%s' "$rec" | jq --arg t "$2" --arg f "${3-}" "$1" > "$tmp" 2>/dev/null \
         && mv -f "$tmp" "$record" 2>/dev/null; then
       return 0
     fi
@@ -271,10 +272,13 @@ if [ "$event" = "prompt" ]; then
     return 1
   }
 
-  # set_title <title> — print the output that sets the title, and record it.
+  # set_title <title> [folder] — print the output that sets the title, and
+  # record it. A folder title records the folder that it names, so a later
+  # change of folder shows that the title is stale. A title that the user
+  # chose records no folder, so a change of folder keeps it.
   set_title() {
-    # shellcheck disable=SC2016 # a jq program: $t is a jq variable
-    write_record 'del(.wanted, .warned) | .set = $t' "$1" \
+    # shellcheck disable=SC2016 # a jq program: $t and $f are jq variables
+    write_record 'del(.wanted, .warned) | .set = $t | if $f == "" then del(.folder) else .folder = $f end' "$1" "${2-}" \
       || warn "could not write $record, so the title was not set"
     jq -n --arg t "$1" '{hookSpecificOutput: {hookEventName: "UserPromptSubmit", sessionTitle: $t}}' \
       || warn "could not write the session title"
@@ -297,18 +301,32 @@ if [ "$event" = "prompt" ]; then
   [ -z "$wanted" ] || set_title "$wanted"
   [ "$bound" -eq 1 ] || exit 0
   [ "$title" != "$folder_name" ] || exit 0
-  [ -z "$title" ] || [ "$title" != "$(rec_field set)" ] || exit 0
+  # A title that the hook set is still correct, unless it names an earlier
+  # folder: /set-work-folder then changed the folder of this session.
+  stale=0
+  if [ -n "$title" ] && [ "$title" = "$(rec_field set)" ]; then
+    set_folder="$(rec_field folder)"
+    { [ -n "$set_folder" ] && [ "$set_folder" != "$folder" ]; } || exit 0
+    stale=1
+  fi
 
   newest=""
   if [ -n "$transcript" ] && [ -f "$transcript" ]; then
     newest="$(grep -E '"type": ?"(ai|custom)-title"' "$transcript" 2>/dev/null | tail -n 1 | jq -r '.type | strings' 2>/dev/null)" || newest=""
   fi
 
-  if [ -z "$title" ] || [ "$newest" = "ai-title" ]; then
+  if [ -z "$title" ] || [ "$newest" = "ai-title" ] || [ "$stale" -eq 1 ]; then
     # A drift. Another holder would get the same name, so it warns instead.
+    # When the check fails, the title stays, and the next prompt checks again.
     holders=""
-    if [ -d "$folder" ] \
-        && check_out="$("$_self_dir/folder-sessions.sh" --others "$folder" 2>/dev/null)"; then
+    if [ -d "$folder" ]; then
+      check_rc=0
+      check_out="$("$_self_dir/folder-sessions.sh" --others "$folder" 2>&1)" || check_rc=$?
+      if [ "$check_rc" -ne 0 ]; then
+        check_why="${check_out##*$'\n'}"
+        check_why="${check_why#*error: }"
+        warn "could not check whether another session holds $folder (${check_why:-no reason given}), so the session name was not changed"
+      fi
       while IFS=$'\t' read -r h_sid h_job h_name h_state; do
         case "$h_state" in
           running | retired)
@@ -319,8 +337,10 @@ if [ "$event" = "prompt" ]; then
 $check_out
 HOLDERS
     fi
-    [ -n "$holders" ] || set_title "$folder_name"
-    warn_once "This session has a new name, '$title', in place of its folder name $folder_name. The hook did not give it the folder name back, because another session holds the work folder $folder of this session, and two sessions with one name make a send by name reach either one:"$'\n'"${holders}Give the user this command, which says what to do, and do not run it yourself: /find-agent $folder"
+    [ -n "$holders" ] || set_title "$folder_name" "$folder"
+    drift="has a new name, '$title', in place of its folder name $folder_name"
+    [ "$stale" -eq 0 ] || drift="keeps the name '$title' of its earlier work folder, in place of its folder name $folder_name"
+    warn_once "This session $drift. The hook did not give it the folder name back, because another session holds the work folder $folder of this session, and two sessions with one name make a send by name reach either one:"$'\n'"${holders}Give the user this command, which says what to do, and do not run it yourself: /find-agent $folder"
   fi
 
   check_rc=0
