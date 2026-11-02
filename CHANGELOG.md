@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.11.02
+
+### Added
+
+- `install.sh` prints `my-claude-skills version: <CalVer>@<sha>` before it links the skills, so you can see which version you installed. The stamp workflow writes the same value into `install.sh` as into the `version:` field of each skill. `--help` and `--uninstall-hooks` print no version line ([issues/310](https://github.com/couimet/my-claude-skills/issues/310))
+
 ## 2026.11.01
 
 ### Fixed

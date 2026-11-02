@@ -35,6 +35,11 @@
 # run from any checkout.
 set -euo pipefail
 
+# The stamped CalVer version of this checkout. The Stamp Skills workflow
+# replaces this value on each push to main, with the value it writes into the
+# version: field of each SKILL.md. Do not edit it by hand.
+VERSION="2026.11.01@49652f9"
+
 usage() {
   cat <<'EOF'
 Usage: install.sh [--no-hooks | --uninstall-hooks]
@@ -152,15 +157,16 @@ fi
 
 REPO_DIR="$script_dir/skills"
 
-# When invoked from a linked git worktree, resolve to the main checkout's
-# skills/ directory instead so global symlinks survive worktree removal.
-# git-common-dir is the shared .git directory; its parent is the main
-# checkout root in all worktree configurations.
-if git_common="$(git rev-parse --git-common-dir 2>/dev/null)"; then
-  [[ "$git_common" == /* ]] || git_common="$PWD/$git_common"
+# Resolve the main checkout of the repository that holds this script, so the
+# links and the printed VERSION come from the same checkout. The query runs in
+# script_dir, not in the PWD of the caller: an absolute-path run from inside
+# another repository must still link this checkout. git-common-dir is the
+# shared .git directory; its parent is the main checkout root.
+if git_common="$(git -C "$script_dir" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"; then
   REPO_DIR="$(cd "$(dirname "$git_common")" && pwd -P)/skills"
 fi
 
+echo "my-claude-skills version: $VERSION"
 echo "Installing skills from $REPO_DIR → $SKILLS_DIR"
 
 mkdir -p "$SKILLS_DIR"

@@ -17,7 +17,7 @@ Beyond `skills/` (the core product), these top-level files and directories matte
 | `Makefile`                | Includes `versions.mk` to pin linter versions matching CI. See Development Commands below.                                                                                                                                                                                  |
 | `demo/`                   | Static site generator (`generate.py`, `templates/`, `static/`) for the project homepage. Also contains `real-life/` — actual workflow artifacts from past issues, used as reference examples in README.                                                                     |
 | `docs/ADR/`               | Architecture Decision Records. Read these to understand design rationale for skill extension hooks and other structural choices.                                                                                                                                            |
-| `scripts/stamp-skills.sh` | Called by `make stamp`. Stamps `version:` into every `skills/*/SKILL.md` front matter. CI-only — never run locally.                                                                                                                                                         |
+| `scripts/stamp-skills.sh` | Called by `make stamp`. Stamps `version:` into every `skills/*/SKILL.md` front matter, and the same value into the `VERSION="..."` line of `install.sh`. CI-only — never run locally.                                                                                       |
 
 ## Development Commands
 
@@ -25,15 +25,15 @@ Run all commands from the project root.
 
 On a fresh clone, run `npm install` before `make lint` or `make check` — it installs `@couimet/markdownlint-config`, the shared config that `.markdownlint-cli2.jsonc` extends, and the pinned `markdownlint-cli2` binary that the `lint-md` recipes call.
 
-| Command                                             | What it does                                                                                                                                                             |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `make check`                                        | Run lint + test — the full gate CI mirrors (default target)                                                                                                              |
-| `make lint`                                         | Verify prerequisites, then run `lint-md` + `fmt-check` + `lint-sh` (markdownlint, Prettier `--check`, shellcheck)                                                        |
-| `make lint-fix`                                     | Verify prerequisites, then run `lint-md-fix` + `format` (auto-fix markdownlint, apply Prettier)                                                                          |
-| `make lint-md` / `lint-sh` / `fmt-check` / `format` | Individual tool runs (markdownlint, shellcheck, Prettier check, Prettier write)                                                                                          |
-| `make test`                                         | `bats bats-tests/` — run the bats test suite                                                                                                                             |
-| `make install-prereqs`                              | Verify node, bats, and shellcheck are installed; print install hints for any missing tool                                                                                |
-| `make stamp`                                        | Stamp `version: <CalVer>@<SHA>` into all `skills/*/SKILL.md` front matter; reads CalVer from the latest `CHANGELOG.md` heading and SHA from `git rev-parse --short HEAD` |
+| Command                                             | What it does                                                                                                                                                                                                    |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `make check`                                        | Run lint + test — the full gate CI mirrors (default target)                                                                                                                                                     |
+| `make lint`                                         | Verify prerequisites, then run `lint-md` + `fmt-check` + `lint-sh` (markdownlint, Prettier `--check`, shellcheck)                                                                                               |
+| `make lint-fix`                                     | Verify prerequisites, then run `lint-md-fix` + `format` (auto-fix markdownlint, apply Prettier)                                                                                                                 |
+| `make lint-md` / `lint-sh` / `fmt-check` / `format` | Individual tool runs (markdownlint, shellcheck, Prettier check, Prettier write)                                                                                                                                 |
+| `make test`                                         | `bats bats-tests/` — run the bats test suite                                                                                                                                                                    |
+| `make install-prereqs`                              | Verify node, bats, and shellcheck are installed; print install hints for any missing tool                                                                                                                       |
+| `make stamp`                                        | Stamp `version: <CalVer>@<SHA>` into all `skills/*/SKILL.md` front matter and the `VERSION` line of `install.sh`; reads CalVer from the latest `CHANGELOG.md` heading and SHA from `git rev-parse --short HEAD` |
 
 **After every change:** run `make check` (lint + test) before committing. Both must pass.
 

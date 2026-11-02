@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# stamp-skills.sh — Stamps version: field into all skills/*/SKILL.md frontmatters.
+# stamp-skills.sh — Stamps version: field into all skills/*/SKILL.md frontmatters,
+# and the same value into the VERSION="..." line of install.sh.
 #
 # Usage: stamp-skills.sh [VERSION] [--dry-run]
 #
@@ -9,6 +10,10 @@
 #   skills/X/SKILL.md    old_ver → new_ver         updated in-place
 #   skills/X/SKILL.md    (new) → new_ver           first stamp
 #   WARNING: skills/X/SKILL.md  <reason>           malformed frontmatter, skipped
+#
+# Then one line for install.sh, in the same forms. install.sh must already
+# carry a VERSION="..." line: the script replaces that line and never inserts
+# one, so a missing line is a warning.
 #
 # Summary line:
 #   Stamped N file(s), M skipped (already at version), K warning(s)
@@ -189,6 +194,36 @@ PYEOF
   esac
 
 done < <(find skills -mindepth 2 -maxdepth 2 -name 'SKILL.md' | sort)
+
+# install.sh prints this value when it links the skills, so it gets the same
+# value as the SKILL.md files in the same run.
+INSTALL_FILE="install.sh"
+if [[ ! -f "$INSTALL_FILE" ]]; then
+  printf "  WARNING: %-44s %s\n" "$INSTALL_FILE" "file not found, skipped"
+  warnings=$((warnings + 1))
+else
+  old_ver="$(grep -m1 '^VERSION=".*"$' "$INSTALL_FILE" | sed -E 's/^VERSION="(.*)"$/\1/' || true)"
+  if ! grep -q '^VERSION=".*"$' "$INSTALL_FILE"; then
+    printf "  WARNING: %-44s %s\n" "$INSTALL_FILE" "no VERSION=\"...\" line, skipped"
+    warnings=$((warnings + 1))
+  elif [[ "$old_ver" == "$VERSION" ]]; then
+    printf "  %-52s (no change)\n" "$INSTALL_FILE"
+    skipped=$((skipped + 1))
+  else
+    if [[ "$DRY_RUN" != "true" ]]; then
+      tmp_file="$(mktemp)"
+      awk -v ver="$VERSION" '
+        !done && /^VERSION=".*"$/ { print "VERSION=\"" ver "\""; done=1; next }
+        { print }
+      ' "$INSTALL_FILE" > "$tmp_file"
+      # A redirect keeps the mode bits of install.sh, where mv would not.
+      cat "$tmp_file" > "$INSTALL_FILE"
+      rm -f "$tmp_file"
+    fi
+    printf "  %-52s %s → %s\n" "$INSTALL_FILE" "$old_ver" "$VERSION"
+    stamped=$((stamped + 1))
+  fi
+fi
 
 dry_run_label=""
 if [[ "$DRY_RUN" == "true" ]]; then
