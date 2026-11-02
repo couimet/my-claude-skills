@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.11.01
+
+### Fixed
+
+- `/find-agent`, `/resume-agent`, and `/launch-agent` now find a session that holds a work folder through the `CLAUDE_WORK_FOLDER` marker of its worktree, with no session file. `/resume-agent` restarts such a session in its worktree when it ended, in place of a refusal. With no session for the folder, the advice names both `/launch-agent` and `/set-work-folder` in a session that runs where the work runs. A `--take-over` of such a session refuses (S008, L008), because it cannot remove the claim of the marker. An ended interactive session is still not found: Claude Code does not list it ([issues/308](https://github.com/couimet/my-claude-skills/issues/308))
+
 ## 2026.10.28
 
 ### Added

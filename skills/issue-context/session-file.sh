@@ -39,6 +39,7 @@
 #   _issue_context_session_file_read <out-folder-var> <out-reason-var>
 #   _issue_context_session_file_matches <out-array-var>
 #   _issue_context_sessions_of_folder <folder>
+#   _issue_context_session_owners
 #   _issue_context_holder_files <folder> <session-id> <job-id>
 #
 # Reading never exits and never prints. Every failure returns non-zero and
@@ -291,6 +292,30 @@ _issue_context_sessions_of_folder() {
     _isf_all="${_isf_all}${_isf_line}"$'\n'
   done
   printf '%s' "$_isf_all" | LC_ALL=C sort -r
+}
+
+# _issue_context_session_owners — print one
+# "<session_id><TAB><job_session_id>" line for each session file, whatever
+# folder it names. folder-sessions.sh uses it for the tier order: a session
+# that has a session file gets its folder from that file, never from the
+# marker of its worktree. The token rules and the skip rules are the ones of
+# _issue_context_sessions_of_folder. Returns 1 when jq is missing or there is
+# no sessions directory.
+_issue_context_session_owners() {
+  local _isf_dir _isf_file
+
+  command -v jq >/dev/null 2>&1 || return 1
+  _isf_dir="$(_issue_context_sessions_dir)" || return 1
+  [ -d "$_isf_dir" ] || return 1
+
+  for _isf_file in "$_isf_dir"/*.json; do
+    [ -f "$_isf_file" ] || continue
+    jq -r ' # kcov-exclude-start
+      def token: type == "string" and test("^[A-Za-z0-9_-]+$");
+      select(type == "object" and (.session_id | token))
+      # kcov-exclude-end
+      | "\(.session_id)\t\(if (.job_session_id | token) then .job_session_id else "" end)"' "$_isf_file" 2>/dev/null || true
+  done
 }
 
 # _issue_context_holder_files <folder> <session-id> <job-id> — print the path

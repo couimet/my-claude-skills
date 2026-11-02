@@ -75,7 +75,11 @@
 # set-work-folder.sh --take-over: in the default mode this script runs it, and
 # in the --bg mode the child runs it as its first action, so a dispatch that
 # fails leaves the claim of the other session. Neither stops the other
-# session; stderr gives the claude stop command. A session that ended does not hold the folder, and it
+# session; stderr gives the claude stop command. A session that holds the
+# folder through the CLAUDE_WORK_FOLDER marker of its worktree has no session
+# file for the take-over to remove, so --take-over stops with L008 before
+# anything is written or dispatched: a refusal in the child of --bg would
+# reach nobody. A session that ended does not hold the folder, and it
 # keeps the /resume-agent hint. A gone session (Claude Code deleted its
 # transcript) does not hold the folder either, and gets no hint, because
 # /resume-agent stops on it with R008. The newest session that ended or is
@@ -123,7 +127,10 @@
 #
 # Exit codes:
 #   0  — this session was pointed at the folder, or --bg dispatched the agent
-#   1  — error (see stderr)
+#   1  — error (see stderr): L001 usage, L002 folder, L003 prompt,
+#        L004 dispatch, L005 here, L006 depth, L007 another session holds
+#        the folder, L008 --take-over of a session that holds the folder
+#        through the marker of its worktree
 
 set -euo pipefail
 
@@ -134,6 +141,7 @@ readonly ERR_DISPATCH="L004"
 readonly ERR_HERE="L005"
 readonly ERR_DEPTH="L006"
 readonly ERR_HELD="L007"
+readonly ERR_MARKER_HELD="L008"
 
 # The one fixed filename this script owns. A launch prompt is found by name
 # rather than by search, so the name does not vary and is not configurable.
@@ -447,6 +455,14 @@ if [ -d "$target" ] && held_abs="$({ cd "$target" && pwd -P; } 2>/dev/null)"; th
         h_next="$("$_self_dir/../issue-context/find-agent.sh" --others "$held_abs" 2>/dev/null | sed -n 's/^Next: //p')" || h_next=""
         [ -n "$h_next" ] || h_next="/resume-agent $held_abs"
         die "$ERR_HELD" "$h_label holds $held_abs, and two sessions in one folder each see half of the work; to continue that session: $h_next; to take the folder from it, launch again with --take-over"
+      fi
+      # A take-over removes session files; a holder with none holds the
+      # folder through the marker of its worktree. See the header.
+      h_owned="$(_issue_context_holder_files "$held_abs" "$h_sid" "$h_job")" || h_owned=""
+      if [ -z "$h_owned" ]; then
+        h_stop="close that session"
+        [ "$h_job" = "-" ] || h_stop="stop it with claude stop $h_job"
+        die "$ERR_MARKER_HELD" "$h_label holds $held_abs through the CLAUDE_WORK_FOLDER marker of its worktree, and a take-over cannot remove that claim; nothing was written or started; $h_stop, or change the marker of its worktree, then launch again"
       fi
       held_files+=("$h_sid	$h_job	$h_label")
     done <<HOLDERS

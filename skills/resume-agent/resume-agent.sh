@@ -254,11 +254,9 @@ folder_abs="$({ cd "$target" && pwd -P; } 2>/dev/null)" \
 folder_name="${folder_abs##*/}"
 
 # --- Find the session of the folder ---
-sessions_dir="$(_issue_context_sessions_dir)" \
-  || die "$ERR_NO_SESSION" "could not resolve the sessions directory from the settings path"
-
-[ -d "$sessions_dir" ] || die "$ERR_NO_SESSION" "no session has its working files in $folder_abs, so there is no session to resume; start one with /launch-agent"
-
+# No check of the sessions directory here: a session can hold the folder
+# through the marker of its worktree with no session file, so the list of
+# folder-sessions.sh decides.
 readonly PROJECTS_DIR="${RESUME_AGENT_PROJECTS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects}"
 readonly JOBS_DIR="${RESUME_AGENT_JOBS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/jobs}"
 

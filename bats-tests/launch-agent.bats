@@ -1422,6 +1422,44 @@ holder() {
   _contains "$output" "launch-agent: takeover dispatched for $REPO/my-topic from session $HOLDER_ID (running); it can still write to the folder until it stops: close that session"
 }
 
+# marker_holder — HOLDER_ID runs, with no session file, in a worktree whose
+# CLAUDE_WORK_FOLDER marker names $REPO/my-topic.
+marker_holder() {
+  local wt="$TEST_TEMP_DIR/holder-wt"
+  mkdir -p "$REPO/my-topic" "$wt"
+  git -C "$wt" init -q
+  printf '%s\n' "$REPO/my-topic" > "$wt/CLAUDE_WORK_FOLDER"
+  printf '[{"cwd":"%s","id":"%s","sessionId":"%s","name":"my-topic","status":"idle","pid":123,"kind":"background","state":"blocked","startedAt":1}]' \
+    "$wt" "${HOLDER_ID:0:8}" "$HOLDER_ID" > "$AGENTS_FILE"
+}
+
+@test "held: a session that holds the folder through its worktree marker → L007" {
+  marker_holder
+  run_here "$REPO" my-topic "a prompt"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L007"
+  _contains "$output" "session $HOLDER_ID (running, job ${HOLDER_ID:0:8}, name 'my-topic') holds $REPO/my-topic"
+}
+
+@test "held: --take-over of a session that holds the folder through its worktree marker → L008, and nothing is written" {
+  marker_holder
+  run_here "$REPO" --take-over my-topic "a prompt"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L008"
+  _contains "$output" "holds $REPO/my-topic through the CLAUDE_WORK_FOLDER marker of its worktree"
+  _contains "$output" "stop it with claude stop ${HOLDER_ID:0:8}, or change the marker of its worktree"
+  [ ! -e "$REPO/my-topic/prompt-new-agent-launch.txt" ]
+  [ ! -e "$SESSIONS_DIR/$SESSION_ID--my-topic.json" ]
+}
+
+@test "held: --bg --take-over of a marker holder → L008, and no agent starts" {
+  marker_holder
+  run_in "$REPO" --bg --take-over my-topic "a prompt"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L008"
+  [ ! -e "$ARGS_FILE" ]
+}
+
 @test "held: --bg --take-over with a failed dispatch → L004, and the other session keeps the folder" {
   holder idle 123
   run env -u CLAUDE_CODE_SESSION_ID \

@@ -29,7 +29,10 @@
 # enum, so a new case adds a value and no reader changes:
 #
 #   launch   no holder, or the newest holder is gone (its transcript is
-#            deleted): /launch-agent the folder
+#            deleted): /launch-agent the folder, or /set-work-folder
+#            the folder in a session that runs where the work runs,
+#            because --bg starts the session at the root of the
+#            repository of the folder, not in a worktree
 #   resume   the newest holder ended: /resume-agent the folder
 #   attach   the newest holder is retired: claude attach <job id>
 #   running  the newest holder runs under the folder name, or the current
@@ -201,7 +204,7 @@ if [ -n "$folder" ]; then
   folder_name="${folder_abs##*/}"
 
   verdict="launch"
-  next="/launch-agent \"$folder_abs\""
+  next="/launch-agent \"$folder_abs\", or /set-work-folder \"$folder_abs\" in a session that runs where the work runs"
   holders=""
   first=1
   while IFS=$'\t' read -r h_sid h_job h_name h_state; do
