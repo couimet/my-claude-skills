@@ -66,6 +66,49 @@ run_install() {
 }
 
 # ============================================================================
+# Version line: install.sh prints its stamped VERSION in link mode only.
+# ============================================================================
+
+# stamp_fake_install <version> — replace the VERSION line of the copy of
+# install.sh in the fake repo, so a test does not depend on the real stamp.
+stamp_fake_install() {
+  sed -i.bak -E "s/^VERSION=\".*\"$/VERSION=\"$1\"/" "$FAKE_REPO/install.sh"
+  rm -f "$FAKE_REPO/install.sh.bak"
+}
+
+@test "version: install.sh carries one stamped VERSION line in CalVer@SHA form" {
+  run grep -cE '^VERSION="[0-9]{4}\.[0-9]{2}\.[0-9]{2}(\.[0-9]+)?@[0-9a-f]{7,40}"$' "$SCRIPT"
+  [ "$output" = "1" ]
+}
+
+@test "version: a link run prints the version before the Installing line" {
+  stamp_fake_install "2030.01.02@abc1234"
+  run_install
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "my-claude-skills version: 2030.01.02@abc1234" ]
+  [[ "${lines[1]}" == "Installing skills from "* ]] || false
+}
+
+@test "version: --no-hooks prints the version line" {
+  stamp_fake_install "2030.01.02@abc1234"
+  run_install --no-hooks
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "my-claude-skills version: 2030.01.02@abc1234" ]
+}
+
+@test "version: --help prints no version line" {
+  run_install --help
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"my-claude-skills version:"* ]] || false
+}
+
+@test "version: --uninstall-hooks prints no version line" {
+  run_install --uninstall-hooks
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"my-claude-skills version:"* ]] || false
+}
+
+# ============================================================================
 # Dangling link for a skill that still exists: reclaimed, not fatal.
 #
 # Regression: `[ -e "$target" ]` is false for a dangling symlink, so control

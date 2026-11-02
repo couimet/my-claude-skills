@@ -579,10 +579,10 @@ npm install
 make lint    # markdownlint + Prettier (YAML/JSON) + shellcheck
 make test    # run the bats test suite
 make coverage # optional: run the bats suite under kcov and write a coverage/ report
-make stamp   # stamp all SKILL.md files with the current version (CalVer@SHA)
+make stamp   # stamp all SKILL.md files and install.sh with the current version (CalVer@SHA)
 ```
 
-CI runs the same checks on every PR, and a `coverage` job runs the bats suite under kcov and uploads the report to Codecov (see the badge above), which posts coverage comments and status checks on PRs. After each merge to main, the stamp workflow automatically updates the `version:` field in every `skills/*/SKILL.md` frontmatter with the current CalVer release and commit SHA.
+CI runs the same checks on every PR, and a `coverage` job runs the bats suite under kcov and uploads the report to Codecov (see the badge above), which posts coverage comments and status checks on PRs. After each merge to main, the stamp workflow automatically updates the `version:` field in every `skills/*/SKILL.md` frontmatter, and the `VERSION` line of `install.sh`, with the current CalVer release and commit SHA. `install.sh` prints that version when it links the skills.
 
 ## Versioning
 

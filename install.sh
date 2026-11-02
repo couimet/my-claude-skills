@@ -35,6 +35,11 @@
 # run from any checkout.
 set -euo pipefail
 
+# The stamped CalVer version of this checkout. The Stamp Skills workflow
+# replaces this value on each push to main, with the value it writes into the
+# version: field of each SKILL.md. Do not edit it by hand.
+VERSION="2026.11.01@49652f9"
+
 usage() {
   cat <<'EOF'
 Usage: install.sh [--no-hooks | --uninstall-hooks]
@@ -161,6 +166,7 @@ if git_common="$(git rev-parse --git-common-dir 2>/dev/null)"; then
   REPO_DIR="$(cd "$(dirname "$git_common")" && pwd -P)/skills"
 fi
 
+echo "my-claude-skills version: $VERSION"
 echo "Installing skills from $REPO_DIR → $SKILLS_DIR"
 
 mkdir -p "$SKILLS_DIR"
