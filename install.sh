@@ -157,12 +157,12 @@ fi
 
 REPO_DIR="$script_dir/skills"
 
-# When invoked from a linked git worktree, resolve to the main checkout's
-# skills/ directory instead so global symlinks survive worktree removal.
-# git-common-dir is the shared .git directory; its parent is the main
-# checkout root in all worktree configurations.
-if git_common="$(git rev-parse --git-common-dir 2>/dev/null)"; then
-  [[ "$git_common" == /* ]] || git_common="$PWD/$git_common"
+# Resolve the main checkout of the repository that holds this script, so the
+# links and the printed VERSION come from the same checkout. The query runs in
+# script_dir, not in the PWD of the caller: an absolute-path run from inside
+# another repository must still link this checkout. git-common-dir is the
+# shared .git directory; its parent is the main checkout root.
+if git_common="$(git -C "$script_dir" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"; then
   REPO_DIR="$(cd "$(dirname "$git_common")" && pwd -P)/skills"
 fi
 

@@ -96,6 +96,20 @@ stamp_fake_install() {
   [ "${lines[0]}" = "my-claude-skills version: 2030.01.02@abc1234" ]
 }
 
+@test "version: an absolute-path run from inside another repo links this checkout" {
+  stamp_fake_install "2030.01.02@abc1234"
+  OTHER_REPO="$TEST_TEMP_DIR/other"
+  mkdir -p "$OTHER_REPO/skills/gamma"
+  printf -- '---\nname: gamma\n---\n' > "$OTHER_REPO/skills/gamma/SKILL.md"
+  git -C "$OTHER_REPO" init -q
+  run env HOME="$FAKE_HOME" bash -c 'cd "$1" && exec "$2/install.sh" --no-hooks' _ "$OTHER_REPO" "$FAKE_REPO" < /dev/null
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "my-claude-skills version: 2030.01.02@abc1234" ]
+  [ "${lines[1]}" = "Installing skills from $FAKE_REPO/skills → $FAKE_HOME/.claude/skills" ]
+  [ "$(readlink "$FAKE_HOME/.claude/skills/alpha")" = "$FAKE_REPO/skills/alpha" ]
+  [ ! -e "$FAKE_HOME/.claude/skills/gamma" ]
+}
+
 @test "version: --help prints no version line" {
   run_install --help
   [ "$status" -eq 0 ]
