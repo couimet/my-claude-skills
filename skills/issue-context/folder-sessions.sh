@@ -18,11 +18,27 @@
 # so that no caller keeps its own copy of the rule. It reads and never
 # writes.
 #
-# A session claims a folder through its session file (session-file.sh). The
-# script reads each session file that names the folder, then joins it to
+# A session claims a folder in one of two tiers, in the order of
+# work-folder.sh:
+#
+#   session   its session file (session-file.sh) names the folder.
+#   worktree  it has no session file, and the CLAUDE_WORK_FOLDER marker
+#             (marker-file.sh) of the worktree of its cwd names the folder.
+#             A session file that names another folder wins over the marker.
+#             A marker in the mode form names no folder.
+#
+# The script reads each session file that names the folder, then joins it to
 # `claude agents --json` (the live list) and `claude agents --json --all`
 # (the live list and the ended jobs). It reads both lists, because --all
-# gives an ended job and a retired row the same fields.
+# gives an ended job and a retired row the same fields. The worktree tier
+# comes from the rows of both lists: the script reads the marker once for
+# each distinct cwd. One session gives one line, also when its session file
+# and its marker both name the folder.
+#
+# The --all list keeps the rows of ended background jobs only: an
+# interactive session leaves the list when it ends (checked on 2026-11-01).
+# So the worktree tier finds a running interactive session, but not an
+# ended one.
 #
 # A file joins to a job row by its job_session_id field, by the sessionId of
 # a row, or by the job id of a row: the 8-character `id`, which is the first 8
@@ -31,7 +47,9 @@
 # before and after a /clear, give one line. An interactive session has no
 # job id, so it joins by its sessionId only.
 #
-# Output (stdout): one line for each session, newest session file first:
+# Output (stdout): one line for each session, newest first. The time of a
+# session is the newest written_at of its session files, or the startedAt of
+# its row for a session that holds the folder through its marker:
 #
 #   <session id><TAB><job id><TAB><name><TAB><state>
 #
@@ -68,8 +86,9 @@
 # ${CLAUDE_CONFIG_DIR:-~/.claude}/jobs. A running or a retired session gets
 # no check, because no caller restarts it.
 #
-# No output means that no session claims the folder. The script then reads
-# no list at all.
+# No output means that no session claims the folder. The script reads both
+# lists also then, because only the rows show a session that holds the folder
+# through its marker.
 #
 # Exit codes:
 #   0  — the list is complete, possibly empty
@@ -108,6 +127,8 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_self_dir/issue-settings.sh"
 # shellcheck disable=SC1091 # sourced sibling; lint-sh runs shellcheck without -x
 source "$_self_dir/session-file.sh"
+# shellcheck disable=SC1091 # sourced sibling; lint-sh runs shellcheck without -x
+source "$_self_dir/marker-file.sh"
 
 die() {
   echo "folder-sessions $2 error: $3" >&2
@@ -147,18 +168,19 @@ folder="$(cd "$1" && pwd -P)" || die 1 "$ERR_FOLDER" "'$1' could not be resolved
 command -v jq >/dev/null 2>&1 \
   || die 2 "$ERR_NO_JQ" "jq not found; it is required to read the session files and the claude agents list"
 
-# No sessions directory means that no session claims any folder.
-files="$(_issue_context_sessions_of_folder "$folder")" || exit 0
-[ -n "$files" ] || exit 0
+# No sessions directory means that no session file claims any folder. A
+# session can still hold the folder through its marker.
+files="$(_issue_context_sessions_of_folder "$folder")" || files=""
+owners="$(_issue_context_session_owners)" || owners=""
 
 self_id=""
 self_first=""
 if [ "$others" -eq 1 ]; then
   self_id="${CLAUDE_CODE_SESSION_ID:-}"
   _issue_context_job_first_id self_first || self_first=""
-  # The files of the caller go first, so a folder that only the caller
-  # claims reads no list. The jq join below also leaves out a caller that
-  # only a row names.
+  # The files of the caller go first. The jq join below also leaves out a
+  # caller that only a row names, such as a caller that holds the folder
+  # through its marker.
   kept=""
   while IFS=$'\t' read -r f_written f_sid f_first; do
     [ -n "$f_sid" ] || continue
@@ -172,7 +194,6 @@ if [ "$others" -eq 1 ]; then
 $files
 FILES
   files="$kept"
-  [ -n "$files" ] || exit 0
 fi
 
 # read_list <out-var> [--all] — set <out-var> to the JSON array that
@@ -192,6 +213,34 @@ read_list live \
 read_list all --all \
   || die 2 "$ERR_AGENTS" "claude agents --json --all failed, so the state of the sessions of $folder is unknown"
 
+# marker_names_folder <cwd> — 0 when the marker of the worktree of <cwd> is
+# a path that resolves to the folder. A subshell, so the cd stays in it. A
+# cwd that no longer exists, a cwd outside git, and a mode marker give 1.
+marker_names_folder() {
+  (
+    cd "$1" 2>/dev/null || exit 1
+    m_folder=""
+    # shellcheck disable=SC2034 # m_reason is set through its name; any reason means no folder
+    m_reason=""
+    _issue_context_marker_read m_folder m_reason || exit 1
+    m_phys="$({ cd "$m_folder" && pwd -P; } 2>/dev/null)" || exit 1
+    [ "$m_phys" = "$folder" ]
+  )
+}
+
+# The cwd values whose marker names the folder, one JSON string each. Each
+# distinct cwd is read once, because many rows share one worktree.
+marker_cwds="[]"
+while IFS= read -r m_cwd; do
+  [ -n "$m_cwd" ] || continue
+  if marker_names_folder "$m_cwd"; then
+    marker_cwds="$(printf '%s' "$marker_cwds" | jq -c --arg c "$m_cwd" '. + [$c]')"
+  fi
+done <<CWDS
+$(jq -n -r --argjson live "$live" --argjson all "$all" \
+  '[($live[], $all[]) | .cwd | strings | select(startswith("/") and (test("[\n\r]") | not))] | unique[]')
+CWDS
+
 # The state rule needs a file test for the transcript, which jq cannot make,
 # so the jq program gives ended, and the loop after it gives gone. The list
 # is held first, so an H005 exit leaves stdout empty.
@@ -199,7 +248,13 @@ listing="$(printf '%s\n' "$files" | jq -R -n -r '
   # kcov-exclude-start
   def clean: tostring | gsub("[\t\n\r]"; " ");
   def jobid: if type == "string" and length >= 8 then .[0:8] else null end;
-  [inputs | split("\t") | select(length >= 2 and .[1] != "")
+  def epoch: try (sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601) catch 0;
+  def token: type == "string" and test("^[A-Za-z0-9_-]+$");
+  # The session ids and the job ids of all session files, whatever folder
+  # they name: a session in this set never holds through its marker.
+  ($owners | split("\n") | map(select(. != "") | split("\t")
+     | {sid: .[0], job: (((.[1] // "") | jobid) // (.[0] | jobid))})) as $own
+  | [inputs | split("\t") | select(length >= 2 and .[1] != "")
    | {written: .[0], sid: .[1], first: (if (.[2] // "") == "" then null else .[2] end)}]
   # The job of each file: its job_session_id first, then the row with its
   # sessionId (live before ended), then the job row whose id it starts with.
@@ -215,9 +270,25 @@ listing="$(printf '%s\n' "$files" | jq -R -n -r '
       if .groups[$f.key] then .groups[$f.key] += [$f]
       else .order += [$f.key] | .groups[$f.key] = [$f] end)
   | .groups as $g
-  | .order[] | $g[.] as $files
-  | ($files[0].job) as $job
-  | [$files[].sid] as $sids
+  | [.order[] | $g[.] as $files
+     | {job: $files[0].job, sids: [$files[].sid],
+        firsts: [$files[].first | select(. != null)],
+        t: ([$files[].written | epoch] | max // 0)}] as $by_file
+  # The worktree tier: a row whose cwd has a marker that names the folder,
+  # and whose session and job have no session file.
+  | [($live[], $all[])
+     | select((.cwd as $c | $mcwds | index($c)) != null and (.sessionId | token))
+     | (.id | jobid) as $job
+     | .sessionId as $sid
+     | select(([$own[] | select(.sid == $sid or ($job != null and .job == $job))]
+               | length) == 0)
+     | {key: (if $job then "job:" + $job else "sid:" + $sid end),
+        job: $job, sids: [$sid], firsts: [], t: ((.startedAt // 0) / 1000)}]
+    | unique_by(.key) | map(del(.key)) as $by_marker
+  | ($by_file + $by_marker) | sort_by(- .t) | .[]
+  | .job as $job
+  | .sids as $sids
+  | .firsts as $firsts
   | ((if $job then first($live[] | select(.id == $job))
       else first($live[] | select(.sessionId as $s | $sids | index($s))) end) // null) as $lrow
   | ((if $job then first($all[] | select(.id == $job))
@@ -231,7 +302,7 @@ listing="$(printf '%s\n' "$files" | jq -R -n -r '
      else "running" end) as $state
   | (if $state != "ended" then $lrow.sessionId
      elif $job then
-       (first($files[].first | select(. != null)) //
+       (first($firsts[]) //
         first($arow.sessionId | select(. != null and jobid == $job)) //
         first($sids[] | select(jobid == $job)) //
         $sids[0])
@@ -240,7 +311,7 @@ listing="$(printf '%s\n' "$files" | jq -R -n -r '
      (($lrow.name // $arow.name // "") | clean | if . == "" then "-" else . end), $state]
   | join("\t")
   # kcov-exclude-end
-' --argjson live "$live" --argjson all "$all" --arg self_id "$self_id" --arg self_job "${self_first:0:8}")"
+' --argjson live "$live" --argjson all "$all" --argjson mcwds "$marker_cwds" --arg owners "$owners" --arg self_id "$self_id" --arg self_job "${self_first:0:8}")"
 
 # has_transcript <session id> <job id> — 0 when the transcript of the
 # conversation that a resume loads exists. See the header.

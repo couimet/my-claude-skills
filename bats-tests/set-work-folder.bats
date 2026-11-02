@@ -812,6 +812,51 @@ set_folder_stub() {
   [[ "$stderr" == *"took $TOPIC from session $OTHER_ID (running) and removed its session file; it can still write to the folder until it stops: close that session"* ]] || false
 }
 
+# marker_holder <status|null> <pid|null> — OTHER_ID runs in a worktree whose
+# CLAUDE_WORK_FOLDER marker names TOPIC, and has no session file.
+marker_holder() {
+  local wt="$TEST_TEMP_DIR/other-wt" status="\"$1\""
+  [ "$1" != "null" ] || status="null"
+  mkdir -p "$wt"
+  git -C "$wt" init -q
+  printf '%s\n' "$TOPIC" > "$wt/CLAUDE_WORK_FOLDER"
+  printf '[{"cwd":"%s","id":"%s","sessionId":"%s","name":"other-work","status":%s,"pid":%s,"kind":"background","state":"blocked","startedAt":1}]' \
+    "$wt" "${OTHER_ID:0:8}" "$OTHER_ID" "$status" "$2" > "$LIVE_FILE"
+}
+
+@test "a folder that a session holds through its worktree marker is refused with S007" {
+  claude_stub
+  marker_holder idle 123
+  set_folder_stub "$TOPIC"
+  [ "$status" -eq 1 ]
+  [ "$(session_file_count)" -eq 0 ]
+  [[ "$stderr" == *"S007"*"session $OTHER_ID (running, job ${OTHER_ID:0:8}, name 'other-work') holds $TOPIC"* ]] || false
+}
+
+@test "--take-over of a session that holds the folder through its worktree marker → S008, and no file changes" {
+  claude_stub
+  marker_holder idle 123
+  set_folder_stub --take-over "$TOPIC"
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [ "$(session_file_count)" -eq 0 ]
+  [[ "$stderr" == *"S008"*"session $OTHER_ID (running, job ${OTHER_ID:0:8}, name 'other-work') holds $TOPIC through the CLAUDE_WORK_FOLDER marker of its worktree"* ]] || false
+  [[ "$stderr" == *"no file changed; stop it with claude stop ${OTHER_ID:0:8}, or change the marker of its worktree"* ]] || false
+  [[ "$stderr" != *"took"* ]] || false
+}
+
+@test "--take-over refuses with S008 before it removes the file of another holder" {
+  claude_stub
+  other_file "$OTHER_CLEARED"
+  marker_holder null null
+  jq -c --arg s "$OTHER_CLEARED" '. + [{"cwd":"/x","id":($s[0:8]),"sessionId":$s,"name":"b","status":"idle","pid":5,"kind":"background","state":"blocked","startedAt":1}]' \
+    "$LIVE_FILE" > "$LIVE_FILE.tmp" && mv "$LIVE_FILE.tmp" "$LIVE_FILE"
+  set_folder_stub --take-over "$TOPIC"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"S008"* ]] || false
+  [ -f "$SESSIONS_DIR/$OTHER_CLEARED--other.json" ]
+}
+
 @test "--take-over of a folder that nobody else holds is a plain claim" {
   claude_stub
   set_folder_stub --take-over "$TOPIC"

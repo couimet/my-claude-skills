@@ -41,7 +41,11 @@
 # name can reach either one. --take-over claims the folder anyway. It removes
 # the session files of the other session, says so on stderr, and prints the
 # claude stop command for it. It does not stop that session, because a stop
-# can cut a turn in progress: the user decides. A session that ended does not
+# can cut a turn in progress: the user decides. A session that holds the
+# folder through the CLAUDE_WORK_FOLDER marker of its worktree has no session
+# file to remove, so --take-over stops with S008 before it changes any file:
+# the marker belongs to another worktree, and the user stops that session or
+# changes that marker. A session that ended does not
 # hold the folder. When the check cannot run (no jq, no claude command, or a
 # failed `claude agents --json`), the claim goes on and one stderr line says
 # so: a refusal would leave the session with no folder, and its working
@@ -70,7 +74,8 @@
 #   0  — success
 #   1  — error (see stderr): S001 usage, S002 no session, S003 folder, S004
 #        no jq, S005 write, S006 marker mode, S007 another session holds the
-#        folder
+#        folder, S008 --take-over of a session that holds the folder through
+#        the marker of its worktree
 
 set -euo pipefail
 
@@ -81,6 +86,7 @@ readonly ERR_NO_JQ="S004"
 readonly ERR_WRITE="S005"
 readonly ERR_MODE="S006"
 readonly ERR_HELD="S007"
+readonly ERR_MARKER_HELD="S008"
 
 usage() {
   cat <<'EOF'
@@ -412,14 +418,38 @@ $check_out
 HOLDERS
 fi
 
+# h_label_of <sid> <job> <name> <state> — the words that name a holder.
+h_label_of() {
+  local label="session $1 ($4"
+  [ "$2" = "-" ] || label="$label, job $2"
+  [ "$3" = "-" ] || label="$label, name '$3'"
+  printf '%s)' "$label"
+}
+
+# A take-over removes session files. A holder with none holds the folder
+# through the marker of its worktree, and a take-over cannot remove that
+# claim, so the check runs for each holder before any file changes.
+if [ "$take_over" -eq 1 ]; then
+  for holder in ${holders[@]+"${holders[@]}"}; do
+    IFS=$'\t' read -r h_sid h_job h_name h_state <<HOLDER
+$holder
+HOLDER
+    h_label="$(h_label_of "$h_sid" "$h_job" "$h_name" "$h_state")"
+    h_files="$(_issue_context_holder_files "$folder_phys" "$h_sid" "$h_job")" \
+      || h_files=""
+    if [ -z "$h_files" ]; then
+      h_stop="close that session"
+      [ "$h_job" = "-" ] || h_stop="stop it with claude stop $h_job"
+      die "$ERR_MARKER_HELD" "$h_label holds $folder_phys through the CLAUDE_WORK_FOLDER marker of its worktree, and a take-over cannot remove that claim; no file changed; $h_stop, or change the marker of its worktree, then run this again"
+    fi
+  done
+fi
+
 for holder in ${holders[@]+"${holders[@]}"}; do
   IFS=$'\t' read -r h_sid h_job h_name h_state <<HOLDER
 $holder
 HOLDER
-  h_label="session $h_sid ($h_state"
-  [ "$h_job" = "-" ] || h_label="$h_label, job $h_job"
-  [ "$h_name" = "-" ] || h_label="$h_label, name '$h_name'"
-  h_label="$h_label)"
+  h_label="$(h_label_of "$h_sid" "$h_job" "$h_name" "$h_state")"
   if [ "$take_over" -eq 0 ]; then
     die "$ERR_HELD" "$h_label holds $folder_phys, and two sessions in one folder each see half of the work; to continue that session, use /resume-agent $folder_phys; to take the folder from it, run set-work-folder.sh --take-over $folder_phys"
   fi

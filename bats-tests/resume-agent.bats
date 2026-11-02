@@ -629,10 +629,31 @@ cleared_job_without_first_transcript() {
   [[ "$stderr" == *"not inside a git repository"* ]] || false
 }
 
-@test "no session file for the folder → R003" {
+@test "no session file for the folder → R003, and next names /launch-agent and /set-work-folder" {
   run_resume "" my-topic
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"R003"* ]] || false
+  [[ "$stderr" == *"R003"*"next: /launch-agent \"$REPO/my-topic\", or /set-work-folder \"$REPO/my-topic\" in a session that runs where the work runs"* ]] || false
+}
+
+@test "no sessions directory and no holder → R003" {
+  rm -rf "$SESSIONS_DIR"
+  run_resume "" my-topic
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"R003"*"no session other than this one"* ]] || false
+}
+
+@test "an ended session with no session file, in a worktree whose marker names the folder, restarts in the worktree" {
+  rm -rf "$SESSIONS_DIR"
+  local wt="$TEST_TEMP_DIR/wt"
+  mkdir -p "$wt"
+  git -C "$wt" init -q
+  printf '%s\n' "$REPO/my-topic" > "$wt/CLAUDE_WORK_FOLDER"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic blocked idle null "$wt")" > "$AGENTS_ALL_FILE"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle 99897 "$wt")" > "$AGENTS_AFTER"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" my-topic
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Session: $TOPIC_SESSION"*"Action: restarted"* ]] || false
+  [ "$(cat "$RESUME_CWD")" = "$wt" ]
 }
 
 @test "claude agents --json fails → R004, and nothing restarts" {

@@ -88,14 +88,23 @@ job_record() {
   fi
 }
 
-# row <job-id|null> <session-id> <name> <status|null> <pid|null> [kind] — one
-# row of claude agents --json, with the keys of a real run.
+# row <job-id|null> <session-id> <name> <status|null> <pid|null> [kind] [cwd]
+# [startedAt] — one row of claude agents --json, with the keys of a real
+# run. startedAt is in milliseconds, as in a real run.
 row() {
   local id="\"$1\"" status="\"$4\""
   [ "$1" != "null" ] || id="null"
   [ "$4" != "null" ] || status="null"
-  printf '{"cwd":"/x","id":%s,"kind":"%s","name":"%s","pid":%s,"sessionId":"%s","startedAt":1,"state":"blocked","status":%s,"waitingFor":null}' \
-    "$id" "${6:-background}" "$3" "$5" "$2" "$status"
+  printf '{"cwd":"%s","id":%s,"kind":"%s","name":"%s","pid":%s,"sessionId":"%s","startedAt":%s,"state":"blocked","status":%s,"waitingFor":null}' \
+    "${7:-/x}" "$id" "${6:-background}" "$3" "$5" "$2" "${8:-1}" "$status"
+}
+
+# worktree <dir> <marker-line> — make a git repository at <dir> whose
+# CLAUDE_WORK_FOLDER marker holds <marker-line>.
+worktree() {
+  mkdir -p "$1"
+  git -C "$1" init -q
+  printf '%s\n' "$2" > "$1/CLAUDE_WORK_FOLDER"
 }
 
 # run_sessions [self-session] [job-dir] <args...> — run the script as the
@@ -304,11 +313,12 @@ run_sessions() {
   [ -z "$output" ]
 }
 
-@test "with no session file, the script reads no list" {
+@test "with no session file, the script still reads both lists" {
   run_sessions "" "" "$TOPIC"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
-  [ ! -e "$CALLS" ]
+  [ "$(cat "$CALLS")" = "agents --json
+agents --json --all" ]
 }
 
 @test "--others leaves out the session of the caller" {
@@ -369,6 +379,160 @@ run_sessions() {
   printf '{"version":1,"folder":"%s","session_id":"a b;c","written_at":"x"}' "$TOPIC" > "$SESSIONS_DIR/bad.json"
   run_sessions "" "" "$TOPIC"
   [ -z "$output" ]
+}
+
+# ============================================================================
+# The worktree tier: a marker that names the folder
+# ============================================================================
+
+@test "a running session with no session file, in a worktree whose marker names the folder, is listed" {
+  worktree "$TEST_TEMP_DIR/wt" "$TOPIC"
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic idle 123 background "$TEST_TEMP_DIR/wt")" > "$LIVE_FILE"
+  cp "$LIVE_FILE" "$ALL_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$FIRST	${FIRST:0:8}	topic	running" ]
+}
+
+@test "a marker holder in a subdirectory of the worktree is listed" {
+  worktree "$TEST_TEMP_DIR/wt" "$TOPIC"
+  mkdir -p "$TEST_TEMP_DIR/wt/sub"
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic idle 123 background "$TEST_TEMP_DIR/wt/sub")" > "$LIVE_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$output" = "$FIRST	${FIRST:0:8}	topic	running" ]
+}
+
+@test "a retired marker holder is retired" {
+  worktree "$TEST_TEMP_DIR/wt" "$TOPIC"
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic null null background "$TEST_TEMP_DIR/wt")" > "$LIVE_FILE"
+  cp "$LIVE_FILE" "$ALL_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$output" = "$FIRST	${FIRST:0:8}	topic	retired" ]
+}
+
+@test "an ended marker holder with a transcript is ended" {
+  worktree "$TEST_TEMP_DIR/wt" "$TOPIC"
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic null null background "$TEST_TEMP_DIR/wt")" > "$ALL_FILE"
+  transcript "$FIRST"
+  run_sessions "" "" "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$FIRST	${FIRST:0:8}	topic	ended" ]
+}
+
+@test "an ended marker holder with no transcript is gone" {
+  worktree "$TEST_TEMP_DIR/wt" "$TOPIC"
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic null null background "$TEST_TEMP_DIR/wt")" > "$ALL_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$output" = "$FIRST	${FIRST:0:8}	topic	gone" ]
+}
+
+@test "a running interactive marker holder is listed by its session id" {
+  worktree "$TEST_TEMP_DIR/wt" "$TOPIC"
+  printf '[%s]' "$(row null "$FIRST" topic idle 123 interactive "$TEST_TEMP_DIR/wt")" > "$LIVE_FILE"
+  cp "$LIVE_FILE" "$ALL_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$output" = "$FIRST	-	topic	running" ]
+}
+
+@test "a marker with a ~/ path that resolves to the folder names it" {
+  local home="$TEST_TEMP_DIR/home"
+  mkdir -p "$home/t"
+  worktree "$TEST_TEMP_DIR/wt" "~/t"
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" t idle 1 background "$TEST_TEMP_DIR/wt")" > "$LIVE_FILE"
+  run --separate-stderr env -u CLAUDE_CODE_SESSION_ID -u CLAUDE_JOB_DIR HOME="$home" \
+    PATH="$BIN:$PATH" MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    FOLDER_SESSIONS_PROJECTS_DIR="$PROJECTS_DIR" FOLDER_SESSIONS_JOBS_DIR="$JOBS_DIR" \
+    "$SCRIPT" "$home/t"
+  [ "$output" = "$FIRST	${FIRST:0:8}	t	running" ]
+}
+
+@test "a session whose session file names another folder is not listed for the folder of its marker" {
+  mkdir -p "$TEST_TEMP_DIR/elsewhere"
+  worktree "$TEST_TEMP_DIR/wt" "$TOPIC"
+  session_file "$FIRST" 2026-10-13T10:00:00Z "" "$TEST_TEMP_DIR/elsewhere"
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic idle 1 background "$TEST_TEMP_DIR/wt")" > "$LIVE_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "a job whose session file after /clear names another folder is not listed for its marker" {
+  mkdir -p "$TEST_TEMP_DIR/elsewhere"
+  worktree "$TEST_TEMP_DIR/wt" "$TOPIC"
+  session_file "$CLEARED" 2026-10-13T10:00:00Z "$FIRST" "$TEST_TEMP_DIR/elsewhere"
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic null null background "$TEST_TEMP_DIR/wt")" > "$ALL_FILE"
+  transcript "$FIRST"
+  run_sessions "" "" "$TOPIC"
+  [ -z "$output" ]
+}
+
+@test "a session whose session file and marker both name the folder gives one line" {
+  worktree "$TEST_TEMP_DIR/wt" "$TOPIC"
+  session_file "$FIRST" 2026-10-13T10:00:00Z
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic idle 1 background "$TEST_TEMP_DIR/wt")" > "$LIVE_FILE"
+  cp "$LIVE_FILE" "$ALL_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$output" = "$FIRST	${FIRST:0:8}	topic	running" ]
+}
+
+@test "a marker in the mode form gives no holder" {
+  worktree "$TEST_TEMP_DIR/wt" '{"mode": "require-override"}'
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic idle 1 background "$TEST_TEMP_DIR/wt")" > "$LIVE_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "a marker that names another folder gives no holder" {
+  mkdir -p "$TEST_TEMP_DIR/elsewhere"
+  worktree "$TEST_TEMP_DIR/wt" "$TEST_TEMP_DIR/elsewhere"
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic idle 1 background "$TEST_TEMP_DIR/wt")" > "$LIVE_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ -z "$output" ]
+}
+
+@test "a row whose cwd no longer exists gives no holder" {
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic null null background "$TEST_TEMP_DIR/removed")" > "$ALL_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "a marker holder orders among the file holders by its startedAt" {
+  worktree "$TEST_TEMP_DIR/wt" "$TOPIC"
+  session_file "$OTHER" 2026-10-13T10:00:00Z
+  # 1791972000000 ms is 2026-10-14T10:00:00Z: after the session file.
+  printf '[%s,%s]' "$(row "${OTHER:0:8}" "$OTHER" b idle 2)" \
+    "$(row "${FIRST:0:8}" "$FIRST" a idle 1 background "$TEST_TEMP_DIR/wt" 1791972000000)" > "$LIVE_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "${lines[0]}" = "$FIRST	${FIRST:0:8}	a	running" ]
+  [ "${lines[1]}" = "$OTHER	${OTHER:0:8}	b	running" ]
+}
+
+@test "a marker holder that started before the newest session file comes after it" {
+  worktree "$TEST_TEMP_DIR/wt" "$TOPIC"
+  session_file "$OTHER" 2026-10-13T10:00:00Z
+  printf '[%s,%s]' "$(row "${OTHER:0:8}" "$OTHER" b idle 2)" \
+    "$(row "${FIRST:0:8}" "$FIRST" a idle 1 background "$TEST_TEMP_DIR/wt" 1000)" > "$LIVE_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "${lines[0]}" = "$OTHER	${OTHER:0:8}	b	running" ]
+  [ "${lines[1]}" = "$FIRST	${FIRST:0:8}	a	running" ]
+}
+
+@test "--others leaves out the caller that holds the folder through its marker" {
+  worktree "$TEST_TEMP_DIR/wt" "$TOPIC"
+  printf '[%s,%s]' "$(row "${SELF:0:8}" "$SELF" me idle 1 background "$TEST_TEMP_DIR/wt")" \
+    "$(row "${FIRST:0:8}" "$FIRST" topic idle 2 background "$TEST_TEMP_DIR/wt")" > "$LIVE_FILE"
+  run_sessions "$SELF" "" --others "$TOPIC"
+  [ "$output" = "$FIRST	${FIRST:0:8}	topic	running" ]
+}
+
+@test "with no sessions directory, a marker holder is still listed" {
+  rm -rf "$SESSIONS_DIR"
+  worktree "$TEST_TEMP_DIR/wt" "$TOPIC"
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic idle 1 background "$TEST_TEMP_DIR/wt")" > "$LIVE_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$output" = "$FIRST	${FIRST:0:8}	topic	running" ]
 }
 
 # ============================================================================

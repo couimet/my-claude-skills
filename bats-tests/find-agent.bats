@@ -66,13 +66,13 @@ transcript() {
   printf '{"type":"user","cwd":"/x","sessionId":"%s"}\n' "$1" > "$PROJECTS_DIR/-proj/$1.jsonl"
 }
 
-# row <session-id> <name> <status|null> <pid|null> [kind] — one row of
-# claude agents --json, with the keys of a real run.
+# row <session-id> <name> <status|null> <pid|null> [kind] [cwd] — one row
+# of claude agents --json, with the keys of a real run.
 row() {
   local status="\"$3\""
   [ "$3" != "null" ] || status="null"
-  printf '{"cwd":"/x","id":"%s","kind":"%s","name":"%s","pid":%s,"sessionId":"%s","startedAt":1,"state":"blocked","status":%s}' \
-    "${1:0:8}" "${5:-background}" "$2" "$4" "$1" "$status"
+  printf '{"cwd":"%s","id":"%s","kind":"%s","name":"%s","pid":%s,"sessionId":"%s","startedAt":1,"state":"blocked","status":%s}' \
+    "${6:-/x}" "${1:0:8}" "${5:-background}" "$2" "$4" "$1" "$status"
 }
 
 # run_find [self-session] <args...> — run the script in a clean environment.
@@ -100,7 +100,7 @@ only_list_reads() {
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "Verdict: launch" ]
   [ "${lines[1]}" = "Folder: $ROOT/my-topic" ]
-  [ "${lines[2]}" = "Next: /launch-agent \"$ROOT/my-topic\"" ]
+  [ "${lines[2]}" = "Next: /launch-agent \"$ROOT/my-topic\", or /set-work-folder \"$ROOT/my-topic\" in a session that runs where the work runs" ]
   [ "${#lines[@]}" -eq 3 ]
 }
 
@@ -109,7 +109,7 @@ only_list_reads() {
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "Verdict: launch" ]
   [ "${lines[1]}" = "Folder: $ROOT/new-topic" ]
-  [ "${lines[2]}" = "Next: /launch-agent \"$ROOT/new-topic\"" ]
+  [ "${lines[2]}" = "Next: /launch-agent \"$ROOT/new-topic\", or /set-work-folder \"$ROOT/new-topic\" in a session that runs where the work runs" ]
 }
 
 @test "find-agent: an ended holder gives resume" {
@@ -122,13 +122,26 @@ only_list_reads() {
   [ "${lines[3]}" = "Next: /resume-agent \"$ROOT/my-topic\"" ]
 }
 
+@test "find-agent: an ended holder with no session file, in a worktree whose marker names the folder, gives resume" {
+  mkdir -p "$TEST_TEMP_DIR/wt"
+  git -C "$TEST_TEMP_DIR/wt" init -q
+  printf '%s\n' "$ROOT/my-topic" > "$TEST_TEMP_DIR/wt/CLAUDE_WORK_FOLDER"
+  printf '[%s]' "$(row "$TOPIC_SESSION" my-topic null null background "$TEST_TEMP_DIR/wt")" > "$ALL_FILE"
+  transcript "$TOPIC_SESSION"
+  run_find "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Verdict: resume" ]
+  [ "${lines[2]}" = "Holder: $TOPIC_SESSION ${TOPIC_SESSION:0:8} ended other my-topic" ]
+  [ "${lines[3]}" = "Next: /resume-agent \"$ROOT/my-topic\"" ]
+}
+
 @test "find-agent: a gone holder gives launch" {
   session_file "$TOPIC_SESSION" "$ROOT/my-topic" "2026-10-13T10:00:00Z"
   run_find "$SELF_SESSION" my-topic
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "Verdict: launch" ]
   [ "${lines[2]}" = "Holder: $TOPIC_SESSION - gone other -" ]
-  [ "${lines[3]}" = "Next: /launch-agent \"$ROOT/my-topic\"" ]
+  [ "${lines[3]}" = "Next: /launch-agent \"$ROOT/my-topic\", or /set-work-folder \"$ROOT/my-topic\" in a session that runs where the work runs" ]
 }
 
 @test "find-agent: a running holder with the folder name gives running" {
