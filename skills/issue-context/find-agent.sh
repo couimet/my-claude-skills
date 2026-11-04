@@ -39,9 +39,13 @@
 #            session runs under the name of its folder
 #   rename   the newest holder, or the current session, runs under another
 #            name: /rename-agent in that session
-#   moved    the current session runs under the folder name of another
-#            existing folder under the topic root: /launch-agent that folder,
-#            or /rename-agent to keep the bound folder
+#   moved    for the current session: it runs under the folder name of
+#            another existing folder under the topic root: /launch-agent
+#            that folder, or /rename-agent to keep the bound folder. For a
+#            folder: each holder moved to another folder (state moved of
+#            folder-sessions.sh), so none holds it: /launch-agent the folder.
+#            A moved holder never decides the verdict when another holder
+#            is listed.
 #   unbound  the current session has no session file
 #
 # A slug whose name is an existing folder decides moved, as /launch-agent
@@ -207,6 +211,7 @@ if [ -n "$folder" ]; then
   next="/launch-agent \"$folder_abs\", or /set-work-folder \"$folder_abs\" in a session that runs where the work runs"
   holders=""
   first=1
+  moved_seen=0
   while IFS=$'\t' read -r h_sid h_job h_name h_state; do
     [ -n "$h_sid" ] || continue
     who="other"
@@ -215,6 +220,11 @@ if [ -n "$folder" ]; then
       who="this"
     fi
     holders="${holders}Holder: $h_sid $h_job $h_state $who $h_name"$'\n'
+    # A moved job does not hold the folder. See the header.
+    if [ "$h_state" = "moved" ]; then
+      moved_seen=1
+      continue
+    fi
     [ "$first" -eq 1 ] || continue
     first=0
     short="$h_job"
@@ -253,6 +263,10 @@ if [ -n "$folder" ]; then
   done <<LISTING
 $listing
 LISTING
+  if [ "$first" -eq 1 ] && [ "$moved_seen" -eq 1 ]; then
+    verdict="moved"
+    next="/launch-agent \"$folder_abs\"; the session that used it before moved to another folder"
+  fi
 
   printf 'Verdict: %s\n' "$verdict"
   printf 'Folder: %s\n' "$folder_abs"

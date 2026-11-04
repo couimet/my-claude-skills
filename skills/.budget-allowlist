@@ -24,7 +24,7 @@
 # without losing the thing a caller reads them for. question-format holds a
 # worked template of about 1,150 bytes on its own.
 question-format 6210
-issue-context-internals 10796
+issue-context-internals 11153
 issue-draft-reader 6583
 
 # --- prose-style: five rules plus three reference tables --------------------
@@ -47,3 +47,6 @@ commit-msg 8566
 create-github-issue 9590
 create-jira-issue 15158
 fork-side-item 8029
+# resume-agent grew past its cap with the three options of issue 312
+# (--prompt-file, --clear, --attach), whose restart forms a caller must know.
+resume-agent 10542

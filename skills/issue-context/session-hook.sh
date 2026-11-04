@@ -10,7 +10,7 @@
 # Install: hooks/hooks.json names this script for the plugin, and install.sh
 # adds the same entry to ~/.claude/settings.json when the user agrees. Both
 # limit the calls with matchers: SessionEnd with the reason clear, and
-# SessionStart with the source clear or resume. UserPromptSubmit has no
+# SessionStart with the source startup, clear, or resume. UserPromptSubmit has no
 # matcher, so it runs at each prompt, and the cheap checks come first. The
 # script checks the event again, because a user can write the settings entry
 # by hand.
@@ -37,7 +37,13 @@
 #       When folder-sessions.sh shows another running or retired session in
 #       the work folder of this session, print additionalContext that names
 #       that session, tells this session not to write working files in the
-#       folder, and gives the /resume-agent command.
+#       folder, and gives the /resume-agent command. Else, the name check
+#       below.
+#   SessionStart, source startup, clear, or resume: the name check
+#       When the session runs under the name of another existing folder (the
+#       verdict moved of find-agent.sh --check), print additionalContext with
+#       that line, before the first prompt and the first write. A /clear runs it after it sets the
+#       folder. A session with no session file gets nothing.
 #   UserPromptSubmit
 #       Keep the session title equal to the folder name of the work folder.
 #       The input holds the title as session_title, and the transcript at
@@ -98,6 +104,7 @@ parsed="$(printf '%s' "$input" | jq -r ' # kcov-exclude-line
     (if .hook_event_name == "SessionEnd" and .reason == "clear" then "end-clear"
      elif .hook_event_name == "SessionStart" and .source == "clear" then "start-clear"
      elif .hook_event_name == "SessionStart" and .source == "resume" then "start-resume"
+     elif .hook_event_name == "SessionStart" and .source == "startup" then "start-startup"
      elif .hook_event_name == "UserPromptSubmit" then "prompt"
      else "other" end)
     + "\t"
@@ -114,7 +121,7 @@ case "$parsed" in
 esac
 
 case "$event" in
-  end-clear | start-clear | start-resume | prompt) ;; # kcov-exclude-line
+  end-clear | start-clear | start-resume | start-startup | prompt) ;; # kcov-exclude-line
   other) exit 0 ;;
   *) warn "the input is not one JSON object, so the hook did nothing" ;;
 esac
@@ -177,6 +184,32 @@ if [ "$event" = "end-clear" ]; then
   exit 0
 fi
 
+# name_check — print the warning of find-agent.sh --check for this session,
+# or nothing. It warns for the verdict moved only: the session runs under the
+# name of another existing folder, so the bound folder is likely the wrong
+# one (issue 312). Each SessionStart (startup, clear, resume) runs it, so the
+# warning comes before the first prompt and the first write. The verdict
+# rename (no name yet, or an AI title) gets no warning here: the next prompt
+# gives the folder name, or warns once.
+name_check() {
+  local nc_out nc_rc=0
+  nc_out="$("$_self_dir/find-agent.sh" --check 2>/dev/null)" || nc_rc=$?
+  [ "$nc_rc" -eq 1 ] || return 0
+  case "$nc_out" in
+    moved:*) ;;
+    *) return 0 ;;
+  esac
+  printf '%s. Give the user these commands, and run none of them: the user decides.' "$nc_out"
+}
+
+# emit_start <context> — print the SessionStart output that gives <context>
+# to the session.
+emit_start() {
+  jq -n --arg context "$1" \
+    '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $context}}' \
+    || warn "could not write the warning of the session start"
+}
+
 # --- SessionStart, source clear ---
 if [ "$event" = "start-clear" ]; then
   handoff="$(handoff_file)" || handoff=""
@@ -232,6 +265,15 @@ if [ "$event" = "start-clear" ]; then
       && [ -f "$titles/$old_id.json" ] && [ ! -e "$titles/$session_id.json" ]; then
     mv -f "$titles/$old_id.json" "$titles/$session_id.json" 2>/dev/null || true
   fi
+  context="$(name_check)"
+  [ -z "$context" ] || emit_start "$context"
+  exit 0
+fi
+
+# --- SessionStart, source startup ---
+if [ "$event" = "start-startup" ]; then
+  context="$(name_check)"
+  [ -z "$context" ] || emit_start "$context"
   exit 0
 fi
 
@@ -384,11 +426,15 @@ while IFS=$'\t' read -r h_sid h_job h_name h_state; do
 done <<HOLDERS
 $check_out
 HOLDERS
-[ -n "$holders" ] || exit 0
 
-context="Another session holds the work folder $folder of this session:
+context=""
+if [ -n "$holders" ]; then
+  context="Another session holds the work folder $folder of this session:
 ${holders}Two sessions in one work folder each see only half of the work. Do not write working files in this folder from this session. Give the user this command, so that the work continues in the session that holds the folder: /resume-agent $folder"
-
-jq -n --arg context "$context" \
-  '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $context}}' \
-  || warn "could not write the warning about the other session of $folder"
+else
+  # The name check only when no other session holds the folder: that warning
+  # already tells the session not to write in the folder.
+  context="$(name_check)"
+fi
+[ -n "$context" ] || exit 0
+emit_start "$context"

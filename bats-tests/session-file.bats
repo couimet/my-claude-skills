@@ -370,3 +370,62 @@ EOF
   read_session "$CLEARED_ID"
   [ "$output" = "1||duplicate" ]
 }
+
+# ============================================================================
+# A move of the job: the newest session file of the job decides (issue 312)
+# ============================================================================
+
+# The id of a child session that moved the job to another folder, and the id
+# of a later resume or /clear that has no file of its own.
+MOVED_ID="7a1d4e22-3b9c-4f10-8e55-2c6a9b0d1f33"
+LATER_ID="9c3e5f44-1a2b-4c6d-8e7f-0a1b2c3d4e5f"
+
+# child_doc <session id> <folder> <written_at> — a file written by a child
+# session of the job of SESSION_ID.
+child_doc() {
+  printf '{"version":1,"folder":"%s","session_id":"%s","job_session_id":"%s","written_at":"%s"}' \
+    "$2" "$1" "$SESSION_ID" "$3"
+}
+
+@test "after a move, a resume with no file of its own resolves the folder of the move" {
+  write_file "${SESSION_ID}--folder-a.json" "$(valid_doc /work/folder-a)"
+  write_file "${MOVED_ID}--folder-b.json" "$(child_doc "$MOVED_ID" /work/folder-b 2026-09-15T08:00:00Z)"
+  job_state '{"sessionId":"'"$SESSION_ID"'","resumeSessionId":"'"$LATER_ID"'"}'
+  read_session "$LATER_ID"
+  [ "$output" = "0|/work/folder-b|" ]
+}
+
+@test "an older child file does not win over a newer file of the first id" {
+  write_file "${MOVED_ID}--folder-b.json" "$(child_doc "$MOVED_ID" /work/folder-b 2026-09-13T08:00:00Z)"
+  write_file "${SESSION_ID}--folder-a.json" "$(valid_doc /work/folder-a)"
+  job_state '{"sessionId":"'"$SESSION_ID"'"}'
+  read_session "$LATER_ID"
+  [ "$output" = "0|/work/folder-a|" ]
+}
+
+@test "after a move, a file under the live id still wins over the newest file of the job" {
+  write_file "${SESSION_ID}--folder-a.json" "$(valid_doc /work/folder-a)"
+  write_file "${MOVED_ID}--folder-b.json" "$(child_doc "$MOVED_ID" /work/folder-b 2026-09-15T08:00:00Z)"
+  write_file "${LATER_ID}.json" "$(child_doc "$LATER_ID" /work/folder-c 2026-09-14T00:00:00Z)"
+  job_state '{"sessionId":"'"$SESSION_ID"'"}'
+  read_session "$LATER_ID"
+  [ "$output" = "0|/work/folder-c|" ]
+}
+
+@test "the file of another job is never the newest file of this job" {
+  write_file "${SESSION_ID}--folder-a.json" "$(valid_doc /work/folder-a)"
+  write_file "${MOVED_ID}.json" '{"version":1,"folder":"/work/other","session_id":"'"$MOVED_ID"'","job_session_id":"'"$LATER_ID"'","written_at":"2026-09-20T00:00:00Z"}'
+  job_state '{"sessionId":"'"$SESSION_ID"'"}'
+  read_session "$CLEARED_ID"
+  [ "$output" = "0|/work/folder-a|" ]
+}
+
+@test "a move does not rewrite the file of the first id" {
+  write_file "${SESSION_ID}--folder-a.json" "$(valid_doc /work/folder-a)"
+  write_file "${MOVED_ID}--folder-b.json" "$(child_doc "$MOVED_ID" /work/folder-b 2026-09-15T08:00:00Z)"
+  local before
+  before="$(cat "$SESSIONS_DIR/${SESSION_ID}--folder-a.json")"
+  job_state '{"sessionId":"'"$SESSION_ID"'"}'
+  read_session "$LATER_ID"
+  [ "$(cat "$SESSIONS_DIR/${SESSION_ID}--folder-a.json")" = "$before" ]
+}

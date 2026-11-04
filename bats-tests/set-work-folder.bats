@@ -83,22 +83,23 @@ session_file_count() {
 @test "no name given → file named for the session alone" {
   set_folder "$TOPIC"
   [ "$status" -eq 0 ]
-  [ "$output" = "$SESSIONS_DIR/${SESSION_ID}.json" ]
+  [ "$output" = "$SESSIONS_DIR/${SESSION_ID}--my-topic.json" ]
   [ "${#lines[@]}" -eq 1 ]
-  [ -f "$SESSIONS_DIR/${SESSION_ID}.json" ]
+  [ -f "$SESSIONS_DIR/${SESSION_ID}--my-topic.json" ]
   [[ "$stderr" == *"$TOPIC"* ]] || false
 }
 
-@test "name given → file carries the slugified name" {
+@test "a name given does not name the file: the slug is the folder basename (issue 312)" {
   set_folder "$TOPIC" "My Current Work on Foobar"
   [ "$status" -eq 0 ]
-  [ "$output" = "$SESSIONS_DIR/${SESSION_ID}--my-current-work-on-foobar.json" ]
+  [ "$output" = "$SESSIONS_DIR/${SESSION_ID}--my-topic.json" ]
   [ -f "$output" ]
 }
 
-@test "name is bounded, so a long one cannot dwarf the session id" {
-  local long="This is a deliberately very long descriptive name that runs well past any sensible filename budget"
-  set_folder "$TOPIC" "$long"
+@test "the slug is bounded, so a long folder name cannot dwarf the session id" {
+  local long="$TEST_TEMP_DIR/This is a deliberately very long descriptive name that runs well past any sensible filename budget"
+  mkdir -p "$long"
+  set_folder "$long"
   [ "$status" -eq 0 ]
   local slug="${output##*--}"
   slug="${slug%.json}"
@@ -109,9 +110,9 @@ session_file_count() {
 @test "the document carries the fields the reader and a human need" {
   set_folder "$TOPIC" "some work"
   [ "$status" -eq 0 ]
-  run jq -r '[.version, .folder, .session_id, .slug] | @tsv' "$SESSIONS_DIR/${SESSION_ID}--some-work.json"
+  run jq -r '[.version, .folder, .session_id, .slug] | @tsv' "$SESSIONS_DIR/${SESSION_ID}--my-topic.json"
   [ "$status" -eq 0 ]
-  [ "$output" = "$(printf '1\t%s\t%s\tsome-work' "$TOPIC" "$SESSION_ID")" ]
+  [ "$output" = "$(printf '1\t%s\t%s\tmy-topic' "$TOPIC" "$SESSION_ID")" ]
 }
 
 @test "written_at is UTC and written_by records what the environment said" {
@@ -124,7 +125,7 @@ session_file_count() {
     "$SCRIPT" "$TOPIC"
   [ "$status" -eq 0 ]
   run jq -r '[.written_at, .written_by.agent, (.written_by.pid|tostring), (.written_by.child_session|tostring)] | @tsv' \
-    "$SESSIONS_DIR/${SESSION_ID}.json"
+    "$SESSIONS_DIR/${SESSION_ID}--my-topic.json"
   [[ "$output" == *"Z"* ]] || false
   [[ "$output" == *"explorer"* ]] || false
   [[ "$output" == *"4242"* ]] || false
@@ -134,56 +135,32 @@ session_file_count() {
 @test "absent agent and pid are recorded as null rather than empty strings" {
   set_folder "$TOPIC"
   run jq -r '[(.written_by.agent|type), (.written_by.pid|type)] | @tsv' \
-    "$SESSIONS_DIR/${SESSION_ID}.json"
+    "$SESSIONS_DIR/${SESSION_ID}--my-topic.json"
   [ "$output" = "$(printf 'null\tnull')" ]
 }
 
 @test "the folder is stored canonicalised, so a path with .. resolves once" {
   set_folder "$TEST_TEMP_DIR/my-topic/../my-topic"
   [ "$status" -eq 0 ]
-  run jq -r '.folder' "$SESSIONS_DIR/${SESSION_ID}.json"
+  run jq -r '.folder' "$SESSIONS_DIR/${SESSION_ID}--my-topic.json"
   [ "$output" = "$TOPIC" ]
 }
 
 # ============================================================================
-# Slug derivation from the job state file
+# The slug is the folder basename, whatever the job is named (issue 312)
 # ============================================================================
 
-@test "no name → slug comes from the job state file when there is one" {
+@test "the name of the job does not name the file: a moved job names its new folder" {
   local job="$TEST_TEMP_DIR/job"
   mkdir -p "$job"
-  printf '%s' '{"name":"Routing Rework","nameSource":"auto"}' > "$job/state.json"
+  printf '%s' '{"name":"an-old-folder","nameSource":"user"}' > "$job/state.json"
   run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" \
     CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
     CLAUDE_JOB_DIR="$job" \
     "$SCRIPT" "$TOPIC"
   [ "$status" -eq 0 ]
-  [ "$output" = "$SESSIONS_DIR/${SESSION_ID}--routing-rework.json" ]
-}
-
-@test "an explicit name beats the job state file" {
-  local job="$TEST_TEMP_DIR/job"
-  mkdir -p "$job"
-  printf '%s' '{"name":"Routing Rework"}' > "$job/state.json"
-  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
-    MY_CLAUDE_SKILLS_CONFIG="$CFG" \
-    CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
-    CLAUDE_JOB_DIR="$job" \
-    "$SCRIPT" "$TOPIC" "chosen by hand"
-  [ "$output" = "$SESSIONS_DIR/${SESSION_ID}--chosen-by-hand.json" ]
-}
-
-@test "a job state file with no usable name leaves the slug off" {
-  local job="$TEST_TEMP_DIR/job"
-  mkdir -p "$job"
-  printf '%s' '{"nameSource":"auto"}' > "$job/state.json"
-  run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
-    MY_CLAUDE_SKILLS_CONFIG="$CFG" \
-    CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
-    CLAUDE_JOB_DIR="$job" \
-    "$SCRIPT" "$TOPIC"
-  [ "$output" = "$SESSIONS_DIR/${SESSION_ID}.json" ]
+  [ "$output" = "$SESSIONS_DIR/${SESSION_ID}--my-topic.json" ]
 }
 
 @test "a malformed job state file does not stop the write" {
@@ -196,54 +173,54 @@ session_file_count() {
     CLAUDE_JOB_DIR="$job" \
     "$SCRIPT" "$TOPIC"
   [ "$status" -eq 0 ]
-  [ "$output" = "$SESSIONS_DIR/${SESSION_ID}.json" ]
+  [ "$output" = "$SESSIONS_DIR/${SESSION_ID}--my-topic.json" ]
 }
 
 # ============================================================================
 # One file per session
 # ============================================================================
 
-@test "writing twice under different slugs leaves exactly one file" {
+@test "writing twice to two folders leaves exactly one file" {
   set_folder "$TOPIC" "first name"
   [ "$status" -eq 0 ]
-  set_folder "$TOPIC" "second name"
+  local other="$TEST_TEMP_DIR/second-topic"
+  mkdir -p "$other"
+  set_folder "$other" "second name"
   [ "$status" -eq 0 ]
   [ "$(session_file_count)" -eq 1 ]
-  [ -f "$SESSIONS_DIR/${SESSION_ID}--second-name.json" ]
-  [ ! -f "$SESSIONS_DIR/${SESSION_ID}--first-name.json" ]
+  [ -f "$SESSIONS_DIR/${SESSION_ID}--second-topic.json" ]
+  [ ! -f "$SESSIONS_DIR/${SESSION_ID}--my-topic.json" ]
 }
 
 @test "writing twice, named then unnamed, leaves exactly one file" {
   set_folder "$TOPIC" "a name"
   set_folder "$TOPIC"
   [ "$(session_file_count)" -eq 1 ]
-  [ -f "$SESSIONS_DIR/${SESSION_ID}.json" ]
+  [ -f "$SESSIONS_DIR/${SESSION_ID}--my-topic.json" ]
 }
 
 @test "rewriting under the same slug keeps the file it just wrote" {
   # The write installs $target and only then removes the other files this
   # session owns. A cleanup that did not except $target would delete the
   # document it had just written and leave the session with no override.
-  set_folder "$TOPIC" "same name"
+  set_folder "$TOPIC"
   [ "$status" -eq 0 ]
-  local other="$TEST_TEMP_DIR/second-topic"
-  mkdir -p "$other"
-  set_folder "$other" "same name"
+  set_folder "$TOPIC"
   [ "$status" -eq 0 ]
   [ "$(session_file_count)" -eq 1 ]
-  run jq -r .folder "$SESSIONS_DIR/${SESSION_ID}--same-name.json"
-  [ "$output" = "$other" ]
+  run jq -r .folder "$SESSIONS_DIR/${SESSION_ID}--my-topic.json"
+  [ "$output" = "$TOPIC" ]
 }
 
 @test "a slug change leaves only the new file, carrying the new folder" {
-  set_folder "$TOPIC" "first name"
+  set_folder "$TOPIC"
   local other="$TEST_TEMP_DIR/second-topic"
   mkdir -p "$other"
-  set_folder "$other" "second name"
+  set_folder "$other"
   [ "$status" -eq 0 ]
   [ "$(session_file_count)" -eq 1 ]
-  [ ! -f "$SESSIONS_DIR/${SESSION_ID}--first-name.json" ]
-  run jq -r .folder "$SESSIONS_DIR/${SESSION_ID}--second-name.json"
+  [ ! -f "$SESSIONS_DIR/${SESSION_ID}--my-topic.json" ]
+  run jq -r .folder "$SESSIONS_DIR/${SESSION_ID}--second-topic.json"
   [ "$output" = "$other" ]
 }
 
@@ -261,6 +238,7 @@ session_file_count() {
   # cleanup between our move and ours, which is the state the check is for.
   set_folder "$TOPIC" "first name"
   [ "$status" -eq 0 ]
+  mkdir -p "$TEST_TEMP_DIR/second-topic"
   local stub="$TEST_TEMP_DIR/racy-rm"
   mkdir -p "$stub"
   cat > "$stub/rm" <<'STUB'
@@ -274,7 +252,7 @@ STUB
   chmod +x "$stub/rm"
   run --separate-stderr "${CLAUDE_ENV_RESET[@]}" PATH="$stub:$PATH" \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
-    "$SCRIPT" "$TOPIC" "second name"
+    "$SCRIPT" "$TEST_TEMP_DIR/second-topic"
   [ "$status" -ne 0 ]
   [[ "$stderr" == *"$ERR_WRITE_CODE"* ]] || false
   [[ "$stderr" == *"did not survive"* ]] || false
@@ -368,7 +346,7 @@ CLEARED_ID="5f0c8a11-7d2e-4b3a-9c41-0e6f2b7d8a90"
   set_folder_job "$SESSION_ID" "$TOPIC"
   set_folder_job "$CLEARED_ID" "$other"
   [ "$status" -eq 0 ]
-  [ "$output" = "$SESSIONS_DIR/$CLEARED_ID.json" ]
+  [ "$output" = "$SESSIONS_DIR/$CLEARED_ID--other-topic.json" ]
   [ "$(session_file_count)" -eq 1 ]
   [ "$(jq -r .job_session_id "$output")" = "$SESSION_ID" ]
 }
@@ -596,11 +574,12 @@ CLEARED_ID="5f0c8a11-7d2e-4b3a-9c41-0e6f2b7d8a90"
   # success over it.
   set_folder "$TOPIC" "first name"
   [ "$status" -eq 0 ]
+  mkdir -p "$TEST_TEMP_DIR/second-topic"
   local stub_path
   stub_path="$(_stub_failing "$TEST_TEMP_DIR/badrm" rm)"
   run --separate-stderr "${CLAUDE_ENV_RESET[@]}" PATH="$stub_path" \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
-    "$SCRIPT" "$TOPIC" "second name"
+    "$SCRIPT" "$TEST_TEMP_DIR/second-topic"
   [ "$status" -ne 0 ]
   [[ "$stderr" == *"$ERR_WRITE_CODE"* ]] || false
   [[ "$stderr" == *"could not remove an older session file"* ]] || false
@@ -754,8 +733,17 @@ set_folder_stub() {
   run --separate-stderr "${CLAUDE_ENV_RESET[@]}" \
     PATH="$TEST_TEMP_DIR/bin:$PATH" LIVE_FILE="$LIVE_FILE" STUB_FAIL="${STUB_FAIL:-0}" \
     MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    FOLDER_SESSIONS_PROJECTS_DIR="$TEST_TEMP_DIR/projects" \
+    FOLDER_SESSIONS_JOBS_DIR="$TEST_TEMP_DIR/jobs" \
     CLAUDE_CODE_SESSION_ID="$SESSION_ID" \
     "$SCRIPT" "$@"
+}
+
+# transcript_of <session-id> — write a transcript, so a retired row stays
+# retired and an ended row is not gone (issue 312).
+transcript_of() {
+  mkdir -p "$TEST_TEMP_DIR/projects/-proj"
+  printf '{}\n' > "$TEST_TEMP_DIR/projects/-proj/$1.jsonl"
 }
 
 @test "a folder that a running session holds is refused with S007 and the /resume-agent command" {
@@ -771,6 +759,7 @@ set_folder_stub() {
 
 @test "a folder that a retired session holds is refused too" {
   claude_stub
+  transcript_of "$OTHER_ID"
   other_file "$OTHER_ID"
   live_row "$OTHER_ID" null null
   set_folder_stub "$TOPIC"
@@ -794,7 +783,7 @@ set_folder_stub() {
   live_row "$OTHER_CLEARED" idle 123
   set_folder_stub --take-over "$TOPIC" "my name"
   [ "$status" -eq 0 ]
-  [ "$output" = "$SESSIONS_DIR/${SESSION_ID}--my-name.json" ]
+  [ "$output" = "$SESSIONS_DIR/${SESSION_ID}--my-topic.json" ]
   [ ! -e "$SESSIONS_DIR/$OTHER_ID--other.json" ]
   [ ! -e "$SESSIONS_DIR/$OTHER_CLEARED--other.json" ]
   [ "$(printf '%s\n' "$stderr" | grep -c 'took ')" -eq 1 ]
@@ -847,6 +836,7 @@ marker_holder() {
 
 @test "--take-over refuses with S008 before it removes the file of another holder" {
   claude_stub
+  transcript_of "$OTHER_ID"
   other_file "$OTHER_CLEARED"
   marker_holder null null
   jq -c --arg s "$OTHER_CLEARED" '. + [{"cwd":"/x","id":($s[0:8]),"sessionId":$s,"name":"b","status":"idle","pid":5,"kind":"background","state":"blocked","startedAt":1}]' \
@@ -896,5 +886,5 @@ marker_holder() {
     MY_CLAUDE_SKILLS_CONFIG="$CFG" CLAUDE_CODE_SESSION_ID="$CLEARED_ID" \
     CLAUDE_JOB_DIR="$TEST_TEMP_DIR/job" "$SCRIPT" "$TOPIC"
   [ "$status" -eq 0 ]
-  [ "$output" = "$SESSIONS_DIR/$CLEARED_ID.json" ]
+  [ "$output" = "$SESSIONS_DIR/$CLEARED_ID--my-topic.json" ]
 }

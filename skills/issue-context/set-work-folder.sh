@@ -29,9 +29,10 @@
 #             inside any repository: a session is not pinned to one, and the
 #             resolver refuses an override that does not belong to the
 #             repository it is resolving in.
-#   [name]    Optional readable label for the filename. Absent, the name is
-#             read from $CLAUDE_JOB_DIR/state.json; absent there too, the
-#             filename carries no label. Nothing is ever looked up by label.
+#   [name]    Optional, and accepted for the callers that pass it. It does
+#             not name the file: the label of the file name is the basename
+#             of <folder>, so the file name and the folder field name one
+#             folder. Nothing is ever looked up by label.
 #
 # One folder has one session. Before a session claims a folder, the script
 # asks folder-sessions.sh which other sessions claim it. When another session
@@ -190,7 +191,9 @@ clear_mode=0
 worktree_mode=0
 take_over=0
 folder=""
-name=""
+# The [name] argument is accepted, so a caller that passes it still works,
+# and it does not name the file; see the header. The parse reads no value
+# from it.
 
 case "${1-}" in
   --help)
@@ -222,7 +225,6 @@ case "${1-}" in
     esac
     take_over=1
     folder="$2"
-    name="${3-}"
     ;;
   "")
     usage >&2
@@ -234,7 +236,6 @@ case "${1-}" in
   *)
     [ "$#" -le 2 ] || die "$ERR_USAGE" "expected 1-2 arguments, got $#"
     folder="$1"
-    name="${2-}"
     ;;
 esac
 
@@ -470,24 +471,17 @@ FILES
 done
 
 # --- Derive the slug ---
-# Order matters: an explicit name, then the job state file, then nothing. This
-# keeps the script usable with no arguments while keeping the dependency on an
-# undocumented internal file optional. If Claude Code renames that key, the
-# sessions directory loses some readability and keeps working.
+# The slug is the basename of the bound folder, always. A person reads the
+# file name first, so the file name and its folder field must name one folder.
+# The name of the job, or an explicit name, can name an old folder after a
+# move (issue 312). Routing ignores the slug. The root folder has no
+# basename, so its file carries no slug.
 slug=""
-if [ -n "$name" ]; then
-  slug="$(_issue_context_slugify "$name" "$_ISSUE_CONTEXT_SESSION_SLUG_MAX")"
-elif [ -n "${CLAUDE_JOB_DIR:-}" ] && [ -r "$CLAUDE_JOB_DIR/state.json" ] \
-    && command -v jq >/dev/null 2>&1; then
-  job_name="$(jq -r 'if (.name | type == "string") then .name else empty end' \
-    "$CLAUDE_JOB_DIR/state.json" 2>/dev/null || true)"
-  if [ -n "${job_name:-}" ]; then
-    slug="$(_issue_context_slugify "$job_name" "$_ISSUE_CONTEXT_SESSION_SLUG_MAX")"
-  fi
+folder_base="${folder_phys##*/}"
+if [ -n "$folder_base" ]; then
+  slug="$(_issue_context_slugify "$folder_base" "$_ISSUE_CONTEXT_SESSION_SLUG_MAX")"
 fi
 
-# _issue_context_slugify never returns empty, so an explicit name of "!!!"
-# becomes "file". That is a readable-half artifact and routing ignores it.
 if [ -n "$slug" ]; then
   target="$sessions_dir/${CLAUDE_CODE_SESSION_ID}--${slug}.json"
 else

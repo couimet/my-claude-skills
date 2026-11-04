@@ -36,7 +36,7 @@ The marker is a plain file at the worktree root and it is deliberately not gitig
 
 Pass an absolute path to a directory that already exists, optionally followed by a short name. A relative path and a missing directory are both refused rather than created, so a typo fails while you are still looking at it.
 
-The name is optional and cosmetic. It goes into the stored file's name to make the sessions directory readable. Nothing is ever looked up by it, so it does not have to stay accurate. With no name given, the script reads one from the session's own job state when that is available, and otherwise leaves it off.
+The name is optional, and it does not name the stored file. The file name carries the basename of the folder, so the file name and the folder in the file always name one folder, also after a session moves to another folder. Nothing is ever looked up by the file name.
 
 The session name is a different thing. When the session hook is installed, the session gets the folder name as its name at its next prompt, unless the user chose another name. A send by name then reaches the session that holds the folder. When another session holds the folder too, the hook does not give the folder name, because two sessions with one name make a send by name reach either one. It warns instead, with `/find-agent <folder>`, which names each holder. `/rename-agent` changes the session name at the next prompt.
 

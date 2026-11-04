@@ -126,7 +126,7 @@ The skills ship one [Claude Code hook](https://code.claude.com/docs/en/hooks), `
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "clear|resume",
+        "matcher": "startup|clear|resume",
         "hooks": [{ "type": "command", "command": "~/.claude/skills/issue-context/session-hook.sh" }]
       }
     ],

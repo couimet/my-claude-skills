@@ -204,6 +204,7 @@ only_list_reads() {
 }
 
 @test "find-agent: a retired holder gives attach" {
+  transcript "$TOPIC_SESSION"
   session_file "$TOPIC_SESSION" "$ROOT/my-topic" "2026-10-13T10:00:00Z"
   printf '[%s]' "$(row "$TOPIC_SESSION" my-topic null null)" > "$LIVE_FILE"
   cp "$LIVE_FILE" "$ALL_FILE"
@@ -421,4 +422,33 @@ only_list_reads() {
   run_find "$SELF_SESSION" --check my-topic
   [ "$status" -eq 2 ]
   [[ "$stderr" == *"G001"* ]] || false
+}
+
+# ============================================================================
+# A retired row with no transcript, and a moved job (issue 312)
+# ============================================================================
+
+@test "find-agent: a retired holder with no transcript is gone, and gives launch" {
+  session_file "$TOPIC_SESSION" "$ROOT/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(row "$TOPIC_SESSION" my-topic null null)" > "$LIVE_FILE"
+  cp "$LIVE_FILE" "$ALL_FILE"
+  run_find "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Verdict: launch" ]
+  [ "${lines[2]}" = "Holder: $TOPIC_SESSION ${TOPIC_SESSION:0:8} gone other my-topic" ]
+}
+
+@test "find-agent: a job that moved to another folder gives moved and /launch-agent" {
+  local moved_id="5d7e9f00-aaaa-4bbb-8ccc-0123456789ab"
+  mkdir -p "$ROOT/folder-b"
+  transcript "$TOPIC_SESSION"
+  session_file "$TOPIC_SESSION" "$ROOT/my-topic" "2026-10-13T10:00:00Z"
+  printf '{"version":1,"folder":"%s","session_id":"%s","job_session_id":"%s","written_at":"%s"}' \
+    "$ROOT/folder-b" "$moved_id" "$TOPIC_SESSION" "2026-10-14T10:00:00Z" > "$SESSIONS_DIR/$moved_id--t.json"
+  printf '[%s]' "$(row "$TOPIC_SESSION" folder-b null null)" > "$ALL_FILE"
+  run_find "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Verdict: moved" ]
+  [ "${lines[2]}" = "Holder: $TOPIC_SESSION ${TOPIC_SESSION:0:8} moved other folder-b" ]
+  [[ "${lines[3]}" == "Next: /launch-agent \"$ROOT/my-topic\"; "* ]] || false
 }

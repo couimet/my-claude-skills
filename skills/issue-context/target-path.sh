@@ -5,7 +5,7 @@
 # timestamp stamping into one deterministic call.
 #
 # Usage: target-path.sh --type <type> --description <text> [--ext <ext>]
-#                       [--folder <absolute directory>]
+#                       [--folder <absolute directory>] [--verbose]
 #
 #   --type         "scratchpads", "questions", "commit-msgs", or "notes" (required)
 #   --description  Free-form text for the slug (required; will be lowercased +
@@ -17,6 +17,8 @@
 #                  another folder, such as a relay to the folder of another
 #                  session, names that folder here. The script never creates
 #                  the folder, so a typo fails and writes nothing.
+#   --verbose      Name each swept reservation on stderr, in place of one
+#                  summary line.
 #
 # Output (single line on stdout):
 #   The full path of the next working file for the current branch context,
@@ -38,8 +40,12 @@
 #
 #   A reservation whose caller never writes is swept. Before it claims a path,
 #   the script removes every empty, stamped file more than ten minutes old from
-#   the four type directories under the resolved folder, and names each removal
-#   on stderr. Without this, an abandoned path stays forever and a "newest file
+#   the four type directories under the resolved folder. stderr then gets one
+#   summary line, "target-path: swept <N> abandoned reservation(s)", and no
+#   line when nothing was swept. --verbose names each removal in place of the
+#   summary. Each line on stderr costs tokens on each call of an agent, so a
+#   success writes at most this line and the "using" line of
+#   get-issue-folder-path.sh. Without this, an abandoned path stays forever and a "newest file
 #   matching X" reader selects it and reads it empty.
 #
 #   The script also ensures the repository's .gitignore carries the
@@ -76,6 +82,7 @@ Usage: target-path.sh --type <scratchpads|questions|commit-msgs|notes> --descrip
   --ext          File extension without the dot. Default: txt
   --folder       Existing absolute directory to write to, in place of the
                  folder of this session
+  --verbose      Name each swept reservation on stderr
   --help         Show this help message
 EOF
 }
@@ -97,6 +104,7 @@ description=""
 ext="txt"
 folder_arg=""
 folder_given=0
+verbose=0
 
 # --- Parse arguments ---
 while [ $# -gt 0 ]; do
@@ -121,6 +129,10 @@ while [ $# -gt 0 ]; do
       folder_arg="$2"
       folder_given=1
       shift 2
+      ;;
+    --verbose)
+      verbose=1
+      shift
       ;;
     --help)
       usage
@@ -271,6 +283,7 @@ readonly STAMPED_NAME_GLOB='20[0-9][0-9][0-1][0-9][0-3][0-9]-[0-9][0-9][0-9][0-9
 # Every type directory under the folder, not only this call's type: a stray in
 # a directory that never receives another call of its own type would otherwise
 # stay forever, which is exactly how the reported pair survived.
+swept=0
 for sweep_dir in "${folder_root}/scratchpads" "${folder_root}/questions" \
   "${folder_root}/commit-msgs" "${folder_root}/notes"; do
   [ -d "$sweep_dir" ] || continue
@@ -278,11 +291,20 @@ for sweep_dir in "${folder_root}/scratchpads" "${folder_root}/questions" \
     # An `if` rather than `&&`: a delete this call cannot make is not this
     # call's problem, and errexit must not turn it into a failed resolution.
     if rm -f -- "$stale" 2>/dev/null; then
-      echo "target-path: swept abandoned reservation $stale" >&2
+      swept=$((swept + 1))
+      [ "$verbose" -eq 0 ] || echo "target-path: swept abandoned reservation $stale" >&2
     fi
   done < <(find "$sweep_dir" -maxdepth 1 -type f -size 0c \
     -mmin +"$SWEEP_AGE_MINUTES" -name "$STAMPED_NAME_GLOB" -print0 2>/dev/null)
 done
+# One summary line in place of one line for each file. See the header.
+if [ "$verbose" -eq 0 ] && [ "$swept" -gt 0 ]; then
+  if [ "$swept" -eq 1 ]; then
+    echo "target-path: swept 1 abandoned reservation" >&2
+  else
+    echo "target-path: swept $swept abandoned reservations" >&2
+  fi
+fi
 
 # --- Determine target directory ---
 target_dir="${folder_root}/${type_arg}"

@@ -69,13 +69,24 @@
 #                        `claude --bg --resume` of it starts a copy, and
 #                        `claude attach <job id>` wakes it.
 #               ended    no live row, and the transcript below exists
-#               gone     no live row, and the transcript below does not
+#               gone     no process, and the transcript below does not
 #                        exist: Claude Code deleted it (cleanupPeriodDays).
-#                        A resume gives an empty conversation with no
-#                        history and no name, so no caller restarts it.
+#                        This is an ended job, or a retired row, which can
+#                        stay in the list for longer than the cleanup
+#                        period. A resume or an attach gives an empty
+#                        conversation with no history and no name, so no
+#                        caller restarts it or attaches to it.
+#               moved    the job moved to another folder: the file of its
+#                        live session id, else its newest session file by
+#                        written_at, names another folder. The older file
+#                        that names this folder does not hold it, so no
+#                        caller counts the row as a holder, and no caller
+#                        restarts it for this folder. The reader in
+#                        session-file.sh gives the job the other folder.
+#                        A session with no job cannot move.
 #
-# The transcript of a session with no live row is the one of the
-# conversation that `claude --bg --resume` loads:
+# The transcript of a session with no process (ended or retired) is the one
+# of the conversation that `claude --bg --resume` or `claude attach` loads:
 # <projects dir>/*/<conversation id>.jsonl. The conversation id is the
 # resumeSessionId of the job record, <jobs dir>/<job id>/state.json, when the
 # record exists and the field is one plain token: a /clear gives the job a
@@ -83,8 +94,9 @@
 # id first. Else it is the session id field. The projects dir is
 # FOLDER_SESSIONS_PROJECTS_DIR, default ${CLAUDE_CONFIG_DIR:-~/.claude}/projects,
 # and the jobs dir is FOLDER_SESSIONS_JOBS_DIR, default
-# ${CLAUDE_CONFIG_DIR:-~/.claude}/jobs. A running or a retired session gets
-# no check, because no caller restarts it.
+# ${CLAUDE_CONFIG_DIR:-~/.claude}/jobs. A running session gets no check,
+# because no caller restarts it, and a moved session gets none, because no
+# caller restarts it for this folder.
 #
 # No output means that no session claims the folder. The script reads both
 # lists also then, because only the rows show a session that holds the folder
@@ -95,10 +107,10 @@
 #   1  — usage error (H001) or a folder that is not an existing absolute
 #        directory (H002)
 #   2  — the sessions cannot be read: jq is missing (H003),
-#        `claude agents --json` failed (H004), or a session has no live row
-#        and the projects dir does not exist (H005), so ended and gone
-#        cannot be told apart. stdout is empty. A caller decides what a
-#        failed check means for it.
+#        `claude agents --json` failed (H004), or a session is ended or
+#        retired and the projects dir does not exist (H005), so ended or
+#        retired and gone cannot be told apart. stdout is empty. A caller
+#        decides what a failed check means for it.
 
 set -euo pipefail
 
@@ -253,7 +265,8 @@ listing="$(printf '%s\n' "$files" | jq -R -n -r '
   # The session ids and the job ids of all session files, whatever folder
   # they name: a session in this set never holds through its marker.
   ($owners | split("\n") | map(select(. != "") | split("\t")
-     | {sid: .[0], job: (((.[1] // "") | jobid) // (.[0] | jobid))})) as $own
+     | {sid: .[0], job: (((.[1] // "") | jobid) // (.[0] | jobid)),
+        written: (.[2] // ""), folder: (.[3] // "")})) as $own
   | [inputs | split("\t") | select(length >= 2 and .[1] != "")
    | {written: .[0], sid: .[1], first: (if (.[2] // "") == "" then null else .[2] end)}]
   # The job of each file: its job_session_id first, then the row with its
@@ -262,6 +275,10 @@ listing="$(printf '%s\n' "$files" | jq -R -n -r '
       | (if $f.first then ($f.first | jobid)
          else (first(($live[], $all[]) | select(.sessionId == $f.sid) | .id) //
                first(($live[], $all[]) | select(.id != null and .id == ($f.sid | jobid)) | .id) //
+               # A file of a later session of the job names this id as its
+               # first id, so this id began a job.
+               (if any($own[]; .sid != $f.sid and .job == ($f.sid | jobid))
+                then ($f.sid | jobid) else null end) //
                null)
          end) as $job
       | . + {job: $job, key: (if $job then "job:" + $job else "sid:" + $f.sid end)})
@@ -307,11 +324,26 @@ listing="$(printf '%s\n' "$files" | jq -R -n -r '
         first($sids[] | select(jobid == $job)) //
         $sids[0])
      else $sids[0] end) as $session
+  # A move: the folder of a job is the one of the file of its live session
+  # id, else the one of its newest file, the rule of the reader in
+  # session-file.sh. When that folder is another one, the job does not hold
+  # this folder. A session with no job has one id, so it cannot move.
+  | (if $job == null then null
+     else [$own[] | select(.job == $job)] as $jf
+       | ((if ($lrow.sessionId // null | token) then
+             [$jf[] | select(.sid == $lrow.sessionId)] | sort_by(.written | epoch) | last
+           else null end)
+          // ($jf | sort_by([(.written | epoch), .sid]) | last)
+          // null)
+       | if . == null then null else .folder end
+     end) as $job_folder
+  | (if $job_folder != null and $job_folder != "" and $job_folder != $folder
+     then "moved" else $state end) as $state
   | [$session, ($job // "-"),
      (($lrow.name // $arow.name // "") | clean | if . == "" then "-" else . end), $state]
   | join("\t")
   # kcov-exclude-end
-' --argjson live "$live" --argjson all "$all" --argjson mcwds "$marker_cwds" --arg owners "$owners" --arg self_id "$self_id" --arg self_job "${self_first:0:8}")"
+' --argjson live "$live" --argjson all "$all" --argjson mcwds "$marker_cwds" --arg owners "$owners" --arg self_id "$self_id" --arg self_job "${self_first:0:8}" --arg folder "$folder")"
 
 # has_transcript <session id> <job id> — 0 when the transcript of the
 # conversation that a resume loads exists. See the header.
@@ -328,7 +360,7 @@ has_transcript() {
 }
 
 case "$listing" in
-  *$'\t'ended | *$'\t'ended$'\n'*)
+  *$'\t'ended | *$'\t'ended$'\n'* | *$'\t'retired | *$'\t'retired$'\n'*)
     [ -d "$PROJECTS_DIR" ] \
       || die 2 "$ERR_PROJECTS" "the transcript directory $PROJECTS_DIR does not exist, so it is unknown whether the sessions of $folder that do not run still have their history"
     ;;
@@ -336,9 +368,11 @@ esac
 
 while IFS=$'\t' read -r l_sid l_job l_name l_state; do
   [ -n "$l_sid" ] || continue
-  if [ "$l_state" = "ended" ] && ! has_transcript "$l_sid" "$l_job"; then
-    l_state="gone"
-  fi
+  case "$l_state" in
+    ended | retired)
+      has_transcript "$l_sid" "$l_job" || l_state="gone"
+      ;;
+  esac
   printf '%s\t%s\t%s\t%s\n' "$l_sid" "$l_job" "$l_name" "$l_state"
 done <<LISTING
 $listing
