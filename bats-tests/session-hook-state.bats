@@ -93,3 +93,56 @@ run_state() {
   [ "$status" -eq 1 ]
   [[ "$stderr" == *K002* ]] || false
 }
+
+# ============================================================================
+# disableAllHooks (CodeRabbit review of PR 313)
+# ============================================================================
+
+# hook_entry — a user settings file whose UserPromptSubmit entry runs the hook,
+# with the extra top-level keys given as JSON members.
+hook_entry() {
+  printf '{%s"hooks":{"UserPromptSubmit":[{"hooks":[{"type":"command","command":"/x/skills/issue-context/session-hook.sh"}]}]}}' "${1:+$1,}" > "$SETTINGS"
+}
+
+# project_file <name> <json> — write <dir>/.claude/<name> of the project.
+project_file() {
+  mkdir -p "$TEST_TEMP_DIR/project/.claude"
+  printf '%s' "$2" > "$TEST_TEMP_DIR/project/.claude/$1"
+}
+
+@test "session-hook-state: disableAllHooks true in the user settings gives none" {
+  hook_entry '"disableAllHooks":true'
+  run_state
+  [ "$status" -eq 0 ]
+  [ "$output" = "none" ]
+}
+
+@test "session-hook-state: disableAllHooks true in the project settings gives none" {
+  hook_entry
+  project_file settings.json '{"disableAllHooks":true}'
+  run_state --project "$TEST_TEMP_DIR/project"
+  [ "$output" = "none" ]
+  run_state
+  [ "$output" = "settings" ]
+}
+
+@test "session-hook-state: the local settings override the project settings" {
+  hook_entry
+  project_file settings.json '{"disableAllHooks":true}'
+  project_file settings.local.json '{"disableAllHooks":false}'
+  run_state --project "$TEST_TEMP_DIR/project"
+  [ "$output" = "settings" ]
+}
+
+@test "session-hook-state: a project file that is not JSON changes nothing" {
+  hook_entry '"disableAllHooks":true'
+  project_file settings.json 'not json'
+  run_state --project "$TEST_TEMP_DIR/project"
+  [ "$output" = "none" ]
+}
+
+@test "session-hook-state: --project with no directory → exit 1, K001" {
+  run_state --project
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *K001* ]] || false
+}

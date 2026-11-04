@@ -1218,3 +1218,17 @@ hook_settings() {
   _contains "$output" "Status: busy"
   _contains "$stderr" "the status wait (RESUME_AGENT_STATUS_WAIT) ended after 60s seconds"
 }
+
+@test "prompt: with the hook, but disableAllHooks in the project settings, the restart sends /rename" {
+  hook_settings
+  mkdir -p "$REPO/.claude"
+  printf '{"disableAllHooks":true}' > "$REPO/.claude/settings.json"
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done)" > "$AGENTS_AFTER"
+  local pf
+  pf="$(prompt_file)"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" --prompt-file "$pf" my-topic
+  [ "$status" -eq 0 ]
+  [ "$(sed -n 4p "$RESUME_ARGS")" = "/rename my-topic" ]
+  _contains "$output" "Prompt: not sent; send it with SendMessage when Status is idle"
+}

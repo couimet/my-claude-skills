@@ -37,8 +37,8 @@
 #       When folder-sessions.sh shows another running or retired session in
 #       the work folder of this session, print additionalContext that names
 #       that session, tells this session not to write working files in the
-#       folder, and gives the /resume-agent command. Else, the name check
-#       below.
+#       folder, and gives the /resume-agent command. The name check below
+#       runs too, and its line follows in the same payload.
 #   SessionStart, source startup, clear, or resume: the name check
 #       When the session runs under the name of another existing folder (the
 #       verdict moved of find-agent.sh --check), print additionalContext with
@@ -431,10 +431,17 @@ context=""
 if [ -n "$holders" ]; then
   context="Another session holds the work folder $folder of this session:
 ${holders}Two sessions in one work folder each see only half of the work. Do not write working files in this folder from this session. Give the user this command, so that the work continues in the session that holds the folder: /resume-agent $folder"
-else
-  # The name check only when no other session holds the folder: that warning
-  # already tells the session not to write in the folder.
-  context="$(name_check)"
+fi
+# The name check runs also when another session holds the folder: a session
+# that runs under the name of another folder gets its fix from that line,
+# and both warnings go in one payload.
+moved_line="$(name_check)"
+if [ -n "$moved_line" ]; then
+  if [ -n "$context" ]; then
+    context="$context"$'\n\n'"$moved_line"
+  else
+    context="$moved_line"
+  fi
 fi
 [ -n "$context" ] || exit 0
 emit_start "$context"

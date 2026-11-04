@@ -135,7 +135,8 @@
 # So the script never sends /rename and the prompt in one restart:
 #
 #   - ended, and the session hook runs at UserPromptSubmit on this machine
-#     (../issue-context/session-hook-state.sh gives settings or plugin): the
+#     (../issue-context/session-hook-state.sh --project <restart directory>
+#     gives settings or plugin, so no disableAllHooks turns it off): the
 #     restart sends the prompt alone, and the hook gives the session the
 #     folder name at that prompt. The script waits for the name only, and
 #     prints "Prompt: sent on the restart". A name other than the folder
@@ -596,7 +597,7 @@ else
     old_conv="$(continued_as "$job_id")"
     [[ "$old_conv" =~ ^[A-Za-z0-9_-]+$ ]] || old_conv="$session_id"
   elif [ -n "$prompt_text" ]; then
-    hook_state="$("$_self_dir/../issue-context/session-hook-state.sh" 2>/dev/null)" || hook_state="none"
+    hook_state="$("$_self_dir/../issue-context/session-hook-state.sh" --project "$resume_dir" 2>/dev/null)" || hook_state="none"
     case "$hook_state" in
       settings | plugin)
         restart_prompt="$prompt_text"

@@ -720,3 +720,15 @@ moved_setup() {
   [ -n "$(files_of "$NEW")" ]
   [[ "$(printf '%s' "$output" | jq -r .hookSpecificOutput.additionalContext)" == "moved: "* ]] || false
 }
+
+@test "session-hook: a resume with a holder in the folder, under the name of another folder, gets both warnings" {
+  moved_setup
+  session_file "$OTHER" "$TOPIC"
+  printf '[%s,%s]' "$(row "${NEW:0:8}" "$NEW" folder-b idle 123)" "$(row "${OTHER:0:8}" "$OTHER" topic idle 456)" > "$LIVE_FILE"
+  cp "$LIVE_FILE" "$ALL_FILE"
+  run_hook "$(event SessionStart resume "$NEW")"
+  [ "$status" -eq 0 ]
+  context="$(printf '%s' "$output" | jq -r .hookSpecificOutput.additionalContext)"
+  [[ "$context" == "Another session holds the work folder $TOPIC"* ]] || false
+  [[ "$context" == *$'\n\n'"moved: "* ]] || false
+}
