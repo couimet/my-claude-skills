@@ -91,7 +91,7 @@ The marker has two forms, read from its first line. A path names the folder. A l
 
 ## Script: session-hook-state.sh
 
-`session-hook-state.sh [--project <dir>]` prints `settings`, `plugin`, or `none`: whether the session hook runs, with `disableAllHooks`. `resume-agent.sh` runs it to choose the restart form of a prompt. Its header is the contract.
+`session-hook-state.sh [--project <dir>]` prints `settings` or `none`: whether the session hook is sure to run, on strong evidence only. `resume-agent.sh` runs it to choose the restart form of a prompt. Its header is the contract.
 
 ## Settings: issue-settings.sh
 

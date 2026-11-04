@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# session-hook-state.sh — Say whether the session hook (session-hook.sh) runs
-# at UserPromptSubmit on this machine, and through which install.
+# session-hook-state.sh — Say whether the session hook (session-hook.sh) is
+# sure to run at UserPromptSubmit when a session starts in a directory.
 #
 # Usage:
 #   session-hook-state.sh [--project <dir>]
 #   session-hook-state.sh --help
 #
-#   --project <dir>  The directory where the session runs. Its
+#   --project <dir>  The directory where the session starts. Its
 #                    .claude/settings.json and .claude/settings.local.json
 #                    can turn all hooks off (see disableAllHooks below).
 #
@@ -16,30 +16,45 @@
 # needs that hook, else the session takes its name from the text of the
 # prompt. So resume-agent.sh asks this script before it chooses the restart.
 #
-# The script reads the user settings file,
-# SESSION_HOOK_STATE_SETTINGS (default ${CLAUDE_CONFIG_DIR:-~/.claude}/settings.json),
-# then, with --project, <dir>/.claude/settings.json and
-# <dir>/.claude/settings.local.json, the order of Claude Code. A file that is
-# missing or is not a JSON object changes nothing. The managed policy
-# settings are not read. From the files:
+# Contract (PR 313): best effort, on strong evidence only. Claude Code builds
+# its hook configuration from more inputs than a script can model, so the
+# script reads the inputs below and no other. Each other input gives none,
+# or is a limit of this list. none is the safe answer: the caller restarts
+# with /rename and sends the prompt itself, which costs one message. A wrong
+# settings costs a session named from its prompt, and resume-agent.sh then
+# prints its Rename line, so a wrong guess is never silent.
 #
-#   - A UserPromptSubmit entry of the hook in any file runs the hook. The
-#     entry test is the one of install.sh: session-hook-rule.jq, beside this
-#     script.
-#   - A plugin install ships the hook in hooks/hooks.json. The keys
-#     "my-claude-skills@<marketplace>" of enabledPlugins merge key by key, so
-#     a later file overrides each key of an earlier one, and a true key at
-#     the end means the plugin is enabled.
-#   - disableAllHooks turns each hook off. The last file that sets it to a
-#     boolean decides, and true gives none.
+# The inputs:
 #
-# Output (stdout): one line, one value of an enum, so a new install form adds
-# a value and no reader changes:
+#   - The hook entry: a UserPromptSubmit entry of the hook in the user
+#     settings file, SESSION_HOOK_STATE_SETTINGS (default
+#     ${CLAUDE_CONFIG_DIR:-~/.claude}/settings.json), the form that install.sh
+#     writes. The entry test is the one of install.sh: session-hook-rule.jq,
+#     beside this script.
+#   - disableAllHooks, from the user settings file, then, with --project,
+#     <dir>/.claude/settings.json and <dir>/.claude/settings.local.json, the
+#     order of Claude Code. The last file that sets it to a boolean decides,
+#     and true gives none.
+#   - The managed policy settings: when a managed settings file exists, the
+#     state is none, with no parse. The paths are
+#     SESSION_HOOK_STATE_MANAGED (default: the macOS path
+#     /Library/Application Support/ClaudeCode/managed-settings.json and the
+#     Linux path /etc/claude-code/managed-settings.json).
+#   - A file that is missing, or is not a JSON object, sets nothing.
 #
-#   settings  a UserPromptSubmit entry of one of the files runs the hook
-#   plugin    no such entry, but the my-claude-skills plugin is enabled
-#   none      neither, the settings file is missing or not JSON, or
-#             disableAllHooks is true
+# The limits, which give none or are not seen: a plugin install (its hook
+# entry is in hooks/hooks.json, and its install state is not a documented
+# file), a hook entry in the project or local settings, --plugin-dir, the
+# saved --settings of a job, the settings of a parent directory (a session
+# reads its project settings from the directory it starts in only; see the
+# header of resume-agent.sh), and a hook script that cannot run.
+#
+# Output (stdout): one line, one value of an enum, so a new value adds with
+# no reader change:
+#
+#   settings  the hook entry is in the user settings, no read file sets
+#             disableAllHooks to true, and no managed settings file exists
+#   none      each other case
 #
 # Exit codes:
 #   0  — the state is printed
@@ -78,39 +93,34 @@ done
 command -v jq >/dev/null 2>&1 \
   || { echo "session-hook-state $ERR_NO_JQ error: jq not found; it is required to read $SETTINGS" >&2; exit 1; }
 
-# summary_of <file> — print one JSON object with the three facts of <file>:
-# a hook entry, the my-claude-skills@* keys of enabledPlugins with a boolean
-# value, and disableAllHooks when it is a boolean. Print nothing when the file
-# is missing or is not a JSON object, so it changes nothing.
-rule="$(cat "$_self_dir/session-hook-rule.jq")"
-summary_of() {
-  [ -r "$1" ] || return 0
-  jq -c "$rule"' # kcov-exclude-start
-    if type != "object" then empty else
-      {hook: (([(.hooks.UserPromptSubmit // [])[]?.hooks[]? | select(ours)] | length) > 0),
-       plugins: ((.enabledPlugins // {})
-                 | if type == "object" then with_entries(select((.key | startswith("my-claude-skills@")) and (.value | type == "boolean"))) else {} end),
-       disable: (.disableAllHooks | if type == "boolean" then . else null end)}
-    end' "$1" 2>/dev/null || true # kcov-exclude-end
+# managed_present — 0 when one of the managed settings files exists. See
+# the header: its keys are not parsed, so its presence alone gives none.
+managed_present() {
+  local m
+  local -a paths=("/Library/Application Support/ClaudeCode/managed-settings.json" "/etc/claude-code/managed-settings.json")
+  [ -z "${SESSION_HOOK_STATE_MANAGED+set}" ] || paths=("$SESSION_HOOK_STATE_MANAGED")
+  for m in "${paths[@]}"; do
+    [ -n "$m" ] && [ -e "$m" ] && return 0
+  done
+  return 1
 }
 
-# The files in the order of Claude Code: a later file overrides an earlier
-# one. See the header.
-summaries=""
-for f in "$SETTINGS" ${project:+"$project/.claude/settings.json" "$project/.claude/settings.local.json"}; do
-  one="$(summary_of "$f")"
-  [ -z "$one" ] || summaries="${summaries}${one}"$'\n'
-done
-state="$(printf '%s' "$summaries" | jq -r -s ' # kcov-exclude-start
-  reduce .[] as $s ({hook: false, plugins: {}, disable: null};
-    .hook = (.hook or $s.hook)
-    | .plugins += $s.plugins
-    | .disable = (if $s.disable == null then .disable else $s.disable end))
-  | if .disable == true then "none"
-    elif .hook then "settings"
-    elif (.plugins | any(.[]; . == true)) then "plugin"
-    else "none" end
-  # kcov-exclude-end
-' 2>/dev/null)" || state="none"
-[ -n "$state" ] || state="none"
+# disabled_in <file> — print true or false when <file> is a JSON object that
+# sets disableAllHooks to a boolean, and nothing otherwise.
+disabled_in() {
+  [ -r "$1" ] || return 0
+  jq -r 'if type == "object" and (.disableAllHooks | type == "boolean") then .disableAllHooks else empty end' "$1" 2>/dev/null || true
+}
+
+state="none"
+if ! managed_present && [ -r "$SETTINGS" ] \
+    && jq -e "$(cat "$_self_dir/session-hook-rule.jq") type == \"object\" and ([(.hooks.UserPromptSubmit // [])[]?.hooks[]? | select(ours)] | length) > 0" "$SETTINGS" >/dev/null 2>&1; then
+  state="settings"
+  disabled=""
+  for f in "$SETTINGS" ${project:+"$project/.claude/settings.json" "$project/.claude/settings.local.json"}; do
+    value="$(disabled_in "$f")"
+    [ -z "$value" ] || disabled="$value"
+  done
+  [ "$disabled" != "true" ] || state="none"
+fi
 printf '%s\n' "$state"

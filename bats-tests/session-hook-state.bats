@@ -22,7 +22,8 @@ teardown() {
 
 # run_state [args...] — run the script with SETTINGS as its settings file.
 run_state() {
-  run --separate-stderr env -u CLAUDE_CONFIG_DIR SESSION_HOOK_STATE_SETTINGS="$SETTINGS" "$SCRIPT" "$@"
+  run --separate-stderr env -u CLAUDE_CONFIG_DIR SESSION_HOOK_STATE_SETTINGS="$SETTINGS" \
+    SESSION_HOOK_STATE_MANAGED="$TEST_TEMP_DIR/no-managed.json" "$SCRIPT" "$@"
 }
 
 @test "session-hook-state: a UserPromptSubmit entry of the hook gives settings" {
@@ -38,16 +39,10 @@ run_state() {
   [ "$output" = "none" ]
 }
 
-@test "session-hook-state: an enabled my-claude-skills plugin gives plugin" {
+@test "session-hook-state: an enabled my-claude-skills plugin gives none, a documented limit" {
   printf '{"enabledPlugins":{"other@x":true,"my-claude-skills@my-claude-skills":true}}' > "$SETTINGS"
   run_state
   [ "$status" -eq 0 ]
-  [ "$output" = "plugin" ]
-}
-
-@test "session-hook-state: a disabled my-claude-skills plugin gives none" {
-  printf '{"enabledPlugins":{"my-claude-skills@my-claude-skills":false}}' > "$SETTINGS"
-  run_state
   [ "$output" = "none" ]
 }
 
@@ -65,10 +60,11 @@ run_state() {
 
 @test "session-hook-state: with no override, the file comes from CLAUDE_CONFIG_DIR" {
   mkdir -p "$TEST_TEMP_DIR/config"
-  printf '{"enabledPlugins":{"my-claude-skills@m":true}}' > "$TEST_TEMP_DIR/config/settings.json"
-  run --separate-stderr env -u SESSION_HOOK_STATE_SETTINGS CLAUDE_CONFIG_DIR="$TEST_TEMP_DIR/config" "$SCRIPT"
+  printf '{"hooks":{"UserPromptSubmit":[{"hooks":[{"type":"command","command":"/x/skills/issue-context/session-hook.sh"}]}]}}' > "$TEST_TEMP_DIR/config/settings.json"
+  run --separate-stderr env -u SESSION_HOOK_STATE_SETTINGS CLAUDE_CONFIG_DIR="$TEST_TEMP_DIR/config" \
+    SESSION_HOOK_STATE_MANAGED="$TEST_TEMP_DIR/no-managed.json" "$SCRIPT"
   [ "$status" -eq 0 ]
-  [ "$output" = "plugin" ]
+  [ "$output" = "settings" ]
 }
 
 @test "session-hook-state: --help prints the header and exits 0" {
@@ -89,7 +85,8 @@ run_state() {
   # tools broke the kcov tracer of the child bash on macOS (2026-11-04).
   local nojq
   nojq="$(_stub_path_without "$TEST_TEMP_DIR/nojq" jq)"
-  run --separate-stderr env -u CLAUDE_CONFIG_DIR PATH="$nojq" SESSION_HOOK_STATE_SETTINGS="$SETTINGS" "$SCRIPT"
+  run --separate-stderr env -u CLAUDE_CONFIG_DIR PATH="$nojq" SESSION_HOOK_STATE_SETTINGS="$SETTINGS" \
+    SESSION_HOOK_STATE_MANAGED="$TEST_TEMP_DIR/no-managed.json" "$SCRIPT"
   [ "$status" -eq 1 ]
   [[ "$stderr" == *K002* ]] || false
 }
@@ -148,30 +145,30 @@ project_file() {
 }
 
 # ============================================================================
-# The plugin and the hook entry across the three files (CodeRabbit review of
-# PR 313)
+# The contract of strong evidence (PR 313, review 5774396690)
 # ============================================================================
 
-@test "session-hook-state: the plugin enabled in the user file and disabled in the project file gives none" {
-  printf '{"enabledPlugins":{"my-claude-skills@m":true}}' > "$SETTINGS"
-  project_file settings.json '{"enabledPlugins":{"my-claude-skills@m":false}}'
+@test "session-hook-state: a hook entry only in the project file gives none, a documented limit" {
+  printf '{}' > "$SETTINGS"
+  project_file settings.json '{"hooks":{"UserPromptSubmit":[{"hooks":[{"type":"command","command":"/x/skills/issue-context/session-hook.sh"}]}]}}'
   run_state --project "$TEST_TEMP_DIR/project"
   [ "$status" -eq 0 ]
   [ "$output" = "none" ]
 }
 
-@test "session-hook-state: the plugin enabled only in the local file gives plugin" {
-  printf '{}' > "$SETTINGS"
-  project_file settings.local.json '{"enabledPlugins":{"my-claude-skills@m":true}}'
-  run_state --project "$TEST_TEMP_DIR/project"
-  [ "$output" = "plugin" ]
+@test "session-hook-state: a managed settings file gives none, with the hook entry in the user file" {
+  hook_entry
+  printf '{}' > "$TEST_TEMP_DIR/managed.json"
+  run --separate-stderr env -u CLAUDE_CONFIG_DIR SESSION_HOOK_STATE_SETTINGS="$SETTINGS" \
+    SESSION_HOOK_STATE_MANAGED="$TEST_TEMP_DIR/managed.json" "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" = "none" ]
 }
 
-@test "session-hook-state: a hook entry only in the project file gives settings" {
-  printf '{}' > "$SETTINGS"
-  project_file settings.json '{"hooks":{"UserPromptSubmit":[{"hooks":[{"type":"command","command":"/x/skills/issue-context/session-hook.sh"}]}]}}'
-  run_state --project "$TEST_TEMP_DIR/project"
-  [ "$output" = "settings" ]
-  run_state
+@test "session-hook-state: a managed settings file that is not JSON also gives none" {
+  hook_entry
+  printf 'not json' > "$TEST_TEMP_DIR/managed.json"
+  run --separate-stderr env -u CLAUDE_CONFIG_DIR SESSION_HOOK_STATE_SETTINGS="$SETTINGS" \
+    SESSION_HOOK_STATE_MANAGED="$TEST_TEMP_DIR/managed.json" "$SCRIPT"
   [ "$output" = "none" ]
 }

@@ -14,7 +14,7 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 ### Added
 
-- `/resume-agent` takes `--prompt-file <path>`. When the session hook runs on your machine, an ended session wakes with the prompt as its first message, so you send nothing after the call. With no hook, or for a running session, the output tells you to send the prompt when the session is idle ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
+- `/resume-agent` takes `--prompt-file <path>`. When `install.sh` installed the session hook in `~/.claude/settings.json`, an ended session wakes with the prompt as its first message, so you send nothing after the call. In each other case (a plugin install, hooks turned off, managed settings, or a running session), the output tells you to send the prompt when the session is idle ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
 - `/resume-agent` takes `--clear`, which wakes an ended session with a cleared conversation and keeps its job, its name, and its work folder. Use it between review cycles ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
 - `resume-agent.sh --attach <folder>`, typed in a terminal, wakes the session and opens it in that terminal ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
 

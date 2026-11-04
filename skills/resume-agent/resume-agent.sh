@@ -136,7 +136,8 @@
 #
 #   - ended, and the session hook runs at UserPromptSubmit on this machine
 #     (../issue-context/session-hook-state.sh --project <restart directory>
-#     gives settings or plugin, so no disableAllHooks turns it off): the
+#     gives settings: strong evidence only, and each other value counts as
+#     none; see its header): the
 #     restart sends the prompt alone, and the hook gives the session the
 #     folder name at that prompt. The script waits for the name only, and
 #     prints "Prompt: sent on the restart". A name other than the folder
@@ -599,7 +600,7 @@ else
   elif [ -n "$prompt_text" ]; then
     hook_state="$("$_self_dir/../issue-context/session-hook-state.sh" --project "$resume_dir" 2>/dev/null)" || hook_state="none"
     case "$hook_state" in
-      settings | plugin)
+      settings)
         restart_prompt="$prompt_text"
         prompt_sent=1
         ;;
