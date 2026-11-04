@@ -17,23 +17,26 @@
 # prompt. So resume-agent.sh asks this script before it chooses the restart.
 #
 # The script reads the user settings file,
-# SESSION_HOOK_STATE_SETTINGS (default ${CLAUDE_CONFIG_DIR:-~/.claude}/settings.json).
-# The entry test is the one of install.sh: session-hook-rule.jq, beside this
-# script. A plugin install ships the hook in hooks/hooks.json, so an enabled
-# plugin named my-claude-skills (a key "my-claude-skills@<marketplace>" in
-# enabledPlugins, with the value true) counts too.
+# SESSION_HOOK_STATE_SETTINGS (default ${CLAUDE_CONFIG_DIR:-~/.claude}/settings.json),
+# then, with --project, <dir>/.claude/settings.json and
+# <dir>/.claude/settings.local.json, the order of Claude Code. A file that is
+# missing or is not a JSON object changes nothing. The managed policy
+# settings are not read. From the files:
 #
-# disableAllHooks turns each hook off. The script reads it from the user
-# settings file, then from <dir>/.claude/settings.json, then from
-# <dir>/.claude/settings.local.json, the order of Claude Code: a later file
-# that sets the key overrides an earlier one. A file that is missing, is not
-# JSON, or does not set the key changes nothing. When the effective value is
-# true, the state is none. The managed policy settings are not read.
+#   - A UserPromptSubmit entry of the hook in any file runs the hook. The
+#     entry test is the one of install.sh: session-hook-rule.jq, beside this
+#     script.
+#   - A plugin install ships the hook in hooks/hooks.json. The keys
+#     "my-claude-skills@<marketplace>" of enabledPlugins merge key by key, so
+#     a later file overrides each key of an earlier one, and a true key at
+#     the end means the plugin is enabled.
+#   - disableAllHooks turns each hook off. The last file that sets it to a
+#     boolean decides, and true gives none.
 #
 # Output (stdout): one line, one value of an enum, so a new install form adds
 # a value and no reader changes:
 #
-#   settings  a UserPromptSubmit entry of the settings file runs the hook
+#   settings  a UserPromptSubmit entry of one of the files runs the hook
 #   plugin    no such entry, but the my-claude-skills plugin is enabled
 #   none      neither, the settings file is missing or not JSON, or
 #             disableAllHooks is true
@@ -75,29 +78,39 @@ done
 command -v jq >/dev/null 2>&1 \
   || { echo "session-hook-state $ERR_NO_JQ error: jq not found; it is required to read $SETTINGS" >&2; exit 1; }
 
-state="none"
-if [ -r "$SETTINGS" ]; then
-  state="$(jq -r "$(cat "$_self_dir/session-hook-rule.jq") # kcov-exclude-start
-    if type != \"object\" then \"none\"
-    elif ([(.hooks.UserPromptSubmit // [])[]?.hooks[]? | select(ours)] | length) > 0 then \"settings\"
-    elif ((.enabledPlugins // {}) | to_entries | any((.key | startswith(\"my-claude-skills@\")) and .value == true)) then \"plugin\"
-    # kcov-exclude-end
-    else \"none\" end" "$SETTINGS" 2>/dev/null)" || state="none"
-fi
-
-# disabled_in <file> — print true or false when <file> sets disableAllHooks
-# to a boolean, and nothing otherwise.
-disabled_in() {
+# summary_of <file> — print one JSON object with the three facts of <file>:
+# a hook entry, the my-claude-skills@* keys of enabledPlugins with a boolean
+# value, and disableAllHooks when it is a boolean. Print nothing when the file
+# is missing or is not a JSON object, so it changes nothing.
+rule="$(cat "$_self_dir/session-hook-rule.jq")"
+summary_of() {
   [ -r "$1" ] || return 0
-  jq -r 'if type == "object" and (.disableAllHooks | type == "boolean") then .disableAllHooks else empty end' "$1" 2>/dev/null || true
+  jq -c "$rule"' # kcov-exclude-start
+    if type != "object" then empty else
+      {hook: (([(.hooks.UserPromptSubmit // [])[]?.hooks[]? | select(ours)] | length) > 0),
+       plugins: ((.enabledPlugins // {})
+                 | if type == "object" then with_entries(select((.key | startswith("my-claude-skills@")) and (.value | type == "boolean"))) else {} end),
+       disable: (.disableAllHooks | if type == "boolean" then . else null end)}
+    end' "$1" 2>/dev/null || true # kcov-exclude-end
 }
 
-if [ "$state" != "none" ]; then
-  disabled=""
-  for f in "$SETTINGS" ${project:+"$project/.claude/settings.json" "$project/.claude/settings.local.json"}; do
-    value="$(disabled_in "$f")"
-    [ -z "$value" ] || disabled="$value"
-  done
-  [ "$disabled" != "true" ] || state="none"
-fi
+# The files in the order of Claude Code: a later file overrides an earlier
+# one. See the header.
+summaries=""
+for f in "$SETTINGS" ${project:+"$project/.claude/settings.json" "$project/.claude/settings.local.json"}; do
+  one="$(summary_of "$f")"
+  [ -z "$one" ] || summaries="${summaries}${one}"$'\n'
+done
+state="$(printf '%s' "$summaries" | jq -r -s ' # kcov-exclude-start
+  reduce .[] as $s ({hook: false, plugins: {}, disable: null};
+    .hook = (.hook or $s.hook)
+    | .plugins += $s.plugins
+    | .disable = (if $s.disable == null then .disable else $s.disable end))
+  | if .disable == true then "none"
+    elif .hook then "settings"
+    elif (.plugins | any(.[]; . == true)) then "plugin"
+    else "none" end
+  # kcov-exclude-end
+' 2>/dev/null)" || state="none"
+[ -n "$state" ] || state="none"
 printf '%s\n' "$state"

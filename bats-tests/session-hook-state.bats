@@ -146,3 +146,32 @@ project_file() {
   [ "$status" -eq 1 ]
   [[ "$stderr" == *K001* ]] || false
 }
+
+# ============================================================================
+# The plugin and the hook entry across the three files (CodeRabbit review of
+# PR 313)
+# ============================================================================
+
+@test "session-hook-state: the plugin enabled in the user file and disabled in the project file gives none" {
+  printf '{"enabledPlugins":{"my-claude-skills@m":true}}' > "$SETTINGS"
+  project_file settings.json '{"enabledPlugins":{"my-claude-skills@m":false}}'
+  run_state --project "$TEST_TEMP_DIR/project"
+  [ "$status" -eq 0 ]
+  [ "$output" = "none" ]
+}
+
+@test "session-hook-state: the plugin enabled only in the local file gives plugin" {
+  printf '{}' > "$SETTINGS"
+  project_file settings.local.json '{"enabledPlugins":{"my-claude-skills@m":true}}'
+  run_state --project "$TEST_TEMP_DIR/project"
+  [ "$output" = "plugin" ]
+}
+
+@test "session-hook-state: a hook entry only in the project file gives settings" {
+  printf '{}' > "$SETTINGS"
+  project_file settings.json '{"hooks":{"UserPromptSubmit":[{"hooks":[{"type":"command","command":"/x/skills/issue-context/session-hook.sh"}]}]}}'
+  run_state --project "$TEST_TEMP_DIR/project"
+  [ "$output" = "settings" ]
+  run_state
+  [ "$output" = "none" ]
+}
