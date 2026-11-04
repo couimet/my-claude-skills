@@ -1233,3 +1233,21 @@ hook_settings() {
   [ "$(sed -n 4p "$RESUME_ARGS")" = "/rename my-topic" ]
   _contains "$output" "Prompt: not sent; send it with SendMessage when Status is idle"
 }
+
+@test "prompt: with the hook, a holder that only a worktree marker names restarts with /rename, and the prompt is not sent" {
+  hook_settings
+  rm -rf "$SESSIONS_DIR"
+  mkdir -p "$SESSIONS_DIR"
+  local wt="$TEST_TEMP_DIR/wt"
+  mkdir -p "$wt"
+  git -C "$wt" init -q
+  printf '%s\n' "$REPO/my-topic" > "$wt/CLAUDE_WORK_FOLDER"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic blocked idle null "$wt")" > "$AGENTS_ALL_FILE"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle 99897 "$wt")" > "$AGENTS_AFTER"
+  local pf
+  pf="$(prompt_file)"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" --prompt-file "$pf" my-topic
+  [ "$status" -eq 0 ]
+  [ "$(sed -n 4p "$RESUME_ARGS")" = "/rename my-topic" ]
+  _contains "$output" "Prompt: not sent; send it with SendMessage when Status is idle"
+}

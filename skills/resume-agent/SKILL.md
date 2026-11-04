@@ -16,7 +16,7 @@ Make the session of a topic folder run again, so that the next round of work on 
 
 Use this when a topic that `/launch-agent` started needs another round, such as a review that waited for the author, and the session of the topic ended. Without this skill, only a shell brings the session back: find the session id, run `claude --bg --resume <session id>`, then attach.
 
-The user or Claude can start this skill. With no prompt file, a restart sends only a `/rename` prompt with the folder name, so the session starts no work. A person can type `/resume-agent` in any session, also in the input box of the agent view, which `claude agents` opens. A skill that prepares the next round runs the script directly. See "For Callers".
+The user or Claude can start this skill. With no prompt file, a restart sends only `/rename` with the folder name (`/clear` with `--clear`), so the session starts no work. A person can type `/resume-agent` in any session, also in the input box of the agent view, which `claude agents` opens. A skill that prepares the next round runs the script directly. See "For Callers".
 
 ## When NOT to Use
 
@@ -38,8 +38,8 @@ The script finds the sessions of the folder, and leaves out this session. When m
 
 - **Running:** the script restarts nothing, because a resume of a running session starts a copy.
 - **Retired:** the job is listed with no process. Only `claude attach` wakes it, in a terminal. The script restarts nothing and prints `Status: retired`. A retired row whose transcript Claude Code deleted is gone, as below, because an attach opens an empty conversation.
-- **Ended:** the script runs `claude --bg --resume` on the first session id of the job, with the prompt `/rename <folder name>` and no flag, so the session wakes under the folder name, in one job record. A flag such as `--name` starts a copy, and a prompt does not. Without the `/rename`, a session named only by a typed `/rename` can wake with an automatic name, which a later AI title replaces. The script picks the start directory and checks it. R007 reports a mismatch.
-- **Moved:** the newest session file of the job names another folder, so the job does not hold this folder. The script does not wake it, and stops with R003, which gives `/launch-agent`.
+- **Ended:** the script runs `claude --bg --resume` on the first session id of the job, with the prompt `/rename <folder name>` and no flag, so the session wakes under the folder name, in one job record. A flag such as `--name` starts a copy, and a prompt does not. The script picks the start directory and checks it. R007 reports a mismatch.
+- **Moved:** the live session file of the job, else its newest one, names another folder, so the job does not hold this folder. The script does not wake it, and stops with R003, which gives `/launch-agent`.
 - **Gone:** the job has no process, and Claude Code deleted the transcript of the conversation that a resume loads (the `cleanupPeriodDays` setting). A resume gives an empty conversation with no history and no name, so the script restarts nothing and stops with R008. It does not resume an older session of the folder in its place, because an older session misses the later rounds.
 
 Right after a restart, the list shows the session under its short id, or under the `/rename <folder name>` prompt, until the rename applies. Until then, a search in the agent view and a send by name cannot find the session. So the script reads the list again for up to 15 seconds, until the list shows the folder name. The `Name:` line gives only a name that the list shows, and never a short id or a prompt. When the folder name does not show in that time, the script prints `Name: not loaded yet`, and stderr names the folder name.

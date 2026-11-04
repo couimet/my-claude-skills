@@ -137,7 +137,9 @@
 #   - ended, and the session hook runs at UserPromptSubmit on this machine
 #     (../issue-context/session-hook-state.sh --project <restart directory>
 #     gives settings: strong evidence only, and each other value counts as
-#     none; see its header): the
+#     none; see its header), and a session file of the session names the
+#     folder (the hook names a session through that file only, so a holder
+#     that only a worktree marker names does not count): the
 #     restart sends the prompt alone, and the hook gives the session the
 #     folder name at that prompt. The script waits for the name only, and
 #     prints "Prompt: sent on the restart". A name other than the folder
@@ -599,12 +601,13 @@ else
     [[ "$old_conv" =~ ^[A-Za-z0-9_-]+$ ]] || old_conv="$session_id"
   elif [ -n "$prompt_text" ]; then
     hook_state="$("$_self_dir/../issue-context/session-hook-state.sh" --project "$resume_dir" 2>/dev/null)" || hook_state="none"
-    case "$hook_state" in
-      settings)
-        restart_prompt="$prompt_text"
-        prompt_sent=1
-        ;;
-    esac
+    # The hook names a session only through its session file, so a holder
+    # that only a worktree marker ties to the folder needs the /rename form.
+    holder_file="$(_issue_context_holder_files "$folder_abs" "$session_id" "$job_id" 2>/dev/null)" || holder_file=""
+    if [ "$hook_state" = "settings" ] && [ -n "$holder_file" ]; then
+      restart_prompt="$prompt_text"
+      prompt_sent=1
+    fi
   fi
   restart_output="$({ cd "$resume_dir" && claude --bg --resume "$session_id" "$restart_prompt"; } 2>&1)" || {
     {

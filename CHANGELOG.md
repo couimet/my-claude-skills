@@ -20,14 +20,14 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 ### Changed
 
-- After it wakes a session, `/resume-agent` waits up to 60 seconds for the session to be idle before it reports the status, so a normal wake gives `Status: idle`, not `busy` or `unknown` ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
+- After it wakes a session with no prompt sent on the restart, `/resume-agent` waits up to 60 seconds for the session to be idle before it reports the status, so a normal wake gives `Status: idle`, not `busy` or `unknown` ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
 - The session hook also checks a new session at its start. A session that runs under the name of another folder gets a warning before its first prompt ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
 - The file of a session under `~/.my-claude-skills/sessions/` carries the name of its folder, not the name of the job ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
 - On success, the path helper of the working files writes one summary line for the files it sweeps, not one line for each file. Pass `--verbose` to see each file ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
 
 ### Fixed
 
-- A background session that moved to another folder keeps that folder after a resume or a `/clear`. The old folder is free again: `/launch-agent` takes it with no `--take-over`, and `/find-agent` shows `moved` ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
+- A background session that moved to another folder keeps that folder after a resume or a `/clear`. The old folder is free again: `/launch-agent` takes it with no `--take-over`, and `/find-agent` shows `moved`. While the live session file of the job still names the old folder, the job holds it, and `/launch-agent` names the older files and `--take-over` ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
 - A retired session whose transcript Claude Code deleted shows as `gone`, so `/resume-agent` and `/find-agent` no longer advise an attach to an empty conversation ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
 
 ## 2026.11.02
