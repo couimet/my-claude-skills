@@ -84,13 +84,12 @@ run_state() {
 }
 
 @test "session-hook-state: no jq on PATH → exit 1, K002" {
-  local bin="$TEST_TEMP_DIR/bin"
-  mkdir -p "$bin"
-  local tool
-  for tool in bash dirname cat; do
-    ln -s "$(command -v "$tool")" "$bin/$tool"
-  done
-  run --separate-stderr env -u CLAUDE_CONFIG_DIR PATH="$bin" SESSION_HOOK_STATE_SETTINGS="$SETTINGS" "$bin/bash" "$SCRIPT"
+  # The shared helper keeps each tool of PATH but jq, as the jq-missing tests
+  # of session-hook.bats and folder-sessions.bats do. A PATH with only a few
+  # tools broke the kcov tracer of the child bash on macOS (2026-11-04).
+  local nojq
+  nojq="$(_stub_path_without "$TEST_TEMP_DIR/nojq" jq)"
+  run --separate-stderr env -u CLAUDE_CONFIG_DIR PATH="$nojq" SESSION_HOOK_STATE_SETTINGS="$SETTINGS" "$SCRIPT"
   [ "$status" -eq 1 ]
   [[ "$stderr" == *K002* ]] || false
 }

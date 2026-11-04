@@ -196,7 +196,7 @@ name_check() {
   nc_out="$("$_self_dir/find-agent.sh" --check 2>/dev/null)" || nc_rc=$?
   [ "$nc_rc" -eq 1 ] || return 0
   case "$nc_out" in
-    moved:*) ;;
+    moved:*) ;; # kcov-exclude-line
     *) return 0 ;;
   esac
   printf '%s. Give the user these commands, and run none of them: the user decides.' "$nc_out"

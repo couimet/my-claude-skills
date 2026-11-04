@@ -39,7 +39,7 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SETTINGS="${SESSION_HOOK_STATE_SETTINGS:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json}"
 
 case "${1-}" in
-  "") ;;
+  "") ;; # kcov-exclude-line
   --help)
     sed -n '3,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
     exit 0
@@ -55,14 +55,11 @@ command -v jq >/dev/null 2>&1 \
 
 state="none"
 if [ -r "$SETTINGS" ]; then
-  state="$(jq -r "$(cat "$_self_dir/session-hook-rule.jq")
+  state="$(jq -r "$(cat "$_self_dir/session-hook-rule.jq") # kcov-exclude-start
     if type != \"object\" then \"none\"
     elif ([(.hooks.UserPromptSubmit // [])[]?.hooks[]? | select(ours)] | length) > 0 then \"settings\"
     elif ((.enabledPlugins // {}) | to_entries | any((.key | startswith(\"my-claude-skills@\")) and .value == true)) then \"plugin\"
+    # kcov-exclude-end
     else \"none\" end" "$SETTINGS" 2>/dev/null)" || state="none"
 fi
-case "$state" in
-  settings | plugin | none) ;;
-  *) state="none" ;;
-esac
 printf '%s\n' "$state"

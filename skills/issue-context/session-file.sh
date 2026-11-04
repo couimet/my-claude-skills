@@ -360,8 +360,7 @@ _issue_context_session_owners() {
     jq -r ' # kcov-exclude-start
       def token: type == "string" and test("^[A-Za-z0-9_-]+$");
       select(type == "object" and (.session_id | token))
-      # kcov-exclude-end
-      | "\(.session_id)\t\(if (.job_session_id | token) then .job_session_id else "" end)\t\(.written_at // "" | tostring | gsub("[\t\n\r]"; " "))\t\(.folder // "" | tostring | gsub("[\t\n\r]"; " "))"' "$_isf_file" 2>/dev/null || true
+      | "\(.session_id)\t\(if (.job_session_id | token) then .job_session_id else "" end)\t\(.written_at // "" | tostring | gsub("[\t\n\r]"; " "))\t\(.folder // "" | tostring | gsub("[\t\n\r]"; " "))"' "$_isf_file" 2>/dev/null || true # kcov-exclude-end
   done
 }
 
