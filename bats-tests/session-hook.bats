@@ -708,3 +708,15 @@ moved_setup() {
   [ -z "$output" ]
   [ ! -e "$CALLS" ]
 }
+
+@test "session-hook: a /clear of a session under the name of another folder sets the folder, then gets the moved warning" {
+  moved_setup
+  mv "$SESSIONS_DIR/$NEW--t.json" "$SESSIONS_DIR/$OLD--t.json"
+  jq -c --arg s "$OLD" '.session_id = $s' "$SESSIONS_DIR/$OLD--t.json" > "$SESSIONS_DIR/$OLD.tmp" && mv "$SESSIONS_DIR/$OLD.tmp" "$SESSIONS_DIR/$OLD--t.json"
+  run_hook "$(event SessionEnd clear "$OLD")" CLAUDE_PID="$PID"
+  [ "$status" -eq 0 ]
+  run_hook "$(event SessionStart clear "$NEW")" CLAUDE_PID="$PID"
+  [ "$status" -eq 0 ]
+  [ -n "$(files_of "$NEW")" ]
+  [[ "$(printf '%s' "$output" | jq -r .hookSpecificOutput.additionalContext)" == "moved: "* ]] || false
+}

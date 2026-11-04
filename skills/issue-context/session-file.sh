@@ -406,10 +406,20 @@ _issue_context_holder_files() {
 # the folder, but a newer file of its job names another one. Returns 1 when
 # jq is missing or there is no sessions directory.
 _issue_context_job_newest_folder() {
-  local _isf_job="$1" _isf_line _isf_best=""
+  local _isf_job="$1" _isf_line _isf_best="" _isf_row _isf_sid _isf_first _isf_written _isf_folder
   [ -n "$_isf_job" ] && [ "$_isf_job" != "-" ] || return 0
   _isf_line="$(_issue_context_session_owners)" || return 1
-  while IFS=$'\t' read -r _isf_sid _isf_first _isf_written _isf_folder; do
+  # Each line is read whole and split with parameter expansion: a read with a
+  # tab in IFS joins two adjacent tabs, so an empty job_session_id would
+  # shift each field after it.
+  while IFS= read -r _isf_row; do
+    [ -n "$_isf_row" ] || continue
+    _isf_sid="${_isf_row%%$'\t'*}"
+    _isf_row="${_isf_row#*$'\t'}"
+    _isf_first="${_isf_row%%$'\t'*}"
+    _isf_row="${_isf_row#*$'\t'}"
+    _isf_written="${_isf_row%%$'\t'*}"
+    _isf_folder="${_isf_row#*$'\t'}"
     [ -n "$_isf_sid" ] || continue
     if [ "${_isf_first:0:8}" = "$_isf_job" ] || { [ -z "$_isf_first" ] && [ "${_isf_sid:0:8}" = "$_isf_job" ]; }; then
       if [ -z "$_isf_best" ] || [[ "$_isf_written"$'\t'"$_isf_sid"$'\t'"$_isf_folder" > "$_isf_best" ]]; then

@@ -1565,3 +1565,17 @@ moved_file() {
   [ "$status" -eq 0 ]
   _contains "$output" "Claude Code deleted its transcript"
 }
+
+@test "held: a holder file with no job_session_id that is newer than a child file of another folder → the plain L007, not the moved one" {
+  # The holder file has no job_session_id, so its owner line has an empty
+  # field. A read with a tab in IFS shifted the fields of that line, and the
+  # older child file then read as the newest file of the job.
+  holder idle 123
+  local child="0e1f2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b"
+  moved_file "$child" "$REPO/folder-b" 2026-10-01T10:00:00Z
+  run_in "$REPO" --bg my-topic "a prompt"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L007"
+  _lacks "$output" "its newest session file names"
+  _contains "$output" "to continue that session:"
+}

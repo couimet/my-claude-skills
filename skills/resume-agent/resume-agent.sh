@@ -641,7 +641,9 @@ else
       if [ -n "$entry" ] && [ "$(field status)" = "idle" ] && cleared; then
         break
       fi
-      if [ "$waited" -ge "$STATUS_WAIT" ]; then
+      # An error, such as a limit that is not a number, also ends the wait,
+      # as in the name wait.
+      if ! [ "$waited" -lt "$STATUS_WAIT" ] 2>/dev/null; then
         echo "resume-agent: the status wait (RESUME_AGENT_STATUS_WAIT) ended after $STATUS_WAIT seconds, and the session is not idle yet; the Status line gives the last status read" >&2
         break
       fi

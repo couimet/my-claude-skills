@@ -1209,3 +1209,12 @@ hook_settings() {
   _contains "$stderr" "moved to another folder"
   [ ! -e "$RESUME_ARGS" ]
 }
+
+@test "status wait: a limit that is not a number ends the wait at once, with the stderr line of the wait" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic working busy)" > "$AGENTS_AFTER"
+  STATUS_WAIT=60s AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  _contains "$output" "Status: busy"
+  _contains "$stderr" "the status wait (RESUME_AGENT_STATUS_WAIT) ended after 60s seconds"
+}
