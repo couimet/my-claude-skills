@@ -1,6 +1,6 @@
 ---
 name: start-side-quest
-version: 2026.11.02@68a7f85
+version: 2026.11.04@730704a
 description: Start a side-quest branch for orthogonal improvements discovered while working on an issue
 argument-hint: <description | path/to/file.ts#L10-L20> [--scratchpad]
 skill-kind: composite
