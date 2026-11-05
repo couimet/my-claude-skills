@@ -464,15 +464,57 @@ _stale() {
   [ ! -e "$stray" ]
 }
 
-@test "the sweep names each removal on stderr" {
+@test "a sweep of three files writes one summary line on stderr" {
   git checkout -q -b issues/42
-  local stray="$TEST_TEMP_DIR/.claude-work/issues/42/notes/20260101-090000-001-abandoned.txt"
-  _stale "$stray"
+  local dir="$TEST_TEMP_DIR/.claude-work/issues/42/notes"
+  _stale "$dir/20260101-090000-001-one.txt"
+  _stale "$dir/20260101-090000-002-two.txt"
+  _stale "$dir/20260101-090000-003-three.txt"
+  run_target_path --type notes --description "Fresh"
+  [ "$status" -eq 0 ]
+  [ "$(printf '%s\n' "$stderr" | grep -c 'swept')" -eq 1 ]
+  case "$stderr" in
+    *"target-path: swept 3 abandoned reservations"*) ;;
+    *) printf 'stderr has no summary line:\n%s\n' "$stderr" >&2; return 1 ;;
+  esac
+}
+
+@test "a sweep of one file says reservation, not reservations" {
+  git checkout -q -b issues/42
+  _stale "$TEST_TEMP_DIR/.claude-work/issues/42/notes/20260101-090000-001-abandoned.txt"
   run_target_path --type notes --description "Fresh"
   [ "$status" -eq 0 ]
   case "$stderr" in
-    *"swept abandoned reservation $stray"*) ;;
-    *) printf 'stderr did not name the removal:\n%s\n' "$stderr" >&2; return 1 ;;
+    *"target-path: swept 1 abandoned reservation"$'\n'* | *"target-path: swept 1 abandoned reservation") ;;
+    *) printf 'stderr has no singular summary line:\n%s\n' "$stderr" >&2; return 1 ;;
+  esac
+}
+
+@test "--verbose names each swept file on its own line, and gives no summary" {
+  git checkout -q -b issues/42
+  local dir="$TEST_TEMP_DIR/.claude-work/issues/42/notes"
+  _stale "$dir/20260101-090000-001-one.txt"
+  _stale "$dir/20260101-090000-002-two.txt"
+  run_target_path --type notes --description "Fresh" --verbose
+  [ "$status" -eq 0 ]
+  [ "$(printf '%s\n' "$stderr" | grep -c 'swept abandoned reservation ')" -eq 2 ]
+  case "$stderr" in
+    *"swept abandoned reservation $dir/20260101-090000-001-one.txt"*) ;;
+    *) printf 'stderr did not name the first file:\n%s\n' "$stderr" >&2; return 1 ;;
+  esac
+  case "$stderr" in
+    *"swept 2 abandoned"*) printf 'stderr has a summary line:\n%s\n' "$stderr" >&2; return 1 ;;
+  esac
+}
+
+@test "a call that sweeps nothing writes only the using line on stderr" {
+  git checkout -q -b issues/42
+  run_target_path --type notes --description "Fresh"
+  [ "$status" -eq 0 ]
+  [ "$(printf '%s\n' "$stderr" | grep -c .)" -eq 1 ]
+  case "$stderr" in
+    "get-issue-folder-path: using "*) ;;
+    *) printf 'stderr is not one using line:\n%s\n' "$stderr" >&2; return 1 ;;
   esac
 }
 

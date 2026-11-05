@@ -28,6 +28,8 @@ setup() {
   mkdir -p "$FAKE_REPO/skills/issue-context"
   printf '#!/bin/sh\nexit 0\n' > "$FAKE_REPO/skills/issue-context/session-hook.sh"
   chmod +x "$FAKE_REPO/skills/issue-context/session-hook.sh"
+  # install.sh reads the entry rule from the checkout it runs from.
+  cp "$PROJECT_ROOT/skills/issue-context/session-hook-rule.jq" "$FAKE_REPO/skills/issue-context/"
   cp "$SCRIPT" "$FAKE_REPO/install.sh"
   # install.sh resolves REPO_DIR from git-common-dir when it is inside a repo,
   # so make the fake repo a real one and run from its root.
@@ -277,7 +279,7 @@ hook_count() {
   [ "$(hook_count SessionStart)" -eq 1 ]
   [ "$(hook_count SessionEnd)" -eq 1 ]
   [ "$(hook_count UserPromptSubmit)" -eq 1 ]
-  [ "$(jq -r '.hooks.SessionStart[0].matcher' "$FAKE_HOME/$SETTINGS_REL")" = "clear|resume" ]
+  [ "$(jq -r '.hooks.SessionStart[0].matcher' "$FAKE_HOME/$SETTINGS_REL")" = "startup|clear|resume" ]
   [ "$(jq -r '.hooks.SessionEnd[0].matcher' "$FAKE_HOME/$SETTINGS_REL")" = "clear" ]
   [ "$(jq -r '.hooks.UserPromptSubmit[0] | has("matcher")' "$FAKE_HOME/$SETTINGS_REL")" = "false" ]
   [ "$(jq -r '.hooks.SessionEnd[0].hooks[0].command' "$FAKE_HOME/$SETTINGS_REL")" = "$FAKE_HOME/.claude/skills/issue-context/session-hook.sh" ]
@@ -314,7 +316,7 @@ hook_count() {
 @test "hook: an entry with only the two earlier events gets the UserPromptSubmit event" {
   local cmd="$FAKE_HOME/.claude/skills/issue-context/session-hook.sh"
   jq -n --arg cmd "$cmd" '{hooks: {
-    SessionStart: [{matcher: "clear|resume", hooks: [{type: "command", command: $cmd}]}],
+    SessionStart: [{matcher: "startup|clear|resume", hooks: [{type: "command", command: $cmd}]}],
     SessionEnd: [{matcher: "clear", hooks: [{type: "command", command: $cmd}]}]}}' > "$FAKE_HOME/$SETTINGS_REL"
   ANSWER=y run_install
   [ "$status" -eq 0 ]
@@ -360,7 +362,7 @@ hook_count() {
   [ "$status" -eq 0 ]
   [ ! -e "$FAKE_HOME/$SETTINGS_REL" ]
   [[ "$output" == *"Claude Code hook: not added"* ]] || false
-  [[ "$output" == *"\"matcher\": \"clear|resume\""* ]] || false
+  [[ "$output" == *"\"matcher\": \"startup|clear|resume\""* ]] || false
 }
 
 @test "hook: a no changes nothing" {
@@ -436,7 +438,7 @@ hook_count() {
 
 @test "hook: the plugin hooks file and install.sh name the same script and matchers" {
   local hooks="$PROJECT_ROOT/hooks/hooks.json"
-  [ "$(jq -r '.hooks.SessionStart[0].matcher' "$hooks")" = "clear|resume" ]
+  [ "$(jq -r '.hooks.SessionStart[0].matcher' "$hooks")" = "startup|clear|resume" ]
   [ "$(jq -r '.hooks.SessionEnd[0].matcher' "$hooks")" = "clear" ]
   [ "$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$hooks")" = '${CLAUDE_PLUGIN_ROOT}/skills/issue-context/session-hook.sh' ]
   [ "$(jq -r '.hooks.SessionEnd[0].hooks[0].command' "$hooks")" = '${CLAUDE_PLUGIN_ROOT}/skills/issue-context/session-hook.sh' ]

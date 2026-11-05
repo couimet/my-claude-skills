@@ -36,11 +36,13 @@
 #   _issue_context_titles_dir
 #   _issue_context_session_id_ok
 #   _issue_context_job_first_id <out-var>
+#   _issue_context_job_newest_id <out-var> <first-id> <sessions-dir>
 #   _issue_context_session_file_read <out-folder-var> <out-reason-var>
 #   _issue_context_session_file_matches <out-array-var>
 #   _issue_context_sessions_of_folder <folder>
 #   _issue_context_session_owners
 #   _issue_context_holder_files <folder> <session-id> <job-id>
+#   _issue_context_job_newest_folder <job-id>
 #
 # Reading never exits and never prints. Every failure returns non-zero and
 # writes a short reason into the caller's variable, so the caller composes its
@@ -144,9 +146,15 @@ _issue_context_job_first_id() {
 #
 # The files of the live id come first. Only when none exists, and the
 # session is a background session whose job state names another first id,
-# are the files of that first id collected instead: a session after /clear.
-# A file under the live id therefore always wins, and the reader, --clear,
-# and the one-writer cleanup of set-work-folder.sh all see the same file.
+# are the files of the newest session of that job collected instead: a
+# session after /clear or after a resume. The newest session is the one of
+# the file with the newest written_at among the files whose session_id is
+# the first id or whose job_session_id names it (see
+# _issue_context_job_newest_id). So a move of the job to another folder,
+# which a child id writes, survives a later resume and a later /clear, and
+# the file of the first id is never rewritten. A file under the live id
+# therefore always wins, and the reader, --clear, and the one-writer cleanup
+# of set-work-folder.sh all see the same file.
 #
 # Returns 1 when there is no session id, when the session id could not be a
 # filename component, or when there is no sessions directory. An empty
@@ -172,8 +180,8 @@ _issue_context_session_file_matches() {
       break
     fi
     _issue_context_job_first_id _isf_first || break
-    [ "$_isf_first" != "$CLAUDE_CODE_SESSION_ID" ] || break
-    _isf_id="$_isf_first"
+    _issue_context_job_newest_id _isf_id "$_isf_first" "$_isf_dir"
+    [ "$_isf_id" != "$CLAUDE_CODE_SESSION_ID" ] || break
   done
 
   # eval is how a bash 3.2 function assigns to a caller-named array; macOS
@@ -185,6 +193,42 @@ _issue_context_session_file_matches() {
     eval "$_isf_out_var=(\"\${_isf_found[@]}\")"
   fi
   return 0
+}
+
+# _issue_context_job_newest_id <out-var> <first-id> <sessions-dir> — set
+# <out-var> to the session id of the newest session file of the job whose
+# first session id is <first-id>: the file with the newest written_at among
+# the files whose session_id is <first-id> or whose job_session_id is
+# <first-id>. A tie goes to the greater session id, so the choice never
+# depends on the order of the directory. With no such file, or with no jq,
+# <out-var> is <first-id>, the rule before job_session_id existed.
+#
+# grep -l -F narrows the files first, because one jq process for each file of
+# the directory runs on each path resolution of a session after a /clear. The
+# id is one plain token (_issue_context_job_first_id checks it), so a fixed
+# string match is exact enough to narrow, and jq decides.
+_issue_context_job_newest_id() {
+  local _isj_out_var="$1" _isj_first="$2" _isj_dir="$3" _isj_best="" _isj_line _isj_file
+  eval "$_isj_out_var=\"\$_isj_first\""
+  command -v jq >/dev/null 2>&1 || return 0
+  while IFS= read -r _isj_file; do
+    [ -n "$_isj_file" ] || continue
+    _isj_line="$(jq -r --arg first "$_isj_first" ' # kcov-exclude-start
+      def token: type == "string" and test("^[A-Za-z0-9_-]+$");
+      select(type == "object" and (.session_id | token)
+             and (.session_id == $first or .job_session_id == $first))
+      # kcov-exclude-end
+      | "\(.written_at // "" | tostring)\t\(.session_id)"' "$_isj_file" 2>/dev/null || true)"
+    [ -n "$_isj_line" ] || continue
+    if [ -z "$_isj_best" ] || [[ "$_isj_line" > "$_isj_best" ]]; then
+      _isj_best="$_isj_line"
+    fi
+  done <<FILES
+$(grep -l -F -- "$_isj_first" "$_isj_dir"/*.json 2>/dev/null || true)
+FILES
+  [ -n "$_isj_best" ] || return 0
+  _isj_best="${_isj_best#*$'\t'}"
+  eval "$_isj_out_var=\"\$_isj_best\""
 }
 
 # _issue_context_session_file_read <out-folder-var> <out-reason-var> — read the
@@ -295,10 +339,13 @@ _issue_context_sessions_of_folder() {
 }
 
 # _issue_context_session_owners — print one
-# "<session_id><TAB><job_session_id>" line for each session file, whatever
-# folder it names. folder-sessions.sh uses it for the tier order: a session
-# that has a session file gets its folder from that file, never from the
-# marker of its worktree. The token rules and the skip rules are the ones of
+# "<session_id><TAB><job_session_id><TAB><written_at><TAB><folder>" line for
+# each session file, whatever folder it names. folder-sessions.sh uses it for
+# the tier order: a session that has a session file gets its folder from that
+# file, never from the marker of its worktree. It also uses it for a move: the
+# newest file of a job decides the folder of the job. A tab, a newline, or a
+# carriage return in written_at or in the folder reads as a space, so each
+# line keeps four fields. The token rules and the skip rules are the ones of
 # _issue_context_sessions_of_folder. Returns 1 when jq is missing or there is
 # no sessions directory.
 _issue_context_session_owners() {
@@ -313,8 +360,7 @@ _issue_context_session_owners() {
     jq -r ' # kcov-exclude-start
       def token: type == "string" and test("^[A-Za-z0-9_-]+$");
       select(type == "object" and (.session_id | token))
-      # kcov-exclude-end
-      | "\(.session_id)\t\(if (.job_session_id | token) then .job_session_id else "" end)"' "$_isf_file" 2>/dev/null || true
+      | "\(.session_id)\t\(if (.job_session_id | token) then .job_session_id else "" end)\t\(.written_at // "" | tostring | gsub("[\t\n\r]"; " "))\t\(.folder // "" | tostring | gsub("[\t\n\r]"; " "))"' "$_isf_file" 2>/dev/null || true # kcov-exclude-end
   done
 }
 
@@ -349,4 +395,38 @@ _issue_context_holder_files() {
       printf '%s\n' "$_isf_file"
     fi
   done
+}
+
+# _issue_context_job_newest_folder <job-id> — print the folder of the newest
+# session file of the job <job-id> (the first 8 characters of its session_id
+# or of its job_session_id), by written_at, the rule of the reader. Prints
+# nothing for an empty <job-id> or "-", or a job with no file. launch-agent.sh
+# uses it to say that a holder moved: the file of its live session id names
+# the folder, but a newer file of its job names another one. Returns 1 when
+# jq is missing or there is no sessions directory.
+_issue_context_job_newest_folder() {
+  local _isf_job="$1" _isf_line _isf_best="" _isf_row _isf_sid _isf_first _isf_written _isf_folder
+  [ -n "$_isf_job" ] && [ "$_isf_job" != "-" ] || return 0
+  _isf_line="$(_issue_context_session_owners)" || return 1
+  # Each line is read whole and split with parameter expansion: a read with a
+  # tab in IFS joins two adjacent tabs, so an empty job_session_id would
+  # shift each field after it.
+  while IFS= read -r _isf_row; do
+    [ -n "$_isf_row" ] || continue
+    _isf_sid="${_isf_row%%$'\t'*}"
+    _isf_row="${_isf_row#*$'\t'}"
+    _isf_first="${_isf_row%%$'\t'*}"
+    _isf_row="${_isf_row#*$'\t'}"
+    _isf_written="${_isf_row%%$'\t'*}"
+    _isf_folder="${_isf_row#*$'\t'}"
+    [ -n "$_isf_sid" ] || continue
+    if [ "${_isf_first:0:8}" = "$_isf_job" ] || { [ -z "$_isf_first" ] && [ "${_isf_sid:0:8}" = "$_isf_job" ]; }; then
+      if [ -z "$_isf_best" ] || [[ "$_isf_written"$'\t'"$_isf_sid"$'\t'"$_isf_folder" > "$_isf_best" ]]; then
+        _isf_best="$_isf_written"$'\t'"$_isf_sid"$'\t'"$_isf_folder"
+      fi
+    fi
+  done <<OWNERS
+$_isf_line
+OWNERS
+  [ -z "$_isf_best" ] || printf '%s\n' "${_isf_best#*$'\t'*$'\t'}"
 }

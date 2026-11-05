@@ -5,8 +5,19 @@
 # rounds.
 #
 # Usage:
-#   resume-agent.sh <folder>
+#   resume-agent.sh [--prompt-file <path>] [--clear] [--attach] <folder>
 #   resume-agent.sh --help
+#
+#   --prompt-file <path>
+#              A file that holds the first prompt for the session. The caller
+#              saves it in the work folder first, so the message is never the
+#              only copy. See "The prompt" below.
+#   --clear    For an ended session only: restart it with a cleared
+#              conversation. It keeps its job, its name, and its work folder.
+#              See "The clear" below.
+#   --attach   Open the session in this terminal after the script: an ended
+#              session restarts first, a running or a retired one does not.
+#              It needs a terminal, so the agent view and a ! line get R011.
 #
 #   <folder>   An absolute path, used as given, or a slug naming one directory
 #              under the topic root (the launchAgentDefaultFolder setting, else
@@ -119,9 +130,48 @@
 # R003 with no session other than the caller gives the next command of
 # ../issue-context/find-agent.sh, so this script and /find-agent agree.
 #
-# The script sends no prompt other than the /rename of a restart, and attaches
-# nothing. A caller sends its own prompt, and a person opens the session from
-# the agent view or with the attach command.
+# The prompt (--prompt-file). `claude --bg --resume <id> [prompt]` takes one
+# prompt, and a second prompt starts a copy (tested on Claude Code 2.1.318).
+# So the script never sends /rename and the prompt in one restart:
+#
+#   - ended, and the session hook runs at UserPromptSubmit on this machine
+#     (../issue-context/session-hook-state.sh --project <restart directory>
+#     gives settings: strong evidence only, and each other value counts as
+#     none; see its header), and a session file of the session names the
+#     folder (the hook names a session through that file only, so a holder
+#     that only a worktree marker names does not count): the
+#     restart sends the prompt alone, and the hook gives the session the
+#     folder name at that prompt. The script waits for the name only, and
+#     prints "Prompt: sent on the restart". A name other than the folder
+#     name after the wait (a title that the user chose, or another session
+#     that holds the folder) gives the Rename line, so the failure shows.
+#   - ended, and no hook: the restart sends /rename as with no prompt, then
+#     the status wait runs, and the script prints "Prompt: not sent; send it
+#     with SendMessage when Status is idle". The caller sends the prompt.
+#   - running or retired: nothing restarts and nothing is sent; the same
+#     "Prompt: not sent" line. A shell script cannot call SendMessage.
+#
+# The clear (--clear). The restart sends /clear as its one prompt. The
+# session gets a new conversation id in the same job record, keeps the name
+# of its job, and the session hook writes the session file of the new id. A
+# /clear takes no second prompt (the text after it is an argument of /clear),
+# so --clear with --prompt-file always prints "Prompt: not sent", and the
+# caller sends the prompt after the status wait. The script waits until the
+# list shows a conversation id other than the one before the restart, so the
+# clear ran before the caller sends.
+#
+# The status wait. After its own restart, with no prompt sent, the script
+# reads the list every second for up to RESUME_AGENT_STATUS_WAIT seconds
+# (default 60), after the name wait, until the status is idle. The restart
+# turn often still runs when the name loads. At the limit, the Status line
+# gives the last status read, and stderr names the wait and its limit. A
+# session that already ran gets one read, because a busy session does real
+# work. With a prompt sent on the restart, there is no status wait.
+#
+# The attach (--attach). After the output, the script runs
+# `exec claude attach <short id>`, so the person sees the session in this
+# terminal. Standard input and output must be a terminal, else R011 before
+# any restart.
 #
 # The Address line is the cross-session address of the session's process,
 # uds:<socket dir>/<pid>.sock. A short id is not a SendMessage address, and
@@ -149,6 +199,8 @@
 #   Rename:   the /rename command for the folder name, only when the name
 #             that the list shows is not the folder name
 #   Note:     do not run claude --bg --resume, because that starts a copy
+#   Prompt:   with --prompt-file only: "sent on the restart", or "not sent;
+#             send it with SendMessage when Status is idle"
 #
 # Exit codes:
 #   0  — the session runs (it ran already, or it restarted), or it is retired
@@ -160,7 +212,9 @@
 #        restarted in another directory than the one the script used, R008
 #        Claude Code deleted the transcript of the session, so nothing
 #        restarted, R009 this session holds the folder too, so nothing
-#        restarted
+#        restarted, R010 the prompt file cannot be used, R011 --attach with
+#        no terminal, R012 --clear on a session that is not ended; R010 to
+#        R012 restart nothing
 
 set -euo pipefail
 
@@ -173,16 +227,22 @@ readonly ERR_UNKNOWN="R006"
 readonly ERR_CWD="R007"
 readonly ERR_GONE="R008"
 readonly ERR_CALLER="R009"
+readonly ERR_PROMPT="R010"
+readonly ERR_TTY="R011"
+readonly ERR_CLEAR="R012"
 
 usage() {
   cat <<'EOF'
-Usage: resume-agent.sh <folder>
+Usage: resume-agent.sh [--prompt-file <path>] [--clear] [--attach] <folder>
        resume-agent.sh --help
 
-  <folder>  Absolute path, or a slug naming one directory under the
-            launchAgentDefaultFolder setting, else the repository root.
-            The folder must exist.
-  --help    Show this help message
+  <folder>              Absolute path, or a slug naming one directory under
+                        the launchAgentDefaultFolder setting, else the
+                        repository root. The folder must exist.
+  --prompt-file <path>  The first prompt for the session
+  --clear               Restart an ended session with a cleared conversation
+  --attach              Open the session in this terminal afterwards
+  --help                Show this help message
 EOF
 }
 
@@ -200,21 +260,66 @@ die() {
 }
 
 # --- Parse arguments ---
-case "${1-}" in
-  --help)
-    usage
-    exit 0
-    ;;
-  "")
-    usage >&2
-    die "$ERR_USAGE" "a folder is required"
-    ;;
-  -*)
-    die "$ERR_USAGE" "unknown flag '$1'"
-    ;;
-esac
-[ "$#" -eq 1 ] || die "$ERR_USAGE" "expected one folder, got $# arguments"
-folder="$1"
+folder=""
+folder_count=0
+prompt_file=""
+clear=0
+attach=0
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --help)
+      usage
+      exit 0
+      ;;
+    --prompt-file)
+      [ "$#" -ge 2 ] && [ -n "$2" ] || die "$ERR_USAGE" "--prompt-file requires a path"
+      prompt_file="$2"
+      shift 2
+      ;;
+    --clear)
+      clear=1
+      shift
+      ;;
+    --attach)
+      attach=1
+      shift
+      ;;
+    -*)
+      die "$ERR_USAGE" "unknown flag '$1'"
+      ;;
+    *)
+      folder="$1"
+      folder_count=$((folder_count + 1))
+      shift
+      ;;
+  esac
+done
+if [ "$folder_count" -eq 0 ]; then
+  usage >&2
+  die "$ERR_USAGE" "a folder is required"
+fi
+[ "$folder_count" -eq 1 ] || die "$ERR_USAGE" "expected one folder, got $folder_count arguments"
+
+# --- Check the prompt and the terminal before anything restarts ---
+prompt_text=""
+if [ -n "$prompt_file" ]; then
+  [ -f "$prompt_file" ] && [ -r "$prompt_file" ] \
+    || die "$ERR_PROMPT" "the prompt file '$prompt_file' is not a readable file; nothing was restarted"
+  prompt_text="$(cat "$prompt_file")" \
+    || die "$ERR_PROMPT" "the prompt file '$prompt_file' could not be read; nothing was restarted"
+  [ -n "${prompt_text//[[:space:]]/}" ] \
+    || die "$ERR_PROMPT" "the prompt file '$prompt_file' is empty; nothing was restarted"
+  # claude reads an argument that starts with - as a flag, and a flag on a
+  # resume starts a copy.
+  case "$prompt_text" in
+    -*) die "$ERR_PROMPT" "the prompt in '$prompt_file' starts with -, which claude reads as a flag; start it with a word; nothing was restarted" ;;
+  esac
+fi
+# RESUME_AGENT_ASSUME_TTY=1 lets the tests reach the attach.
+if [ "$attach" -eq 1 ] && [ "${RESUME_AGENT_ASSUME_TTY:-}" != "1" ] \
+    && { [ ! -t 0 ] || [ ! -t 1 ]; }; then
+  die "$ERR_TTY" "--attach needs a terminal, and this run has none (the agent view and a ! line have none); run resume-agent.sh --attach in a terminal, or open the session from the agent view; nothing was restarted"
+fi
 
 command -v jq >/dev/null 2>&1 \
   || die "$ERR_NO_SESSION" "jq not found; it is required to read the session files and the claude agents list"
@@ -277,9 +382,15 @@ session_id=""
 job_id=""
 list_state=""
 others=()
+moved_ids=()
 while IFS=$'\t' read -r sid jid _name st; do
   [ -n "$sid" ] || continue
   [ "$jid" != "-" ] || jid=""
+  # A moved job does not hold the folder, so it is never woken for it.
+  if [ "$st" = "moved" ]; then
+    moved_ids+=("${jid:-${sid:0:8}}")
+    continue
+  fi
   if [ -z "$session_id" ]; then
     session_id="$sid"
     job_id="$jid"
@@ -296,6 +407,9 @@ if [ -z "$session_id" ]; then
   # script never disagree. A failed call keeps the old advice.
   no_next="$(FOLDER_SESSIONS_PROJECTS_DIR="$PROJECTS_DIR" FOLDER_SESSIONS_JOBS_DIR="$JOBS_DIR" "$_self_dir/../issue-context/find-agent.sh" "$folder_abs" 2>/dev/null | sed -n 's/^Next: //p')" || no_next=""
   [ -n "$no_next" ] || no_next="start one with /launch-agent"
+  if [ "${#moved_ids[@]}" -gt 0 ]; then
+    die "$ERR_NO_SESSION" "the session that used $folder_abs moved to another folder (job ${moved_ids[*]}), so it is not woken for this folder; next: $no_next"
+  fi
   die "$ERR_NO_SESSION" "no session other than this one has its working files in $folder_abs, so there is no session to resume; next: $no_next"
 fi
 # The id reaches a command line and a jq filter, so it must be one plain token.
@@ -376,7 +490,12 @@ if [ "$list_state" = "gone" ]; then
     [ "$gone_dir" = "$gone_top" ] \
       || advice="start a session in $gone_dir, and run /launch-agent \"$folder_abs\" in it"
   fi
-  die "$ERR_GONE" "Claude Code deleted the transcript of session $session_id (no $gone_conv.jsonl in $PROJECTS_DIR), so a resume gives an empty conversation with no history and no name; the script restarted nothing; $advice"
+  die "$ERR_GONE" "Claude Code deleted the transcript of session $session_id (no $gone_conv.jsonl in $PROJECTS_DIR), so a resume or an attach gives an empty conversation with no history and no name; the script restarted nothing; $advice"
+fi
+
+# --- --clear only for an ended session ---
+if [ "$clear" -eq 1 ] && [ "$list_state" != "ended" ]; then
+  die "$ERR_CLEAR" "--clear restarts an ended session only, and session $session_id is $list_state; nothing was restarted"
 fi
 
 resume_dir=""
@@ -415,6 +534,7 @@ fi
 
 # --- Read the live sessions ---
 readonly NAME_WAIT="${RESUME_AGENT_NAME_WAIT:-15}"
+readonly STATUS_WAIT="${RESUME_AGENT_STATUS_WAIT:-60}"
 readonly SOCKET_DIR="${RESUME_AGENT_SOCKET_DIR:-/tmp/cc-socks}"
 
 # read_list — set `agents_list` to the `claude agents --json` array. Returns 1
@@ -444,6 +564,20 @@ loaded() {
   [ -n "$1" ] && [ "$1" != "$short_id" ] && [ "${1#/}" = "$1" ]
 }
 
+# reread — read the list again after the restart, and set `entry`.
+reread() {
+  read_list || die "$ERR_UNKNOWN" "claude --bg --resume $session_id ran, but claude agents --json then failed, so it is not known whether the session runs; do not run claude --bg --resume, because a resume of a running session starts a copy; run this skill again, which restarts nothing when the session is listed"
+  entry="$(entry_of)"
+}
+
+# cleared — 0 when no /clear runs, or when the list shows a conversation id
+# other than the one before the /clear.
+cleared() {
+  [ "$clear" -eq 1 ] || return 0
+  [ -n "$(field sessionId)" ] && [ "$(field sessionId)" != "$old_conv" ]
+}
+
+prompt_sent=0
 read_list || die "$ERR_AGENTS" "claude agents --json failed, so the state of session $session_id is unknown; nothing was restarted"
 entry="$(entry_of)"
 
@@ -457,8 +591,25 @@ elif [ "$list_state" = "retired" ]; then
   retired=1
   echo "resume-agent: session $session_id is retired: its job is listed with no process, and claude --bg --resume of it starts a copy, so the script restarts nothing; wake it with claude attach $short_id" >&2
 else
-  # A /rename prompt, and no flag. See the header for why --name is not passed.
-  restart_output="$({ cd "$resume_dir" && claude --bg --resume "$session_id" "/rename $folder_name"; } 2>&1)" || {
+  # One prompt, and no flag. See the header for why --name is not passed,
+  # and for the choice of the prompt.
+  restart_prompt="/rename $folder_name"
+  old_conv=""
+  if [ "$clear" -eq 1 ]; then
+    restart_prompt="/clear"
+    old_conv="$(continued_as "$job_id")"
+    [[ "$old_conv" =~ ^[A-Za-z0-9_-]+$ ]] || old_conv="$session_id"
+  elif [ -n "$prompt_text" ]; then
+    hook_state="$("$_self_dir/../issue-context/session-hook-state.sh" --project "$resume_dir" 2>/dev/null)" || hook_state="none"
+    # The hook names a session only through its session file, so a holder
+    # that only a worktree marker ties to the folder needs the /rename form.
+    holder_file="$(_issue_context_holder_files "$folder_abs" "$session_id" "$job_id" 2>/dev/null)" || holder_file=""
+    if [ "$hook_state" = "settings" ] && [ -n "$holder_file" ]; then
+      restart_prompt="$prompt_text"
+      prompt_sent=1
+    fi
+  fi
+  restart_output="$({ cd "$resume_dir" && claude --bg --resume "$session_id" "$restart_prompt"; } 2>&1)" || {
     {
       echo "resume-agent $ERR_RESTART error: claude --bg --resume $session_id failed:"
       printf '%s\n' "$restart_output" | sed 's/^/  /'
@@ -474,12 +625,12 @@ else
       exit 1
       ;;
   esac
-  # The /rename prompt asks for the folder name, so the wait ends at that name.
+  # The name wait ends at the folder name, and after a /clear also at a new
+  # conversation id. The status wait follows when no prompt was sent.
   waited=0
   while :; do
-    read_list || die "$ERR_UNKNOWN" "claude --bg --resume $session_id ran, but claude agents --json then failed, so it is not known whether the session runs; do not run claude --bg --resume, because a resume of a running session starts a copy; run this skill again, which restarts nothing when the session is listed"
-    entry="$(entry_of)"
-    if [ -n "$entry" ] && [ "$(field name)" = "$folder_name" ]; then
+    reread
+    if [ -n "$entry" ] && [ "$(field name)" = "$folder_name" ] && cleared; then
       break
     fi
     [ "$waited" -lt "$NAME_WAIT" ] || break
@@ -489,6 +640,23 @@ else
   [ -n "$entry" ] \
     || die "$ERR_RESTART" "claude --bg --resume $session_id returned, but claude agents does not list the session"
   action="restarted"
+  if [ "$prompt_sent" -eq 0 ]; then
+    waited=0
+    while :; do
+      if [ -n "$entry" ] && [ "$(field status)" = "idle" ] && cleared; then
+        break
+      fi
+      # An error, such as a limit that is not a number, also ends the wait,
+      # as in the name wait.
+      if ! [ "$waited" -lt "$STATUS_WAIT" ] 2>/dev/null; then
+        echo "resume-agent: the status wait (RESUME_AGENT_STATUS_WAIT) ended after $STATUS_WAIT seconds, and the session is not idle yet; the Status line gives the last status read" >&2
+        break
+      fi
+      sleep 1
+      waited=$((waited + 1))
+      reread
+    done
+  fi
 fi
 [ -n "$entry" ] || entry="$(entry_of)"
 
@@ -609,3 +777,16 @@ if [ "${name:-}" != "$folder_name" ]; then
   printf 'Rename: if the agent view does not show %s, open the session and type /rename %s\n' "$folder_name" "$folder_name"
 fi
 printf 'Note: do not run claude --bg --resume %s: the session runs, and a resume starts a copy\n' "$short_id"
+if [ -n "$prompt_file" ]; then
+  if [ "$prompt_sent" -eq 1 ]; then
+    printf 'Prompt: sent on the restart\n'
+  else
+    printf 'Prompt: not sent; send it with SendMessage when Status is idle\n'
+  fi
+fi
+
+# --- Attach ---
+# See the header. The output above stays on the screen of the terminal.
+if [ "$attach" -eq 1 ]; then
+  exec claude attach "$short_id"
+fi

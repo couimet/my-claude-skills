@@ -1357,6 +1357,9 @@ holder() {
   mkdir -p "$REPO/my-topic" "$SESSIONS_DIR"
   printf '{"version":1,"folder":"%s","session_id":"%s","written_at":"2026-10-13T10:00:00Z"}' \
     "$REPO/my-topic" "$HOLDER_ID" > "$SESSIONS_DIR/$HOLDER_ID--t.json"
+  # A transcript, so a retired holder stays retired (issue 312).
+  mkdir -p "$PROJECTS_DIR/-proj"
+  printf '{}\n' > "$PROJECTS_DIR/-proj/$HOLDER_ID.jsonl"
   local status="\"$1\""
   [ "$1" != "null" ] || status="null"
   printf '[{"id":"%s","sessionId":"%s","name":"my-topic","status":%s,"pid":%s,"kind":"background","state":"blocked"}]' \
@@ -1517,4 +1520,62 @@ marker_holder() {
   run_in "$REPO" --bg new-topic "a prompt"
   [ "$status" -eq 0 ]
   [[ "$output" != *"could not check"* ]] || false
+}
+
+# ============================================================================
+# A moved holder, and a retired holder with no transcript (issue 312)
+# ============================================================================
+
+# moved_file <session-id> <folder> <written_at> — a file of a child session
+# of the job of HOLDER_ID that names <folder>.
+moved_file() {
+  mkdir -p "$2"
+  printf '{"version":1,"folder":"%s","session_id":"%s","job_session_id":"%s","written_at":"%s"}' \
+    "$2" "$1" "$HOLDER_ID" "$3" > "$SESSIONS_DIR/$1--moved.json"
+}
+
+@test "held: a job that moved to another folder does not hold the folder, and --bg starts with no --take-over" {
+  holder idle 123
+  local child="0e1f2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b"
+  moved_file "$child" "$REPO/folder-b" 2026-10-14T10:00:00Z
+  jq -c --arg s "$child" '.[0].sessionId = $s' "$AGENTS_FILE" > "$AGENTS_FILE.tmp" && mv "$AGENTS_FILE.tmp" "$AGENTS_FILE"
+  run_in "$REPO" --bg my-topic "a prompt"
+  [ "$status" -eq 0 ]
+  [ -e "$ARGS_FILE" ]
+  _lacks "$(cat "$ARGS_FILE")" "--take-over"
+}
+
+@test "held: a holder whose newest file names another folder → L007 names the older files and --take-over" {
+  holder idle 123
+  local child="0e1f2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b"
+  moved_file "$child" "$REPO/folder-b" 2026-10-14T10:00:00Z
+  run_in "$REPO" --bg my-topic "a prompt"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L007"
+  _contains "$output" "through its older session files ($SESSIONS_DIR/$HOLDER_ID--t.json)"
+  _contains "$output" "its newest session file names $REPO/folder-b"
+  _contains "$output" "launch again with --take-over"
+  [ ! -e "$ARGS_FILE" ]
+}
+
+@test "held: a retired holder with no transcript does not hold the folder, and the launch gives the gone hint" {
+  holder null null
+  rm -f "$PROJECTS_DIR/-proj/$HOLDER_ID.jsonl"
+  run_in "$REPO" --bg my-topic "a prompt"
+  [ "$status" -eq 0 ]
+  _contains "$output" "Claude Code deleted its transcript"
+}
+
+@test "held: a holder file with no job_session_id that is newer than a child file of another folder → the plain L007, not the moved one" {
+  # The holder file has no job_session_id, so its owner line has an empty
+  # field. A read with a tab in IFS shifted the fields of that line, and the
+  # older child file then read as the newest file of the job.
+  holder idle 123
+  local child="0e1f2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b"
+  moved_file "$child" "$REPO/folder-b" 2026-10-01T10:00:00Z
+  run_in "$REPO" --bg my-topic "a prompt"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L007"
+  _lacks "$output" "its newest session file names"
+  _contains "$output" "to continue that session:"
 }

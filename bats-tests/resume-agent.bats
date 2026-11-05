@@ -70,6 +70,10 @@ if [ "${1-}" = "--bg" ] && [ "${2-}" = "--resume" ]; then
   [ -z "${AGENTS_AFTER:-}" ] || cp "$AGENTS_AFTER" "$AGENTS_FILE"
   exit 0
 fi
+if [ "${1-}" = "attach" ]; then
+  printf '%s\n' "$@" > "$RESUME_ARGS.attach"
+  exit 0
+fi
 echo "unexpected claude call: $*" >&2
 exit 9
 STUB
@@ -170,6 +174,9 @@ run_resume() {
     STUB_AGENTS_FAIL="${STUB_AGENTS_FAIL:-0}" STUB_RESUME_FAIL="${STUB_RESUME_FAIL:-0}" \
     STUB_RESUME_COPY="${STUB_RESUME_COPY:-0}" STUB_NAME="${STUB_NAME-my-topic}" \
     RESUME_AGENT_NAME_WAIT="${NAME_WAIT:-0}" RESUME_AGENT_SOCKET_DIR="$SOCKET_DIR" \
+    RESUME_AGENT_STATUS_WAIT="${STATUS_WAIT:-0}" RESUME_AGENT_ASSUME_TTY="${ASSUME_TTY:-}" \
+    SESSION_HOOK_STATE_SETTINGS="${HOOK_SETTINGS:-$TEST_TEMP_DIR/no-settings.json}" \
+    SESSION_HOOK_STATE_MANAGED="$TEST_TEMP_DIR/no-managed.json" \
     RESUME_AGENT_PROJECTS_DIR="$PROJECTS_DIR" RESUME_AGENT_JOBS_DIR="$JOBS_DIR" \
     bash -c 'cd "$1" && shift && exec "$@" < /dev/null' _ "${RUN_DIR:-$REPO}" "$SCRIPT" "$@"
 }
@@ -581,7 +588,7 @@ cleared_job_without_first_transcript() {
 @test "--help prints the usage" {
   run_resume "" --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Usage: resume-agent.sh <folder>"* ]] || false
+  [[ "$output" == *"Usage: resume-agent.sh [--prompt-file <path>] [--clear] [--attach] <folder>"* ]] || false
 }
 
 @test "a folder that does not exist → R002, and nothing is created" {
@@ -993,4 +1000,254 @@ STUB
   [ "$status" -eq 1 ]
   [ ! -e "$RESUME_ARGS" ]
   [[ "$stderr" == *"R003"*"no session other than this one"*"next: nothing; this session holds the folder"* ]] || false
+}
+
+# ============================================================================
+# The prompt, the clear, the attach, and the status wait (issue 312)
+# ============================================================================
+
+# _contains / _lacks <haystack> <needle> — a literal substring test that fails
+# the test from inside a function, the helpers of launch-agent.bats.
+_contains() {
+  case "$1" in
+    *"$2"*) return 0 ;;
+  esac
+  printf 'expected to find:\n  %s\n\nin:\n  %s\n' "$2" "$1" >&2
+  return 1
+}
+
+_lacks() {
+  case "$1" in
+    *"$2"*)
+      printf 'expected not to find:\n  %s\n\nin:\n  %s\n' "$2" "$1" >&2
+      return 1
+      ;;
+  esac
+}
+
+# prompt_file — write a prompt file in the folder and print its path.
+prompt_file() {
+  mkdir -p "$REPO/my-topic"
+  printf 'Do the next round.\n' > "$REPO/my-topic/prompt.txt"
+  printf '%s' "$REPO/my-topic/prompt.txt"
+}
+
+# hook_settings — a settings file whose UserPromptSubmit entry runs the hook.
+hook_settings() {
+  HOOK_SETTINGS="$TEST_TEMP_DIR/hook-settings.json"
+  printf '{"hooks":{"UserPromptSubmit":[{"hooks":[{"type":"command","command":"/x/skills/issue-context/session-hook.sh"}]}]}}' > "$HOOK_SETTINGS"
+}
+
+@test "status wait: a restart reads the list until the session is idle" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic working busy)" > "$AGENTS_AFTER"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle)" > "$AGENTS_NEXT"
+  STATUS_WAIT=5 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  _contains "$output" "Status: idle"
+  _lacks "$stderr" "status wait"
+}
+
+@test "status wait: at the limit, the last status and one stderr line that names the wait" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic working busy)" > "$AGENTS_AFTER"
+  STATUS_WAIT=1 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  _contains "$output" "Status: busy"
+  _contains "$stderr" "the status wait (RESUME_AGENT_STATUS_WAIT) ended after 1 seconds"
+}
+
+@test "status wait: a running session gets one read and no wait" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic working busy)" > "$AGENTS_FILE"
+  STATUS_WAIT=30 run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  _contains "$output" "Action: already running"
+  _contains "$output" "Status: busy"
+  _lacks "$stderr" "status wait"
+}
+
+@test "prompt: with the hook, an ended session restarts with the prompt alone, and the output says it was sent" {
+  hook_settings
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic working busy)" > "$AGENTS_AFTER"
+  local pf
+  pf="$(prompt_file)"
+  STATUS_WAIT=30 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" --prompt-file "$pf" my-topic
+  [ "$status" -eq 0 ]
+  [ "$(sed -n 4p "$RESUME_ARGS")" = "Do the next round." ]
+  [ "$(wc -l < "$RESUME_ARGS")" -eq 4 ]
+  _contains "$output" "Prompt: sent on the restart"
+  _contains "$output" "Status: busy"
+  _lacks "$stderr" "status wait"
+}
+
+@test "prompt: with the hook, a name other than the folder name gives the Rename line" {
+  hook_settings
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" "a chosen title" done)" > "$AGENTS_AFTER"
+  local pf
+  pf="$(prompt_file)"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" --prompt-file "$pf" my-topic
+  [ "$status" -eq 0 ]
+  _contains "$output" "Rename: if the agent view does not show my-topic"
+}
+
+@test "prompt: with no hook, the restart sends /rename, and the caller sends the prompt" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done)" > "$AGENTS_AFTER"
+  local pf
+  pf="$(prompt_file)"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" --prompt-file "$pf" my-topic
+  [ "$status" -eq 0 ]
+  [ "$(sed -n 4p "$RESUME_ARGS")" = "/rename my-topic" ]
+  _contains "$output" "Prompt: not sent; send it with SendMessage when Status is idle"
+}
+
+@test "prompt: a running session gets no message from the script, and the output gives the send rule" {
+  hook_settings
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done)" > "$AGENTS_FILE"
+  local pf
+  pf="$(prompt_file)"
+  run_resume "$SELF_SESSION" --prompt-file "$pf" my-topic
+  [ "$status" -eq 0 ]
+  [ ! -e "$RESUME_ARGS" ]
+  _contains "$output" "Action: already running"
+  _contains "$output" "Prompt: not sent; send it with SendMessage when Status is idle"
+}
+
+@test "prompt: a missing, empty, or dash-led prompt file → R010, and nothing restarts" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  run_resume "$SELF_SESSION" --prompt-file "$TEST_TEMP_DIR/none.txt" my-topic
+  [ "$status" -eq 1 ]
+  _contains "$stderr" "R010"
+  : > "$TEST_TEMP_DIR/empty.txt"
+  run_resume "$SELF_SESSION" --prompt-file "$TEST_TEMP_DIR/empty.txt" my-topic
+  _contains "$stderr" "R010"
+  printf -- '--name x\n' > "$TEST_TEMP_DIR/dash.txt"
+  run_resume "$SELF_SESSION" --prompt-file "$TEST_TEMP_DIR/dash.txt" my-topic
+  _contains "$stderr" "R010"
+  [ ! -e "$RESUME_ARGS" ]
+}
+
+@test "clear: an ended session restarts with /clear, and the waits end at a new conversation id" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  local new_conv="aa11bb22-cc33-4d44-8e55-ff6677889900"
+  # The ended job row, so the script follows the job when its conversation
+  # id changes.
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle null)" > "$AGENTS_ALL_FILE"
+  # Right after the restart, the list still shows the old conversation.
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic working idle)" > "$AGENTS_AFTER"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle | jq -c --arg s "$new_conv" '.sessionId = $s')" > "$AGENTS_NEXT"
+  NAME_WAIT=5 STATUS_WAIT=5 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" --clear my-topic
+  [ "$status" -eq 0 ]
+  [ "$(sed -n 4p "$RESUME_ARGS")" = "/clear" ]
+  _contains "$output" "Session: $new_conv"
+  _contains "$output" "Status: idle"
+}
+
+@test "clear: with a prompt file, the prompt is not sent on the restart" {
+  hook_settings
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle null)" > "$AGENTS_ALL_FILE"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle | jq -c '.sessionId = "aa11bb22-cc33-4d44-8e55-ff6677889900"')" > "$AGENTS_AFTER"
+  local pf
+  pf="$(prompt_file)"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" --clear --prompt-file "$pf" my-topic
+  [ "$status" -eq 0 ]
+  [ "$(sed -n 4p "$RESUME_ARGS")" = "/clear" ]
+  _contains "$output" "Prompt: not sent; send it with SendMessage when Status is idle"
+}
+
+@test "clear: a running session → R012, and nothing restarts" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done)" > "$AGENTS_FILE"
+  run_resume "$SELF_SESSION" --clear my-topic
+  [ "$status" -eq 1 ]
+  _contains "$stderr" "R012"
+  [ "$(printf '%s\n' "$stderr" | grep -c .)" -eq 1 ]
+  [ ! -e "$RESUME_ARGS" ]
+}
+
+@test "attach: with no terminal → R011, and nothing restarts" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  run_resume "$SELF_SESSION" --attach my-topic
+  [ "$status" -eq 1 ]
+  _contains "$stderr" "R011"
+  [ "$(printf '%s\n' "$stderr" | grep -c .)" -eq 1 ]
+  [ ! -e "$RESUME_ARGS" ]
+}
+
+@test "attach: in a terminal, an ended session restarts, then claude attach runs" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done)" > "$AGENTS_AFTER"
+  ASSUME_TTY=1 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" --attach my-topic
+  [ "$status" -eq 0 ]
+  [ -e "$RESUME_ARGS" ]
+  [ "$(cat "$RESUME_ARGS.attach")" = "$(printf 'attach\n%s' "${TOPIC_SESSION:0:8}")" ]
+}
+
+@test "attach: a running session attaches with no restart" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done)" > "$AGENTS_FILE"
+  ASSUME_TTY=1 run_resume "$SELF_SESSION" --attach my-topic
+  [ "$status" -eq 0 ]
+  [ ! -e "$RESUME_ARGS" ]
+  [ -e "$RESUME_ARGS.attach" ]
+}
+
+@test "moved: a job that moved to another folder is not woken for this folder → R003" {
+  local child="0e1f2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b"
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  mkdir -p "$REPO/folder-b"
+  printf '{"version":1,"folder":"%s","session_id":"%s","job_session_id":"%s","written_at":"2026-10-14T10:00:00Z"}' \
+    "$REPO/folder-b" "$child" "$TOPIC_SESSION" > "$SESSIONS_DIR/$child--folder-b.json"
+  transcript "$TOPIC_SESSION" "$REPO"
+  run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 1 ]
+  _contains "$stderr" "R003"
+  _contains "$stderr" "moved to another folder"
+  [ ! -e "$RESUME_ARGS" ]
+}
+
+@test "status wait: a limit that is not a number ends the wait at once, with the stderr line of the wait" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic working busy)" > "$AGENTS_AFTER"
+  STATUS_WAIT=60s AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" my-topic
+  [ "$status" -eq 0 ]
+  _contains "$output" "Status: busy"
+  _contains "$stderr" "the status wait (RESUME_AGENT_STATUS_WAIT) ended after 60s seconds"
+}
+
+@test "prompt: with the hook, but disableAllHooks in the project settings, the restart sends /rename" {
+  hook_settings
+  mkdir -p "$REPO/.claude"
+  printf '{"disableAllHooks":true}' > "$REPO/.claude/settings.json"
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done)" > "$AGENTS_AFTER"
+  local pf
+  pf="$(prompt_file)"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" --prompt-file "$pf" my-topic
+  [ "$status" -eq 0 ]
+  [ "$(sed -n 4p "$RESUME_ARGS")" = "/rename my-topic" ]
+  _contains "$output" "Prompt: not sent; send it with SendMessage when Status is idle"
+}
+
+@test "prompt: with the hook, a holder that only a worktree marker names restarts with /rename, and the prompt is not sent" {
+  hook_settings
+  rm -rf "$SESSIONS_DIR"
+  mkdir -p "$SESSIONS_DIR"
+  local wt="$TEST_TEMP_DIR/wt"
+  mkdir -p "$wt"
+  git -C "$wt" init -q
+  printf '%s\n' "$REPO/my-topic" > "$wt/CLAUDE_WORK_FOLDER"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic blocked idle null "$wt")" > "$AGENTS_ALL_FILE"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle 99897 "$wt")" > "$AGENTS_AFTER"
+  local pf
+  pf="$(prompt_file)"
+  AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "" --prompt-file "$pf" my-topic
+  [ "$status" -eq 0 ]
+  [ "$(sed -n 4p "$RESUME_ARGS")" = "/rename my-topic" ]
+  _contains "$output" "Prompt: not sent; send it with SendMessage when Status is idle"
 }

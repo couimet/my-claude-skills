@@ -28,7 +28,7 @@ With no argument, for this session:
 
 ## Step 2: Report
 
-Give the user each line that the script printed, in order. The `Verdict:` line holds one of `launch`, `resume`, `attach`, `running`, `rename`, `moved`, or `unbound`. The `Next:` line holds the command, and an `Or:` line holds the second choice. A `Holder:` line marks this session with `this`.
+Give the user each line that the script printed, in order. The `Verdict:` line holds one of `launch`, `resume`, `attach`, `running`, `rename`, `moved`, or `unbound`. The `Next:` line holds the command, and an `Or:` line holds the second choice. A `Holder:` line marks this session with `this`. For a folder, `moved` means that each session that used the folder moved to another folder, so none holds it, and the `Next:` line gives `/launch-agent`. A holder with the state `moved` never decides the verdict when another holder is listed.
 
 Do not run a command that the script printed. The user decides. An error names its code, G001 to G005: give the user the error as it is.
 

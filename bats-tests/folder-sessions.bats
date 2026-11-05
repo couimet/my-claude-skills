@@ -140,6 +140,7 @@ run_sessions() {
 }
 
 @test "a live row with status null and pid null is retired" {
+  transcript "$FIRST"
   session_file "$FIRST" 2026-10-13T10:00:00Z
   printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic null null)" > "$LIVE_FILE"
   cp "$LIVE_FILE" "$ALL_FILE"
@@ -268,13 +269,95 @@ run_sessions() {
   [ "$output" = "$FIRST	${FIRST:0:8}	topic	ended" ]
 }
 
-@test "a running or a retired session with no transcript keeps its state" {
+@test "a running session with no transcript keeps its state" {
   session_file "$FIRST" 2026-10-13T10:00:00Z
-  session_file "$OTHER" 2026-10-15T10:00:00Z
-  printf '[%s,%s]' "$(row "${FIRST:0:8}" "$FIRST" a idle 1)" "$(row "${OTHER:0:8}" "$OTHER" b null null)" > "$LIVE_FILE"
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" a idle 1)" > "$LIVE_FILE"
   run_sessions "" "" "$TOPIC"
-  [ "${lines[0]}" = "$OTHER	${OTHER:0:8}	b	retired" ]
-  [ "${lines[1]}" = "$FIRST	${FIRST:0:8}	a	running" ]
+  [ "$output" = "$FIRST	${FIRST:0:8}	a	running" ]
+}
+
+@test "a retired row with a transcript stays retired" {
+  session_file "$OTHER" 2026-10-15T10:00:00Z
+  transcript "$OTHER"
+  printf '[%s]' "$(row "${OTHER:0:8}" "$OTHER" b null null)" > "$LIVE_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$output" = "$OTHER	${OTHER:0:8}	b	retired" ]
+}
+
+@test "a retired row with no transcript is gone" {
+  session_file "$OTHER" 2026-10-15T10:00:00Z
+  printf '[%s]' "$(row "${OTHER:0:8}" "$OTHER" b null null)" > "$LIVE_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$OTHER	${OTHER:0:8}	b	gone" ]
+}
+
+@test "a retired row and no transcript directory → exit 2, H005" {
+  rm -rf "$PROJECTS_DIR"
+  session_file "$OTHER" 2026-10-15T10:00:00Z
+  printf '[%s]' "$(row "${OTHER:0:8}" "$OTHER" b null null)" > "$LIVE_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$status" -eq 2 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *H005* ]] || false
+}
+
+# ============================================================================
+# A move: the newest session file of the job decides (issue 312)
+# ============================================================================
+
+@test "an ended job whose newest file names another folder is moved" {
+  local other_topic="$TEST_TEMP_DIR/other-topic"
+  mkdir -p "$other_topic"
+  transcript "$FIRST"
+  session_file "$FIRST" 2026-10-13T10:00:00Z "$FIRST"
+  session_file "$CLEARED" 2026-10-14T10:00:00Z "$FIRST" "$other_topic"
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" other-topic null null)" > "$ALL_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$FIRST	${FIRST:0:8}	other-topic	moved" ]
+  run_sessions "" "" "$other_topic"
+  [ "$output" = "$FIRST	${FIRST:0:8}	other-topic	ended" ]
+}
+
+@test "a running job whose live session file names another folder is moved" {
+  local other_topic="$TEST_TEMP_DIR/other-topic"
+  mkdir -p "$other_topic"
+  session_file "$FIRST" 2026-10-13T10:00:00Z "$FIRST"
+  session_file "$CLEARED" 2026-10-14T10:00:00Z "$FIRST" "$other_topic"
+  printf '[%s]' "$(row "${FIRST:0:8}" "$CLEARED" other-topic idle 123)" > "$LIVE_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$output" = "$CLEARED	${FIRST:0:8}	other-topic	moved" ]
+}
+
+@test "a job whose newest file names this folder is not moved, also with an older file of another folder" {
+  local other_topic="$TEST_TEMP_DIR/other-topic"
+  mkdir -p "$other_topic"
+  transcript "$FIRST"
+  session_file "$FIRST" 2026-10-13T10:00:00Z "$FIRST" "$other_topic"
+  session_file "$CLEARED" 2026-10-14T10:00:00Z "$FIRST"
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic null null)" > "$ALL_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$output" = "$FIRST	${FIRST:0:8}	topic	ended" ]
+}
+
+@test "the file of the live session id wins over a newer file of the job" {
+  local other_topic="$TEST_TEMP_DIR/other-topic"
+  mkdir -p "$other_topic"
+  session_file "$FIRST" 2026-10-13T10:00:00Z "$FIRST"
+  session_file "$CLEARED" 2026-10-14T10:00:00Z "$FIRST" "$other_topic"
+  printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic idle 123)" > "$LIVE_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$output" = "$FIRST	${FIRST:0:8}	topic	running" ]
+}
+
+@test "an interactive session never moves" {
+  local other_topic="$TEST_TEMP_DIR/other-topic"
+  mkdir -p "$other_topic"
+  session_file "$OTHER" 2026-10-13T10:00:00Z
+  printf '[%s]' "$(row null "$OTHER" "" idle 123 interactive)" > "$LIVE_FILE"
+  run_sessions "" "" "$TOPIC"
+  [ "$output" = "$OTHER	-	-	running" ]
 }
 
 @test "with no FOLDER_SESSIONS_* variable, the transcripts and job records come from CLAUDE_CONFIG_DIR" {
@@ -297,6 +380,7 @@ run_sessions() {
 # ============================================================================
 
 @test "two sessions print newest first" {
+  transcript "$OTHER"
   session_file "$FIRST" 2026-10-13T10:00:00Z
   session_file "$OTHER" 2026-10-15T10:00:00Z
   printf '[%s,%s]' "$(row "${FIRST:0:8}" "$FIRST" a idle 1)" "$(row "${OTHER:0:8}" "$OTHER" b null null)" > "$LIVE_FILE"
@@ -403,6 +487,7 @@ agents --json --all" ]
 }
 
 @test "a retired marker holder is retired" {
+  transcript "$FIRST"
   worktree "$TEST_TEMP_DIR/wt" "$TOPIC"
   printf '[%s]' "$(row "${FIRST:0:8}" "$FIRST" topic null null background "$TEST_TEMP_DIR/wt")" > "$LIVE_FILE"
   cp "$LIVE_FILE" "$ALL_FILE"

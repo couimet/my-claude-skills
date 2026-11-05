@@ -72,15 +72,12 @@ SKILLS_DIR="$HOME/.claude/skills"
 SETTINGS="$HOME/.claude/settings.json"
 HOOK_COMMAND="$SKILLS_DIR/issue-context/session-hook.sh"
 
-# hook_filter — the jq definitions that find this hook's entries. An entry is
-# this hook's when its command ends with the path below the skills directory,
-# so a link to another checkout or a hand-written ~ path still counts.
-# shellcheck disable=SC2016 # a jq program, not a shell expansion
-HOOK_JQ_DEFS='
-  def ours: ((.command // "") | tostring | endswith("/issue-context/session-hook.sh"));
-  def strip: map(.hooks = ((.hooks // []) | map(select(ours | not))))
-             | map(select((.hooks | length) > 0));
-'
+# HOOK_JQ_DEFS — the jq definitions that find this hook's entries, from
+# skills/issue-context/session-hook-rule.jq. session-hook-state.sh reads the
+# same file, so the two never disagree on what counts as the hook.
+HOOK_RULE="$(cd "$(dirname "$0")" && pwd)/skills/issue-context/session-hook-rule.jq"
+HOOK_JQ_DEFS="$(cat "$HOOK_RULE" 2>/dev/null)" \
+  || { echo "install.sh: cannot read $HOOK_RULE; update this checkout" >&2; exit 1; }
 
 # write_settings <jq filter> — apply <jq filter> to the settings file after a
 # backup. Prints the backup path. Returns 1, with the file unchanged, when the
@@ -112,7 +109,7 @@ write_settings() {
 
 print_hook_entry() {
   jq -n --arg cmd "$HOOK_COMMAND" '{hooks: {
-    SessionStart: [{matcher: "clear|resume", hooks: [{type: "command", command: $cmd}]}],
+    SessionStart: [{matcher: "startup|clear|resume", hooks: [{type: "command", command: $cmd}]}],
     SessionEnd: [{matcher: "clear", hooks: [{type: "command", command: $cmd}]}],
     UserPromptSubmit: [{hooks: [{type: "command", command: $cmd}]}]}}' 2>/dev/null \
     | sed 's/^/    /'
@@ -276,12 +273,12 @@ if [ "$hooks_mode" = "skip" ]; then
 fi
 if ! command -v jq >/dev/null 2>&1; then
   echo "Claude Code hook: jq not found, so $SETTINGS was not changed. Install jq and run install.sh again, or add this entry by hand:"
-  echo "    {\"hooks\": {\"SessionStart\": [{\"matcher\": \"clear|resume\", \"hooks\": [{\"type\": \"command\", \"command\": \"$HOOK_COMMAND\"}]}], \"SessionEnd\": [{\"matcher\": \"clear\", \"hooks\": [{\"type\": \"command\", \"command\": \"$HOOK_COMMAND\"}]}], \"UserPromptSubmit\": [{\"hooks\": [{\"type\": \"command\", \"command\": \"$HOOK_COMMAND\"}]}]}}"
+  echo "    {\"hooks\": {\"SessionStart\": [{\"matcher\": \"startup|clear|resume\", \"hooks\": [{\"type\": \"command\", \"command\": \"$HOOK_COMMAND\"}]}], \"SessionEnd\": [{\"matcher\": \"clear\", \"hooks\": [{\"type\": \"command\", \"command\": \"$HOOK_COMMAND\"}]}], \"UserPromptSubmit\": [{\"hooks\": [{\"type\": \"command\", \"command\": \"$HOOK_COMMAND\"}]}]}}"
   exit 0
 fi
 already_in=0
 if [ -e "$SETTINGS" ] && jq -e --arg cmd "$HOOK_COMMAND" "$HOOK_JQ_DEFS
-    ([.hooks.SessionStart[]? | select(.matcher == \"clear|resume\") | .hooks[]? | select(.command == \$cmd)] | length == 1)
+    ([.hooks.SessionStart[]? | select(.matcher == \"startup|clear|resume\") | .hooks[]? | select(.command == \$cmd)] | length == 1)
     and ([.hooks.SessionEnd[]? | select(.matcher == \"clear\") | .hooks[]? | select(.command == \$cmd)] | length == 1)
     and ([.hooks.UserPromptSubmit[]? | select(has(\"matcher\") | not) | .hooks[]? | select(.command == \$cmd)] | length == 1)
     and ([.hooks[]?[]?.hooks[]? | select(ours)] | length == 3)" "$SETTINGS" >/dev/null 2>&1; then
@@ -327,7 +324,7 @@ esac
 write_settings '
   .hooks = (.hooks // {})
   | .hooks.SessionStart = (((.hooks.SessionStart // []) | strip)
-      + [{matcher: "clear|resume", hooks: [{type: "command", command: $cmd}]}])
+      + [{matcher: "startup|clear|resume", hooks: [{type: "command", command: $cmd}]}])
   | .hooks.SessionEnd = (((.hooks.SessionEnd // []) | strip)
       + [{matcher: "clear", hooks: [{type: "command", command: $cmd}]}])
   | .hooks.UserPromptSubmit = (((.hooks.UserPromptSubmit // []) | strip)

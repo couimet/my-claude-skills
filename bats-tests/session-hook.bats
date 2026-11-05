@@ -146,7 +146,7 @@ row() {
 @test "session-hook: an event outside the three cases does nothing" {
   session_file "$NEW" "$TOPIC"
   printf '[%s]' "$(row "${OTHER:0:8}" "$OTHER" other idle 123)" > "$LIVE_FILE"
-  for input in "$(event SessionStart startup "$NEW")" "$(event SessionEnd logout "$NEW")" \
+  for input in "$(event SessionEnd logout "$NEW")" \
       "$(event SessionStart compact "$NEW")" '{"hook_event_name":"Stop","session_id":"x"}'; do
     run_hook "$input" CLAUDE_PID="$PID"
     [ "$status" -eq 0 ]
@@ -357,6 +357,8 @@ row() {
 }
 
 @test "session-hook: a resume with another retired session in the folder returns additionalContext" {
+  mkdir -p "$TEST_TEMP_DIR/projects/-proj"
+  printf '{}\n' > "$TEST_TEMP_DIR/projects/-proj/$OTHER.jsonl"
   session_file "$OTHER" "$TOPIC"
   session_file "$NEW" "$TOPIC"
   printf '[%s]' "$(row "${OTHER:0:8}" "$OTHER" other-topic null null)" > "$LIVE_FILE"
@@ -657,4 +659,76 @@ TITLES_DIR_NAME="session-titles"
   [ -z "$stderr" ]
   [ "$(jq -c . "$TEST_TEMP_DIR/$TITLES_DIR_NAME/$NEW.json")" = '{"set":"topic","warned":"my-choice"}' ]
   [ ! -e "$TEST_TEMP_DIR/$TITLES_DIR_NAME/$OLD.json" ]
+}
+
+# ============================================================================
+# The name check at each SessionStart (issue 312)
+# ============================================================================
+
+# moved_setup — bind NEW to TOPIC, and list NEW under the name of another
+# existing folder of the topic root.
+moved_setup() {
+  printf '{"launchAgentDefaultFolder":"%s"}' "$TEST_TEMP_DIR" > "$CFG"
+  mkdir -p "$TEST_TEMP_DIR/folder-b"
+  session_file "$NEW" "$TOPIC"
+  printf '[%s]' "$(row "${NEW:0:8}" "$NEW" folder-b idle 123)" > "$LIVE_FILE"
+  cp "$LIVE_FILE" "$ALL_FILE"
+}
+
+@test "session-hook: a startup under the name of another folder gets one moved warning" {
+  moved_setup
+  run_hook "$(event SessionStart startup "$NEW")"
+  [ "$status" -eq 0 ]
+  [ "$(printf '%s' "$output" | jq -r .hookSpecificOutput.hookEventName)" = "SessionStart" ]
+  [[ "$(printf '%s' "$output" | jq -r .hookSpecificOutput.additionalContext)" == "moved: "* ]] || false
+}
+
+@test "session-hook: a resume under the name of another folder gets the moved warning" {
+  moved_setup
+  run_hook "$(event SessionStart resume "$NEW")"
+  [ "$status" -eq 0 ]
+  [[ "$(printf '%s' "$output" | jq -r .hookSpecificOutput.additionalContext)" == "moved: "* ]] || false
+}
+
+@test "session-hook: a startup under the folder name, or with no name yet, prints nothing" {
+  printf '{"launchAgentDefaultFolder":"%s"}' "$TEST_TEMP_DIR" > "$CFG"
+  session_file "$NEW" "$TOPIC"
+  printf '[%s]' "$(row "${NEW:0:8}" "$NEW" topic idle 123)" > "$LIVE_FILE"
+  run_hook "$(event SessionStart startup "$NEW")"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  printf '[%s]' "$(row "${NEW:0:8}" "$NEW" "" idle 123)" > "$LIVE_FILE"
+  run_hook "$(event SessionStart startup "$NEW")"
+  [ -z "$output" ]
+}
+
+@test "session-hook: a startup with no session file reads no list and prints nothing" {
+  run_hook "$(event SessionStart startup "$NEW")"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  [ ! -e "$CALLS" ]
+}
+
+@test "session-hook: a /clear of a session under the name of another folder sets the folder, then gets the moved warning" {
+  moved_setup
+  mv "$SESSIONS_DIR/$NEW--t.json" "$SESSIONS_DIR/$OLD--t.json"
+  jq -c --arg s "$OLD" '.session_id = $s' "$SESSIONS_DIR/$OLD--t.json" > "$SESSIONS_DIR/$OLD.tmp" && mv "$SESSIONS_DIR/$OLD.tmp" "$SESSIONS_DIR/$OLD--t.json"
+  run_hook "$(event SessionEnd clear "$OLD")" CLAUDE_PID="$PID"
+  [ "$status" -eq 0 ]
+  run_hook "$(event SessionStart clear "$NEW")" CLAUDE_PID="$PID"
+  [ "$status" -eq 0 ]
+  [ -n "$(files_of "$NEW")" ]
+  [[ "$(printf '%s' "$output" | jq -r .hookSpecificOutput.additionalContext)" == "moved: "* ]] || false
+}
+
+@test "session-hook: a resume with a holder in the folder, under the name of another folder, gets both warnings" {
+  moved_setup
+  session_file "$OTHER" "$TOPIC"
+  printf '[%s,%s]' "$(row "${NEW:0:8}" "$NEW" folder-b idle 123)" "$(row "${OTHER:0:8}" "$OTHER" topic idle 456)" > "$LIVE_FILE"
+  cp "$LIVE_FILE" "$ALL_FILE"
+  run_hook "$(event SessionStart resume "$NEW")"
+  [ "$status" -eq 0 ]
+  context="$(printf '%s' "$output" | jq -r .hookSpecificOutput.additionalContext)"
+  [[ "$context" == "Another session holds the work folder $TOPIC"* ]] || false
+  [[ "$context" == *$'\n\n'"moved: "* ]] || false
 }

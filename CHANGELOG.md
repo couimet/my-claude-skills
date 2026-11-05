@@ -10,6 +10,26 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.11.04
+
+### Added
+
+- `/resume-agent` takes `--prompt-file <path>`. When `install.sh` installed the session hook in `~/.claude/settings.json`, an ended session wakes with the prompt as its first message, so you send nothing after the call. In each other case (a plugin install, hooks turned off, managed settings, or a running session), the output tells you to send the prompt when the session is idle ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
+- `/resume-agent` takes `--clear`, which wakes an ended session with a cleared conversation and keeps its job, its name, and its work folder. Use it between review cycles ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
+- `resume-agent.sh --attach <folder>`, typed in a terminal, wakes the session and opens it in that terminal ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
+
+### Changed
+
+- After it wakes a session with no prompt sent on the restart, `/resume-agent` waits up to 60 seconds for the session to be idle before it reports the status, so a normal wake gives `Status: idle`, not `busy` or `unknown` ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
+- The session hook also checks a new session at its start. A session that runs under the name of another folder gets a warning before its first prompt ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
+- The file of a session under `~/.my-claude-skills/sessions/` carries the name of its folder, not the name of the job ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
+- On success, the path helper of the working files writes one summary line for the files it sweeps, not one line for each file. Pass `--verbose` to see each file ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
+
+### Fixed
+
+- A background session that moved to another folder keeps that folder after a resume or a `/clear`. The old folder is free again: `/launch-agent` takes it with no `--take-over`, and `/find-agent` shows `moved`. While the live session file of the job still names the old folder, the job holds it, and `/launch-agent` names the older files and `--take-over` ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
+- A retired session whose transcript Claude Code deleted shows as `gone`, so `/resume-agent` and `/find-agent` no longer advise an attach to an empty conversation ([issues/312](https://github.com/couimet/my-claude-skills/issues/312))
+
 ## 2026.11.02
 
 ### Added

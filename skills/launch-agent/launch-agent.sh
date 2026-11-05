@@ -454,6 +454,14 @@ if [ -d "$target" ] && held_abs="$({ cd "$target" && pwd -P; } 2>/dev/null)"; th
         # this script never disagree. A failed call keeps the old advice.
         h_next="$("$_self_dir/../issue-context/find-agent.sh" --others "$held_abs" 2>/dev/null | sed -n 's/^Next: //p')" || h_next=""
         [ -n "$h_next" ] || h_next="/resume-agent $held_abs"
+        # A holder that moved: the file of its live session id names this
+        # folder, but a newer file of its job names another one. /rename-agent
+        # and /resume-agent do not release the folder; only a take-over does.
+        h_newest="$(_issue_context_job_newest_folder "$h_job" 2>/dev/null)" || h_newest=""
+        if [ -n "$h_newest" ] && [ "$h_newest" != "$held_abs" ]; then
+          h_old="$(_issue_context_holder_files "$held_abs" "$h_sid" "$h_job" 2>/dev/null | tr '\n' ' ')" || h_old=""
+          die "$ERR_HELD" "$h_label holds $held_abs through its older session files (${h_old% }), but its newest session file names $h_newest, so the job moved there; /rename-agent and /resume-agent do not release this folder; to take the folder from it, launch again with --take-over"
+        fi
         die "$ERR_HELD" "$h_label holds $held_abs, and two sessions in one folder each see half of the work; to continue that session: $h_next; to take the folder from it, launch again with --take-over"
       fi
       # A take-over removes session files; a holder with none holds the

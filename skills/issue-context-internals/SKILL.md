@@ -89,6 +89,10 @@ The marker has two forms, read from its first line. A path names the folder. A l
 
 `folder-sessions.sh` lists the sessions that claim a folder. No skill runs it directly, and its header is the contract.
 
+## Script: session-hook-state.sh
+
+`session-hook-state.sh [--project <dir>]` prints `settings` or `none`: whether the session hook is sure to run, on strong evidence only. `resume-agent.sh` runs it to choose the restart form of a prompt. Its header is the contract.
+
 ## Settings: issue-settings.sh
 
 The path convention is configurable through `~/.my-claude-skills/settings.json`, overridable with `MY_CLAUDE_SKILLS_CONFIG` (a full path to the file). `issue-settings.sh` locates and parses it and exposes `SETTINGS_*` globals; scripts source it rather than execute it. Any failure writes a warning to stderr and resolves to the built-in defaults, never refusing to resolve. Keys:
