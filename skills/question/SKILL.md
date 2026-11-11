@@ -1,6 +1,6 @@
 ---
 name: question
-version: 2026.11.04@1c607a9
+version: 2026.11.11@fdf2793
 description: Create a questions file for gathering user input on design decisions. Questions go to a file, never the terminal.
 argument-hint: '[--format-only] <topic>'
 allowed-tools: Read, Write, Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/question/extract-answers.sh *), Bash(*/skills/prose-style/check-prose.sh *)

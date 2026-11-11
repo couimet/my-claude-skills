@@ -1,6 +1,6 @@
 ---
 name: rename-agent
-version: 2026.11.04@1c607a9
+version: 2026.11.11@fdf2793
 description: Give this session its folder name, or another name, at the next prompt. It renames only this session.
 argument-hint: '[name]'
 allowed-tools: Bash(*/skills/issue-context/rename-agent.sh *)

@@ -38,7 +38,7 @@ set -euo pipefail
 # The stamped CalVer version of this checkout. The Stamp Skills workflow
 # replaces this value on each push to main, with the value it writes into the
 # version: field of each SKILL.md. Do not edit it by hand.
-VERSION="2026.11.04@1c607a9"
+VERSION="2026.11.11@fdf2793"
 
 usage() {
   cat <<'EOF'
