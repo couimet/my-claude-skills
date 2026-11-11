@@ -158,7 +158,9 @@ esac
 
 # --- Get the folder and the text ---
 text_file="$(mktemp)"
-trap 'rm -f "$text_file"' EXIT
+selection_file=""
+tmp_prompt=""
+trap 'rm -f "$text_file" ${selection_file:+"$selection_file"} ${tmp_prompt:+"$tmp_prompt"}' EXIT
 
 if [ "$from" = "stdin" ]; then
   case "$folder" in
@@ -191,9 +193,15 @@ else
   # -R with fromjson? skips a line that is not JSON. The first output line is
   # the status: OK, then the text; NONE (no human message); or BARE (a bare
   # /save-prompt with no human message before it).
+  # The output goes to a file, not through $( ), which strips each trailing
+  # newline: a message that ends in blank lines keeps them.
   # The kcov markers wrap the jq program: kcov counts each line of a '...'
-  # program as a bash line that never runs. See scripts/shell-coverage.sh.
-  selection="$(jq -R -n -r --arg sep "$SEPARATOR" ' # kcov-exclude-start
+  # program as a bash line that never runs. The hit of this plain command
+  # lands on its opening line, so the start marker goes inside the program,
+  # and the end marker after the closing quote. See scripts/shell-coverage.sh.
+  selection_file="$(mktemp)"
+  jq -R -n -r --arg sep "$SEPARATOR" '
+    # kcov-exclude-start
     def render:
       if type == "string" then .
       elif type == "array" then [.[] | objects | select(.type == "text") | .text | strings] | join("\n")
@@ -225,10 +233,11 @@ else
               + ([range($sel + 1; $end) | select($e[.].k == "f") | "\n\n" + $sep + "\n\n" + $e[.].t] | join(""))
           end
       end
-    # kcov-exclude-end
-  ' "$transcript")" || die "$ERR_MESSAGE" "could not read the transcript $transcript"
-  case "$selection" in
-    OK$'\n'*) printf '%s\n' "${selection#OK$'\n'}" > "$text_file" ;;
+  ' "$transcript" > "$selection_file" || die "$ERR_MESSAGE" "could not read the transcript $transcript" # kcov-exclude-end
+  # jq -r ends the output with one newline, so the text keeps its own ending
+  # plus one final newline.
+  case "$(head -n 1 "$selection_file")" in
+    OK) tail -n +2 "$selection_file" > "$text_file" ;;
     BARE) die "$ERR_MESSAGE" "the transcript $transcript holds only a bare /save-prompt, and no human message before it to save" ;;
     *) die "$ERR_MESSAGE" "the transcript $transcript holds no human message (a type: user entry with origin.kind: human); the transcript form can have changed, so nothing was written" ;;
   esac
@@ -290,9 +299,14 @@ while :; do
   sleep 1
 done
 prompt_file="$prompts_dir/$stamp-$kind.txt"
-(
-  set -o noclobber
-  cat "$text_file" > "$prompt_file"
-) 2>/dev/null || die "$ERR_WRITE" "could not write $prompt_file"
+# The copy goes to a temp file in prompts/ first, so a failed copy never
+# leaves a part of a prompt under a real name. mktemp creates the file with
+# mode 0600, so the prompt is private to its owner. ln publishes it, and fails
+# when the name exists, so a file is never overwritten. The temp name never
+# matches the stamp pattern, so the newest-file scan never reads it.
+tmp_prompt="$(mktemp "$prompts_dir/.save-prompt.XXXXXX" 2>/dev/null)" \
+  || die "$ERR_WRITE" "could not write $prompt_file"
+cat "$text_file" > "$tmp_prompt" 2>/dev/null || die "$ERR_WRITE" "could not write $prompt_file"
+ln "$tmp_prompt" "$prompt_file" 2>/dev/null || die "$ERR_WRITE" "could not write $prompt_file"
 
 printf '%s\n' "$prompt_file"

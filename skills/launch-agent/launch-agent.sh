@@ -619,11 +619,13 @@ done
 # first line once the codes are gone. Both kinds of sequence go: CSI for color,
 # and OSC, which a terminal hyperlink uses. An id that is not one plain token
 # means the layout changed, and a wrong Attach: line is worse than none.
+# The substitution stays on one line, because kcov counts the first line of a
+# multi-line $( ) as a line that never runs.
 esc=$'\033'
 bel=$'\007'
-launch_output="$(printf '%s\n' "$job_id" | LC_ALL=C sed -E \
-  -e "s#${esc}[]][^${bel}${esc}]*(${bel}|${esc}\\\\)##g" \
-  -e "s#${esc}[[][0-?]*[ -/]*[@-~]##g")"
+strip_osc="s#${esc}[]][^${bel}${esc}]*(${bel}|${esc}\\\\)##g"
+strip_csi="s#${esc}[[][0-?]*[ -/]*[@-~]##g"
+launch_output="$(printf '%s\n' "$job_id" | LC_ALL=C sed -E -e "$strip_osc" -e "$strip_csi")"
 first_line="${launch_output%%$'\n'*}"
 job_id=""
 case "$first_line" in

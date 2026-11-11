@@ -1366,11 +1366,28 @@ next_after_restart() {
 @test "next: the second run refuses with R013 when the folder names another session than the stopped one" {
   session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
   printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle null)" > "$AGENTS_ALL_FILE"
-  RESUME_AGENT_NEXT_STOPPED="$OTHER_SESSION" run_resume "$SELF_SESSION" --next my-topic
+  RESUME_AGENT_NEXT_STOPPED="${OTHER_SESSION:0:8}" run_resume "$SELF_SESSION" --next my-topic
   [ "$status" -eq 1 ]
-  _contains "$stderr" "resume-agent R013 error: --next stopped session $OTHER_SESSION, but $REPO/my-topic now names session $TOPIC_SESSION, so nothing was restarted"
+  _contains "$stderr" "resume-agent R013 error: --next stopped job ${OTHER_SESSION:0:8}, but $REPO/my-topic now names session $TOPIC_SESSION (job ${TOPIC_SESSION:0:8}), so nothing was restarted"
   [ ! -e "$STOP_ARGS" ]
   [ ! -e "$RESUME_ARGS" ]
+}
+
+@test "next: a job that ran /clear restarts after the stop, though its listed session id changes" {
+  printf '{"version":1,"folder":"%s","session_id":"%s","job_session_id":"%s","written_at":"%s"}' \
+    "$REPO/my-topic" "$CLEARED_SESSION" "$TOPIC_SESSION" "2026-10-14T10:00:00Z" \
+    > "$SESSIONS_DIR/$CLEARED_SESSION.json"
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  agent_entry "$TOPIC_SESSION" my-topic done idle \
+    | jq -c --arg s "$CLEARED_SESSION" '[.sessionId = $s]' > "$AGENTS_FILE"
+  next_after_restart
+  NAME_WAIT=5 STATUS_WAIT=5 STOP_WAIT=3 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" --next my-topic
+  [ "$status" -eq 0 ]
+  [ "$(cat "$STOP_ARGS")" = "$(printf '%s\n' stop "${TOPIC_SESSION:0:8}")" ]
+  [ "$(cat "$RESUME_ARGS")" = "$(printf '%s\n' --bg --resume "$TOPIC_SESSION" "/clear")" ]
+  _contains "$stderr" "session $CLEARED_SESSION was idle"
+  _lacks "$stderr" "R013"
+  _contains "$output" "Action: restarted"
 }
 
 @test "next: a failed claude stop → R013, and nothing restarts" {

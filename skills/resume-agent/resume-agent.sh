@@ -181,9 +181,11 @@
 # keeps the job id and starts no copy (tested on 2026-11-10). The script
 # then runs itself again with the same arguments, so the session is listed
 # and restarted by the one rule of an ended session. The second run gets the
-# id of the stopped session in RESUME_AGENT_NEXT_STOPPED, and refuses with
-# R013 when the folder now names another session: another session can claim
-# the folder during the stop wait, and a /clear of that session would cut its
+# job id of the stopped session in RESUME_AGENT_NEXT_STOPPED, and refuses with
+# R013 when the folder now names another job. The job id, not the session id,
+# is compared: after a /clear, the list names a running job by its current
+# conversation and an ended job by its first session id. Another session can
+# claim the folder during the stop wait, and a /clear of that session would cut its
 # conversation while the stopped session stays stopped. A prompt that reaches
 # the session between the status read and the stop is cut: the stop is a
 # race that the script cannot close. --next sends no prompt, for the reason
@@ -459,8 +461,8 @@ fi
   || die "$ERR_NO_SESSION" "the session file for $folder_abs holds the session id '$session_id', which is not a valid id"
 # See "The next" in the header: the second run of --next restarts only the
 # session that the first run stopped.
-if [ -n "${RESUME_AGENT_NEXT_STOPPED:-}" ] && [ "$RESUME_AGENT_NEXT_STOPPED" != "$session_id" ]; then
-  die "$ERR_NEXT" "--next stopped session $RESUME_AGENT_NEXT_STOPPED, but $folder_abs now names session $session_id, so nothing was restarted; session $RESUME_AGENT_NEXT_STOPPED stays stopped; run --next again to restart the session that the folder names now"
+if [ -n "${RESUME_AGENT_NEXT_STOPPED:-}" ] && [ "$RESUME_AGENT_NEXT_STOPPED" != "$job_id" ]; then
+  die "$ERR_NEXT" "--next stopped job $RESUME_AGENT_NEXT_STOPPED, but $folder_abs now names session $session_id (job ${job_id:-none}), so nothing was restarted; job $RESUME_AGENT_NEXT_STOPPED stays stopped; run --next again to restart the session that the folder names now"
 fi
 
 # --- Stop when the caller holds the folder too ---
@@ -639,8 +641,8 @@ entry="$(entry_of)"
 # --- Stop an idle session (--next) ---
 # See "The next" in the header. After the stop, the script runs itself again,
 # and the second run finds the session ended. RESUME_AGENT_NEXT_STOPPED marks
-# that run with the id of the stopped session, so it never stops a session a
-# second time, and it restarts only that session.
+# that run with the job id of the stopped session, so it never stops a session
+# a second time, and it restarts only that job.
 if [ "$next" -eq 1 ] && [ "$list_state" = "running" ]; then
   next_status="$(field status)"
   next_state="$(field state)"
@@ -670,7 +672,7 @@ if [ "$next" -eq 1 ] && [ "$list_state" = "running" ]; then
     sleep 1
     waited=$((waited + 1))
   done
-  RESUME_AGENT_NEXT_STOPPED="$session_id" exec "$0" "${orig_args[@]}"
+  RESUME_AGENT_NEXT_STOPPED="$job_id" exec "$0" "${orig_args[@]}"
 fi
 
 retired=0

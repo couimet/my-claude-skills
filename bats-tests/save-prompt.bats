@@ -145,6 +145,13 @@ Also leave room for tulips."
   printf '%s\n' "Keep this: it's a \"long\" prompt with \$HOME and \`pwd\`." | cmp -s - "$output"
 }
 
+@test "a message that ends in blank lines keeps them, with one final newline" {
+  human $'Keep the ending.\n\n' > "$TRANSCRIPT"
+  run_save
+  [ "$status" -eq 0 ]
+  printf 'Keep the ending.\n\n\n' | cmp -s - "$output"
+}
+
 @test "the newest human message is the one saved" {
   { human "an older prompt"; human "save this prompt verbatim: the newest one"; } > "$TRANSCRIPT"
   run_save
@@ -411,6 +418,26 @@ one more thing"
   clock_stub 20261110-100000
   run_save
   chmod 755 "$FOLDER/prompts"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"M006"*"could not write $FOLDER/prompts/20261110-100000-saved.txt"* ]] || false
+  [ -z "$(ls -A "$FOLDER/prompts")" ]
+}
+
+@test "a saved prompt has mode 0600, and no temp file stays in prompts/" {
+  human "a private prompt" > "$TRANSCRIPT"
+  clock_stub 20261110-100000
+  run_save
+  [ "$status" -eq 0 ]
+  [ "$(ls -l "$FOLDER/prompts/20261110-100000-saved.txt" | cut -c1-10)" = "-rw-------" ]
+  [ "$(ls -A "$FOLDER/prompts")" = "20261110-100000-saved.txt" ]
+}
+
+@test "a publish that fails → M006, and no part of the prompt stays in prompts/" {
+  human "a prompt" > "$TRANSCRIPT"
+  clock_stub 20261110-100000
+  printf '#!/usr/bin/env bash\nexit 1\n' > "$BIN/ln"
+  chmod +x "$BIN/ln"
+  run_save
   [ "$status" -eq 1 ]
   [[ "$output" == *"M006"*"could not write $FOLDER/prompts/20261110-100000-saved.txt"* ]] || false
   [ -z "$(ls -A "$FOLDER/prompts")" ]
