@@ -515,8 +515,9 @@ printf 'Folder: %s\n' "$folder_abs"
 # stdout is the path or the Repeat: line; stderr is the reason of a refusal.
 save_err_file="$(mktemp)" || die "$ERR_PROMPT" "could not create a temporary file to save the prompt"
 save_out=""
-if ! save_out="$(printf '%s\n' "$prompt" \
-    | "$_self_dir/../save-prompt/save-prompt.sh" --from stdin --kind launch "$folder_abs" 2> "$save_err_file")"; then
+# One line: kcov records a multi-line command on one of its lines only.
+save_script="$_self_dir/../save-prompt/save-prompt.sh"
+if ! save_out="$(printf '%s\n' "$prompt" | "$save_script" --from stdin --kind launch "$folder_abs" 2> "$save_err_file")"; then
   save_err="$(cat "$save_err_file")"
   rm -f "$save_err_file"
   die "$ERR_PROMPT" "${save_err#save-prompt * error: }"

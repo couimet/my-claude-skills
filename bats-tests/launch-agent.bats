@@ -751,6 +751,25 @@ seed_launch() {
   [ ! -e "$ARGS_FILE" ]
 }
 
+@test "a save-prompt.sh that prints no prompt path → L003 that quotes its output, and no agent starts" {
+  # A tree of symlinks to the real skills, so the real launch-agent.sh runs,
+  # with a stub in place of save-prompt.sh.
+  local tree="$TEST_TEMP_DIR/skills" dir name
+  for dir in "$PROJECT_ROOT"/skills/*/; do
+    name="$(basename "$dir")"
+    mkdir -p "$tree/$name"
+    ln -s "$dir"* "$tree/$name/"
+  done
+  rm "$tree/save-prompt/save-prompt.sh"
+  printf '#!/usr/bin/env bash\ncat > /dev/null\necho "an unexpected line"\n' > "$tree/save-prompt/save-prompt.sh"
+  chmod +x "$tree/save-prompt/save-prompt.sh"
+  SCRIPT="$tree/launch-agent/launch-agent.sh" run_in "$REPO" --bg my-topic "do the thing"
+  [ "$status" -eq 1 ]
+  _contains "$output" "L003"
+  _contains "$output" "save-prompt.sh printed no prompt path: an unexpected line"
+  [ ! -e "$ARGS_FILE" ]
+}
+
 @test "a repeat of the newest launch file writes nothing and names that file" {
   seed_launch 20260929-080000 "the first prompt"
   seed_launch 20260930-100000 "the second prompt"

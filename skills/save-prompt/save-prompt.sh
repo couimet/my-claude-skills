@@ -41,14 +41,17 @@
 #     /save-prompt, with no text after it, the script saves the human message
 #     before it.
 #   - A message that the person sends while a turn runs is an `attachment`
-#     entry of type `queued_command` with `origin.kind: human`. Each such
+#     entry of type `queued_command` with `attachment.origin.kind: human`
+#     (an older form puts it at the top-level `origin.kind`). Each such
 #     entry after the saved message, up to the next human message, follows
 #     the saved text under the line
 #     `--- Follow-up message in the same turn ---`.
 #   - A string content is the text. An array content gives its text blocks,
 #     joined with a newline.
 #   - A slash command is in the transcript as <command-name> and
-#     <command-args> tags. The script writes the typed form /<name> <args>.
+#     <command-args> tags at the start of the content, after an optional
+#     <command-message> tag. The script writes the typed form /<name> <args>.
+#     The same tags in the middle of a prompt are text, saved as they are.
 #   - With no human message, the script refuses: the transcript form can have
 #     changed. It never writes an empty file.
 #
@@ -139,7 +142,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 case "$kind" in
-  launch | next | saved) ;;
+  launch | next | saved) ;; # kcov-exclude-line
   *) die "$ERR_USAGE" "unknown kind '$kind'; use launch, next, or saved" ;;
 esac
 case "$from" in
@@ -159,7 +162,7 @@ trap 'rm -f "$text_file"' EXIT
 
 if [ "$from" = "stdin" ]; then
   case "$folder" in
-    /*) ;;
+    /*) ;; # kcov-exclude-line
     *) die "$ERR_FOLDER" "'$folder' is not an absolute path" ;;
   esac
   cat > "$text_file" || die "$ERR_USAGE" "could not read standard input"
@@ -188,13 +191,15 @@ else
   # -R with fromjson? skips a line that is not JSON. The first output line is
   # the status: OK, then the text; NONE (no human message); or BARE (a bare
   # /save-prompt with no human message before it).
-  selection="$(jq -R -n -r --arg sep "$SEPARATOR" '
+  # The kcov markers wrap the jq program: kcov counts each line of a '...'
+  # program as a bash line that never runs. See scripts/shell-coverage.sh.
+  selection="$(jq -R -n -r --arg sep "$SEPARATOR" ' # kcov-exclude-start
     def render:
       if type == "string" then .
       elif type == "array" then [.[] | objects | select(.type == "text") | .text | strings] | join("\n")
       else "" end;
     def typed:
-      if test("<command-name>[^<]*</command-name>"; "s") then
+      if test("^\\s*<command-(message|name)>") and test("<command-name>[^<]*</command-name>"; "s") then
         (capture("<command-name>(?<n>[^<]*)</command-name>"; "s").n | ltrimstr("/")) as $n
         | ((capture("<command-args>(?<a>[\\s\\S]*)</command-args>").a) // "") as $a
         | "/" + $n + (if ($a | test("\\S")) then " " + $a else "" end)
@@ -203,7 +208,8 @@ else
     [inputs | fromjson? | objects
       | if .type == "user" and .origin.kind? == "human" then
           {k: "h", t: (.message.content | render | typed)}
-        elif .type == "attachment" and .attachment.type? == "queued_command" and .origin.kind? == "human" then
+        elif .type == "attachment" and .attachment.type? == "queued_command"
+          and (.attachment.origin.kind? // .origin.kind?) == "human" then
           {k: "f", t: (.attachment.prompt | render | typed)}
         else empty end] as $e
     | [range(0; $e | length) | select($e[.].k == "h")] as $hs
@@ -219,6 +225,7 @@ else
               + ([range($sel + 1; $end) | select($e[.].k == "f") | "\n\n" + $sep + "\n\n" + $e[.].t] | join(""))
           end
       end
+    # kcov-exclude-end
   ' "$transcript")" || die "$ERR_MESSAGE" "could not read the transcript $transcript"
   case "$selection" in
     OK$'\n'*) printf '%s\n' "${selection#OK$'\n'}" > "$text_file" ;;

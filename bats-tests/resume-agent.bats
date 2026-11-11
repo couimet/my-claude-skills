@@ -1363,6 +1363,16 @@ next_after_restart() {
   [ ! -e "$RESUME_ARGS" ]
 }
 
+@test "next: the second run refuses with R013 when the folder names another session than the stopped one" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle null)" > "$AGENTS_ALL_FILE"
+  RESUME_AGENT_NEXT_STOPPED="$OTHER_SESSION" run_resume "$SELF_SESSION" --next my-topic
+  [ "$status" -eq 1 ]
+  _contains "$stderr" "resume-agent R013 error: --next stopped session $OTHER_SESSION, but $REPO/my-topic now names session $TOPIC_SESSION, so nothing was restarted"
+  [ ! -e "$STOP_ARGS" ]
+  [ ! -e "$RESUME_ARGS" ]
+}
+
 @test "next: a failed claude stop → R013, and nothing restarts" {
   session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
   printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle)" > "$AGENTS_FILE"

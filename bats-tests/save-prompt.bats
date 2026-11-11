@@ -57,8 +57,16 @@ slash() {
     '{type: "user", origin: {kind: "human"}, message: {role: "user", content: ("<command-message>" + $n + "</command-message>\n<command-name>/" + $n + "</command-name>\n<command-args>" + $a + "</command-args>")}}'
 }
 
-# queued <text> — print one human message that arrived while a turn ran.
+# queued <text> [<kind>] — print one message that arrived while a turn ran,
+# with its origin in the attachment, as Claude Code 2.1.322 writes it. The
+# kind defaults to human.
 queued() {
+  jq -cn --arg t "$1" --arg k "${2:-human}" '{type: "attachment", attachment: {type: "queued_command", prompt: $t, commandMode: "prompt", origin: {kind: $k}}}'
+}
+
+# queued_top <text> — print one human queued message in the older form, with
+# its origin at the top level.
+queued_top() {
   jq -cn --arg t "$1" '{type: "attachment", origin: {kind: "human"}, attachment: {type: "queued_command", prompt: $t, commandMode: "prompt"}}'
 }
 
@@ -202,6 +210,40 @@ and another"
   [ "$(cat "$output")" = "the prompt" ]
 }
 
+@test "a queued follow-up with its origin at the top level, the older form, still follows the saved message" {
+  { human "the prompt"; queued_top "one more thing"; } > "$TRANSCRIPT"
+  run_save
+  [ "$status" -eq 0 ]
+  expected="the prompt
+
+$SEPARATOR
+
+one more thing"
+  [ "$(cat "$output")" = "$expected" ]
+}
+
+@test "a queued message of a peer or a task notification is skipped" {
+  { human "the prompt"; queued "a peer asks" peer; queued "a task ended" task-notification; } > "$TRANSCRIPT"
+  run_save
+  [ "$status" -eq 0 ]
+  [ "$(cat "$output")" = "the prompt" ]
+}
+
+@test "command tags quoted in the middle of a prompt are text, saved byte for byte" {
+  text='The transcript shows <command-name>/foo</command-name> and <command-args>bar</command-args> for a slash command.'
+  human "$text" > "$TRANSCRIPT"
+  run_save
+  [ "$status" -eq 0 ]
+  [ "$(cat "$output")" = "$text" ]
+}
+
+@test "a slash command with no <command-message> tag is rebuilt as /<name> <args>" {
+  jq -cn '{type: "user", origin: {kind: "human"}, message: {role: "user", content: "<command-name>/clear</command-name>\n<command-args></command-args>"}}' > "$TRANSCRIPT"
+  run_save
+  [ "$status" -eq 0 ]
+  [ "$(cat "$output")" = "/clear" ]
+}
+
 @test "an array content gives its text blocks, joined with a newline" {
   jq -cn '{type: "user", origin: {kind: "human"}, message: {role: "user", content: [{type: "text", text: "part one"}, {type: "image", source: {}}, {type: "text", text: "part two"}]}}' > "$TRANSCRIPT"
   run_save
@@ -238,6 +280,14 @@ and another"
   run_save --kind later
   [ "$status" -eq 1 ]
   [[ "$output" == *"M001"*"unknown kind 'later'"* ]] || false
+  [ ! -e "$FOLDER/prompts" ]
+}
+
+@test "an unknown flag → M001, nothing written" {
+  human "a prompt" > "$TRANSCRIPT"
+  run_save --bogus
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"M001"*"unknown flag '--bogus'"* ]] || false
   [ ! -e "$FOLDER/prompts" ]
 }
 
@@ -352,6 +402,18 @@ and another"
   [[ "$output" == *"M006"*"no free name"* ]] || false
   [ "$(wc -l < "$TEST_TEMP_DIR/sleep-log" | tr -d ' ')" -eq 2 ]
   [ "$(ls -1 "$FOLDER/prompts")" = "20261110-100000-next.txt" ]
+}
+
+@test "a prompts/ folder that refuses the write → M006, nothing written" {
+  human "a prompt" > "$TRANSCRIPT"
+  mkdir -p "$FOLDER/prompts"
+  chmod 555 "$FOLDER/prompts"
+  clock_stub 20261110-100000
+  run_save
+  chmod 755 "$FOLDER/prompts"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"M006"*"could not write $FOLDER/prompts/20261110-100000-saved.txt"* ]] || false
+  [ -z "$(ls -A "$FOLDER/prompts")" ]
 }
 
 # ============================================================================
