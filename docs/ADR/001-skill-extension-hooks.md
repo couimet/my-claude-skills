@@ -28,6 +28,7 @@ This is purely a convention: a few lines of prose added to existing SKILL.md fil
 | `start-side-quest`    | `start-side-quest-hook`    | After branch creation, before plan generation                             |
 | `create-github-issue` | `create-github-issue-hook` | During Step 8 label offering, before the generic `/label-discovery` offer |
 | `fork-side-item`      | `fork-side-item-hook`      | Refusal checks, tracker search, worker-prompt lines, after-fork steps     |
+| `save-prompt`         | `save-prompt-hook`         | After-save steps                                                          |
 
 `fork-side-item` names four points, because a hook only adds requirements and so the parent skill must say where each addition goes. A hook is a soft check, as Consequences says, so a project that puts a safety gate in `fork-side-item-hook` (for example, a refusal for a security item) also states that gate in its `CLAUDE.md`.
 

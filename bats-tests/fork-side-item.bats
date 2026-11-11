@@ -58,7 +58,7 @@ run_fork() {
   [ "$status" -eq 0 ]
   local folder="$REPO/side-the-readme-links-a-dead-page"
   [ -d "$folder" ]
-  [ "$(cat "$folder/prompt-new-agent-launch.txt")" = "check the claim" ]
+  [ "$(cat "$folder"/prompts/*-launch.txt)" = "check the claim" ]
   [[ "$(cat "$ARGS_FILE")" == "--bg --name side-the-readme-links-a-dead-page "* ]] || false
   [[ "$output" == *"Folder: $folder"* ]] || false
   [[ "$output" == *"Job: a1b2c3d4"* ]] || false

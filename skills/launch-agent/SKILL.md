@@ -48,7 +48,7 @@ The task prompt goes to the script on standard input, through a quoted heredoc (
 
 A person who runs the script by hand can pass the prompt as arguments. Its header gives the rules.
 
-The prompt is saved in the folder before the work starts, so it is there even when the launch fails. The first prompt keeps `prompt-new-agent-launch.txt`. Each later launch adds `prompt-new-agent-launch.txt.update-<stamp>.txt`, which sorts after it. A repeat of the newest prompt adds nothing. No saved prompt is ever changed.
+The prompt is saved in the folder before the work starts, so it is there even when the launch fails. Each launch adds `prompts/<stamp>-launch.txt`, through the stdin mode of `save-prompt.sh` (see `/save-prompt`). The oldest launch file is the first prompt of the folder. A repeat of the newest launch prompt adds nothing. No saved prompt is ever changed, and the `prompt-new-agent-launch.txt` files of an older folder stay where they are.
 
 ## Step 1: Run the Script
 
@@ -72,7 +72,7 @@ Every refusal happens before the script writes anything, in both modes. A reject
 
 Give the user the lines the script printed, as it printed them: the resolved folder, the prompt file, and the name. Give the `Repeat:` line and the `/resume-agent` hint for an earlier session too, when printed.
 
-A line that says that Claude Code deleted the transcript of an earlier session means that no session holds the chat context of the earlier rounds. Tell the user that this launch starts with no context. In the default mode, this session does the work: before the task, read the earlier `prompt-new-agent-launch*.txt` files and the working files in the folder. With `--bg`, tell the user that those files are in the folder.
+A line that says that Claude Code deleted the transcript of an earlier session means that no session holds the chat context of the earlier rounds. Tell the user that this launch starts with no context. In the default mode, this session does the work: before the task, read the earlier launch prompts and the working files in the folder. The launch prompts are the `prompts/*-launch.txt` files, and in an older folder the `prompt-new-agent-launch*.txt` files at its root. With `--bg`, tell the user that those files are in the folder.
 
 The default mode adds one line saying that no agent started, and one `Type /rename <name> ...` line. Print both. Claude Code gives a script no way to rename a session, so only the user can type that command. This session now owns the folder, so do the task the user gave you. Then repeat the `/rename` line, unchanged, as the last line of your first reply that gives control back to the user: a finished result, a question, or a stop for approval. Repeat it only that once.
 

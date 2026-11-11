@@ -101,11 +101,13 @@
 #   ~/.claude/skills/issue-context/set-work-folder.sh '<folder>' '<name>'
 #
 #   Then read <cwd>/CLAUDE.md and follow it. Your launch prompt is already
-#   saved at <folder>/prompt-new-agent-launch.txt, so do not write it again.
+#   saved at <folder>/prompts/<stamp>-launch.txt, so do not write it again.
 #
-# The saved path is prompt-new-agent-launch.txt on the first launch into a
-# folder, and a dated prompt-new-agent-launch.txt.update-<stamp>.txt on each
-# later one. The CLAUDE.md sentence appears only when that file exists. The name is
+# The saved path is <folder>/prompts/<stamp>-launch.txt on each launch, the
+# first one too, and ../save-prompt/save-prompt.sh writes it. The oldest
+# launch file of the folder is its first launch prompt. A folder from before
+# prompts/ keeps its prompt-new-agent-launch.txt files where they are. The
+# CLAUDE.md sentence appears only when that file exists. The name is
 # passed to set-work-folder.sh explicitly even though the script can read one
 # from the job state file, because the explicit form does not depend on an
 # undocumented internal file.
@@ -142,10 +144,6 @@ readonly ERR_HERE="L005"
 readonly ERR_DEPTH="L006"
 readonly ERR_HELD="L007"
 readonly ERR_MARKER_HELD="L008"
-
-# The one fixed filename this script owns. A launch prompt is found by name
-# rather than by search, so the name does not vary and is not configurable.
-readonly PROMPT_BASENAME="prompt-new-agent-launch"
 
 usage() {
   cat <<'EOF'
@@ -507,78 +505,33 @@ printf 'Folder: %s\n' "$folder_abs"
 [ -z "$earlier_hint" ] || echo "$earlier_hint" >&2
 
 # --- Save the prompt ---
-# Before dispatch, so the file exists even when the launch fails. The stable
-# name holds the first launch, because the first prompt is what defines the
-# topic and what readers look for. Each later launch adds a file stamped with
-# the launch time, and no launch renames, rewrites, or deletes a file that
-# exists. A launch that repeats the newest prompt byte for byte adds nothing,
-# so a retry leaves no trace.
-#
-# A later name starts with the full name of the first prompt, extension
-# included: prompt-new-agent-launch.txt.update-<stamp>.txt. A name sorts before
-# every longer name that starts with it, so the first prompt lists first and
-# the later prompts follow in stamp order, in every locale and explorer. That
-# is one rule for every file that iterates on a source file in its folder.
-# Before this rule the later name was prompt-new-agent-launch.update-<stamp>.txt,
-# which also sorted after the first prompt, but only because "u" sorts after
-# "t". No file of that form is renamed. A folder that holds both forms lists
-# its new-form files before its old-form files, which is the accepted cost.
-#
-# The newest prompt is therefore found by stamp, never by glob order: in a
-# folder with both forms the glob lists the new form first, so its last file
-# is not the newest. A suffix that is not a YYYYMMDD-HHMMSS stamp does not
-# count, so a file a person named by hand is never compared.
-#
-# A taken stamp waits for the next second rather than taking a suffix, because
-# "<stamp>-001.txt" sorts before "<stamp>.txt" and breaks the launch order. A
-# stamp is taken when a file of either form holds it. noclobber makes each
-# write fail rather than replace a file that appeared after the name check, so
-# a race between two launches cannot break the rule.
-first_prompt="$folder_abs/$PROMPT_BASENAME.txt"
-prompt_file="$first_prompt"
-repeat_of=""
-if [ -f "$first_prompt" ]; then
-  newest="$first_prompt"
-  newest_stamp=""
-  # With no update file a pattern stays literal, and -f skips it.
-  for candidate in "$folder_abs/$PROMPT_BASENAME".update-*.txt \
-    "$folder_abs/$PROMPT_BASENAME".txt.update-*.txt; do
-    [ -f "$candidate" ] || continue
-    candidate_stamp="${candidate##*.update-}"
-    candidate_stamp="${candidate_stamp%.txt}"
-    [[ "$candidate_stamp" =~ ^[0-9]{8}-[0-9]{6}$ ]] || continue
-    # The stamps have one fixed width, so a byte comparison is a time
-    # comparison.
-    if [[ "$candidate_stamp" > "$newest_stamp" ]]; then
-      newest="$candidate"
-      newest_stamp="$candidate_stamp"
-    fi
-  done
-  if printf '%s\n' "$prompt" | cmp -s - "$newest"; then
-    prompt_file="$newest"
-    repeat_of="$newest"
-  else
-    attempt=1
-    while :; do
-      stamp="$(date +%Y%m%d-%H%M%S)" \
-        || die "$ERR_PROMPT" "could not read the clock to name the new prompt file"
-      prompt_file="$folder_abs/$PROMPT_BASENAME.txt.update-$stamp.txt"
-      [ -e "$prompt_file" ] || [ -e "$folder_abs/$PROMPT_BASENAME.update-$stamp.txt" ] || break
-      [ "$attempt" -lt 3 ] \
-        || die "$ERR_PROMPT" "no free name for a new prompt file in $folder_abs after $attempt tries; launch again in a second"
-      attempt=$((attempt + 1))
-      sleep 1
-    done
-  fi
+# Before dispatch, so the file exists even when the launch fails. The save
+# logic has one copy: save-prompt.sh in its stdin mode, with the kind launch.
+# It writes <folder>/prompts/<stamp>-launch.txt, and no launch renames,
+# rewrites, or deletes a file that exists. A launch that repeats the newest
+# launch prompt byte for byte adds nothing, so a retry leaves no trace. Its
+# header gives the rules: the repeat check reads prompts/ first, then the old
+# names, and a taken stamp waits for the next second.
+# stdout is the path or the Repeat: line; stderr is the reason of a refusal.
+save_err_file="$(mktemp)" || die "$ERR_PROMPT" "could not create a temporary file to save the prompt"
+save_out=""
+# One line: kcov records a multi-line command on one of its lines only.
+save_script="$_self_dir/../save-prompt/save-prompt.sh"
+if ! save_out="$(printf '%s\n' "$prompt" | "$save_script" --from stdin --kind launch "$folder_abs" 2> "$save_err_file")"; then
+  save_err="$(cat "$save_err_file")"
+  rm -f "$save_err_file"
+  die "$ERR_PROMPT" "${save_err#save-prompt * error: }"
 fi
-if [ -n "$repeat_of" ]; then
-  printf 'Repeat: the prompt matches %s, so no new file was written.\n' "$repeat_of"
-else
-  (
-    set -o noclobber
-    printf '%s\n' "$prompt" > "$prompt_file"
-  ) || die "$ERR_PROMPT" "could not write $prompt_file"
-fi
+rm -f "$save_err_file"
+case "$save_out" in
+  "Repeat: the prompt matches "*", so no new file was written.")
+    prompt_file="${save_out#Repeat: the prompt matches }"
+    prompt_file="${prompt_file%, so no new file was written.}"
+    printf '%s\n' "$save_out"
+    ;;
+  /*) prompt_file="$save_out" ;;
+  *) die "$ERR_PROMPT" "save-prompt.sh printed no prompt path: $save_out" ;;
+esac
 
 printf 'Prompt: %s\n' "$prompt_file"
 printf 'Name: %s\n' "$display_name"
@@ -666,11 +619,13 @@ done
 # first line once the codes are gone. Both kinds of sequence go: CSI for color,
 # and OSC, which a terminal hyperlink uses. An id that is not one plain token
 # means the layout changed, and a wrong Attach: line is worse than none.
+# The substitution stays on one line, because kcov counts the first line of a
+# multi-line $( ) as a line that never runs.
 esc=$'\033'
 bel=$'\007'
-launch_output="$(printf '%s\n' "$job_id" | LC_ALL=C sed -E \
-  -e "s#${esc}[]][^${bel}${esc}]*(${bel}|${esc}\\\\)##g" \
-  -e "s#${esc}[[][0-?]*[ -/]*[@-~]##g")"
+strip_osc="s#${esc}[]][^${bel}${esc}]*(${bel}|${esc}\\\\)##g"
+strip_csi="s#${esc}[[][0-?]*[ -/]*[@-~]##g"
+launch_output="$(printf '%s\n' "$job_id" | LC_ALL=C sed -E -e "$strip_osc" -e "$strip_csi")"
 first_line="${launch_output%%$'\n'*}"
 job_id=""
 case "$first_line" in
