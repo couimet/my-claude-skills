@@ -48,5 +48,6 @@ create-github-issue 9590
 create-jira-issue 15158
 fork-side-item 8029
 # resume-agent grew past its cap with the three options of issue 312
-# (--prompt-file, --clear, --attach), whose restart forms a caller must know.
-resume-agent 10542
+# (--prompt-file, --clear, --attach), whose restart forms a caller must know,
+# and with --next of issue 315, whose refusal R013 a caller must know.
+resume-agent 10791

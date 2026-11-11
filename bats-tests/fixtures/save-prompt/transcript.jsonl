@@ -1,0 +1,9 @@
+not json: a line that the reader skips
+{"type":"user","origin":{"kind":"human"},"message":{"role":"user","content":"Plan the garden beds:\n- tomatoes on the south side\n- herbs by the door"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"I will plan the beds."}]}}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_fixture","content":"ok"}]}}
+{"type":"user","origin":{"kind":"peer"},"message":{"role":"user","content":"A peer session says hello."}}
+{"type":"attachment","origin":{"kind":"human"},"attachment":{"type":"queued_command","prompt":"Also leave room for tulips.","commandMode":"prompt"}}
+{"type":"attachment","origin":{"kind":"task-notification"},"attachment":{"type":"queued_command","prompt":"<task-notification>a task ended</task-notification>","commandMode":"task-notification"}}
+{"type":"attachment","attachment":{"type":"date","date":"2026-01-01"}}
+{"type":"user","origin":{"kind":"human"},"message":{"role":"user","content":"<command-message>save-prompt</command-message>\n<command-name>/save-prompt</command-name>\n<command-args></command-args>"}}

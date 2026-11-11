@@ -2,7 +2,7 @@
 name: resume-agent
 version: 2026.11.04@1c607a9
 description: Make the session of a topic folder run again under its name, so the next round of work goes to the session that holds the earlier rounds. No shell command is necessary.
-argument-hint: '[--prompt-file <path>] [--clear] [--attach] <folder>'
+argument-hint: '[--prompt-file <path>] [--clear | --next] [--attach] <folder>'
 allowed-tools: Bash(*/skills/resume-agent/resume-agent.sh *), Bash(claude stop *)
 ---
 
@@ -10,13 +10,13 @@ allowed-tools: Bash(*/skills/resume-agent/resume-agent.sh *), Bash(claude stop *
 
 Make the session of a topic folder run again, so that the next round of work on the topic goes to the session that holds the chat context of the earlier rounds.
 
-**Input:** $ARGUMENTS (a folder: an absolute path, or a slug, optionally with `--prompt-file <path>`, `--clear`, or `--attach`)
+**Input:** $ARGUMENTS (a folder: an absolute path, or a slug, optionally with `--prompt-file <path>`, `--clear`, `--next`, or `--attach`)
 
 ## When to Use
 
 Use this when a topic that `/launch-agent` started needs another round, such as a review that waited for the author, and the session of the topic ended. Without this skill, only a shell brings the session back: find the session id, run `claude --bg --resume <session id>`, then attach.
 
-The user or Claude can start this skill. With no prompt file, a restart sends only `/rename` with the folder name (`/clear` with `--clear`), so the session starts no work. A person can type `/resume-agent` in any session, also in the input box of the agent view, which `claude agents` opens. A skill that prepares the next round runs the script directly. See "For Callers".
+The user or Claude can start this skill. With no prompt file, a restart sends only `/rename` with the folder name (`/clear` with `--clear` or `--next`), so the session starts no work. A person can type `/resume-agent` in any session, also in the input box of the agent view, which `claude agents` opens. A skill that prepares the next round runs the script directly. See "For Callers".
 
 ## When NOT to Use
 
@@ -32,7 +32,7 @@ The folder is an absolute path or a slug. A slug resolves as in `/launch-agent`:
 ~/.claude/skills/resume-agent/resume-agent.sh "<folder>"
 ```
 
-Add `--prompt-file "<path>"` to give the session its first prompt, and `--clear` to restart an ended session with a cleared conversation. See "The Options".
+Add `--prompt-file "<path>"` to give the session its first prompt, and `--clear` or `--next` to restart it with a cleared conversation. See "The Options".
 
 The script finds the sessions of the folder, and leaves out this session. When more than one session used the folder, the newest one wins, and stderr names the others. The state decides the action:
 
@@ -50,6 +50,7 @@ After its own restart, with no prompt sent, the script then waits up to 60 secon
 
 - **`--prompt-file <path>`:** save the prompt in the topic folder first, so that the message is never the only copy. For an ended session, when `install.sh` put the session hook in `~/.claude/settings.json` (and no setting turns it off), the restart sends the prompt alone, and the hook gives the session the folder name. The script then waits for the name only, and prints `Prompt: sent on the restart`. Else, a plugin install included, the restart sends `/rename` as usual, and the script prints `Prompt: not sent; send it with SendMessage when Status is idle`. For a running or a retired session, the script sends nothing, and prints the same `Prompt: not sent` line.
 - **`--clear`:** for an ended session only. The restart sends `/clear`, so the session wakes in the same job, with an empty conversation, its name, and its work folder. A `/clear` takes no second prompt, so with `--prompt-file` the script prints `Prompt: not sent`, and the caller sends the prompt. The waits end only after the list shows the new conversation, so the clear ran before the send. For any other state, the script stops with R012.
+- **`--next`:** for an ended session, as `--clear`. For a running session whose status is idle, the script stops the job with `claude stop`, then restarts it with `/clear`. Each other state stops with R013. It sends no prompt, as `--clear`.
 - **`--attach`:** for a person in a terminal. After its output, the script runs `claude attach` on the session, after a restart for an ended session. With no terminal, as in the agent view or a `!` line, it stops with R011, before any restart.
 
 ## Step 2: Report
@@ -58,7 +59,7 @@ Give the user every line the script printed, on stdout and on stderr, in order.
 
 Tell the user how to open the session: with the `Attach:` command, or in the agent view as the `Open:` line says. Give the `Rename:` line as it is, when the script printed one: the list does not show the folder name. Tell the user not to run `claude --bg --resume` for the session, because it starts a copy. Give a `claude rm` line to the user, and do not run it: it removes a job record and its worktree, and keeps the transcript.
 
-An error names its code. R003 means that no session other than this one holds the folder: give the user the error, which names `/launch-agent` and `/set-work-folder`. R005 means that the restart failed, or that it started a copy: give the user the output the script printed, which names the copy to stop. R006 means that the restart ran, but the list read after it failed, so the script does not know whether the session runs. Do not run `claude --bg --resume` for the session, because a resume of a running session starts a copy. Run the skill again: it restarts nothing when the list shows the session. R007 means that the session restarted in another directory than the one the script chose, so the project settings do not apply to it. The session runs: give the user the error, which says how to stop the session or move it with `/cd`. R008 means that Claude Code deleted the transcript of the session, so its history is lost and nothing restarted. Give the user the error, which says how to start the work again with `/launch-agent`, and in which directory when the session started outside the repository of the folder. Do not run `claude --bg --resume` for the session, and do not resume another session of the folder in its place. R009 means that this session holds the folder too, so a restart would make two sessions in one folder. Nothing restarted. Give the user the error, which gives the two choices, and let the user choose. Do not run `/set-work-folder --clear` or `claude stop` unless the user asks. R010 means that the prompt file is missing, empty, or starts with `-`. R011 means `--attach` with no terminal. R012 means `--clear` on a session that is not ended. Nothing restarted for these three: give the user the error.
+An error names its code. R003 means that no session other than this one holds the folder: give the user the error, which names `/launch-agent` and `/set-work-folder`. R005 means that the restart failed, or that it started a copy: give the user the output the script printed, which names the copy to stop. R006 means that the restart ran, but the list read after it failed, so the script does not know whether the session runs. Do not run `claude --bg --resume` for the session, because a resume of a running session starts a copy. Run the skill again: it restarts nothing when the list shows the session. R007 means that the session restarted in another directory than the one the script chose, so the project settings do not apply to it. The session runs: give the user the error, which says how to stop the session or move it with `/cd`. R008 means that Claude Code deleted the transcript of the session, so its history is lost and nothing restarted. Give the user the error, which says how to start the work again with `/launch-agent`, and in which directory when the session started outside the repository of the folder. Do not run `claude --bg --resume` for the session, and do not resume another session of the folder in its place. R009 means that this session holds the folder too, so a restart would make two sessions in one folder. Nothing restarted. Give the user the error, which gives the two choices, and let the user choose. Do not run `/set-work-folder --clear` or `claude stop` unless the user asks. R010 means that the prompt file is missing, empty, or starts with `-`. R011 means `--attach` with no terminal. R012 means `--clear` on a session that is not ended. R013 means `--next` on a session that it cannot stop. Nothing restarted for these four: give the user the error.
 
 ## Step 3: Stop the Helper Session
 

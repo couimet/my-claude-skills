@@ -48,7 +48,7 @@ The task prompt goes to the script on standard input, through a quoted heredoc (
 
 A person who runs the script by hand can pass the prompt as arguments. Its header gives the rules.
 
-The prompt is saved in the folder before the work starts, so it is there even when the launch fails. The first prompt keeps `prompt-new-agent-launch.txt`. Each later launch adds `prompt-new-agent-launch.txt.update-<stamp>.txt`, which sorts after it. A repeat of the newest prompt adds nothing. No saved prompt is ever changed.
+The prompt is saved in the folder before the work starts, so it is there even when the launch fails. Each launch adds `prompts/<stamp>-launch.txt`, through the stdin mode of `save-prompt.sh` (see `/save-prompt`). The oldest launch file is the first prompt of the folder. A repeat of the newest launch prompt adds nothing. No saved prompt is ever changed, and the `prompt-new-agent-launch.txt` files of an older folder stay where they are.
 
 ## Step 1: Run the Script
 

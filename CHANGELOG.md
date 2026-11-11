@@ -10,6 +10,17 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.11.11
+
+### Added
+
+- `/save-prompt` saves a prompt verbatim in the `prompts/` folder of the work folder. It reads the text from the session transcript, so no model copies it. Say "save this prompt verbatim", or type a bare `/save-prompt` after a long prompt. `--kind next` marks a prompt for a later session, and a project can add its own steps in a `/save-prompt-hook` skill ([issues/315](https://github.com/couimet/my-claude-skills/issues/315))
+- `/resume-agent` takes `--next`, which gives a session a cleared conversation for its next prompt: an ended session as with `--clear`, and an idle running session after `claude stop`. A busy session is refused ([issues/315](https://github.com/couimet/my-claude-skills/issues/315))
+
+### Changed
+
+- `/launch-agent` saves each launch prompt as `prompts/<stamp>-launch.txt`, also the first one. The oldest launch file is the first prompt of the folder. Existing `prompt-new-agent-launch.txt` files stay where they are, and a relaunch still sees them as the newest prompt until `prompts/` holds one ([issues/315](https://github.com/couimet/my-claude-skills/issues/315))
+
 ## 2026.11.04
 
 ### Added

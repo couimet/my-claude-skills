@@ -70,6 +70,14 @@ if [ "${1-}" = "--bg" ] && [ "${2-}" = "--resume" ]; then
   [ -z "${AGENTS_AFTER:-}" ] || cp "$AGENTS_AFTER" "$AGENTS_FILE"
   exit 0
 fi
+if [ "${1-}" = "stop" ]; then
+  printf '%s\n' "$@" > "$STOP_ARGS"
+  [ "${STUB_STOP_FAIL:-0}" = "1" ] && { echo "stop refused" >&2; exit 6; }
+  # A stopped job leaves the live list, unless the test keeps it there.
+  [ "${STUB_STOP_KEEPS:-0}" = "1" ] || printf '[]' > "$AGENTS_FILE"
+  printf 'stopped %s\n' "$2"
+  exit 0
+fi
 if [ "${1-}" = "attach" ]; then
   printf '%s\n' "$@" > "$RESUME_ARGS.attach"
   exit 0
@@ -98,6 +106,7 @@ setup() {
   AGENTS_NEXT="$TEST_TEMP_DIR/agents-next.json"
   RESUME_ARGS="$TEST_TEMP_DIR/resume-args.txt"
   RESUME_CWD="$TEST_TEMP_DIR/resume-cwd.txt"
+  STOP_ARGS="$TEST_TEMP_DIR/stop-args.txt"
   JOBS_DIR="$TEST_TEMP_DIR/jobs"
   AGENTS_ALL_FILE="$TEST_TEMP_DIR/agents-all.json"
   : > "$AGENTS_ALL_FILE"
@@ -107,7 +116,7 @@ setup() {
   transcript "$TOPIC_SESSION" "$REPO"
   printf '[]' > "$AGENTS_FILE"
   : > "$AGENTS_AFTER"
-  export AGENTS_FILE AGENTS_ALL_FILE AGENTS_NEXT RESUME_ARGS RESUME_CWD
+  export AGENTS_FILE AGENTS_ALL_FILE AGENTS_NEXT RESUME_ARGS RESUME_CWD STOP_ARGS
 }
 
 teardown() {
@@ -173,6 +182,8 @@ run_resume() {
     AGENTS_AFTER="${AGENTS_AFTER_SET:-}" \
     STUB_AGENTS_FAIL="${STUB_AGENTS_FAIL:-0}" STUB_RESUME_FAIL="${STUB_RESUME_FAIL:-0}" \
     STUB_RESUME_COPY="${STUB_RESUME_COPY:-0}" STUB_NAME="${STUB_NAME-my-topic}" \
+    STUB_STOP_FAIL="${STUB_STOP_FAIL:-0}" STUB_STOP_KEEPS="${STUB_STOP_KEEPS:-0}" \
+    RESUME_AGENT_STOP_WAIT="${STOP_WAIT:-0}" \
     RESUME_AGENT_NAME_WAIT="${NAME_WAIT:-0}" RESUME_AGENT_SOCKET_DIR="$SOCKET_DIR" \
     RESUME_AGENT_STATUS_WAIT="${STATUS_WAIT:-0}" RESUME_AGENT_ASSUME_TTY="${ASSUME_TTY:-}" \
     SESSION_HOOK_STATE_SETTINGS="${HOOK_SETTINGS:-$TEST_TEMP_DIR/no-settings.json}" \
@@ -588,7 +599,7 @@ cleared_job_without_first_transcript() {
 @test "--help prints the usage" {
   run_resume "" --help
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Usage: resume-agent.sh [--prompt-file <path>] [--clear] [--attach] <folder>"* ]] || false
+  [[ "$output" == *"Usage: resume-agent.sh [--prompt-file <path>] [--clear | --next] [--attach] <folder>"* ]] || false
 }
 
 @test "a folder that does not exist → R002, and nothing is created" {
@@ -1250,4 +1261,132 @@ hook_settings() {
   [ "$status" -eq 0 ]
   [ "$(sed -n 4p "$RESUME_ARGS")" = "/rename my-topic" ]
   _contains "$output" "Prompt: not sent; send it with SendMessage when Status is idle"
+}
+
+# ============================================================================
+# The next (issue 315)
+# ============================================================================
+
+# next_after_restart — the lists after the /clear restart: the job row in
+# --all, the old conversation right after the restart, then a new one.
+next_after_restart() {
+  NEW_CONV="aa11bb22-cc33-4d44-8e55-ff6677889900"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle null)" > "$AGENTS_ALL_FILE"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic working idle)" > "$AGENTS_AFTER"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle | jq -c --arg s "$NEW_CONV" '.sessionId = $s')" > "$AGENTS_NEXT"
+}
+
+@test "next: an ended session restarts with /clear, as with --clear, and nothing is stopped" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  next_after_restart
+  NAME_WAIT=5 STATUS_WAIT=5 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" --next my-topic
+  [ "$status" -eq 0 ]
+  [ "$(cat "$RESUME_ARGS")" = "$(printf '%s\n' --bg --resume "$TOPIC_SESSION" "/clear")" ]
+  _contains "$output" "Session: $NEW_CONV"
+  _contains "$output" "Action: restarted"
+  [ ! -e "$STOP_ARGS" ]
+}
+
+@test "next: an idle running session is stopped with its job id, then restarts with /clear" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle)" > "$AGENTS_FILE"
+  next_after_restart
+  NAME_WAIT=5 STATUS_WAIT=5 STOP_WAIT=3 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" --next my-topic
+  [ "$status" -eq 0 ]
+  [ "$(cat "$STOP_ARGS")" = "$(printf '%s\n' stop "${TOPIC_SESSION:0:8}")" ]
+  [ "$(cat "$RESUME_ARGS")" = "$(printf '%s\n' --bg --resume "$TOPIC_SESSION" "/clear")" ]
+  _contains "$stderr" "session $TOPIC_SESSION was idle, so the script stopped it with claude stop ${TOPIC_SESSION:0:8} before the restart"
+  _contains "$output" "Session: $NEW_CONV"
+  _contains "$output" "Action: restarted"
+}
+
+@test "next: with a prompt file, the prompt is not sent on the restart" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle)" > "$AGENTS_FILE"
+  next_after_restart
+  local pf
+  pf="$(prompt_file)"
+  NAME_WAIT=5 STATUS_WAIT=5 STOP_WAIT=3 AGENTS_AFTER_SET="$AGENTS_AFTER" run_resume "$SELF_SESSION" --next --prompt-file "$pf" my-topic
+  [ "$status" -eq 0 ]
+  [ "$(sed -n 4p "$RESUME_ARGS")" = "/clear" ]
+  _contains "$output" "Prompt: not sent; send it with SendMessage when Status is idle"
+}
+
+@test "next: a busy session → R013 that names the status and the state, and nothing is stopped" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic working busy)" > "$AGENTS_FILE"
+  run_resume "$SELF_SESSION" --next my-topic
+  [ "$status" -eq 1 ]
+  _contains "$stderr" "resume-agent R013 error: --next stops only an idle session, and session $TOPIC_SESSION has the status 'busy' and the state 'working'; nothing was stopped or restarted; run --next again when the status is idle"
+  [ ! -e "$STOP_ARGS" ]
+  [ ! -e "$RESUME_ARGS" ]
+}
+
+@test "next: a session that waits on a permission answer → R013, and nothing is stopped" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic blocked waiting)" > "$AGENTS_FILE"
+  run_resume "$SELF_SESSION" --next my-topic
+  [ "$status" -eq 1 ]
+  _contains "$stderr" "R013"
+  _contains "$stderr" "the status 'waiting'"
+  [ ! -e "$STOP_ARGS" ]
+}
+
+@test "next: a running session with no job id → R013, and nothing is stopped" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle | jq -c '.id = null | .kind = "interactive"')" > "$AGENTS_FILE"
+  run_resume "$SELF_SESSION" --next my-topic
+  [ "$status" -eq 1 ]
+  _contains "$stderr" "R013"
+  _contains "$stderr" "no job id"
+  [ ! -e "$STOP_ARGS" ]
+}
+
+@test "next: a retired session → R013, and nothing is stopped" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle null | jq -c '.status = null')" > "$AGENTS_FILE"
+  run_resume "$SELF_SESSION" --next my-topic
+  [ "$status" -eq 1 ]
+  _contains "$stderr" "R013"
+  _contains "$stderr" "is retired"
+  [ ! -e "$STOP_ARGS" ]
+}
+
+@test "next: a stop that does not take the session off the list → R013, and nothing restarts" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle)" > "$AGENTS_FILE"
+  STUB_STOP_KEEPS=1 STOP_WAIT=1 run_resume "$SELF_SESSION" --next my-topic
+  [ "$status" -eq 1 ]
+  _contains "$stderr" "R013"
+  _contains "$stderr" "still lists session $TOPIC_SESSION after 1 seconds"
+  [ -e "$STOP_ARGS" ]
+  [ ! -e "$RESUME_ARGS" ]
+}
+
+@test "next: a failed claude stop → R013, and nothing restarts" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle)" > "$AGENTS_FILE"
+  STUB_STOP_FAIL=1 run_resume "$SELF_SESSION" --next my-topic
+  [ "$status" -eq 1 ]
+  _contains "$stderr" "R013 error: claude stop ${TOPIC_SESSION:0:8} failed"
+  _contains "$stderr" "stop refused"
+  [ ! -e "$RESUME_ARGS" ]
+}
+
+@test "next: the caller holds the folder too → R009 before any stop" {
+  session_file "$TOPIC_SESSION" "$REPO/my-topic" "2026-10-13T10:00:00Z"
+  session_file "$SELF_SESSION" "$REPO/my-topic" "2026-10-14T10:00:00Z"
+  printf '[%s]' "$(agent_entry "$TOPIC_SESSION" my-topic done idle)" > "$AGENTS_FILE"
+  run_resume "$SELF_SESSION" --next my-topic
+  [ "$status" -eq 1 ]
+  _contains "$stderr" "R009"
+  [ ! -e "$STOP_ARGS" ]
+  [ ! -e "$RESUME_ARGS" ]
+}
+
+@test "next: the usage names --next" {
+  run_resume "$SELF_SESSION" --help
+  [ "$status" -eq 0 ]
+  _contains "$output" "[--clear | --next]"
+  _contains "$output" "--next"
 }

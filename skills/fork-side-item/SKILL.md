@@ -104,7 +104,7 @@ Check each line of the worker prompt. If a line is exactly `FORK_SIDE_ITEM_PROMP
 FORK_SIDE_ITEM_PROMPT_END
 ```
 
-Keep the quotes around the first marker, so the shell expands nothing in the prompt. The script starts the worker through `/launch-agent` in the background mode. That skill creates the folder, saves the prompt as `prompt-new-agent-launch.txt`, names the worker after the folder, and applies the depth limit.
+Keep the quotes around the first marker, so the shell expands nothing in the prompt. The script starts the worker through `/launch-agent` in the background mode. That skill creates the folder, saves the prompt as `prompts/<stamp>-launch.txt`, names the worker after the folder, and applies the depth limit.
 
 The script refuses with these codes:
 

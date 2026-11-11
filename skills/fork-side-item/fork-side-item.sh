@@ -20,7 +20,7 @@
 #          is cut at 50 characters, and start the worker through
 #          launch-agent.sh --bg <folder> with the worker prompt from standard
 #          input. launch-agent.sh creates the folder, saves the prompt as
-#          prompt-new-agent-launch.txt, names the worker after the folder, and
+#          prompts/<stamp>-launch.txt, names the worker after the folder, and
 #          applies the depth limit. This script adds no folder code of its own.
 #   list   Print one "<folder><TAB><state>" line for each side-* directory
 #          under the topic root. The state is the outcome in the folder's

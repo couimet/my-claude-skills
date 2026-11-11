@@ -5,7 +5,7 @@
 # rounds.
 #
 # Usage:
-#   resume-agent.sh [--prompt-file <path>] [--clear] [--attach] <folder>
+#   resume-agent.sh [--prompt-file <path>] [--clear | --next] [--attach] <folder>
 #   resume-agent.sh --help
 #
 #   --prompt-file <path>
@@ -15,6 +15,10 @@
 #   --clear    For an ended session only: restart it with a cleared
 #              conversation. It keeps its job, its name, and its work folder.
 #              See "The clear" below.
+#   --next     Restart the session with a cleared conversation, so it starts
+#              its next prompt in a new context: an ended session as with
+#              --clear, and a running session that is idle after a
+#              `claude stop`. See "The next" below.
 #   --attach   Open the session in this terminal after the script: an ended
 #              session restarts first, a running or a retired one does not.
 #              It needs a terminal, so the agent view and a ! line get R011.
@@ -160,6 +164,28 @@
 # list shows a conversation id other than the one before the restart, so the
 # clear ran before the caller sends.
 #
+# The next (--next). The session gets a new conversation for its next
+# prompt, with no person at the terminal. An ended session restarts as with
+# --clear. A running session restarts only when the `status` of its row in
+# `claude agents --json` is idle, the value that the Status line reports:
+# busy (a turn runs), waiting (a permission answer), and no status refuse
+# with R013, which names the status and the state that it read, because a
+# stop cuts the work. A session with no job id (an interactive session)
+# refuses too: `claude stop` needs a job id. A retired session refuses, as
+# with --clear. Before the stop, the script runs the check of the caller
+# (R009), so a refusal never leaves a stopped session. Then it runs
+# `claude stop <job id>`, and reads the list every second for up to
+# RESUME_AGENT_STOP_WAIT seconds (default 15) until the row is gone. On
+# Claude Code 2.1.322, a stopped job leaves the live list and stays in
+# --all, so it is ended, and a resume of its first session id with /clear
+# keeps the job id and starts no copy (tested on 2026-11-10). The script
+# then runs itself again with the same arguments, so the session is listed
+# and restarted by the one rule of an ended session. A prompt that reaches
+# the session between the status read and the stop is cut: the stop is a
+# race that the script cannot close. --next sends no prompt, for the reason
+# of --clear: the project gives the session its next prompt, for example
+# with a SessionStart hook. With --clear, --next wins.
+#
 # The status wait. After its own restart, with no prompt sent, the script
 # reads the list every second for up to RESUME_AGENT_STATUS_WAIT seconds
 # (default 60), after the name wait, until the status is idle. The restart
@@ -213,8 +239,9 @@
 #        Claude Code deleted the transcript of the session, so nothing
 #        restarted, R009 this session holds the folder too, so nothing
 #        restarted, R010 the prompt file cannot be used, R011 --attach with
-#        no terminal, R012 --clear on a session that is not ended; R010 to
-#        R012 restart nothing
+#        no terminal, R012 --clear on a session that is not ended, R013
+#        --next on a session that is not ended and cannot be stopped, or
+#        that a stop did not end; R010 to R013 restart nothing
 
 set -euo pipefail
 
@@ -230,10 +257,11 @@ readonly ERR_CALLER="R009"
 readonly ERR_PROMPT="R010"
 readonly ERR_TTY="R011"
 readonly ERR_CLEAR="R012"
+readonly ERR_NEXT="R013"
 
 usage() {
   cat <<'EOF'
-Usage: resume-agent.sh [--prompt-file <path>] [--clear] [--attach] <folder>
+Usage: resume-agent.sh [--prompt-file <path>] [--clear | --next] [--attach] <folder>
        resume-agent.sh --help
 
   <folder>              Absolute path, or a slug naming one directory under
@@ -241,6 +269,8 @@ Usage: resume-agent.sh [--prompt-file <path>] [--clear] [--attach] <folder>
                         repository root. The folder must exist.
   --prompt-file <path>  The first prompt for the session
   --clear               Restart an ended session with a cleared conversation
+  --next                Restart an ended or an idle session with a cleared
+                        conversation, for its next prompt
   --attach              Open the session in this terminal afterwards
   --help                Show this help message
 EOF
@@ -260,10 +290,13 @@ die() {
 }
 
 # --- Parse arguments ---
+# The arguments as given, for the run after the stop of --next.
+orig_args=("$@")
 folder=""
 folder_count=0
 prompt_file=""
 clear=0
+next=0
 attach=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -277,6 +310,11 @@ while [ "$#" -gt 0 ]; do
       shift 2
       ;;
     --clear)
+      clear=1
+      shift
+      ;;
+    --next)
+      next=1
       clear=1
       shift
       ;;
@@ -420,18 +458,22 @@ fi
 # See the header: a restart would make two sessions in one folder, and the
 # caller is one of them. No time rule replaces this check, because a /clear
 # writes the session file again.
-if [ "$list_state" = "ended" ]; then
-  caller_folder=""
+# check_caller — stop with R009 when the session file of the caller names the
+# folder. --next runs it also before the stop of a running session.
+check_caller() {
+  local caller_folder="" caller_short=""
   # shellcheck disable=SC2034 # caller_reason is set through its name; any reason means no claim
-  caller_reason=""
+  local caller_reason=""
   if _issue_context_session_file_read caller_folder caller_reason \
       && [ "$caller_folder" = "$folder_abs" ]; then
-    caller_short=""
     _issue_context_job_first_id caller_short || caller_short=""
     caller_short="${caller_short:0:8}"
     [ -n "$caller_short" ] || caller_short="${CLAUDE_CODE_SESSION_ID:0:8}"
     die "$ERR_CALLER" "this session, ${CLAUDE_CODE_SESSION_ID:-}, holds $folder_abs too, so a restart of session $session_id would make two sessions in one folder, each with half of the work; the script restarted nothing; choose one: (1) keep this session, and do nothing; (2) wake the earlier session: run /set-work-folder --clear in this session, then /resume-agent \"$folder_abs\" again, then claude stop $caller_short"
   fi
+}
+if [ "$list_state" = "ended" ] || { [ "$next" -eq 1 ] && [ "$list_state" = "running" ]; }; then
+  check_caller
 fi
 
 # continued_as <job id> — print the conversation id that the job record of
@@ -494,7 +536,11 @@ if [ "$list_state" = "gone" ]; then
 fi
 
 # --- --clear only for an ended session ---
-if [ "$clear" -eq 1 ] && [ "$list_state" != "ended" ]; then
+# --next stops an idle running session first; see "Stop an idle session".
+if [ "$next" -eq 1 ] && [ "$list_state" != "ended" ] && [ "$list_state" != "running" ]; then
+  die "$ERR_NEXT" "--next restarts an ended session, or a running session that is idle, and session $session_id is $list_state; nothing was stopped or restarted"
+fi
+if [ "$next" -eq 0 ] && [ "$clear" -eq 1 ] && [ "$list_state" != "ended" ]; then
   die "$ERR_CLEAR" "--clear restarts an ended session only, and session $session_id is $list_state; nothing was restarted"
 fi
 
@@ -580,6 +626,42 @@ cleared() {
 prompt_sent=0
 read_list || die "$ERR_AGENTS" "claude agents --json failed, so the state of session $session_id is unknown; nothing was restarted"
 entry="$(entry_of)"
+
+# --- Stop an idle session (--next) ---
+# See "The next" in the header. After the stop, the script runs itself again,
+# and the second run finds the session ended. RESUME_AGENT_NEXT_STOPPED marks
+# that run, so it never stops a session a second time.
+if [ "$next" -eq 1 ] && [ "$list_state" = "running" ]; then
+  next_status="$(field status)"
+  next_state="$(field state)"
+  [ -z "${RESUME_AGENT_NEXT_STOPPED:-}" ] \
+    || die "$ERR_NEXT" "session $session_id is still listed as running after the claude stop of --next; nothing was restarted; run --next again when claude agents no longer lists it"
+  [ -n "$job_id" ] \
+    || die "$ERR_NEXT" "session $session_id runs with no job id (an interactive session), and claude stop needs a job id; nothing was stopped or restarted; type /clear in that session"
+  [ "$next_status" = "idle" ] \
+    || die "$ERR_NEXT" "--next stops only an idle session, and session $session_id has the status '${next_status:-none}' and the state '${next_state:-unknown}'; nothing was stopped or restarted; run --next again when the status is idle"
+  stop_output="$(claude stop "$job_id" 2>&1)" || {
+    {
+      echo "resume-agent $ERR_NEXT error: claude stop $job_id failed, so nothing was restarted:"
+      printf '%s\n' "$stop_output" | sed 's/^/  /'
+    } >&2 # kcov-exclude-line
+    exit 1
+  }
+  echo "resume-agent: session $session_id was idle, so the script stopped it with claude stop $job_id before the restart" >&2
+  readonly STOP_WAIT="${RESUME_AGENT_STOP_WAIT:-15}"
+  waited=0
+  while :; do
+    read_list || die "$ERR_AGENTS" "claude stop $job_id ran, but claude agents --json then failed, so the state of session $session_id is unknown; nothing was restarted; run --next again"
+    entry="$(entry_of)"
+    [ -n "$entry" ] || break
+    if ! [ "$waited" -lt "$STOP_WAIT" ] 2>/dev/null; then
+      die "$ERR_NEXT" "claude stop $job_id ran, but claude agents still lists session $session_id after $STOP_WAIT seconds (RESUME_AGENT_STOP_WAIT); nothing was restarted; the session may still stop; run --next again when claude agents no longer lists it"
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  RESUME_AGENT_NEXT_STOPPED=1 exec "$0" "${orig_args[@]}"
+fi
 
 retired=0
 if [ "$list_state" = "running" ]; then
