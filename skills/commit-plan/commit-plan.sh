@@ -164,9 +164,13 @@ rel() {
 
 # abs <path> — print <path> as an absolute path, relative to the root.
 abs() {
+  local r
   case "$1" in
     /*) printf '%s\n' "$1" ;;
-    *) printf '%s/%s\n' "$top" "$(rel "$1")" ;;
+    *)
+      r="$(rel "$1")"
+      if [ "$r" = "." ]; then printf '%s\n' "$top"; else printf '%s/%s\n' "$top" "$r"; fi
+      ;;
   esac
 }
 
@@ -214,6 +218,20 @@ OWNERS
 }
 
 # --- The sessions ---
+# One row for each live session, its fields split by the unit separator. The
+# loops of this script read a here-string, not a process substitution: kcov
+# marks the `done < <(...)` line of a loop as missed even when the loop runs.
+rows="$(printf '%s' "$live" | jq -r ' # kcov-exclude-line
+  # kcov-exclude-start
+  .[] | select(type == "object" and (.sessionId | type == "string") and (.cwd | type == "string"))
+  | [.sessionId,
+     (if (.id | type == "string") and (.id | length) >= 8 then .id[0:8] else "" end),
+     (.name // "-" | tostring),
+     (if (.status | type == "string") then .status else "no status" end),
+     .cwd]
+  | map(gsub("[\u001f\n\r]"; " ")) | join("\u001f")
+  # kcov-exclude-end
+  ')"
 folders=()
 while IFS=$'\x1f' read -r r_sid r_job r_name r_status r_cwd; do
   [ -n "$r_sid" ] || continue
@@ -237,14 +255,7 @@ while IFS=$'\x1f' read -r r_sid r_job r_name r_status r_cwd; do
   seen=0
   for f in ${folders[@]+"${folders[@]}"}; do [ "$f" != "$folder" ] || seen=1; done
   [ "$seen" -eq 1 ] || folders+=("$folder")
-done < <(printf '%s' "$live" | jq -r '
-  .[] | select(type == "object" and (.sessionId | type == "string") and (.cwd | type == "string"))
-  | [.sessionId,
-     (if (.id | type == "string") and (.id | length) >= 8 then .id[0:8] else "" end),
-     (.name // "-" | tostring),
-     (if (.status | type == "string") then .status else "no status" end),
-     .cwd]
-  | map(gsub("[\u001f\n\r]"; " ")) | join("\u001f")')
+done <<<"$rows"
 
 # --- A temporary index from HEAD ---
 tmp_dir="$(mktemp -d)"
@@ -277,7 +288,7 @@ for folder in ${folders[@]+"${folders[@]}"}; do
         "# scope: path "* | "# scope: patch "*) entries+=("${line#\# scope: }") ;;
         *) break ;;
       esac
-    done <"$msg"
+    done <<<"$(cat "$msg")"
     if [ "${#entries[@]}" -eq 0 ]; then
       unscoped=$((unscoped + 1))
       continue
@@ -327,7 +338,7 @@ for folder in ${folders[@]+"${folders[@]}"}; do
           while IFS= read -r pf; do
             [ -n "$pf" ] || continue
             under "$pf" "$xr" || all=0
-          done < <(patch_files "$(abs "$value")")
+          done <<<"$(patch_files "$(abs "$value")")"
           [ "$all" -eq 0 ] || dropped=1
         fi
       done
@@ -356,7 +367,7 @@ ordered=()
 if [ "${#plan[@]}" -gt 0 ]; then
   while IFS= read -r row; do
     ordered+=("${row##*$'\t'}")
-  done < <(printf '%s\n' "${plan[@]}" | sort -t $'\t' -k1,1n -k2,2)
+  done <<<"$(printf '%s\n' "${plan[@]}" | sort -t $'\t' -k1,1n -k2,2)"
 fi
 
 # --- U005: two messages take the same path ---
@@ -384,7 +395,7 @@ for a in ${ordered[@]+"${ordered[@]}"}; do
             if under "$pf" "$px"; then
               die "$ERR_OVERLAP" "path '$px' of ${m_msgs[$x]} holds file '$pf' of a patch of ${m_msgs[$y]}"
             fi
-          done < <(patch_files "$patch")
+          done <<<"$(patch_files "$patch")"
         done <<<"${m_patches[$y]}"
       done <<<"${m_paths[$x]}"
     done
@@ -401,10 +412,12 @@ fi
 sim_index="$tmp_dir/plan.index"
 cp "$head_index" "$sim_index"
 # touched: one "<file><TAB><message>" line for each file that a message
-# before changed.
+# before changed. The files of a message join it after its own lines, so a
+# failed patch never names its own message as the earlier one.
 touched=""
 for k in ${ordered[@]+"${ordered[@]}"}; do
   msg="${m_msgs[$k]}"
+  own=""
   paths=()
   while IFS= read -r p; do [ -z "$p" ] || paths+=("$p"); done <<<"${m_paths[$k]}"
   if [ "${#paths[@]}" -gt 0 ]; then
@@ -419,17 +432,18 @@ for k in ${ordered[@]+"${ordered[@]}"}; do
         [ -n "$pf" ] || continue
         hit="$(printf '%s' "$touched" | awk -F '\t' -v f="$pf" '$1 == f { m = $2 } END { print m }')"
         [ -z "$hit" ] || earlier="$hit"
-      done < <(patch_files "$patch")
+      done <<<"$(patch_files "$patch")"
       if [ -n "$earlier" ]; then
         die "$ERR_APPLY" "patch $patch of $msg does not apply after $earlier, which changes the same file; make one of the two patches again after the other commit"
       fi
       die "$ERR_APPLY" "patch $patch of $msg does not apply after the lines before it"
     fi
-    while IFS= read -r pf; do
-      [ -z "$pf" ] || touched="$touched$pf"$'\t'"$msg"$'\n'
-    done < <(patch_files "$patch")
+    own="$own$(patch_files "$patch")"$'\n'
   done <<<"${m_patches[$k]}"
-  for p in ${paths[@]+"${paths[@]}"}; do touched="$touched$p"$'\t'"$msg"$'\n'; done
+  for p in ${paths[@]+"${paths[@]}"}; do own="$own$p"$'\n'; done
+  while IFS= read -r pf; do
+    [ -z "$pf" ] || touched="$touched$pf"$'\t'"$msg"$'\n'
+  done <<<"$own"
 done
 
 # --- Output ---

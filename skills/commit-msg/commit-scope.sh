@@ -133,6 +133,8 @@ for f in ${patches[@]+"${patches[@]}"}; do
 done
 
 # --- Check that no file is in a path and in a patch ---
+# The loops read a here-string, not a process substitution: kcov marks the
+# `done < <(...)` line of a loop as missed even when the loop runs.
 if [ "${#paths[@]}" -gt 0 ] && [ "${#patches[@]}" -gt 0 ]; then
   path_files="$(
     git diff HEAD --name-only -- "${paths[@]}"
@@ -144,7 +146,7 @@ if [ "${#paths[@]}" -gt 0 ] && [ "${#patches[@]}" -gt 0 ]; then
       if printf '%s\n' "$path_files" | grep -Fxq -- "$target"; then
         die "$ERR_OVERLAP" "file '$target' is in a --path and in patch file '$f'"
       fi
-    done < <(sed -n -e 's#^+++ b/##p' -e 's#^--- a/##p' "$f" | sort -u)
+    done <<<"$(sed -n -e 's#^+++ b/##p' -e 's#^--- a/##p' "$f" | sort -u)"
   done
 fi
 
@@ -163,7 +165,7 @@ if [ "${#paths[@]}" -gt 0 ]; then
     # git diff --no-index exits 1 when the files differ, which is the case
     # for each new file.
     git diff --no-index -- /dev/null "$new_file" || [ "$?" -eq 1 ]
-  done < <(git ls-files --others --exclude-standard --full-name -- "${paths[@]}")
+  done <<<"$(git ls-files --others --exclude-standard --full-name -- "${paths[@]}")"
 fi
 for f in ${patches[@]+"${patches[@]}"}; do
   sed -n '/^diff --git /,$p' "$f"

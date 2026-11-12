@@ -131,6 +131,16 @@ patch_of() {
   [[ "$output" == *"'shared.txt'"* ]] || false
 }
 
+@test "commit-scope: a path and a patch of other files give both diffs" {
+  echo a2 >> d/a
+  sed -i.bak 's/^1$/one/' shared.txt && rm shared.txt.bak
+  patch_of shared.txt "$TEST_TEMP_DIR/p.patch"
+  run "$SCRIPT" --path d --patch "$TEST_TEMP_DIR/p.patch"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"+++ b/d/a"* ]] || false
+  [[ "$output" == *"+++ b/shared.txt"* ]] || false
+}
+
 @test "commit-scope: a failed check prints no record" {
   run --separate-stderr "$SCRIPT" --record --path b
   [ "$status" -eq 1 ]

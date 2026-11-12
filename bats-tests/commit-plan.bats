@@ -60,12 +60,15 @@ teardown() {
   rm -rf "${TEST_TEMP_DIR:?}"
 }
 
-# session <session id> <folder name> — write the session file of a session
-# that names <folder>, and make the folder with its commit-msgs/ directory.
+# session <session id> <folder name> [job session id] [written_at] — write
+# the session file of a session that names <folder>, and make the folder with
+# its commit-msgs/ directory.
 session() {
+  local job="null"
+  [ -z "${3-}" ] || job="\"$3\""
   mkdir -p "$TEST_TEMP_DIR/$2/commit-msgs"
-  printf '{"version":1,"folder":"%s","session_id":"%s","job_session_id":null,"written_at":"2026-11-11T10:00:00Z"}' \
-    "$TEST_TEMP_DIR/$2" "$1" > "$SESSIONS_DIR/$1--$2.json"
+  printf '{"version":1,"folder":"%s","session_id":"%s","job_session_id":%s,"written_at":"%s"}' \
+    "$TEST_TEMP_DIR/$2" "$1" "$job" "${4:-2026-11-11T10:00:00Z}" > "$SESSIONS_DIR/$1--$2.json"
 }
 
 # row <session id> <status|null> [cwd] — add a live row to $LIVE_FILE.
@@ -73,6 +76,12 @@ row() {
   local status="null"
   [ "$2" = "null" ] || status="\"$2\""
   ROWS="${ROWS:+$ROWS,}{\"cwd\":\"${3:-$REPO}\",\"id\":null,\"kind\":\"interactive\",\"name\":\"n-${1:0:4}\",\"pid\":1,\"sessionId\":\"$1\",\"startedAt\":0,\"status\":$status}"
+  printf '[%s]' "$ROWS" > "$LIVE_FILE"
+}
+
+# job_row <session id> <job id> <status> — add a live row of a background job.
+job_row() {
+  ROWS="${ROWS:+$ROWS,}{\"cwd\":\"$REPO\",\"id\":\"$2\",\"kind\":\"bg\",\"name\":\"job-$2\",\"pid\":1,\"sessionId\":\"$1\",\"startedAt\":0,\"status\":\"$3\"}"
   printf '[%s]' "$ROWS" > "$LIVE_FILE"
 }
 
@@ -105,6 +114,7 @@ shared_patches() {
 run_plan() {
   run env -u CLAUDE_CODE_SESSION_ID -u CLAUDE_JOB_DIR \
     ${SELF_ID:+CLAUDE_CODE_SESSION_ID="$SELF_ID"} \
+    ${SELF_JOB_DIR:+CLAUDE_JOB_DIR="$SELF_JOB_DIR"} \
     PATH="$BIN:$PATH" MY_CLAUDE_SKILLS_CONFIG="$CFG" STUB_FAIL="${STUB_FAIL:-}" \
     "$SCRIPT" "$@"
 }
@@ -363,6 +373,110 @@ run_plan() {
   [ "$status" -eq 0 ]
   [ "${lines[1]}" = "! git add -- '$REPO/a' && git commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/m1.txt'" ]
   [[ "$output" == *"excluded: path logs/run.log from $TEST_TEMP_DIR/one/commit-msgs/m1.txt"* ]] || false
+}
+
+@test "commit-plan: a scope path can be absolute, also the repository root" {
+  session "$S1" one
+  session "$S2" two
+  row "$S1" idle
+  row "$S2" idle
+  echo a2 >> a/file
+  message one m1 202611110900 "path $REPO/a"
+  run_plan
+  [ "$status" -eq 0 ]
+  [ "${lines[1]}" = "! git add -- '$REPO/a' && git commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/m1.txt'" ]
+  rm "$TEST_TEMP_DIR/one/commit-msgs/m1.txt"
+  message two m2 202611110900 "path $REPO"
+  run_plan
+  [ "$status" -eq 0 ]
+  [ "${lines[1]}" = "! git add -- '$REPO' && git commit --cleanup=strip -F '$TEST_TEMP_DIR/two/commit-msgs/m2.txt'" ]
+}
+
+@test "commit-plan: a row joins the newest session file of its job" {
+  JOB_FIRST="44444444-dddd-4ddd-8ddd-dddddddddddd"
+  session "$JOB_FIRST" old "" 2026-11-11T08:00:00Z
+  session "$S2" new "$JOB_FIRST" 2026-11-11T09:00:00Z
+  session "$S3" older "$JOB_FIRST" 2026-11-11T07:00:00Z
+  job_row "$S1" "${JOB_FIRST:0:8}" idle
+  echo a2 >> a/file
+  message new m1 202611110900 "path a"
+  message old m0 202611110800 "path b"
+  run_plan
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Plan for $REPO: 1 commit" ]
+  [[ "${lines[1]}" == *"/new/commit-msgs/m1.txt'" ]] || false
+}
+
+@test "commit-plan: the background job that runs the plan counts as idle" {
+  JOB_FIRST="44444444-dddd-4ddd-8ddd-dddddddddddd"
+  mkdir -p "$TEST_TEMP_DIR/jobdir"
+  printf '{"sessionId":"%s"}' "$JOB_FIRST" > "$TEST_TEMP_DIR/jobdir/state.json"
+  session "$S1" one
+  job_row "$S1" "${JOB_FIRST:0:8}" busy
+  echo a2 >> a/file
+  message one m1 202611110900 "path a"
+  SELF_JOB_DIR="$TEST_TEMP_DIR/jobdir" run_plan
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Plan for $REPO: 1 commit" ]
+  [[ "$output" != *"held:"* ]] || false
+}
+
+@test "commit-plan: a patch that applies to HEAD neither way is held as stale" {
+  session "$S1" one
+  row "$S1" idle
+  printf 'diff --git a/b/file b/b/file\n--- a/b/file\n+++ b/b/file\n@@ -1 +1 @@\n-zzz\n+yyy\n' > "$TEST_TEMP_DIR/bad.patch"
+  message one m1 202611110900 "patch $TEST_TEMP_DIR/bad.patch"
+  run_plan
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"held: stale $TEST_TEMP_DIR/one/commit-msgs/m1.txt (a patch is missing, or applies to HEAD neither way: patch $TEST_TEMP_DIR/bad.patch)"* ]] || false
+}
+
+@test "commit-plan: --exclude drops a patch whose files are all under the path" {
+  session "$S1" one
+  row "$S1" idle
+  echo a2 >> a/file
+  shared_patches
+  message one m1 202611110900 "path a" "patch $TEST_TEMP_DIR/top.patch"
+  run_plan --exclude shared.txt
+  [ "$status" -eq 0 ]
+  [ "${lines[1]}" = "! git add -- '$REPO/a' && git commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/m1.txt'" ]
+  [[ "$output" == *"excluded: patch $TEST_TEMP_DIR/top.patch from $TEST_TEMP_DIR/one/commit-msgs/m1.txt"* ]] || false
+}
+
+@test "commit-plan: a message with each entry excluded gets no line" {
+  session "$S1" one
+  row "$S1" idle
+  echo log2 >> logs/run.log
+  message one m1 202611110900 "path logs/run.log"
+  run_plan --exclude "$REPO/logs"
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Plan for $REPO: 0 commits" ]
+  [[ "$output" == *"excluded: $TEST_TEMP_DIR/one/commit-msgs/m1.txt has no entry left"* ]] || false
+}
+
+@test "commit-plan: a path of one message and a patch of another on other files give two lines" {
+  session "$S1" one
+  session "$S2" two
+  row "$S1" idle
+  row "$S2" idle
+  echo a2 >> a/file
+  shared_patches
+  message one m1 202611110900 "path a"
+  message two m2 202611111000 "patch $TEST_TEMP_DIR/top.patch"
+  run_plan
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Plan for $REPO: 2 commits" ]
+}
+
+@test "commit-plan: a patch that a message lists twice stops with U006 and names no earlier message" {
+  session "$S1" one
+  row "$S1" idle
+  shared_patches
+  message one m1 202611110900 "patch $TEST_TEMP_DIR/top.patch" "patch $TEST_TEMP_DIR/top.patch"
+  run_plan
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"U006"* ]] || false
+  [[ "$output" == *"of $TEST_TEMP_DIR/one/commit-msgs/m1.txt does not apply after the lines before it"* ]] || false
 }
 
 @test "commit-plan: a failed claude agents call stops with U004" {
