@@ -10,6 +10,16 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.11.11.2
+
+### Added
+
+- `/commit-plan` prints one commit line for each pending scoped message of the live Claude sessions in the working tree, in order, so the work of several sessions lands as one commit each. It holds a session that is not idle (`held: busy`), skips a message that is already committed, holds a message that is only partly committed, and stops when two messages take the same path or the same hunk. It runs the full plan in a temporary index first, so the real index does not change. It never stages and never commits: you run each line. A project can leave out paths and print its own lines first with a `/commit-plan-hook` skill ([issues/322](https://github.com/couimet/my-claude-skills/issues/322))
+
+### Changed
+
+- `/commit-msg` takes `--path <path>` and `--patch <file>`, which describe one part of a dirty tree before you stage it, and asks no "Staged only" question. A path with no change, a missing or empty patch, or a file in a path and in a patch stops the run, and no file is written. The message file records the scope in `# scope:` lines, and the printed command is `git commit --cleanup=strip -F <file>`, which drops them. A call with no flag works as before ([issues/321](https://github.com/couimet/my-claude-skills/issues/321))
+
 ## 2026.11.11.1
 
 ### Fixed

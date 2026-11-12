@@ -2,15 +2,15 @@
 name: commit-msg
 version: 2026.11.11.1@0054246
 description: Create a commit message file in .claude-work/commit-msgs/. Every call creates a new file. Focuses on WHY not WHAT. The diff already shows what changed. User reviews and commits manually.
-argument-hint: <description>
-allowed-tools: Read, Write, AskUserQuestion, Bash(git diff *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/prose-style/check-prose.sh *), Bash(*/skills/issue-context/skill-version.sh *)
+argument-hint: '[--path <path>]... [--patch <file>]... <description>'
+allowed-tools: Read, Write, AskUserQuestion, Bash(git diff *), Bash(*/skills/commit-msg/commit-scope.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/prose-style/check-prose.sh *), Bash(*/skills/issue-context/skill-version.sh *)
 ---
 
 # Commit Message
 
 Create a commit message file in `.claude-work/`. You write the message. The user reviews and runs `git commit` themselves.
 
-**Input:** $ARGUMENTS (a short description for the filename)
+**Input:** $ARGUMENTS (optional scope flags, then a short description for the filename)
 
 ## Output format rule (read before writing anything)
 
@@ -26,12 +26,22 @@ The diff is also the filter for WHICH changes to describe. If a change was added
 
 Always create a new file. Never edit an existing commit-msg file. `target-path.sh` already guarantees a unique filename. Old files stay on disk as historical artifacts. Two invocations without an intermediate commit simply produce two files — the user picks whichever they want at commit time.
 
-## Step 1: Resolve the Target Path
+## Step 0: Check the Scope (scope flags only)
 
-Run the path helper:
+A scope is a set of whole paths (`--path`) and patch files (`--patch`) that holds one part of a dirty tree. Give each one relative to the repository root, or absolute. With no flag, skip this step. With flags, run the scope script before Step 1, with the flags in the order the caller gave them:
 
 ```bash
-~/.claude/skills/issue-context/target-path.sh --type commit-msgs --description "$ARGUMENTS"
+~/.claude/skills/commit-msg/commit-scope.sh --path "<path>" --patch "<file>"
+```
+
+Its stdout is the effective diff. On an error (J001 to J005), give the user the stderr line and stop: write no file. Run it again with `--record` first in the arguments to get the scope record: one `# scope:` line for each flag.
+
+## Step 1: Resolve the Target Path
+
+Run the path helper, with the description only (no flags):
+
+```bash
+~/.claude/skills/issue-context/target-path.sh --type commit-msgs --description "<description>"
 ```
 
 Use the stdout as the full absolute file path. The path is unique and its directory exists, so write the file directly to it. See `/issue-context` for the full contract.
@@ -48,7 +58,9 @@ Before writing, assess the change and pick a tier. The heuristic: if you can't a
 
 ## Capture the Actual Change Set
 
-Run these four commands as parallel tool calls. They are independent.
+With a scope, the stdout of Step 0 is the effective diff: skip this section, and ask no question. A change outside the scope is not part of the message. Never name a patch file in the message.
+
+With no scope, run these four commands as parallel tool calls. They are independent.
 
 ```bash
 git diff --stat
@@ -87,6 +99,8 @@ After capture, determine which diff(s) produced output:
 ## File Format
 
 Files use `.txt` extension (not `.md`).
+
+With a scope, the file starts with the scope record of Step 0, as the script printed it, then the first line. With no scope, the file has no `# scope:` line.
 
 ### First Line (all tiers)
 
@@ -167,4 +181,4 @@ Formatting: see `/prose-style` for hard-wrap and GitHub-reference rules.
 5. **Run the prose checker.** Run `check-prose.sh` on the file you just wrote and fix every line it names. See `/prose-style` Rule 1.
    Also verify the complete skill footer contract: the footer is the very last line of the file, is separated from the preceding content by exactly one blank line, contains no `Co-Authored-By` trailer anywhere in the file, and the version matches what `skill-version.sh commit-msg` printed.
 6. Print the absolute filepath in terminal
-7. Do NOT run `git commit`. The user reviews and commits manually.
+7. Do NOT run `git commit`. The user reviews and commits manually. When the file holds a scope line, print `git commit --cleanup=strip -F "<file>"`: a plain `-F` keeps the `#` lines in the commit.
