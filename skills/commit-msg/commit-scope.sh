@@ -33,20 +33,25 @@
 #   # scope: patch <file>
 #
 # /commit-msg writes these lines at the top of the message file, and
-# /commit-plan reads them. `git commit --cleanup=strip` removes them.
+# /commit-plan reads them. `git -c core.commentChar='#' commit --cleanup=strip`
+# removes them, whatever the repository sets as its comment character.
 #
 # Both modes check the scope first, and print nothing when a check fails:
 #   - each path has a change against HEAD, or an untracked file under it;
-#   - each patch file exists and holds a `diff --git` line;
-#   - no file is in a path and also in a patch file (the `+++ b/` or the
-#     `--- a/` file of a patch section is a changed file of a path).
+#   - each path is a literal file or directory: no glob character (* ? [)
+#     and no leading ':' (git pathspec magic);
+#   - each patch file exists, holds a `diff --git` line, and each of its
+#     sections names its files (see patch-names.sh);
+#   - no file is in a path and also in a patch file (a file that a patch
+#     section names is a changed file of a path).
 #
 # Exit codes:
 #   0  — the diff or the record is on stdout
 #   1  — error (see stderr): J001 usage, J002 not in a git repository or no
-#        HEAD commit, J003 a path with no change or outside the repository,
-#        J004 a patch file that is missing or holds no diff, J005 a file in
-#        a path and in a patch file
+#        HEAD commit, J003 a path with no change, outside the repository,
+#        or not literal, J004 a patch file that is missing, holds no diff, or
+#        has a section with no readable file name, J005 a file in a path and
+#        in a patch file
 
 set -euo pipefail
 
@@ -55,6 +60,10 @@ readonly ERR_REPO="J002"
 readonly ERR_PATH="J003"
 readonly ERR_PATCH="J004"
 readonly ERR_OVERLAP="J005"
+
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091 # sourced sibling; lint-sh runs shellcheck without -x
+source "$_self_dir/patch-names.sh"
 
 usage() {
   cat <<'EOF'
@@ -118,6 +127,12 @@ done
 
 # --- Check each path ---
 for p in ${paths[@]+"${paths[@]}"}; do
+  # git reads a path as a pathspec: a glob matches many files, and a leading
+  # ':' is pathspec magic. A scope names one literal file or directory.
+  case "$p" in
+    *[*?[]*) die "$ERR_PATH" "path '$p' has a glob character (* ? [); pass a literal file or directory" ;;
+    :*) die "$ERR_PATH" "path '$p' starts with ':', which git reads as pathspec magic; pass a literal file or directory" ;;
+  esac
   rc=0
   git diff HEAD --quiet -- "$p" 2>/dev/null || rc=$?
   [ "$rc" -le 1 ] || die "$ERR_PATH" "path '$p' is outside the repository"
@@ -130,6 +145,8 @@ done
 for f in ${patches[@]+"${patches[@]}"}; do
   [ -f "$f" ] || die "$ERR_PATCH" "patch file '$f' does not exist"
   grep -q '^diff --git ' "$f" || die "$ERR_PATCH" "patch file '$f' holds no 'diff --git' section"
+  patch_names "$f" >/dev/null \
+    || die "$ERR_PATCH" "patch file '$f' has a section whose file name the script cannot read, such as a quoted name"
 done
 
 # --- Check that no file is in a path and in a patch ---
@@ -146,7 +163,7 @@ if [ "${#paths[@]}" -gt 0 ] && [ "${#patches[@]}" -gt 0 ]; then
       if printf '%s\n' "$path_files" | grep -Fxq -- "$target"; then
         die "$ERR_OVERLAP" "file '$target' is in a --path and in patch file '$f'"
       fi
-    done <<<"$(sed -n -e 's#^+++ b/##p' -e 's#^--- a/##p' "$f" | sort -u)"
+    done <<<"$(patch_names "$f")"
   done
 fi
 

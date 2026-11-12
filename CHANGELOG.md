@@ -18,7 +18,7 @@ Contributors are encouraged to add a changelog entry with their PR, but it's not
 
 ### Changed
 
-- `/commit-msg` takes `--path <path>` and `--patch <file>`, which describe one part of a dirty tree before you stage it, and asks no "Staged only" question. A path with no change, a missing or empty patch, or a file in a path and in a patch stops the run, and no file is written. The message file records the scope in `# scope:` lines, and the printed command is `git commit --cleanup=strip -F <file>`, which drops them. A call with no flag works as before ([issues/321](https://github.com/couimet/my-claude-skills/issues/321))
+- `/commit-msg` takes `--path <path>` and `--patch <file>`, which describe one part of a dirty tree before you stage it, and asks no "Staged only" question. A path with no change or with a glob character, a missing or empty patch, or a file in a path and in a patch stops the run, and no file is written. The message file records the scope in `# scope:` lines, and the printed command is `git -c core.commentChar='#' commit --cleanup=strip -F <file>`, which drops them. A call with no flag works as before ([issues/321](https://github.com/couimet/my-claude-skills/issues/321))
 
 ## 2026.11.11.1
 

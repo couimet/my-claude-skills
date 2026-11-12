@@ -127,7 +127,7 @@ run_plan() {
   run_plan
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "Plan for $REPO: 1 commit" ]
-  [ "${lines[1]}" = "! git add -- '$REPO/a' && git commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/m1.txt'" ]
+  [ "${lines[1]}" = "! git add -- '$REPO/a' && git -c core.commentChar='#' commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/m1.txt'" ]
   [ "${#lines[@]}" -eq 2 ]
 }
 
@@ -296,7 +296,7 @@ run_plan() {
   message two bottom 202611111000 "patch $TEST_TEMP_DIR/bottom.patch"
   run_plan
   [ "$status" -eq 0 ]
-  [ "${lines[1]}" = "! git apply --cached '$TEST_TEMP_DIR/top.patch' && git commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/top.txt'" ]
+  [ "${lines[1]}" = "! git apply --cached '$TEST_TEMP_DIR/top.patch' && git -c core.commentChar='#' commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/top.txt'" ]
   # Run the printed lines, as the user does.
   bash -c "${lines[1]#! }"
   bash -c "${lines[2]#! }"
@@ -371,7 +371,7 @@ run_plan() {
   message one m1 202611110900 "path a" "path logs/run.log"
   run_plan --exclude logs
   [ "$status" -eq 0 ]
-  [ "${lines[1]}" = "! git add -- '$REPO/a' && git commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/m1.txt'" ]
+  [ "${lines[1]}" = "! git add -- '$REPO/a' && git -c core.commentChar='#' commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/m1.txt'" ]
   [[ "$output" == *"excluded: path logs/run.log from $TEST_TEMP_DIR/one/commit-msgs/m1.txt"* ]] || false
 }
 
@@ -384,12 +384,12 @@ run_plan() {
   message one m1 202611110900 "path $REPO/a"
   run_plan
   [ "$status" -eq 0 ]
-  [ "${lines[1]}" = "! git add -- '$REPO/a' && git commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/m1.txt'" ]
+  [ "${lines[1]}" = "! git add -- '$REPO/a' && git -c core.commentChar='#' commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/m1.txt'" ]
   rm "$TEST_TEMP_DIR/one/commit-msgs/m1.txt"
   message two m2 202611110900 "path $REPO"
   run_plan
   [ "$status" -eq 0 ]
-  [ "${lines[1]}" = "! git add -- '$REPO' && git commit --cleanup=strip -F '$TEST_TEMP_DIR/two/commit-msgs/m2.txt'" ]
+  [ "${lines[1]}" = "! git add -- '$REPO' && git -c core.commentChar='#' commit --cleanup=strip -F '$TEST_TEMP_DIR/two/commit-msgs/m2.txt'" ]
 }
 
 @test "commit-plan: a row joins the newest session file of its job" {
@@ -439,7 +439,7 @@ run_plan() {
   message one m1 202611110900 "path a" "patch $TEST_TEMP_DIR/top.patch"
   run_plan --exclude shared.txt
   [ "$status" -eq 0 ]
-  [ "${lines[1]}" = "! git add -- '$REPO/a' && git commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/m1.txt'" ]
+  [ "${lines[1]}" = "! git add -- '$REPO/a' && git -c core.commentChar='#' commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/m1.txt'" ]
   [[ "$output" == *"excluded: patch $TEST_TEMP_DIR/top.patch from $TEST_TEMP_DIR/one/commit-msgs/m1.txt"* ]] || false
 }
 
@@ -512,4 +512,84 @@ run_plan() {
 
 @test "skill-hooks: the table lists /commit-plan" {
   grep -q '| `/commit-plan` *| `commit-plan-hook`' "$PROJECT_ROOT/skills/skill-hooks/SKILL.md"
+}
+
+@test "commit-plan: an idle session that shares the folder of a busy session is held" {
+  session "$S1" one
+  session "$S2" one
+  row "$S1" busy
+  row "$S2" idle
+  echo a2 >> a/file
+  message one m1 202611110900 "path a"
+  run_plan
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Plan for $REPO: 0 commits" ]
+  [[ "$output" == *"held: busy n-1111 ($S1)"* ]] || false
+  [[ "$output" == *"held: shared with a busy session n-2222 ($S2)"* ]] || false
+}
+
+@test "commit-plan: an --exclude path with a change under a path entry holds the message" {
+  session "$S1" one
+  row "$S1" idle
+  echo a2 >> a/file
+  echo log2 >> logs/run.log
+  message one m1 202611110900 "path ."
+  run_plan --exclude logs
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Plan for $REPO: 0 commits" ]
+  [[ "$output" == *"held: excluded $TEST_TEMP_DIR/one/commit-msgs/m1.txt (no line can leave out the --exclude path: path . (holds logs))"* ]] || false
+}
+
+@test "commit-plan: an --exclude path with no change under a path entry keeps the line" {
+  session "$S1" one
+  row "$S1" idle
+  echo a2 >> a/file
+  message one m1 202611110900 "path ."
+  run_plan --exclude logs
+  [ "$status" -eq 0 ]
+  [ "${lines[1]}" = "! git add -- '$REPO' && git -c core.commentChar='#' commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/m1.txt'" ]
+}
+
+@test "commit-plan: a patch with files under and outside an --exclude path holds the message" {
+  session "$S1" one
+  row "$S1" idle
+  echo a2 >> a/file
+  echo log2 >> logs/run.log
+  git diff -- a logs > "$TEST_TEMP_DIR/mixed.patch"
+  message one m1 202611110900 "patch $TEST_TEMP_DIR/mixed.patch"
+  run_plan --exclude logs
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Plan for $REPO: 0 commits" ]
+  [[ "$output" == *"held: excluded $TEST_TEMP_DIR/one/commit-msgs/m1.txt"*"(changes logs)"* ]] || false
+}
+
+@test "commit-plan: a binary patch outside an --exclude path keeps its line" {
+  session "$S1" one
+  row "$S1" idle
+  printf '\000\001\002' > a/bin.dat
+  git add -N a/bin.dat
+  git diff --binary -- a/bin.dat > "$TEST_TEMP_DIR/bin.patch"
+  git reset -q -- a/bin.dat
+  message one m1 202611110900 "patch $TEST_TEMP_DIR/bin.patch"
+  run_plan --exclude logs
+  [ "$status" -eq 0 ]
+  [ "${lines[1]}" = "! git apply --cached '$TEST_TEMP_DIR/bin.patch' && git -c core.commentChar='#' commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/m1.txt'" ]
+  [[ "$output" != *"excluded:"* ]] || false
+}
+
+@test "commit-plan: a binary patch under an --exclude path is dropped" {
+  session "$S1" one
+  row "$S1" idle
+  printf '\000\001\002' > logs/bin.dat
+  git add -N logs/bin.dat
+  git diff --binary -- logs/bin.dat > "$TEST_TEMP_DIR/bin.patch"
+  git reset -q -- logs/bin.dat
+  message one m1 202611110900 "patch $TEST_TEMP_DIR/bin.patch"
+  run_plan --exclude logs
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"excluded: patch $TEST_TEMP_DIR/bin.patch from $TEST_TEMP_DIR/one/commit-msgs/m1.txt"* ]] || false
+}
+
+@test "commit-plan skill: allows the script with no argument" {
+  grep -qF 'Bash(*/skills/commit-plan/commit-plan.sh),' "$SKILL"
 }

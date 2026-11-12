@@ -24,6 +24,9 @@
 # CLAUDE_CODE_SESSION_ID, or the job of $CLAUDE_JOB_DIR/state.json. Each
 # other row whose status is not idle is listed as `held: <status>` (busy,
 # waiting, or `no status`), because its files can hold a half-done change.
+# An idle row whose folder is also the folder of such a row is listed as
+# `held: shared with a busy session`, so no message of that folder is in the
+# plan.
 #
 # The messages. Each *.txt file in <folder>/commit-msgs/ of an idle session.
 # The scope of a message is its leading `# scope: path <path>` and
@@ -43,7 +46,11 @@
 #
 # The exclusions. An --exclude path drops each path entry at or under it, and
 # each patch whose files are all at or under it. Each drop is listed as
-# `excluded:`. A message with no entry left gets no line.
+# `excluded:`. A message with no entry left gets no line. When an --exclude
+# path with a change is under a path entry, or a patch has files both under
+# and outside it, no line can leave it out: the message is listed as
+# `held: excluded`, with no line. A patch file name that the script cannot
+# read counts as outside each --exclude path.
 #
 # The checks, in order. Each one stops the plan with no line:
 #   U005  two messages take the same path, or a path of one message holds a
@@ -60,13 +67,15 @@
 #
 # Output (stdout):
 #   Plan for <root>: <N> commits
-#   ! git add -- '<path>'... && git apply --cached '<patch>'... && git commit --cleanup=strip -F '<message>'
+#   ! git add -- '<path>'... && git apply --cached '<patch>'... && git -c core.commentChar='#' commit --cleanup=strip -F '<message>'
 #   ...
 #   Not in the plan:
 #   held: busy <name> (<session id>)
 #   ...
 # Each path in a line is absolute, so the line runs from any directory of the
-# working tree. A line has the `git add` part only when the message has a
+# working tree. The `-c core.commentChar='#'` makes git strip the `# scope:`
+# lines whatever comment character the repository sets. A line has the
+# `git add` part only when the message has a
 # path, and the `git apply --cached` part only when it has a patch. The "Not
 # in the plan:" block prints only when it has an item.
 #
@@ -107,6 +116,8 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_self_dir/../issue-context/issue-settings.sh"
 # shellcheck disable=SC1091 # sourced sibling; lint-sh runs shellcheck without -x
 source "$_self_dir/../issue-context/session-file.sh"
+# shellcheck disable=SC1091 # sourced sibling; lint-sh runs shellcheck without -x
+source "$_self_dir/../commit-msg/patch-names.sh"
 
 excludes=()
 while [ "$#" -gt 0 ]; do
@@ -185,9 +196,17 @@ quote() {
 }
 
 # patch_files <patch> — print the files of a patch, one per line, relative
-# to the root.
+# to the root. A section with no readable name prints nothing.
 patch_files() {
-  sed -n -e 's#^+++ b/##p' -e 's#^--- a/##p' "$1" | sort -u
+  patch_names "$1" || true
+}
+
+# has <item> [<list>...] — 0 when <item> is one of <list>.
+has() {
+  local item="$1" x
+  shift
+  for x in "$@"; do [ "$x" != "$item" ] || return 0; done
+  return 1
 }
 
 # folder_of <session id> <job id> — print the folder of the newest session
@@ -233,6 +252,8 @@ rows="$(printf '%s' "$live" | jq -r ' # kcov-exclude-line
   # kcov-exclude-end
   ')"
 folders=()
+busy_folders=()
+idle_rows=()
 while IFS=$'\x1f' read -r r_sid r_job r_name r_status r_cwd; do
   [ -n "$r_sid" ] || continue
   r_top="$({ cd "$r_cwd" && cd "$(git rev-parse --show-toplevel)" && pwd -P; } 2>/dev/null)" || continue
@@ -250,12 +271,21 @@ while IFS=$'\x1f' read -r r_sid r_job r_name r_status r_cwd; do
   fi
   if [ "$is_self" -eq 0 ] && [ "$r_status" != "idle" ]; then
     notes+=("held: $r_status $r_name ($r_sid)")
+    busy_folders+=("$folder")
     continue
   fi
-  seen=0
-  for f in ${folders[@]+"${folders[@]}"}; do [ "$f" != "$folder" ] || seen=1; done
-  [ "$seen" -eq 1 ] || folders+=("$folder")
+  idle_rows+=("$folder"$'\x1f'"$r_name ($r_sid)")
 done <<<"$rows"
+# A second pass, after each busy row is known: a busy session can still
+# change each message of its folder, also when an idle row shares it.
+for row in ${idle_rows[@]+"${idle_rows[@]}"}; do
+  folder="${row%%$'\x1f'*}"
+  if has "$folder" ${busy_folders[@]+"${busy_folders[@]}"}; then
+    notes+=("held: shared with a busy session ${row#*$'\x1f'}")
+  elif ! has "$folder" ${folders[@]+"${folders[@]}"}; then
+    folders+=("$folder")
+  fi
+done
 
 # --- A temporary index from HEAD ---
 tmp_dir="$(mktemp -d)"
@@ -325,6 +355,8 @@ for folder in ${folders[@]+"${folders[@]}"}; do
     fi
     paths_of=""
     patches_of=""
+    drops=()
+    split=()
     for e in "${pending[@]}"; do
       kind="${e%% *}"
       value="${e#* }"
@@ -332,24 +364,41 @@ for folder in ${folders[@]+"${folders[@]}"}; do
       for x in ${excludes[@]+"${excludes[@]}"}; do
         xr="$(rel "$x")"
         if [ "$kind" = "path" ]; then
-          under "$(rel "$value")" "$xr" && dropped=1
+          v="$(rel "$value")"
+          if under "$v" "$xr"; then
+            dropped=1
+          elif under "$xr" "$v" && path_changed "$xr"; then
+            split+=("$e (holds $x)")
+          fi
         else
-          all=1
+          # A name the script cannot read counts as outside the exclusion.
+          n_in=0
+          n_out=0
+          names="$(patch_names "$(abs "$value")")" || n_out=1
           while IFS= read -r pf; do
             [ -n "$pf" ] || continue
-            under "$pf" "$xr" || all=0
-          done <<<"$(patch_files "$(abs "$value")")"
-          [ "$all" -eq 0 ] || dropped=1
+            if under "$pf" "$xr"; then n_in=$((n_in + 1)); else n_out=$((n_out + 1)); fi
+          done <<<"$names"
+          if [ "$n_in" -gt 0 ] && [ "$n_out" -eq 0 ]; then
+            dropped=1
+          elif [ "$n_in" -gt 0 ]; then
+            split+=("$e (changes $x)")
+          fi
         fi
       done
       if [ "$dropped" -eq 1 ]; then
-        notes+=("excluded: $kind $value from $msg")
+        drops+=("excluded: $kind $value from $msg")
       elif [ "$kind" = "path" ]; then
         paths_of="$paths_of$(rel "$value")"$'\n'
       else
         patches_of="$patches_of$(abs "$value")"$'\n'
       fi
     done
+    if [ "${#split[@]}" -gt 0 ]; then
+      notes+=("held: excluded $msg (no line can leave out the --exclude path: ${split[*]})")
+      continue
+    fi
+    notes+=(${drops[@]+"${drops[@]}"})
     if [ -z "$paths_of$patches_of" ]; then
       notes+=("excluded: $msg has no entry left")
       continue
@@ -471,7 +520,7 @@ for k in ${ordered[@]+"${ordered[@]}"}; do
     line="$line$sep git apply --cached $(quote "$patch")"
     sep=" &&"
   done <<<"${m_patches[$k]}"
-  echo "$line$sep git commit --cleanup=strip -F $(quote "$msg")"
+  echo "$line$sep git -c core.commentChar='#' commit --cleanup=strip -F $(quote "$msg")"
 done
 if [ "${#notes[@]}" -gt 0 ]; then
   echo "Not in the plan:"

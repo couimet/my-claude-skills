@@ -181,4 +181,4 @@ Formatting: see `/prose-style` for hard-wrap and GitHub-reference rules.
 5. **Run the prose checker.** Run `check-prose.sh` on the file you just wrote and fix every line it names. See `/prose-style` Rule 1.
    Also verify the complete skill footer contract: the footer is the very last line of the file, is separated from the preceding content by exactly one blank line, contains no `Co-Authored-By` trailer anywhere in the file, and the version matches what `skill-version.sh commit-msg` printed.
 6. Print the absolute filepath in terminal
-7. Do NOT run `git commit`. The user reviews and commits manually. When the file holds a scope line, print `git commit --cleanup=strip -F "<file>"`: a plain `-F` keeps the `#` lines in the commit.
+7. Do NOT run `git commit`. The user reviews and commits manually. When the file holds a scope line, print `git -c core.commentChar='#' commit --cleanup=strip -F "<file>"`, which strips the `#` lines.
