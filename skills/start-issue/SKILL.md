@@ -1,6 +1,6 @@
 ---
 name: start-issue
-version: 2026.11.11@fdf2793
+version: 2026.11.11.1@0054246
 description: Start working on a GitHub issue - analyze, explore codebase, and create detailed implementation plan
 argument-hint: <github-issue-url> [--scratchpad]
 skill-kind: composite
