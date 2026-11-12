@@ -44,8 +44,8 @@ release-article 15819
 changelog 11419
 cleanup-issue 9360
 commit-msg 8566
-create-github-issue 9590
-create-jira-issue 15158
+create-github-issue 9530
+create-jira-issue 15021
 fork-side-item 8029
 # resume-agent grew past its cap with the three options of issue 312
 # (--prompt-file, --clear, --attach), whose restart forms a caller must know,

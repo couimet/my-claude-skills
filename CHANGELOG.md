@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.11.11.1
+
+### Fixed
+
+- `/create-github-issue` and `/create-jira-issue` delete their issue files (the body and title files, or the payload file) after a clean run, so a repository that tracks its notes folder no longer commits them. A run that does not end clean keeps its files and prints their paths, so you can retry or fix the ticket by hand ([issues/318](https://github.com/couimet/my-claude-skills/issues/318))
+
 ## 2026.11.11
 
 ### Added

@@ -3,7 +3,7 @@ name: create-jira-issue
 version: 2026.11.11@fdf2793
 description: Create a Jira issue from a standardized draft or an inline title, mirroring a reference ticket when one is given, with pre-create review
 argument-hint: <file-path-or-title> [--expect-sha256 <hex>]
-allowed-tools: Read, Write, Glob, AskUserQuestion, Bash(git ls-files *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), mcp__atlassian__createJiraIssue, mcp__atlassian__editJiraIssue, mcp__atlassian__getJiraIssue, mcp__atlassian__getJiraIssueTypeMetaWithFields, mcp__atlassian__getJiraProjectIssueTypesMetadata, mcp__atlassian__createIssueLink, mcp__atlassian__getIssueLinkTypes, mcp__atlassian__getAccessibleAtlassianResources, mcp__atlassian__lookupJiraAccountId, mcp__atlassian__getTransitionsForJiraIssue, mcp__atlassian__transitionJiraIssue, Bash(*/skills/prose-style/check-prose.sh *), Bash(*/skills/issue-context/skill-version.sh *), Bash(*/skills/create-jira-issue/draft-sha256.sh *)
+allowed-tools: Read, Write, Glob, AskUserQuestion, Bash(git ls-files *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), mcp__atlassian__createJiraIssue, mcp__atlassian__editJiraIssue, mcp__atlassian__getJiraIssue, mcp__atlassian__getJiraIssueTypeMetaWithFields, mcp__atlassian__getJiraProjectIssueTypesMetadata, mcp__atlassian__createIssueLink, mcp__atlassian__getIssueLinkTypes, mcp__atlassian__getAccessibleAtlassianResources, mcp__atlassian__lookupJiraAccountId, mcp__atlassian__getTransitionsForJiraIssue, mcp__atlassian__transitionJiraIssue, Bash(*/skills/prose-style/check-prose.sh *), Bash(*/skills/issue-context/skill-version.sh *), Bash(*/skills/create-jira-issue/draft-sha256.sh *), Bash(*/skills/issue-context/remove-issue-files.sh *)
 ---
 
 # Create Jira Issue
@@ -57,7 +57,7 @@ If the returned fields name a GitHub target (`target-repo`) but no `target-proje
 
 **Fetch the field metadata for every draft.** `getJiraIssueTypeMetaWithFields` takes an issue type id, not a name. Resolve the id of the Step 2 issue type from `getJiraProjectIssueTypesMetadata` for the target project. Then call `getJiraIssueTypeMetaWithFields` once for that project and issue type id. Pass `requiredFieldsOnly: true` when the draft has no `like` field and no `jira-fields` field. Pass `requiredFieldsOnly: false` otherwise, because the `like` mirror and the `jira-fields` names also need the optional fields. The rest of this step reads from this one response.
 
-**When a `like` field exists, mirror the reference ticket.** Fetch its key with `getJiraIssue` requesting all fields and keep only its non-null fields. The metadata response from above returns exactly the fields creatable for the target project and issue type. Intersect the two sets: everything in both goes to the create call, with custom fields passed through `additional_fields`. This fills both the required fields and the optional-but-conventional fields that every real ticket sets, which discovery alone can never reveal. Mirror the ticket's metadata only. Do not mirror its `summary` and `description`. Set summary from the draft title and description from the draft body. This ticket then carries the draft's own content instead of duplicating the reference ticket's. Never pass the whole response blob: it contains values that cannot be set at creation (the development panel populated by the GitHub integration, plus `votes`, `watches`, `worklog`, `progress`, `workratio`, `statuscategorychangedate`, `lastViewed`).
+**When a `like` field exists, mirror the reference ticket.** Fetch its key with `getJiraIssue` requesting all fields and keep only its non-null fields. The metadata response from above returns exactly the fields creatable for the target project and issue type. Intersect the two sets: everything in both goes to the create call, with custom fields passed through `additional_fields`. Mirror the ticket's metadata only. Do not mirror its `summary` and `description`. Set summary from the draft title and description from the draft body. Never pass the whole response blob: it contains values that cannot be set at creation (the development panel populated by the GitHub integration, plus `votes`, `watches`, `worklog`, `progress`, `workratio`, `statuscategorychangedate`, `lastViewed`).
 
 **When no like field is given, assemble the payload from the draft.** Summary is the title, description is the body, and the issue type and project come from Step 2.
 
@@ -69,9 +69,9 @@ When an `assignee` field is present, or the like ticket names an assignee and no
 
 ## Step 4: Save the Payload and Confirm
 
-Use `/note` with description `issue-payload` to save the resolved payload to a new file (summary, sanitized description with the Generated-by footer, target project and issue type, parent, custom fields, and each required field with the value the user picked in Step 3 and the allowed values it came from), then print the note path and confirm with the user before creating. Always confirm, not conditionally. Jira creation is harder to undo than GitHub's: deleting an issue leaves a permanent hole in the key sequence, and a ticket filed against the wrong project cannot be moved without admin rights on some sites. This review is the one moment a human sees exactly what will be submitted.
+Use `/note` with the exact description `issue-payload`, with no suffix, to save the resolved payload to a new file (summary, sanitized description with the Generated-by footer, target project and issue type, parent, custom fields, and each required field with the value the user picked in Step 3 and the allowed values it came from), then print the note path and confirm with the user before creating. Always confirm, not conditionally. On a decline, stop and print the note path. A Jira create is hard to undo, and this review is the one moment a human sees what will be submitted.
 
-The saved payload and the confirmation must also cover the Step 7 dependency links. For each `blocked-by` entry, list the target that will block this issue. For each `is-blocking` entry, list the target that this issue will block. Give each target with its resolved Jira key and link direction. The pre-create review must surface every tracker change the run will make. It must show the creation and the links that follow it alike. Nothing should happen after sign-off that the user has not seen.
+The saved payload and the confirmation must also cover the Step 7 dependency links. For each `blocked-by` entry, list the target that will block this issue. For each `is-blocking` entry, list the target that this issue will block. Give each target with its resolved Jira key and link direction. Nothing should happen after sign-off that the user has not seen.
 
 Before saving, append a footer line to the description identifying the skill that generated it, preceded by a blank line. Fill `<VERSION>` from `~/.claude/skills/issue-context/skill-version.sh create-jira-issue`:
 
@@ -93,7 +93,7 @@ Choose the description format from the body:
 - **The body has no task list:** use `contentFormat: "markdown"` and pass the description as text.
 - **The body has a `- [ ]` or `- [x]` line:** use `contentFormat: "adf"`. The markdown converter stores a task item as escaped text, not as a checkbox. Convert the whole description to an ADF `doc`. Each run of task lines becomes a `taskList` node, and each line becomes a `taskItem` node with state `TODO` for `- [ ]` and `DONE` for `- [x]`. Give each `taskList` and `taskItem` node a unique `attrs.localId`, such as a UUID: the ADF schema requires it, and Jira rejects a task node without it. Convert the other blocks to their ADF nodes, and keep the Generated-by footer as the last paragraph.
 
-**When creation fails on a missing required field, do not prompt and do not surface the raw error.** Step 3 asks for every required field before the create, so this is a backstop for a field the metadata did not show as required. Call `getJiraIssueTypeMetaWithFields` once with `requiredFieldsOnly: true`. Print the full list of required fields with their allowed values, then exit. The user fixes the draft and re-runs. Surfacing the bare error puts the user in a retry loop. Each attempt costs a round trip and may reveal only the next missing field. Printing the whole requirement set costs the same single call and ends the loop after one failure.
+**When creation fails on a missing required field, do not prompt and do not surface the raw error.** Step 3 asks for every required field before the create, so this is a backstop for a field the metadata did not show as required. Call `getJiraIssueTypeMetaWithFields` once with `requiredFieldsOnly: true`. Print the full list of required fields with their allowed values and the payload path, then exit. The user fixes the draft and re-runs. The bare error would show only one missing field for each retry. On any other failed create, print the error and the payload path.
 
 ## Step 6: Read Back the Ticket
 
@@ -108,10 +108,18 @@ On a difference that remains, do not edit or delete the ticket: it already exist
 
 ## Step 7: Link Dependencies
 
-For each dependency relationship the draft declares against another Jira ticket, call `getIssueLinkTypes` to confirm the site's link-type names rather than assuming one, then link with `createIssueLink` using the confirmed type. Direction is the trap: for "A is blocked by B", `inwardIssue` is B and `outwardIssue` is A, which reads backwards from the natural sentence. Each entry in the `blocked-by` list is a ticket this issue waits on, and each entry in the `is-blocking` list is a ticket this issue unblocks. Entries are Jira issue keys; if one is a full URL, read the key from its tail.
+For each dependency relationship the draft declares against another Jira ticket, call `getIssueLinkTypes` to confirm the site's link-type names rather than assuming one, then link with `createIssueLink` using the confirmed type. Direction is the trap: for "A is blocked by B", `inwardIssue` is B and `outwardIssue` is A, which reads backwards from the natural sentence. Each entry in the `blocked-by` list is a ticket this issue waits on, and each entry in the `is-blocking` list is a ticket this issue unblocks. Entries are Jira issue keys; if one is a full URL, read the key from its tail. Note each link that fails for Step 8.
+
+**Delete the payload on a clean run.** When Step 6 found no difference and each link succeeded, run:
+
+```bash
+~/.claude/skills/issue-context/remove-issue-files.sh "<PAYLOAD_FILE_PATH>"
+```
+
+Otherwise keep the file, so the user can fix the ticket by hand.
 
 ## Step 8: Report
 
-Print the created ticket's browse URL and key. The GitHub-for-Jira integration populates the Development panel automatically from a branch whose name contains the key (the branch created for the work carries it), so no explicit PR-link step is needed. When Step 6 found a difference, print each difference after the URL.
+Print the created ticket's browse URL and key. The GitHub-for-Jira integration populates the Development panel automatically from a branch whose name contains the key (the branch created for the work carries it), so no explicit PR-link step is needed. Print each Step 6 difference and each failed link after the URL. When the payload stays, print its path. When the script refused to delete it, say so.
 
 Formatting: see `/prose-style` for hard-wrap, code-reference, and GitHub-reference rules.
