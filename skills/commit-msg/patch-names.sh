@@ -15,8 +15,8 @@
 # still print.
 
 patch_names() {
-  # kcov-exclude-start
   awk '
+    # kcov-exclude-start
     function close_section() { if (open && !named) bad = 1 }
     /^diff --git / {
       close_section()
@@ -38,7 +38,6 @@ patch_names() {
     /^--- a\// { print substr($0, 7); named = 1; next }
     /^\+\+\+ b\// { print substr($0, 7); named = 1; next }
     END { close_section(); exit(bad ? 2 : 0) }
-  ' "$1" | sort -u
-  # kcov-exclude-end
+  ' "$1" | sort -u # kcov-exclude-end
   return "${PIPESTATUS[0]}"
 }
