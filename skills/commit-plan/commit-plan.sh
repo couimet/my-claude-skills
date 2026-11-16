@@ -67,17 +67,18 @@
 #
 # Output (stdout):
 #   Plan for <root>: <N> commits
-#   ! git add -- '<path>'... && git apply --cached '<patch>'... && git -c core.commentChar='#' commit --cleanup=strip -F '<message>'
+#   ! git add -- '<path>'... && git -C '<root>' apply --cached '<patch>'... && git -c core.commentChar='#' commit --cleanup=strip -F '<message>'
 #   ...
 #   Not in the plan:
 #   held: busy <name> (<session id>)
 #   ...
-# Each path in a line is absolute, so the line runs from any directory of the
-# working tree. The `-c core.commentChar='#'` makes git strip the `# scope:`
-# lines whatever comment character the repository sets. A line has the
-# `git add` part only when the message has a
-# path, and the `git apply --cached` part only when it has a patch. The "Not
-# in the plan:" block prints only when it has an item.
+# Each path in a line is absolute, and `git -C '<root>'` runs each
+# `git apply` from the root, so the line runs from any directory of the
+# working tree. A `git apply` from a subdirectory skips the files outside it.
+# The `-c core.commentChar='#'` makes git strip the `# scope:` lines whatever
+# comment character the repository sets. A line has the `git add` part only
+# when the message has a path, and the `git apply --cached` part only when it
+# has a patch. The "Not in the plan:" block prints only when it has an item.
 #
 # Exit codes:
 #   0  — the plan is on stdout, possibly with no commit
@@ -371,15 +372,20 @@ for folder in ${folders[@]+"${folders[@]}"}; do
             split+=("$e (holds $x)")
           fi
         else
-          # A name the script cannot read counts as outside the exclusion.
+          # A name the script cannot read can be under the exclusion, so the
+          # patch holds its message: no line can prove that it leaves the
+          # path out.
           n_in=0
           n_out=0
-          names="$(patch_names "$(abs "$value")")" || n_out=1
+          unread=0
+          names="$(patch_names "$(abs "$value")")" || unread=1
           while IFS= read -r pf; do
             [ -n "$pf" ] || continue
             if under "$pf" "$xr"; then n_in=$((n_in + 1)); else n_out=$((n_out + 1)); fi
           done <<<"$names"
-          if [ "$n_in" -gt 0 ] && [ "$n_out" -eq 0 ]; then
+          if [ "$unread" -eq 1 ]; then
+            split+=("$e (a file name is unreadable, so it can change $x)")
+          elif [ "$n_in" -gt 0 ] && [ "$n_out" -eq 0 ]; then
             dropped=1
           elif [ "$n_in" -gt 0 ]; then
             split+=("$e (changes $x)")
@@ -517,7 +523,7 @@ for k in ${ordered[@]+"${ordered[@]}"}; do
   fi
   while IFS= read -r patch; do
     [ -n "$patch" ] || continue
-    line="$line$sep git apply --cached $(quote "$patch")"
+    line="$line$sep git -C $(quote "$top") apply --cached $(quote "$patch")"
     sep=" &&"
   done <<<"${m_patches[$k]}"
   echo "$line$sep git -c core.commentChar='#' commit --cleanup=strip -F $(quote "$msg")"

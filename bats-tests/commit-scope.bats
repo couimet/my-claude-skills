@@ -174,6 +174,20 @@ patch_of() {
   [[ "$output" == *"cannot read"* ]] || false
 }
 
+@test "commit-scope: a patch that renames to and from quoted names stops with J004" {
+  printf 'diff --git "a/t\\ta" "b/t\\tb"\nsimilarity index 100%%\nrename from "t\\ta"\nrename to "t\\tb"\n' > "$TEST_TEMP_DIR/quoted.patch"
+  run "$SCRIPT" --patch "$TEST_TEMP_DIR/quoted.patch"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"J004"* ]] || false
+}
+
+@test "commit-scope: a readable rename name does not hide a quoted one" {
+  printf 'diff --git a/b "b/t\\tb"\nsimilarity index 100%%\nrename from b\nrename to "t\\tb"\n' > "$TEST_TEMP_DIR/quoted.patch"
+  run "$SCRIPT" --patch "$TEST_TEMP_DIR/quoted.patch"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"J004"* ]] || false
+}
+
 @test "commit-scope: a path and a patch of other files give both diffs" {
   echo a2 >> d/a
   sed -i.bak 's/^1$/one/' shared.txt && rm shared.txt.bak

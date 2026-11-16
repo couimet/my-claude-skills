@@ -11,8 +11,9 @@
 #   - `rename from`, `rename to`, `copy from`, and `copy to`;
 #   - `--- a/<P>` and `+++ b/<P>`, before the first hunk of the section.
 # Returns 2 when a section gives no name, such as a section whose names git
-# quoted (a name with a special character). The names of the other sections
-# still print.
+# quoted (a name with a special character). Returns 2 also when git quoted a
+# `rename` or `copy` name, even when the other name of the section is readable.
+# The names of the other sections still print.
 
 patch_names() {
   awk '
@@ -34,7 +35,11 @@ patch_names() {
     }
     !header { next }
     /^@@/ || /^GIT binary patch/ || /^Binary files / { header = 0; next }
-    /^(rename|copy) (from|to) / { p = $0; sub(/^(rename|copy) (from|to) /, "", p); print p; named = 1; next }
+    /^(rename|copy) (from|to) / {
+      p = $0; sub(/^(rename|copy) (from|to) /, "", p)
+      if (substr(p, 1, 1) == "\"") { bad = 1; next }
+      print p; named = 1; next
+    }
     /^--- a\// { print substr($0, 7); named = 1; next }
     /^\+\+\+ b\// { print substr($0, 7); named = 1; next }
     END { close_section(); exit(bad ? 2 : 0) }

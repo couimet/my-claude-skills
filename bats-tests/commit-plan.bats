@@ -296,7 +296,7 @@ run_plan() {
   message two bottom 202611111000 "patch $TEST_TEMP_DIR/bottom.patch"
   run_plan
   [ "$status" -eq 0 ]
-  [ "${lines[1]}" = "! git apply --cached '$TEST_TEMP_DIR/top.patch' && git -c core.commentChar='#' commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/top.txt'" ]
+  [ "${lines[1]}" = "! git -C '$REPO' apply --cached '$TEST_TEMP_DIR/top.patch' && git -c core.commentChar='#' commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/top.txt'" ]
   # Run the printed lines, as the user does.
   bash -c "${lines[1]#! }"
   bash -c "${lines[2]#! }"
@@ -304,6 +304,23 @@ run_plan() {
   git diff --quiet HEAD -- shared.txt
   run git log -2 --format=%B
   [[ "$output" != *"# scope:"* ]] || false
+}
+
+@test "commit-plan: a printed patch line run from a subdirectory stages the files outside it" {
+  session "$S1" one
+  row "$S1" idle
+  echo a2 >> a/file
+  echo log2 >> logs/run.log
+  git diff -- a/file logs/run.log > "$TEST_TEMP_DIR/two.patch"
+  git checkout -q -- a/file logs/run.log
+  message one m1 202611110900 "patch $TEST_TEMP_DIR/two.patch"
+  run_plan
+  [ "$status" -eq 0 ]
+  (cd a && bash -c "${lines[1]#! }")
+  [ "$(git rev-list --count HEAD)" -eq 2 ]
+  run git show --name-only --format= HEAD
+  [[ "$output" == *"a/file"* ]] || false
+  [[ "$output" == *"logs/run.log"* ]] || false
 }
 
 @test "commit-plan: two messages with the same path stop with U005" {
@@ -454,6 +471,21 @@ run_plan() {
   [[ "$output" == *"excluded: $TEST_TEMP_DIR/one/commit-msgs/m1.txt has no entry left"* ]] || false
 }
 
+@test "commit-plan: a patch with a quoted rename name holds its message under --exclude" {
+  session "$S1" one
+  row "$S1" idle
+  printf 'x\n' > "logs/old	.txt"
+  git add -A && git commit -qm old
+  git mv "logs/old	.txt" "logs/new	.txt"
+  git diff --cached -M > "$TEST_TEMP_DIR/quoted.patch"
+  git reset -q --hard
+  message one m1 202611110900 "patch $TEST_TEMP_DIR/quoted.patch"
+  run_plan --exclude logs
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Plan for $REPO: 0 commits" ]
+  [[ "$output" == *"held: excluded $TEST_TEMP_DIR/one/commit-msgs/m1.txt"*"a file name is unreadable"* ]] || false
+}
+
 @test "commit-plan: a path of one message and a patch of another on other files give two lines" {
   session "$S1" one
   session "$S2" two
@@ -573,7 +605,7 @@ run_plan() {
   message one m1 202611110900 "patch $TEST_TEMP_DIR/bin.patch"
   run_plan --exclude logs
   [ "$status" -eq 0 ]
-  [ "${lines[1]}" = "! git apply --cached '$TEST_TEMP_DIR/bin.patch' && git -c core.commentChar='#' commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/m1.txt'" ]
+  [ "${lines[1]}" = "! git -C '$REPO' apply --cached '$TEST_TEMP_DIR/bin.patch' && git -c core.commentChar='#' commit --cleanup=strip -F '$TEST_TEMP_DIR/one/commit-msgs/m1.txt'" ]
   [[ "$output" != *"excluded:"* ]] || false
 }
 
