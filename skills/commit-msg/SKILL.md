@@ -1,6 +1,6 @@
 ---
 name: commit-msg
-version: 2026.11.11.1@0054246
+version: 2026.11.11.2@692451e
 description: Create a commit message file in .claude-work/commit-msgs/. Every call creates a new file. Focuses on WHY not WHAT. The diff already shows what changed. User reviews and commits manually.
 argument-hint: '[--path <path>]... [--patch <file>]... <description>'
 allowed-tools: Read, Write, AskUserQuestion, Bash(git diff *), Bash(*/skills/commit-msg/commit-scope.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/prose-style/check-prose.sh *), Bash(*/skills/issue-context/skill-version.sh *)

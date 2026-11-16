@@ -1,6 +1,6 @@
 ---
 name: finish-issue
-version: 2026.11.11.1@0054246
+version: 2026.11.11.2@692451e
 description: Wrap up issue or side-quest work on the current issues/* or side-quest/* branch. Runs verification, checks documentation needs, and generates a PR description
 argument-hint: '[issue-number-or-url]'
 skill-kind: composite
