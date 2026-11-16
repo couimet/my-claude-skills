@@ -35,7 +35,9 @@ prose-style 5478
 # Each orchestrates five or more skills. start-issue and tackle-pr-comment are
 # the two largest in the collection and the obvious next targets.
 start-issue 18149
-tackle-pr-comment 16723
+# tackle-pr-comment grew by one allowed-tools entry for issue 321: it calls
+# /commit-msg, so it must allow commit-scope.sh too (transitive rule).
+tackle-pr-comment 16768
 finish-issue 17276
 release-article 15819
 
@@ -43,7 +45,9 @@ release-article 15819
 # No dedicated slimming pass yet; each is over on its own content.
 changelog 11419
 cleanup-issue 9360
-commit-msg 8566
+# commit-msg grew with the scope flags of issue 321 (--path, --patch), whose
+# stop rule and scope record a caller must know.
+commit-msg 9882
 create-github-issue 9530
 create-jira-issue 15021
 fork-side-item 8029

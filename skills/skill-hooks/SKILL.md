@@ -12,7 +12,7 @@ Explains the hook mechanism that lets projects extend global skills with project
 
 ## How It Works
 
-Some skills in this collection (like `/start-issue`, `/finish-issue`, `/start-side-quest`, `/create-github-issue`, `/fork-side-item`, and `/save-prompt`) include hook points — prose references to a companion skill that a project can optionally define. When the parent skill runs, Claude Code resolves the hook reference across all skill directories. If the project has the hook skill, its requirements are incorporated. If not, the vanilla skill runs unchanged.
+Some skills (like `/start-issue`, `/finish-issue`, `/start-side-quest`, `/create-github-issue`, `/fork-side-item`, `/save-prompt`, and `/commit-plan`) include hook points — prose references to a companion skill that a project can optionally define. When the parent skill runs, Claude Code resolves the hook reference across all skill directories. If the project has the hook skill, its requirements are incorporated. If not, the vanilla skill runs unchanged.
 
 ## Convention
 
@@ -26,6 +26,7 @@ A project creates a foundation skill in `.claude/skills/` with the name `{parent
 | `/create-github-issue` | `create-github-issue-hook` | Mandatory label requirements, label catalogs, label-application steps |
 | `/fork-side-item`      | `fork-side-item-hook`      | Refusal checks, tracker search, worker-prompt lines, after-fork steps |
 | `/save-prompt`         | `save-prompt-hook`         | After-save steps                                                      |
+| `/commit-plan`         | `commit-plan-hook`         | Paths each plan leaves out, lines the plan prints first               |
 
 Hook skills are foundation skills (`user-invocable: false`). They are consulted by their parent skill, never invoked directly by the user.
 
