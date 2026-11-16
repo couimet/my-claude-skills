@@ -486,6 +486,37 @@ run_plan() {
   [[ "$output" == *"held: excluded $TEST_TEMP_DIR/one/commit-msgs/m1.txt"*"a file name is unreadable"* ]] || false
 }
 
+@test "commit-plan: a patch with a quoted name and a path of another message stop with U005" {
+  session "$S1" one
+  session "$S2" two
+  row "$S1" idle
+  row "$S2" idle
+  printf 'x\n' > "logs/odd	.txt"
+  git add -A && git commit -qm odd
+  printf 'y\n' >> "logs/odd	.txt"
+  git diff > "$TEST_TEMP_DIR/quoted.patch"
+  message one m1 202611110900 "patch $TEST_TEMP_DIR/quoted.patch"
+  message two m2 202611111000 "path logs"
+  run_plan
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"U005"*"is unreadable"* ]] || false
+  [[ "$output" == *"m1.txt"* ]] || false
+  [[ "$output" == *"m2.txt"* ]] || false
+}
+
+@test "commit-plan: a patch with a quoted name and no path message gets one line" {
+  session "$S1" one
+  row "$S1" idle
+  printf 'x\n' > "logs/odd	.txt"
+  git add -A && git commit -qm odd
+  printf 'y\n' >> "logs/odd	.txt"
+  git diff > "$TEST_TEMP_DIR/quoted.patch"
+  message one m1 202611110900 "patch $TEST_TEMP_DIR/quoted.patch"
+  run_plan
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "Plan for $REPO: 1 commit" ]
+}
+
 @test "commit-plan: a path of one message and a patch of another on other files give two lines" {
   session "$S1" one
   session "$S2" two

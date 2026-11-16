@@ -54,7 +54,9 @@
 #
 # The checks, in order. Each one stops the plan with no line:
 #   U005  two messages take the same path, or a path of one message holds a
-#         file of a patch of another (each name is listed).
+#         file of a patch of another (each name is listed). A patch file
+#         name that the script cannot read counts as under each path of
+#         another message.
 #   U007  the index differs from HEAD, so the first commit would also take
 #         the staged changes.
 #   U006  a line does not apply after the lines before it. The script runs
@@ -197,7 +199,8 @@ quote() {
 }
 
 # patch_files <patch> — print the files of a patch, one per line, relative
-# to the root. A section with no readable name prints nothing.
+# to the root. A section with no readable name prints nothing. Use it only
+# where a missing name is safe; U005 calls patch_names for its status.
 patch_files() {
   patch_names "$1" || true
 }
@@ -445,12 +448,19 @@ for a in ${ordered[@]+"${ordered[@]}"}; do
         [ -n "$px" ] || continue
         while IFS= read -r patch; do
           [ -n "$patch" ] || continue
+          unread=0
+          names="$(patch_names "$patch")" || unread=1
           while IFS= read -r pf; do
             [ -n "$pf" ] || continue
             if under "$pf" "$px"; then
               die "$ERR_OVERLAP" "path '$px' of ${m_msgs[$x]} holds file '$pf' of a patch of ${m_msgs[$y]}"
             fi
-          done <<<"$(patch_files "$patch")"
+          done <<<"$names"
+          # A name the script cannot read can be under the path, so no
+          # check can prove that the two messages do not overlap.
+          if [ "$unread" -eq 1 ]; then
+            die "$ERR_OVERLAP" "a file name of patch '$patch' of ${m_msgs[$y]} is unreadable, so it can be under path '$px' of ${m_msgs[$x]}"
+          fi
         done <<<"${m_patches[$y]}"
       done <<<"${m_paths[$x]}"
     done
