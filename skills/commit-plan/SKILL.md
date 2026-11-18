@@ -1,6 +1,6 @@
 ---
 name: commit-plan
-version: 2026.11.11.2@692451e
+version: 2026.11.18@1d06bc6
 description: Print one commit line for each pending scoped /commit-msg message of the live Claude sessions in this working tree, in order, so the work of several sessions lands as one commit each. Never stages and never commits. Use when the user says "plan the commits", "commit the work of all sessions", or "one commit for each session".
 allowed-tools: Bash(*/skills/commit-plan/commit-plan.sh), Bash(*/skills/commit-plan/commit-plan.sh *)
 ---

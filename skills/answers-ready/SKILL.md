@@ -1,6 +1,6 @@
 ---
 name: answers-ready
-version: 2026.11.11.2@692451e
+version: 2026.11.18@1d06bc6
 description: Collect a user's acknowledgment from a questions wave file or a working document, without reading either into context. Resolves the wave when no path is given, and owns the procedure for finalizing a pending stub.
 argument-hint: '[path-to-wave-file]'
 user-invocable: true

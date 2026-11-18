@@ -1,6 +1,6 @@
 ---
 name: find-agent
-version: 2026.11.11.2@692451e
+version: 2026.11.18@1d06bc6
 description: Say which session holds a work folder, or what this session holds, and print the next command (launch, resume, attach, or rename). It changes nothing.
 argument-hint: '[<folder>]'
 allowed-tools: Bash(*/skills/issue-context/find-agent.sh *)

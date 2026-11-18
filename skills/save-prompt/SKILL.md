@@ -1,6 +1,6 @@
 ---
 name: save-prompt
-version: 2026.11.11.2@692451e
+version: 2026.11.18@1d06bc6
 description: Save a prompt verbatim in the prompts/ folder of the work folder, read from the session transcript so no model copies the text. Use when the user says "save this prompt verbatim", "save the prompt", or "keep this prompt".
 argument-hint: '[--kind launch|next|saved] [--folder <absolute folder>]'
 allowed-tools: Bash(*/skills/save-prompt/save-prompt.sh *)

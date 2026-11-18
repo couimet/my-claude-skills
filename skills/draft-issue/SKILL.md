@@ -1,6 +1,6 @@
 ---
 name: draft-issue
-version: 2026.11.11.2@692451e
+version: 2026.11.18@1d06bc6
 description: Author an issue draft in the standardized local format, a YAML-style front-matter block over a markdown title and body, grill the content through `/g2q` for thoroughness, then file it with `/create-github-issue` or `/create-jira-issue`
 argument-hint: <title-or-file-path>
 allowed-tools: Read, Write, Glob, AskUserQuestion, Bash(*/skills/issue-context/branch-issue-id.sh *), Bash(mkdir -p *), Bash(date *), Bash(*/skills/issue-context/get-issue-folder-path.sh *), Bash(*/skills/issue-context/claude-work-root.sh *), Bash(*/skills/issue-context/target-path.sh *), Bash(*/skills/question/extract-answers.sh *), Bash(*/skills/prose-style/check-prose.sh *)
