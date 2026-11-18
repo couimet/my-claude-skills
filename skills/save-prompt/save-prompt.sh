@@ -4,7 +4,7 @@
 # folder, so no model copies the text by hand.
 #
 # Usage:
-#   save-prompt.sh [--kind launch|next|saved] [--from transcript]
+#   save-prompt.sh [--kind launch|next|saved] [--from transcript] [--folder <folder>]
 #   save-prompt.sh [--kind launch|next|saved] --from stdin <folder>
 #   save-prompt.sh --help
 #
@@ -17,6 +17,9 @@
 #            folder as its one argument. An explicit mode, because a script
 #            that reads standard input when nobody meant it waits on a
 #            terminal.
+#   --folder transcript mode only: the target folder, an absolute path to an
+#            existing directory. With it, the script reads no session file,
+#            so a session with no work folder can save into any folder.
 #   <folder> stdin mode only: an absolute path to an existing directory.
 #
 # The file is <folder>/prompts/<YYYYMMDD-HHMMSS>-<kind>.txt. The stamp is the
@@ -25,9 +28,12 @@
 # when it is missing, and it writes only the prompt file.
 #
 # Transcript mode. The session id comes from CLAUDE_CODE_SESSION_ID. The
-# work folder comes from the session file of the session, through the reader
-# of ../issue-context/session-file.sh; with no session file the script
-# refuses and names /set-work-folder, and it never guesses a folder. The
+# target folder is the --folder value; with no --folder, it is the work folder
+# of the session file of the session, through the reader of
+# ../issue-context/session-file.sh. With no --folder and no session file the
+# script refuses and names /set-work-folder, and it never guesses a folder.
+# With --folder, an unset CLAUDE_CODE_SESSION_ID is M004, because the
+# transcript is unknown. The
 # transcript is the first match of the glob <projects dir>/*/<session id>.jsonl,
 # where the projects dir is SAVE_PROMPT_PROJECTS_DIR, else
 # ${CLAUDE_CONFIG_DIR:-~/.claude}/projects. A glob by the session id does not
@@ -73,8 +79,8 @@
 # Exit codes:
 #   0  — the file was written, or the prompt repeats the newest file
 #   1  — error (see stderr): M001 usage or empty input, M002 folder, M003 no
-#        session file, M004 no transcript, M005 no human message to save,
-#        M006 write
+#        session file (or no jq), M004 no transcript, M005 no human message
+#        to save, M006 write
 
 set -euo pipefail
 
@@ -92,13 +98,15 @@ readonly OLD_LAUNCH_BASENAME="prompt-new-agent-launch"
 
 usage() {
   cat <<'EOF'
-Usage: save-prompt.sh [--kind launch|next|saved] [--from transcript]
+Usage: save-prompt.sh [--kind launch|next|saved] [--from transcript] [--folder <folder>]
        save-prompt.sh [--kind launch|next|saved] --from stdin <folder>
        save-prompt.sh --help
 
   --kind   launch, next, or saved (default saved)
   --from   transcript (default): the newest human message of this session
            stdin: the text on standard input, saved in <folder>
+  --folder transcript mode: save in this absolute folder, not in the work
+           folder of the session file
   --help   Show this help message
 EOF
 }
@@ -115,6 +123,8 @@ kind="saved"
 from="transcript"
 folder=""
 folder_count=0
+folder_flag=""
+folder_flag_count=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --help)
@@ -129,6 +139,12 @@ while [ "$#" -gt 0 ]; do
     --from)
       [ "$#" -ge 2 ] || die "$ERR_USAGE" "--from requires a value: transcript or stdin"
       from="$2"
+      shift 2
+      ;;
+    --folder)
+      [ "$#" -ge 2 ] || die "$ERR_USAGE" "--folder requires a value: an absolute path to an existing directory"
+      folder_flag="$2"
+      folder_flag_count=$((folder_flag_count + 1))
       shift 2
       ;;
     -*)
@@ -148,9 +164,12 @@ esac
 case "$from" in
   transcript)
     [ "$folder_count" -eq 0 ] \
-      || die "$ERR_USAGE" "transcript mode takes no folder; it reads the work folder from the session file (for a folder, use --from stdin <folder>)"
+      || die "$ERR_USAGE" "transcript mode takes no positional folder; it reads the work folder from the session file (for another folder, use --folder <folder>, or --from stdin <folder>)"
+    [ "$folder_flag_count" -le 1 ] || die "$ERR_USAGE" "--folder takes one folder, got $folder_flag_count"
     ;;
   stdin)
+    [ "$folder_flag_count" -eq 0 ] \
+      || die "$ERR_USAGE" "--folder is for the transcript mode only; --from stdin takes the folder as its one argument"
     [ "$folder_count" -eq 1 ] || die "$ERR_USAGE" "--from stdin takes one folder, got $folder_count"
     ;;
   *) die "$ERR_USAGE" "unknown mode '$from'; use transcript or stdin" ;;
@@ -168,6 +187,18 @@ if [ "$from" = "stdin" ]; then
     *) die "$ERR_FOLDER" "'$folder' is not an absolute path" ;;
   esac
   cat > "$text_file" || die "$ERR_USAGE" "could not read standard input"
+elif [ -n "$folder_flag" ]; then
+  # --folder: the caller names the folder, so no session file is read. The
+  # folder is checked before the transcript, so a typo fails first.
+  case "$folder_flag" in
+    /*) ;; # kcov-exclude-line
+    *) die "$ERR_FOLDER" "'$folder_flag' is not an absolute path" ;;
+  esac
+  [ -d "$folder_flag" ] || die "$ERR_FOLDER" "'$folder_flag' is not an existing directory"
+  folder="$folder_flag"
+  command -v jq >/dev/null 2>&1 \
+    || die "$ERR_SESSION" "jq not found; it is required to read the transcript"
+  [ -n "${CLAUDE_CODE_SESSION_ID:-}" ] || die "$ERR_TRANSCRIPT" "CLAUDE_CODE_SESSION_ID is not set, so the transcript is unknown"
 else
   # Only this mode reads the settings, the session file, and the transcript,
   # so the stdin mode of launch-agent.sh needs neither jq nor a settings file.
@@ -182,6 +213,8 @@ else
     die "$ERR_SESSION" "this session has no work folder in a session file ($reason), and the script never guesses one; run /set-work-folder <absolute folder> first"
   fi
   [ -n "${CLAUDE_CODE_SESSION_ID:-}" ] || die "$ERR_SESSION" "CLAUDE_CODE_SESSION_ID is not set, so the transcript is unknown"
+fi
+if [ "$from" = "transcript" ]; then
   projects_dir="${SAVE_PROMPT_PROJECTS_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects}"
   transcript=""
   for candidate in "$projects_dir"/*/"$CLAUDE_CODE_SESSION_ID.jsonl"; do

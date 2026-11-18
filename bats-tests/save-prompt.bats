@@ -363,6 +363,108 @@ one more thing"
 }
 
 # ============================================================================
+# The --folder flag of the transcript mode
+# ============================================================================
+
+@test "--folder saves the newest human message in that folder, byte for byte" {
+  human "an old prompt" > "$TRANSCRIPT"
+  printf 'line one\n\nline three with $HOME\n' > "$TEST_TEMP_DIR/expected.txt"
+  human "$(cat "$TEST_TEMP_DIR/expected.txt")" >> "$TRANSCRIPT"
+  RUN="$TEST_TEMP_DIR/run"
+  mkdir -p "$RUN"
+  clock_stub 20261116-120000
+  run_save --kind saved --folder "$RUN"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$RUN/prompts/20261116-120000-saved.txt" ]
+  cmp -s "$TEST_TEMP_DIR/expected.txt" "$output"
+  [ ! -e "$FOLDER/prompts" ]
+}
+
+@test "--folder works in a session that has no session file" {
+  human "a prompt" > "$TRANSCRIPT"
+  rm -f "$CFG_DIR/sessions/"*
+  RUN="$TEST_TEMP_DIR/run"
+  mkdir -p "$RUN"
+  run_save --folder "$RUN"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "$RUN/prompts/"*"-saved.txt" ]] || false
+  [ "$(cat "$output")" = "a prompt" ]
+}
+
+@test "--folder with an explicit --from transcript is the same mode" {
+  human "a prompt" > "$TRANSCRIPT"
+  RUN="$TEST_TEMP_DIR/run"
+  mkdir -p "$RUN"
+  run_save --from transcript --folder "$RUN" --kind next
+  [ "$status" -eq 0 ]
+  [[ "$output" == "$RUN/prompts/"*"-next.txt" ]] || false
+}
+
+@test "--folder with a relative or missing folder → M002, nothing written" {
+  human "a prompt" > "$TRANSCRIPT"
+  run_save --folder topic
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"M002"*"not an absolute path"* ]] || false
+  run_save --folder "$TEST_TEMP_DIR/missing"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"M002"*"not an existing directory"* ]] || false
+  [ ! -e "$FOLDER/prompts" ]
+}
+
+@test "--folder with --from stdin → M001, nothing written" {
+  printf 'a prompt\n' > "$TEST_TEMP_DIR/in.txt"
+  run_stdin "$TEST_TEMP_DIR/in.txt" --from stdin --folder "$FOLDER" "$FOLDER"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"M001"*"--folder is for the transcript mode only"* ]] || false
+  [ ! -e "$FOLDER/prompts" ]
+}
+
+@test "--folder with no value → M001" {
+  run_save --folder
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"M001"*"--folder requires a value"* ]] || false
+}
+
+@test "--folder given twice → M001" {
+  RUN="$TEST_TEMP_DIR/run"
+  mkdir -p "$RUN"
+  run_save --folder "$RUN" --folder "$RUN"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"M001"*"--folder takes one folder, got 2"* ]] || false
+}
+
+@test "--folder with no transcript → M004, nothing written" {
+  RUN="$TEST_TEMP_DIR/run"
+  mkdir -p "$RUN"
+  run_save --folder "$RUN"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"M004"*"$SESSION_ID.jsonl"* ]] || false
+  [ ! -e "$RUN/prompts" ]
+}
+
+@test "--folder with no CLAUDE_CODE_SESSION_ID → M004, nothing written" {
+  human "a prompt" > "$TRANSCRIPT"
+  RUN="$TEST_TEMP_DIR/run"
+  mkdir -p "$RUN"
+  run env -u CLAUDE_CODE_SESSION_ID PATH="$STUB_PATH" MY_CLAUDE_SKILLS_CONFIG="$CFG" \
+    SAVE_PROMPT_PROJECTS_DIR="$PROJECTS_DIR" "$SCRIPT" --folder "$RUN" < /dev/null
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"M004"*"CLAUDE_CODE_SESSION_ID is not set"* ]] || false
+  [ ! -e "$RUN/prompts" ]
+}
+
+@test "no jq on PATH with --folder → M003, nothing written" {
+  human "a prompt" > "$TRANSCRIPT"
+  RUN="$TEST_TEMP_DIR/run"
+  mkdir -p "$RUN"
+  STUB_PATH="$(_stub_path_without "$TEST_TEMP_DIR/nojq" jq)"
+  run_save --folder "$RUN"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"M003"*"jq not found"* ]] || false
+  [ ! -e "$RUN/prompts" ]
+}
+
+# ============================================================================
 # Writes
 # ============================================================================
 
