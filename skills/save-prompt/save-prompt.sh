@@ -44,8 +44,10 @@
 #     Each entry of another origin.kind, such as a message from a peer
 #     session or a task notification, is skipped.
 #   - The script saves the newest human message. When that message is a bare
-#     /save-prompt, with no text after it, the script saves the human message
-#     before it.
+#     /save-prompt, the script saves the human message before it. A bare
+#     /save-prompt has no text after it, or only --kind <value> and
+#     --folder <value> options. A value can be in double or single quotes.
+#     Any other text after /save-prompt makes the message the saved prompt.
 #   - A message that the person sends while a turn runs is an `attachment`
 #     entry of type `queued_command` with `attachment.origin.kind: human`
 #     (an older form puts it at the top-level `origin.kind`). Each such
@@ -245,7 +247,9 @@ if [ "$from" = "transcript" ]; then
         | ((capture("<command-args>(?<a>[\\s\\S]*)</command-args>").a) // "") as $a
         | "/" + $n + (if ($a | test("\\S")) then " " + $a else "" end)
       else . end;
-    def bare: (gsub("^\\s+|\\s+$"; "") == "/save-prompt");
+    # \u0027 is a single quote: the program sits in a bash single-quoted string.
+    def bare: gsub("^\\s+|\\s+$"; "")
+      | test("^/save-prompt(\\s+--(kind|folder)\\s+(\"[^\"]*\"|\u0027[^\u0027]*\u0027|\\S+))*$");
     [inputs | fromjson? | objects
       | if .type == "user" and .origin.kind? == "human" then
           {k: "h", t: (.message.content | render | typed)}

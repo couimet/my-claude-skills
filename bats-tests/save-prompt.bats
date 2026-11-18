@@ -187,11 +187,25 @@ Also leave room for tulips."
   [ "$(cat "$output")" = "the long prompt" ]
 }
 
-@test "/save-prompt with args is not bare, so it is the saved message" {
+@test "/save-prompt with only --kind is bare, so it saves the message before it" {
   { human "an older prompt"; slash "save-prompt" "--kind next"; } > "$TRANSCRIPT"
   run_save
   [ "$status" -eq 0 ]
-  [ "$(cat "$output")" = "/save-prompt --kind next" ]
+  [ "$(cat "$output")" = "an older prompt" ]
+}
+
+@test "/save-prompt with only quoted --folder and --kind options is bare" {
+  { human "an older prompt"; slash "save-prompt" "--folder \"/a b/c\" --kind 'next'"; } > "$TRANSCRIPT"
+  run_save
+  [ "$status" -eq 0 ]
+  [ "$(cat "$output")" = "an older prompt" ]
+}
+
+@test "/save-prompt followed by text is not bare, so it is the saved message" {
+  { human "an older prompt"; slash "save-prompt" "--kind next keep this text"; } > "$TRANSCRIPT"
+  run_save
+  [ "$status" -eq 0 ]
+  [ "$(cat "$output")" = "/save-prompt --kind next keep this text" ]
 }
 
 @test "a queued follow-up after the newest message follows it under the separator" {

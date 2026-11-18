@@ -34,13 +34,13 @@ When the user or a calling skill names a target folder, add `--folder "<absolute
 ~/.claude/skills/save-prompt/save-prompt.sh --kind "<kind>" --folder "<absolute folder>"
 ```
 
-The script saves the human message of the current turn. When that message is a bare `/save-prompt`, it saves the human message before it. A message that the user sent while the turn ran follows the saved text under a separator line. A message that arrives after the script runs is not in the file: run the skill again to add it. The script header gives each rule.
+The script saves the human message of the current turn. When that message is a bare `/save-prompt`, it saves the human message before it. A `/save-prompt` with only its `--kind` and `--folder` options is bare too. Any other text after `/save-prompt` makes the message the saved prompt. A message that the user sent while the turn ran follows the saved text under a separator line. A message that arrives after the script runs is not in the file: run the skill again to add it. The script header gives each rule.
 
 The file is `<folder>/prompts/<YYYYMMDD-HHMMSS>-<kind>.txt`. The folder is the `--folder` value. With no `--folder`, the script reads the work folder from the session file of this session. With `--folder`, it reads no session file, so it also works in a session that has no work folder.
 
 ## Step 2: Report
 
-Give the user the absolute path that the script printed, or its `Repeat:` line: a repeat of the newest file of the same kind writes nothing. An error names its code. M002 means that the `--folder` value is not an absolute path to an existing directory. M003 means that this session has no work folder: give the user the error, which names `/set-work-folder`, or run again with `--folder`. M005 means that the transcript holds no human message, and the transcript form can have changed.
+Give the user the absolute path that the script printed, or its `Repeat:` line: a repeat of the newest file of the same kind writes nothing. An error names its code. M002 means that the `--folder` value is not an absolute path to an existing directory. M003 means that jq is missing, or that this session has no work folder. Give the user the error. When the error says `jq not found`, tell the user that the script requires jq. When the error names `/set-work-folder`, suggest `/set-work-folder` or a new run with `--folder`. M005 means that the transcript holds no human message, and the transcript form can have changed.
 
 ## Hook Points
 
