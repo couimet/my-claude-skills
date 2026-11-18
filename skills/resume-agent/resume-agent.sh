@@ -68,8 +68,12 @@
 #            conversation, where a resume of a later conversation id makes a
 #            second record. No flag is passed: with a flag such as --name,
 #            Claude Code 2.1.311 starts a copy under a new id instead of the
-#            session. A prompt does not start a copy. Without the /rename
-#            prompt, a session named only by a typed /rename wakes with an
+#            session. No flag is necessary either: Claude Code 2.1.325
+#            wakes the session with the options of its launch, such as
+#            --add-dir, --settings, and --model, and prints "woke session
+#            <id> with its saved options". A prompt does not start a copy.
+#            Without the /rename prompt, a session named only by a typed
+#            /rename wakes with an
 #            automatic name, and a later AI title replaces it, so a send by
 #            the folder name misses it. The /rename prompt sets a name that
 #            Claude Code keeps as the --name option of the job, also for a

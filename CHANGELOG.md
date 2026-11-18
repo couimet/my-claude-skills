@@ -10,6 +10,12 @@ Entries are organized using [Keep a Changelog](https://keepachangelog.com/) cate
 
 Contributors are encouraged to add a changelog entry with their PR, but it's not required. CI will nudge you with a non-blocking reminder if CHANGELOG.md wasn't modified.
 
+## 2026.11.18
+
+### Added
+
+- `/save-prompt` takes `--folder <absolute folder>`, which saves the prompt in that folder and still reads the text from the transcript, so no model copies it. With `--folder`, the script reads no session file, so it also works in a session that has no work folder. A relative or missing folder stops with M002, and `--folder` with `--from stdin` stops with M001. A call with no `--folder` works as before ([issues/324](https://github.com/couimet/my-claude-skills/issues/324))
+
 ## 2026.11.11.2
 
 ### Added
