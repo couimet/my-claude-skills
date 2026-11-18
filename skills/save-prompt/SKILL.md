@@ -40,7 +40,7 @@ The file is `<folder>/prompts/<YYYYMMDD-HHMMSS>-<kind>.txt`. The folder is the `
 
 ## Step 2: Report
 
-Give the user the absolute path that the script printed, or its `Repeat:` line: a repeat of the newest file of the same kind writes nothing. An error names its code. M002 means that the `--folder` value is not an absolute path to an existing directory. M003 means that jq is missing, or that this session has no work folder. Give the user the error. When the error says `jq not found`, tell the user that the script requires jq. When the error names `/set-work-folder`, suggest `/set-work-folder` or a new run with `--folder`. M005 means that the transcript holds no human message, and the transcript form can have changed.
+Give the user the absolute path that the script printed, or its `Repeat:` line: a repeat of the newest file of the same kind writes nothing. An error names its code. M002 means that the `--folder` value is not an absolute path to an existing directory. M003 means that jq is missing, or that this session has no work folder. Give the user the error. When the error says `jq not found`, tell the user that the script requires jq. When the error names `/set-work-folder`, suggest `/set-work-folder` or a new run with `--folder`. M005 means that the script found no message to save, for one of two reasons. When the error says `no human message before it to save`, the transcript holds only a bare `/save-prompt`: tell the user to send the prompt first, then run `/save-prompt` again. When the error says that the transcript holds no human message, the transcript form can have changed.
 
 ## Hook Points
 
