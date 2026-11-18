@@ -187,7 +187,7 @@ if [ "$from" = "stdin" ]; then
     *) die "$ERR_FOLDER" "'$folder' is not an absolute path" ;;
   esac
   cat > "$text_file" || die "$ERR_USAGE" "could not read standard input"
-elif [ -n "$folder_flag" ]; then
+elif [ "$folder_flag_count" -gt 0 ]; then
   # --folder: the caller names the folder, so no session file is read. The
   # folder is checked before the transcript, so a typo fails first.
   case "$folder_flag" in

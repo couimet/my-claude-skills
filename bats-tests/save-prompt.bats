@@ -366,17 +366,26 @@ one more thing"
 # The --folder flag of the transcript mode
 # ============================================================================
 
-@test "--folder saves the newest human message in that folder, byte for byte" {
+@test "--folder saves the newest human message in that folder, byte for byte, with one final newline" {
   human "an old prompt" > "$TRANSCRIPT"
-  printf 'line one\n\nline three with $HOME\n' > "$TEST_TEMP_DIR/expected.txt"
-  human "$(cat "$TEST_TEMP_DIR/expected.txt")" >> "$TRANSCRIPT"
+  # shellcheck disable=SC2016 # $HOME is literal text of the message
+  human $'line one\n\nline three with $HOME\n\n' >> "$TRANSCRIPT"
   RUN="$TEST_TEMP_DIR/run"
   mkdir -p "$RUN"
   clock_stub 20261116-120000
   run_save --kind saved --folder "$RUN"
   [ "$status" -eq 0 ]
   [ "$output" = "$RUN/prompts/20261116-120000-saved.txt" ]
-  cmp -s "$TEST_TEMP_DIR/expected.txt" "$output"
+  # shellcheck disable=SC2016 # $HOME is literal text of the message
+  printf 'line one\n\nline three with $HOME\n\n\n' | cmp -s - "$output"
+  [ ! -e "$FOLDER/prompts" ]
+}
+
+@test "--folder with an empty value → M002, and the session folder gets no prompt" {
+  human "a prompt" > "$TRANSCRIPT"
+  run_save --folder ""
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"M002"*"'' is not an absolute path"* ]] || false
   [ ! -e "$FOLDER/prompts" ]
 }
 
